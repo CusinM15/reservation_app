@@ -30,3 +30,6 @@ uvicorn.log
 # Test files
 test_docs/
 cookies.txt
+certs/key.pem
+certs/cert.pem
+certs/

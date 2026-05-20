@@ -6,8 +6,10 @@ services:
     container_name: sola_app
     ports:
       - "${APP_PORT:-8001}:8001"
+      - "${APP_PORT_HTTPS:-8443}:8443"
     volumes:
       - ./data:/app/data
+      - ./certs:/app/certs:ro
     env_file:
       - .env
     restart: unless-stopped
