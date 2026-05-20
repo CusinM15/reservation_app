@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Upravljanje uporabnikov - Šolski App</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; background: #f5f5f5; }
+        .container { max-width: 1200px; margin: auto; background: white; padding: 20px; border-radius: 10px; }
+        table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+        th, td { padding: 10px; text-align: left; border-bottom: 1px solid #ddd; }
+        th { background: #007bff; color: white; }
+        .btn { padding: 5px 10px; background: #007bff; color: white; text-decoration: none; border-radius: 3px; }
+        .btn-danger { background: #dc3545; }
+        .btn-success { background: #28a745; }
+        .form-group { margin: 10px 0; }
+        input, select { padding: 5px; margin: 5px; }
+        .nav { margin-bottom: 20px; }
+        .nav a { margin-right: 10px; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="nav">
+            <a href="/">Domov</a>
+            <a href="/admin/users">Uporabniki</a>
+            <a href="/logout">Odjava</a>
+        </div>
+        <h2>Upravljanje učiteljev</h2>
+        
+        <h3>Dodaj učitelja</h3>
+        <form method="POST" action="/admin/users">
+            <input type="text" name="username" placeholder="Uporabniško ime" required>
+            <input type="password" name="password" placeholder="Geslo" required>
+            <select name="role">
+                <option value="teacher">Učitelj</option>
+                <option value="admin">Admin</option>
+            </select>
+            <button type="submit" class="btn">Dodaj</button>
+        </form>
+        
+        <h3>Seznam učiteljev</h3>
+        <table>
+            <thead>
+                <tr><th>ID</th><th>Uporabniško ime</th><th>Vloga</th><th>Aktiven</th><th>Akcije</th></tr>
+            </thead>
+            <tbody>
+                {% for user in users %}
+                <tr>
+                    <td>{{ user.id }}</td>
+                    <td>{{ user.username }}</td>
+                    <td>{{ user.role }}</td>
+                    <td>{{ "Da" if user.is_active else "Ne" }}</td>
+                    <td>
+                        {% if user.is_active %}
+                        <a href="/admin/users/{{ user.id }}/deactivate" class="btn btn-danger">Deaktiviraj</a>
+                        {% else %}
+                        <a href="/admin/users/{{ user.id }}/activate" class="btn btn-success">Aktiviraj</a>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</body>
+</html>

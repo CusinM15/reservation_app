@@ -1,0 +1,13 @@
+version: "3.9"
+
+services:
+  sola:
+    build: .
+    container_name: sola_app
+    ports:
+      - "${APP_PORT:-8001}:8001"
+    volumes:
+      - ./data:/app/data
+    env_file:
+      - .env
+    restart: unless-stopped

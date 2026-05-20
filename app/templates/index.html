@@ -1,0 +1,674 @@
+<!DOCTYPE html>
+<html lang="sl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Šolski App</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: #f0f2f5; color: #1a1a2e; }
+    nav { background: #1a1a2e; color: #fff; padding: 0.8rem 1.5rem; display: flex; align-items: center; gap: 1.5rem; flex-wrap: wrap; }
+    nav .brand { font-weight: 700; font-size: 1.1rem; }
+    nav a, nav button { color: #ccc; text-decoration: none; cursor: pointer; background: none; border: none; font-size: 0.95rem; padding: 0.3rem 0.5rem; }
+    nav a:hover, nav button:hover { color: #fff; }
+    nav a.active { color: #fff; border-bottom: 2px solid #4a6cf7; }
+    nav .spacer { flex: 1; }
+    nav .user-info { font-size: 0.85rem; color: #aaa; }
+    .container { max-width: 1200px; margin: 1.5rem auto; padding: 0 1rem; }
+    .section { display: none; }
+    .section.active { display: block; }
+    .card { background: #fff; border-radius: 12px; padding: 1.5rem; box-shadow: 0 2px 8px rgba(0,0,0,0.08); margin-bottom: 1.5rem; }
+    .card h2 { font-size: 1.2rem; margin-bottom: 1rem; }
+    .filters { display: flex; gap: 0.8rem; flex-wrap: wrap; align-items: end; margin-bottom: 1rem; }
+    .filters label { font-size: 0.85rem; font-weight: 500; color: #555; display: block; margin-bottom: 0.2rem; }
+    .filters select, .filters input { padding: 0.5rem 0.7rem; border: 1px solid #ddd; border-radius: 6px; font-size: 0.9rem; }
+    .filters select:focus, .filters input:focus { outline: none; border-color: #4a6cf7; }
+    .btn { padding: 0.5rem 1rem; border: none; border-radius: 6px; font-size: 0.9rem; font-weight: 600; cursor: pointer; display: inline-flex; align-items: center; gap: 0.3rem; }
+    .btn-primary { background: #4a6cf7; color: #fff; }
+    .btn-primary:hover { background: #3a5ce5; }
+    .btn-danger { background: #dc3545; color: #fff; font-size: 0.75rem; padding: 0.25rem 0.5rem; }
+    .btn-danger:hover { background: #c82333; }
+    .btn-sm { padding: 0.3rem 0.6rem; font-size: 0.8rem; }
+    .btn-success { background: #28a745; color: #fff; }
+    .btn-success:hover { background: #218838; }
+    .btn-outline { background: transparent; border: 1px solid #4a6cf7; color: #4a6cf7; }
+    .btn-outline:hover { background: #4a6cf7; color: #fff; }
+    table { width: 100%; border-collapse: collapse; font-size: 0.88rem; }
+    th, td { padding: 0.5rem; text-align: center; border: 1px solid #e0e0e0; }
+    th { background: #f8f9fa; font-weight: 600; color: #555; font-size: 0.82rem; }
+    td { min-height: 40px; vertical-align: middle; }
+    .slot-free { color: #28a745; font-size: 0.8rem; }
+    .slot-taken { font-size: 0.8rem; }
+    .slot-taken .razred { font-weight: 600; }
+    .slot-info { font-size: 0.75rem; color: #666; }
+    .rez-label { font-weight: 600; font-size: 0.85rem; }
+    .rez-teacher { font-size: 0.7rem; color: #666; }
+    .prostor-tabs { display: flex; gap: 0; margin-bottom: 1rem; }
+    .prostor-tab { padding: 0.5rem 1.2rem; border: 1px solid #ddd; background: #f8f9fa; cursor: pointer; font-weight: 600; font-size: 0.9rem; }
+    .prostor-tab:first-child { border-radius: 8px 0 0 8px; }
+    .prostor-tab:last-child { border-radius: 0 8px 8px 0; }
+    .prostor-tab.active { background: #4a6cf7; color: #fff; border-color: #4a6cf7; }
+    .prostor-tab:not(.active):hover { background: #e9ecef; }
+    .prostor-view { display: none; }
+    .prostor-view.active { display: block; }
+    .week-nav { display: flex; align-items: center; gap: 1rem; margin-bottom: 1rem; justify-content: center; }
+    .week-nav h3 { font-size: 1rem; min-width: 250px; text-align: center; }
+    /* Calendar */
+    .calendar-nav { display: flex; align-items: center; gap: 1rem; margin-bottom: 1rem; justify-content: center; }
+    .calendar-nav h3 { font-size: 1.1rem; min-width: 200px; text-align: center; }
+    .calendar-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 2px; }
+    .calendar-header { background: #f8f9fa; padding: 0.5rem; text-align: center; font-weight: 600; font-size: 0.82rem; color: #555; border-radius: 4px; }
+    .calendar-day { background: #fff; border: 1px solid #eee; border-radius: 4px; min-height: 80px; padding: 0.4rem; position: relative; cursor: pointer; }
+    .calendar-day .day-num { font-weight: 600; font-size: 0.85rem; margin-bottom: 0.3rem; }
+    .calendar-day.other-month { opacity: 0.4; }
+    .calendar-day.today { border-color: #4a6cf7; }
+    .assessment-badge { font-size: 0.72rem; padding: 0.15rem 0.3rem; border-radius: 3px; margin-bottom: 2px; display: flex; justify-content: space-between; align-items: center; gap: 2px; }
+    .assessment-normal { background: #cce5ff; color: #004085; }
+    .assessment-ponavljanje { background: #ffcccc; color: #8b0000; }
+    .assessment-badge .del-asm { cursor: pointer; font-weight: 700; padding: 0 2px; opacity: 0.6; }
+    .assessment-badge .del-asm:hover { opacity: 1; }
+    .empty-calendar { text-align: center; padding: 2rem; color: #999; }
+    .add-asm-btn { font-size: 0.7rem; color: #4a6cf7; cursor: pointer; opacity: 0.5; }
+    .add-asm-btn:hover { opacity: 1; }
+    /* Forms */
+    .modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.4); z-index: 100; justify-content: center; align-items: center; }
+    .modal-overlay.active { display: flex; }
+    .modal { background: #fff; border-radius: 12px; padding: 2rem; width: 100%; max-width: 450px; box-shadow: 0 4px 24px rgba(0,0,0,0.15); }
+    .modal h3 { margin-bottom: 1rem; }
+    .modal .form-group { margin-bottom: 0.8rem; }
+    .modal label { display: block; font-size: 0.85rem; font-weight: 500; color: #555; margin-bottom: 0.2rem; }
+    .modal select, .modal input { width: 100%; padding: 0.5rem 0.7rem; border: 1px solid #ddd; border-radius: 6px; font-size: 0.9rem; }
+    .modal .form-actions { display: flex; gap: 0.5rem; justify-content: end; margin-top: 1rem; }
+    .modal .btn-cancel { background: #6c757d; color: #fff; }
+    .modal .btn-cancel:hover { background: #5a6268; }
+    .modal .form-checkbox { display: flex; align-items: center; gap: 0.5rem; }
+    .modal .form-checkbox input { width: auto; }
+    .modal .form-checkbox label { margin: 0; }
+    .msg { padding: 0.7rem; border-radius: 8px; margin-bottom: 1rem; font-size: 0.9rem; display: none; }
+    .msg.error { display: block; background: #fee; color: #c00; }
+    .msg.success { display: block; background: #e8f5e9; color: #2e7d32; }
+    .quick-add { display: inline-block; margin-top: 2px; }
+    @media (max-width: 768px) {
+      .calendar-grid { grid-template-columns: repeat(7, 1fr); font-size: 0.75rem; }
+      .calendar-day { min-height: 60px; padding: 0.2rem; }
+      .filters { flex-direction: column; }
+      .filters select, .filters input { width: 100%; }
+      .prostor-tabs { flex-wrap: wrap; }
+    }
+  </style>
+</head>
+<body>
+  <nav>
+    <span class="brand">Šolski App</span>
+    <a href="#" class="active" data-tab="rezervacije">Rezervacije</a>
+    <a href="#" data-tab="ocenjevanja">Ocenjevanje</a>
+    <span class="spacer"></span>
+    <span class="user-info" id="userInfo"></span>
+    <a href="/auth/logout">Odjava</a>
+  </nav>
+
+  <div class="container">
+    <div id="msg" class="msg"></div>
+
+    <!-- ===== REZERVACIJE ===== -->
+    <div id="section-rezervacije" class="section active">
+      <div class="card">
+        <h2>Rezervacije prostorov</h2>
+        <div class="filters">
+          <div>
+            <label>Začetek tedna</label>
+            <input type="date" id="rez-week-start">
+          </div>
+          <button class="btn btn-primary" onclick="loadAllReservations()">Osveži</button>
+          <button class="btn btn-outline" onclick="openRezModal()">+ Nova rezervacija</button>
+        </div>
+
+        <div class="prostor-tabs" id="prostor-tabs"></div>
+
+        <div id="rez-views-container"></div>
+      </div>
+    </div>
+
+    <!-- ===== OCENJEVANJE ===== -->
+    <div id="section-ocenjevanja" class="section">
+      <div class="card">
+        <h2>Ocenjevanja</h2>
+        <div class="filters">
+          <div>
+            <label>Razred</label>
+            <select id="oc-razred"></select>
+          </div>
+          <button class="btn btn-primary" onclick="loadAssessments()">Osveži</button>
+          <button class="btn btn-outline" onclick="openOcModal()">+ Novo ocenjevanje</button>
+        </div>
+        <div id="oc-calendar-container">
+          <p style="text-align:center;color:#999;padding:2rem;">Nalaganje ...</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== MODAL - Rezervacija ===== -->
+  <div class="modal-overlay" id="rez-modal">
+    <div class="modal">
+      <h3>Nova rezervacija</h3>
+      <div class="form-group">
+        <label>Prostor</label>
+        <select id="rez-form-prostor"></select>
+      </div>
+      <div class="form-group">
+        <label>Razred</label>
+        <select id="rez-form-razred"></select>
+      </div>
+      <div class="form-group">
+        <label>Datum</label>
+        <input type="date" id="rez-form-date">
+      </div>
+      <div class="form-group">
+        <label>Ura</label>
+        <select id="rez-form-hour"></select>
+      </div>
+      <div class="form-group" id="rez-form-qty-group">
+        <label>Število tablic</label>
+        <input type="number" id="rez-form-qty" min="1" max="28" value="1">
+      </div>
+      <div class="form-actions">
+        <button class="btn btn-cancel" onclick="closeModal('rez-modal')">Prekliči</button>
+        <button class="btn btn-primary" onclick="submitRezervacija()">Shrani</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== MODAL - Ocenjevanje ===== -->
+  <div class="modal-overlay" id="oc-modal">
+    <div class="modal">
+      <h3>Novo ocenjevanje</h3>
+      <div class="form-group">
+        <label>Razred</label>
+        <select id="oc-form-razred"></select>
+      </div>
+      <div class="form-group">
+        <label>Datum</label>
+        <input type="date" id="oc-form-date">
+      </div>
+      <div class="form-checkbox">
+        <input type="checkbox" id="oc-form-ponavljanje">
+        <label for="oc-form-ponavljanje">Ponavljanje</label>
+      </div>
+      <div class="form-actions">
+        <button class="btn btn-cancel" onclick="closeModal('oc-modal')">Prekliči</button>
+        <button class="btn btn-primary" onclick="submitOcenjevanje()">Shrani</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // ── Global state ──
+    let schedule = {};
+    let razredi = [];
+    let prostori = [];
+    let currentUser = null;
+    let currentOcMonth = '';
+    let currentOcRazred = '';
+
+    // ── Init ──
+    document.addEventListener('DOMContentLoaded', async () => {
+      const [schedRes, razRes, proRes, meRes] = await Promise.all([
+        fetch('/api/schedule'), fetch('/api/razredi'), fetch('/api/prostori'), fetch('/auth/me')
+      ]);
+      schedule = await schedRes.json();
+      razredi = await razRes.json();
+      prostori = await proRes.json();
+      if (meRes.ok) currentUser = await meRes.json();
+
+      if (currentUser) {
+        document.getElementById('userInfo').textContent = `${currentUser.username} (${currentUser.role})`;
+      }
+
+      // Populate selects
+      populateSelect('rez-form-prostor', prostori);
+      populateSelect('rez-form-razred', razredi);
+      populateSelect('oc-razred', razredi, true);
+      populateSelect('oc-form-razred', razredi);
+      populateHours('rez-form-hour');
+
+      // Set default week start to this Monday
+      const monday = getMonday(new Date());
+      document.getElementById('rez-week-start').value = formatDate(monday);
+
+      // Build prostor tabs
+      const tabsHtml = prostori.map(p =>
+        `<div class="prostor-tab${p === prostori[0] ? ' active' : ''}" data-prostor="${p}" onclick="switchProstor('${p}')">${prostorLabel(p)}</div>`
+      ).join('');
+      document.getElementById('prostor-tabs').innerHTML = tabsHtml;
+
+      // Build prostor view containers
+      const viewsHtml = prostori.map(p =>
+        `<div class="prostor-view${p === prostori[0] ? ' active' : ''}" id="prostor-view-${p}"><div class="rez-table-inner"><p style="text-align:center;color:#999;padding:2rem;">Nalaganje ...</p></div></div>`
+      ).join('');
+      document.getElementById('rez-views-container').innerHTML = viewsHtml;
+
+      // Tab switching
+      document.querySelectorAll('nav a[data-tab]').forEach(a => {
+        a.addEventListener('click', e => {
+          e.preventDefault();
+          document.querySelectorAll('nav a[data-tab]').forEach(x => x.classList.remove('active'));
+          a.classList.add('active');
+          document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+          document.getElementById('section-' + a.dataset.tab).classList.add('active');
+          if (a.dataset.tab === 'rezervacije') loadAllReservations();
+          if (a.dataset.tab === 'ocenjevanja') loadAssessments();
+        });
+      });
+
+      // Prostor change → show/hide qty field
+      document.getElementById('rez-form-prostor').addEventListener('change', e => {
+        document.getElementById('rez-form-qty-group').style.display = e.target.value === 'tablice' ? 'block' : 'none';
+      });
+      document.getElementById('rez-form-prostor').dispatchEvent(new Event('change'));
+
+      // Auto-load everything
+      loadAllReservations();
+      currentOcMonth = new Date().getFullYear() + '-' + String(new Date().getMonth() + 1).padStart(2, '0');
+      loadAssessments();
+    });
+
+    // ── Helpers ──
+    function prostorLabel(p) {
+      const labels = {tablice: 'Tablice', racunalnica: 'Računalnica', ladja: 'Ladja'};
+      return labels[p] || p;
+    }
+
+    function getMonday(d) {
+      const date = new Date(d);
+      const day = date.getDay();
+      const diff = date.getDate() - day + (day === 0 ? -6 : 1);
+      date.setDate(diff);
+      date.setHours(0,0,0,0);
+      return date;
+    }
+
+    function formatDate(d) {
+      return d.toISOString().split('T')[0];
+    }
+
+    function formatDateSI(d) {
+      const dd = String(d.getDate()).padStart(2,'0');
+      const mm = String(d.getMonth()+1).padStart(2,'0');
+      const yyyy = d.getFullYear();
+      return `${dd}/${mm}/${yyyy}`;
+    }
+
+    function monthName(m) {
+      const names = ['Januar','Februar','Marec','April','Maj','Junij','Julij','Avgust','September','Oktober','November','December'];
+      return names[m];
+    }
+
+    function addDays(d, n) {
+      const r = new Date(d);
+      r.setDate(r.getDate() + n);
+      return r;
+    }
+
+    function populateSelect(id, items, addAll) {
+      const sel = document.getElementById(id);
+      let html = items.map(v => `<option value="${v}">${v}</option>`).join('');
+      if (addAll) html = '<option value="">Vsi razredi</option>' + html;
+      sel.innerHTML = html;
+    }
+
+    function populateHours(id) {
+      const sel = document.getElementById(id);
+      sel.innerHTML = Object.entries(schedule).map(([k,v]) => `<option value="${k}">${k}: ${v}</option>`).join('');
+    }
+
+    function showMsg(msg, type) {
+      const el = document.getElementById('msg');
+      el.textContent = msg;
+      el.className = 'msg ' + type;
+      setTimeout(() => { el.className = 'msg'; }, 5000);
+    }
+
+    function openModal(id) { document.getElementById(id).classList.add('active'); }
+    function closeModal(id) { document.getElementById(id).classList.remove('active'); }
+
+    // ── Rezervacije ──
+    function switchProstor(p) {
+      document.querySelectorAll('.prostor-tab').forEach(t => t.classList.toggle('active', t.dataset.prostor === p));
+      document.querySelectorAll('.prostor-view').forEach(v => v.classList.toggle('active', v.id === 'prostor-view-' + p));
+    }
+
+    async function loadAllReservations() {
+      const weekStart = document.getElementById('rez-week-start').value;
+      if (!weekStart) return;
+      const startDate = new Date(weekStart + 'T00:00:00');
+      const endDate = addDays(startDate, 6);
+      const endStr = formatDate(endDate);
+
+      for (const prostor of prostori) {
+        await loadProstorView(prostor, startDate, endStr);
+      }
+    }
+
+    async function loadProstorView(prostor, startDate, endStr) {
+      try {
+        const res = await fetch(`/api/rezervacije?date_from=${formatDate(startDate)}&date_to=${endStr}&prostor=${prostor}`);
+        if (!res.ok) return;
+        const reservations = await res.json();
+        const container = document.querySelector(`#prostor-view-${prostor} .rez-table-inner`);
+        container.innerHTML = renderWeeklyTable(prostor, startDate, reservations);
+      } catch(e) {}
+    }
+
+    function renderWeeklyTable(prostor, weekStart, reservations) {
+      const map = {};
+
+      reservations.forEach(r => {
+        const key = r.date + '|' + r.hour;
+        if (!map[key]) map[key] = [];
+        map[key].push(r);
+      });
+
+      // tablice totals per hour per day
+      const tabliceMap = {};
+      if (prostor === 'tablice') {
+        reservations.forEach(r => {
+          const key = r.date + '|' + r.hour;
+          tabliceMap[key] = (tabliceMap[key] || 0) + (r.qty || 0);
+        });
+      }
+
+      const days = [];
+      for (let i = 0; i < 5; i++) { days.push(addDays(weekStart, i)); }
+
+      // Week navigation
+      const weekEnd = addDays(weekStart, 4);
+      let html = `<div class="week-nav">
+        <button class="btn btn-sm btn-outline" onclick="shiftWeek(-7)">‹ Prejšnji teden</button>
+        <h3>${formatDateSI(weekStart)} – ${formatDateSI(weekEnd)}</h3>
+        <button class="btn btn-sm btn-outline" onclick="shiftWeek(7)">Naslednji teden ›</button>
+      </div>`;
+
+      const dayNames = ['Ponedeljek', 'Torek', 'Sreda', 'Četrtek', 'Petek'];
+      const hours = Object.entries(schedule);
+
+      html += `<table><thead><tr><th>Ura</th>`;
+      days.forEach((d, i) => {
+        html += `<th>${dayNames[i]}<br><small>${formatDateSI(d)}</small></th>`;
+      });
+      html += `</tr></thead><tbody>`;
+
+      for (const [hourIdx, hourLabel] of hours) {
+        html += `<tr><td><strong>${hourIdx}</strong><br><small>${hourLabel}</small></td>`;
+        for (const day of days) {
+          const dateStr = formatDate(day);
+          const key = dateStr + '|' + hourIdx;
+          const resList = map[key];
+
+          if (resList && resList.length > 0) {
+            html += `<td class="slot-taken">`;
+            for (const res of resList) {
+              // prostor · razred · (qty) · uporabnik
+              const parts = [prostorLabel(prostor), res.razred];
+              if (prostor === 'tablice' && res.qty) parts.push(`${res.qty} kos`);
+              parts.push(res.teacher_name || '?');
+              const label = parts.join(' · ');
+              html += `<div class="rez-label">${label}</div>`;
+              if (currentUser && res.teacher_id === currentUser.id) {
+                html += `<button class="btn btn-danger btn-sm" onclick="deleteReservation(${res.id})">✕</button>`;
+              }
+            }
+            html += `</td>`;
+          } else {
+            html += `<td>
+              <div class="slot-free">Prosto</div>`;
+            if (prostor === 'tablice') {
+              const used = tabliceMap[key] || 0;
+              html += `<div class="slot-info">${28 - used}/28 preostalih</div>`;
+            }
+            html += `<div class="quick-add"><button class="btn btn-sm btn-outline" onclick="quickRez('${prostor}','${dateStr}',${hourIdx})">+</button></div>`;
+            html += `</td>`;
+          }
+        }
+        html += `</tr>`;
+      }
+      html += `</tbody></table>`;
+      return html;
+    }
+
+    function shiftWeek(days) {
+      const input = document.getElementById('rez-week-start');
+      const d = new Date(input.value + 'T00:00:00');
+      d.setDate(d.getDate() + days);
+      input.value = formatDate(d);
+      loadAllReservations();
+    }
+
+    function quickRez(prostor, date, hour) {
+      document.getElementById('rez-form-prostor').value = prostor;
+      document.getElementById('rez-form-date').value = date;
+      document.getElementById('rez-form-hour').value = hour;
+      document.getElementById('rez-form-qty').value = 1;
+      document.getElementById('rez-form-qty-group').style.display = prostor === 'tablice' ? 'block' : 'none';
+      openModal('rez-modal');
+    }
+
+    function openRezModal() {
+      document.getElementById('rez-form-date').value = document.getElementById('rez-week-start').value;
+      document.getElementById('rez-form-prostor').value = prostori[0];
+      document.getElementById('rez-form-qty').value = 1;
+      document.getElementById('rez-form-qty-group').style.display = 'block';
+      openModal('rez-modal');
+    }
+
+    async function submitRezervacija() {
+      const data = {
+        prostor: document.getElementById('rez-form-prostor').value,
+        razred: document.getElementById('rez-form-razred').value,
+        date: document.getElementById('rez-form-date').value,
+        hour: parseInt(document.getElementById('rez-form-hour').value),
+        teacher_id: currentUser.id,
+      };
+      if (data.prostor === 'tablice') {
+        data.qty = parseInt(document.getElementById('rez-form-qty').value) || 1;
+      }
+
+      try {
+        const res = await fetch('/api/rezervacije', {
+          method: 'POST',
+          headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify(data),
+        });
+        const json = await res.json();
+        if (res.ok) {
+          showMsg('Rezervacija uspešno ustvarjena!', 'success');
+          closeModal('rez-modal');
+          loadAllReservations();
+        } else {
+          showMsg(json.detail || 'Napaka pri ustvarjanju rezervacije.', 'error');
+        }
+      } catch(e) {
+        showMsg('Napaka pri povezavi s strežnikom.', 'error');
+      }
+    }
+
+    async function deleteReservation(id) {
+      if (!confirm('Ste prepričani, da želite izbrisati to rezervacijo?')) return;
+      try {
+        const res = await fetch(`/api/rezervacije/${id}`, { method: 'DELETE' });
+        if (res.ok) {
+          showMsg('Rezervacija izbrisana.', 'success');
+          loadAllReservations();
+        } else {
+          const json = await res.json();
+          showMsg(json.detail || 'Napaka pri brisanju.', 'error');
+        }
+      } catch(e) {
+        showMsg('Napaka pri povezavi s strežnikom.', 'error');
+      }
+    }
+
+    // ── Ocenjevanje ──
+    async function loadAssessments() {
+      const razred = document.getElementById('oc-razred').value;
+      currentOcRazred = razred;
+
+      let month = currentOcMonth;
+      if (!month) {
+        const now = new Date();
+        month = now.getFullYear() + '-' + String(now.getMonth() + 1).padStart(2, '0');
+        currentOcMonth = month;
+      }
+
+      let url = `/api/ocenjevanja?month=${month}`;
+      if (razred) url += `&razred=${razred}`;
+
+      try {
+        const res = await fetch(url);
+        if (!res.ok) { showMsg('Napaka pri nalaganju ocenjevanj.', 'error'); return; }
+        const assessments = await res.json();
+        renderMonthlyCalendar(razred || 'Vsi razredi', month, assessments, razred === '');
+      } catch(e) {
+        showMsg('Napaka pri povezavi s strežnikom.', 'error');
+      }
+    }
+
+    function renderMonthlyCalendar(razred, month, assessments, showAll) {
+      const [year, mon] = month.split('-').map(Number);
+      const firstDay = new Date(year, mon - 1, 1);
+      const lastDay = new Date(year, mon, 0);
+      const daysInMonth = lastDay.getDate();
+      const startDow = firstDay.getDay();
+      const startCol = startDow === 0 ? 6 : startDow - 1;
+
+      const asmMap = {};
+      assessments.forEach(a => {
+        const d = new Date(a.date + 'T00:00:00');
+        const key = d.getDate();
+        if (!asmMap[key]) asmMap[key] = [];
+        asmMap[key].push(a);
+      });
+
+      const prevMonth = mon === 1 ? `${year-1}-12` : `${year}-${String(mon-1).padStart(2,'0')}`;
+      const nextMonth = mon === 12 ? `${year+1}-01` : `${year}-${String(mon+1).padStart(2,'0')}`;
+
+      const dayNames = ['Pon','Tor','Sre','Čet','Pet','Sob','Ned'];
+      const today = new Date();
+
+      let html = `<div class="calendar-nav">
+        <button class="btn btn-sm btn-outline" onclick="changeMonth('${prevMonth}')">‹ Prejšnji mesec</button>
+        <h3>${monthName(mon-1)} ${year}</h3>
+        <button class="btn btn-sm btn-outline" onclick="changeMonth('${nextMonth}')">Naslednji mesec ›</button>
+      </div>`;
+
+      html += `<div class="calendar-grid">`;
+      dayNames.forEach(n => { html += `<div class="calendar-header">${n}</div>`; });
+
+      for (let i = 0; i < startCol; i++) {
+        html += `<div class="calendar-day other-month"></div>`;
+      }
+
+      for (let day = 1; day <= daysInMonth; day++) {
+        const cellDate = new Date(year, mon-1, day);
+        const isToday = cellDate.toDateString() === today.toDateString();
+        const isWeekend = cellDate.getDay() === 0 || cellDate.getDay() === 6;
+        let cls = 'calendar-day';
+        if (isToday) cls += ' today';
+        if (isWeekend) cls += ' other-month';
+
+        html += `<div class="${cls}" onclick="quickOc('${razred}','${year}-${String(mon).padStart(2,'0')}-${String(day).padStart(2,'0')}')">
+          <div class="day-num">${day}</div>`;
+
+        if (asmMap[day]) {
+          asmMap[day].forEach(a => {
+            const asmCls = a.ponavljanje ? 'assessment-ponavljanje' : 'assessment-normal';
+            const clsLabel = showAll ? ` [${a.razred}]` : '';
+            const label = `Ocenjevanje${clsLabel}: ${a.teacher_name || '?'}`;
+            html += `<div class="assessment-badge ${asmCls}">
+              <span>${a.ponavljanje ? '🔄 ' : ''}${label}</span>
+              <span class="del-asm" onclick="event.stopPropagation();deleteAssessment(${a.id})">✕</span>
+            </div>`;
+          });
+        } else if (!isWeekend) {
+          html += `<div class="add-asm-btn" onclick="event.stopPropagation();quickOc('${razred}','${year}-${String(mon).padStart(2,'0')}-${String(day).padStart(2,'0')}')">+</div>`;
+        }
+
+        html += `</div>`;
+      }
+
+      const lastCol = (startCol + daysInMonth) % 7;
+      const remaining = lastCol === 0 ? 0 : 7 - lastCol;
+      for (let i = 0; i < remaining; i++) {
+        html += `<div class="calendar-day other-month"></div>`;
+      }
+
+      html += `</div>`;
+      document.getElementById('oc-calendar-container').innerHTML = html;
+    }
+
+    function changeMonth(month) {
+      currentOcMonth = month;
+      loadAssessments();
+    }
+
+    function quickOc(razred, date) {
+      // If "Vsi razredi", use the form's selected razred instead
+      const formRazred = document.getElementById('oc-form-razred').value;
+      document.getElementById('oc-form-razred').value = formRazred || (razredi.length > 0 ? razredi[0] : '');
+      document.getElementById('oc-form-date').value = date;
+      document.getElementById('oc-form-ponavljanje').checked = false;
+      openModal('oc-modal');
+    }
+
+    function openOcModal() {
+      document.getElementById('oc-form-razred').value = document.getElementById('oc-razred').value;
+      document.getElementById('oc-form-date').value = new Date().toISOString().split('T')[0];
+      document.getElementById('oc-form-ponavljanje').checked = false;
+      openModal('oc-modal');
+    }
+
+    async function submitOcenjevanje() {
+      const data = {
+        razred: document.getElementById('oc-form-razred').value,
+        date: document.getElementById('oc-form-date').value,
+        ponavljanje: document.getElementById('oc-form-ponavljanje').checked,
+        teacher_id: currentUser.id,
+      };
+
+      try {
+        const res = await fetch('/api/ocenjevanja', {
+          method: 'POST',
+          headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify(data),
+        });
+        const json = await res.json();
+        if (res.ok) {
+          showMsg('Ocenjevanje uspešno dodano!', 'success');
+          closeModal('oc-modal');
+          loadAssessments();
+        } else {
+          showMsg(json.detail || 'Napaka pri dodajanju ocenjevanja.', 'error');
+        }
+      } catch(e) {
+        showMsg('Napaka pri povezavi s strežnikom.', 'error');
+      }
+    }
+
+    async function deleteAssessment(id) {
+      if (!confirm('Ste prepričani, da želite izbrisati to ocenjevanje?')) return;
+      try {
+        const res = await fetch(`/api/ocenjevanja/${id}`, { method: 'DELETE' });
+        if (res.ok) {
+          showMsg('Ocenjevanje izbrisano.', 'success');
+          loadAssessments();
+        } else {
+          const json = await res.json();
+          showMsg(json.detail || 'Napaka pri brisanju.', 'error');
+        }
+      } catch(e) {
+        showMsg('Napaka pri povezavi s strežnikom.', 'error');
+      }
+    }
+  </script>
+</body>
+</html>
