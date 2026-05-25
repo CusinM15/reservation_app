@@ -103,6 +103,7 @@
     <span class="brand">Šolski App</span>
     <a href="#" class="active" data-tab="rezervacije">Rezervacije</a>
     <a href="#" data-tab="ocenjevanja">Ocenjevanje</a>
+    <a href="/auth/admin/users" id="admin-link" style="display:none;">Admin panel</a>
     <span class="spacer"></span>
     <span class="user-info" id="userInfo"></span>
     <a href="#" onclick="openChangePasswordModal(); return false;">Spremeni geslo</a>
@@ -293,6 +294,11 @@
 
       if (currentUser) {
         document.getElementById('userInfo').textContent = `${currentUser.full_name || currentUser.username} (${currentUser.role === 'admin' ? 'admin' : currentUser.role === 'vodstvo' ? 'vodstvo' : 'učitelj'})`;
+        
+        // Show admin panel link only for admin
+        if (currentUser.role === 'admin') {
+          document.getElementById('admin-link').style.display = 'inline';
+        }
         
         // Show/hide blocked dates button based on permissions
         const allowedIds = [1, 2, 3, 4]; // admin, Gaber, Mateja, Sanela
