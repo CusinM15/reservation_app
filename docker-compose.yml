@@ -1,15 +1,12 @@
-version: "3.9"
-
 services:
   sola:
-    build: .
+    image: reservation-app:latest
     container_name: sola_app
     ports:
-      - "${APP_PORT:-8001}:8001"
-      - "${APP_PORT_HTTPS:-8443}:8443"
+      - "127.0.0.1:8002:8002"
     volumes:
       - ./data:/app/data
-      - ./certs:/app/certs:ro
     env_file:
       - .env
     restart: unless-stopped
+    command: uvicorn app.main:app --host 0.0.0.0 --port 8002

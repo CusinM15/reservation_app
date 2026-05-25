@@ -18,5 +18,12 @@ class Settings:
     SSL_CERT_PATH = os.getenv("SSL_CERT_PATH", "./certs/cert.pem")
     SSL_KEY_PATH = os.getenv("SSL_KEY_PATH", "./certs/key.pem")
 
+    # Email
+    MAIL_FROM = os.getenv("MAIL_FROM", "matej.cusin2+ocenjevanje@guest.arnes.si")
+    MAIL_USERNAME = os.getenv("MAIL_USERNAME", "matcus1")
+    MAIL_PASSWORD = os.getenv("MAIL_PASSWORD", "")
+    MAIL_SERVER = os.getenv("MAIL_SERVER", "mail.arnes.si")
+    MAIL_PORT = int(os.getenv("MAIL_PORT", 587))
+
 
 settings = Settings()

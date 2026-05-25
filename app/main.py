@@ -6,7 +6,7 @@ from sqlalchemy.orm import Session
 
 from app.config import settings
 from app.database import init_db, get_db
-from app.routers import rezervacije, ocenjevanja, auth
+from app.routers import rezervacije, ocenjevanja, auth, blocked_dates
 from app.models import User, RoleEnum
 from passlib.context import CryptContext
 
@@ -36,6 +36,9 @@ def on_startup():
         pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
         admin = User(
             username="admin",
+            email="admin@ostonecufar.local",
+            first_name="Admin",
+            last_name="OŠ",
             password_hash=pwd_context.hash("admin123"),
             role=RoleEnum.admin,
             is_active=True
@@ -55,6 +58,10 @@ def root(request: Request):
         return templates.TemplateResponse("index.html", {"request": request})
     return RedirectResponse(url="/auth/login")
 
+@app.get("/admin/users")
+def admin_users_redirect(request: Request):
+    return RedirectResponse(url="/auth/admin/users")
+
 @app.get("/api/razredi")
 def get_razredi():
     return settings.RAZREDI
@@ -71,3 +78,4 @@ def get_schedule():
 app.include_router(rezervacije.router)
 app.include_router(ocenjevanja.router)
 app.include_router(auth.router)
+app.include_router(blocked_dates.router)

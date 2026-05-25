@@ -6,62 +6,133 @@
     <title>Upravljanje uporabnikov - Šolski App</title>
     <style>
         body { font-family: Arial, sans-serif; margin: 20px; background: #f5f5f5; }
-        .container { max-width: 1200px; margin: auto; background: white; padding: 20px; border-radius: 10px; }
+        .container { max-width: 1400px; margin: auto; background: white; padding: 20px; border-radius: 10px; }
         table { width: 100%; border-collapse: collapse; margin-top: 20px; }
-        th, td { padding: 10px; text-align: left; border-bottom: 1px solid #ddd; }
+        th, td { padding: 8px; text-align: left; border-bottom: 1px solid #ddd; font-size: 14px; }
         th { background: #007bff; color: white; }
-        .btn { padding: 5px 10px; background: #007bff; color: white; text-decoration: none; border-radius: 3px; }
+        .btn { padding: 4px 8px; background: #007bff; color: white; text-decoration: none; border-radius: 3px; font-size: 12px; border: none; cursor: pointer; display: inline-block; margin: 1px; }
         .btn-danger { background: #dc3545; }
         .btn-success { background: #28a745; }
+        .btn-warning { background: #ffc107; color: #000; }
         .form-group { margin: 10px 0; }
         input, select { padding: 5px; margin: 5px; }
         .nav { margin-bottom: 20px; }
         .nav a { margin-right: 10px; }
+        .edit-form { display: none; background: #f8f9fa; padding: 15px; border-radius: 8px; margin-top: 10px; border: 1px solid #ddd; }
+        .edit-form.active { display: block; }
     </style>
 </head>
 <body>
     <div class="container">
         <div class="nav">
             <a href="/">Domov</a>
-            <a href="/admin/users">Uporabniki</a>
-            <a href="/logout">Odjava</a>
+            <a href="/auth/admin/users">Uporabniki</a>
+            <a href="/auth/logout">Odjava</a>
         </div>
-        <h2>Upravljanje učiteljev</h2>
+        <h2>Upravljanje uporabnikov</h2>
         
-        <h3>Dodaj učitelja</h3>
-        <form method="POST" action="/admin/users">
-            <input type="text" name="username" placeholder="Uporabniško ime" required>
+        {% if error %}
+        <div style="color: red;">{{ error }}</div>
+        {% endif %}
+
+        <h3>Dodaj uporabnika</h3>
+        <form method="POST" action="/auth/admin/users">
+            <input type="text" name="username" placeholder="AAI uporabniško ime (email)" required style="width:250px;">
+            <input type="email" name="email" placeholder="Email (če je drugačen)" style="width:250px;">
+            <br>
+            <input type="text" name="first_name" placeholder="Ime" required>
+            <input type="text" name="last_name" placeholder="Priimek" required>
+            <br>
             <input type="password" name="password" placeholder="Geslo" required>
             <select name="role">
                 <option value="teacher">Učitelj</option>
+                <option value="vodstvo">Vodstvo</option>
                 <option value="admin">Admin</option>
             </select>
             <button type="submit" class="btn">Dodaj</button>
         </form>
         
-        <h3>Seznam učiteljev</h3>
+        <h3>Seznam uporabnikov</h3>
         <table>
             <thead>
-                <tr><th>ID</th><th>Uporabniško ime</th><th>Vloga</th><th>Aktiven</th><th>Akcije</th></tr>
+                <tr>
+                    <th>ID</th>
+                    <th>Uporabniško ime</th>
+                    <th>Email</th>
+                    <th>Ime</th>
+                    <th>Priimek</th>
+                    <th>Vloga</th>
+                    <th>Aktiven</th>
+                    <th>Akcije</th>
+                </tr>
             </thead>
             <tbody>
                 {% for user in users %}
                 <tr>
                     <td>{{ user.id }}</td>
                     <td>{{ user.username }}</td>
+                    <td>{{ user.email or "-" }}</td>
+                    <td>{{ user.first_name }}</td>
+                    <td>{{ user.last_name }}</td>
                     <td>{{ user.role }}</td>
                     <td>{{ "Da" if user.is_active else "Ne" }}</td>
-                    <td>
+                    <td style="white-space:nowrap;">
+                        <a href="#" class="btn btn-warning" onclick="toggleEdit({{ user.id }})">Uredi</a>
                         {% if user.is_active %}
-                        <a href="/admin/users/{{ user.id }}/deactivate" class="btn btn-danger">Deaktiviraj</a>
+                        <a href="/auth/admin/users/{{ user.id }}/deactivate" class="btn btn-danger">Deaktiviraj</a>
                         {% else %}
-                        <a href="/admin/users/{{ user.id }}/activate" class="btn btn-success">Aktiviraj</a>
+                        <a href="/auth/admin/users/{{ user.id }}/activate" class="btn btn-success">Aktiviraj</a>
                         {% endif %}
+                        {% if user.id != 1 %}
+                        <a href="/auth/admin/users/{{ user.id }}/delete" class="btn btn-danger" onclick="return confirm('Ste prepričani? Izbrisani bodo tudi vsi podatki uporabnika.')">Izbriši</a>
+                        {% endif %}
+                    </td>
+                </tr>
+                <tr id="edit-row-{{ user.id }}" class="edit-form">
+                    <td colspan="8">
+                        <form method="POST" action="/auth/admin/users/{{ user.id }}/update" style="display:flex;flex-wrap:wrap;gap:10px;align-items:end;">
+                            <div>
+                                <label style="font-size:12px;">Upor. ime</label>
+                                <input type="text" name="username" value="{{ user.username }}" required>
+                            </div>
+                            <div>
+                                <label style="font-size:12px;">Email</label>
+                                <input type="email" name="email" value="{{ user.email or '' }}">
+                            </div>
+                            <div>
+                                <label style="font-size:12px;">Ime</label>
+                                <input type="text" name="first_name" value="{{ user.first_name }}" required>
+                            </div>
+                            <div>
+                                <label style="font-size:12px;">Priimek</label>
+                                <input type="text" name="last_name" value="{{ user.last_name }}" required>
+                            </div>
+                            <div>
+                                <label style="font-size:12px;">Vloga</label>
+                                <select name="role">
+                                    <option value="teacher" {% if user.role == 'teacher' %}selected{% endif %}>Učitelj</option>
+                                    <option value="vodstvo" {% if user.role == 'vodstvo' %}selected{% endif %}>Vodstvo</option>
+                                    <option value="admin" {% if user.role == 'admin' %}selected{% endif %}>Admin</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label style="font-size:12px;">Novo geslo (pusti prazno za nespremenjeno)</label>
+                                <input type="password" name="new_password" placeholder="Novo geslo">
+                            </div>
+                            <button type="submit" class="btn">Shrani</button>
+                            <button type="button" class="btn btn-danger" onclick="toggleEdit({{ user.id }})">Zapri</button>
+                        </form>
                     </td>
                 </tr>
                 {% endfor %}
             </tbody>
         </table>
     </div>
+    <script>
+        function toggleEdit(id) {
+            const row = document.getElementById('edit-row-' + id);
+            row.classList.toggle('active');
+        }
+    </script>
 </body>
 </html>

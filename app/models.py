@@ -9,6 +9,7 @@ from app.database import Base
 
 class RoleEnum(str, enum.Enum):
     admin = "admin"
+    vodstvo = "vodstvo"
     teacher = "teacher"
 
 
@@ -17,6 +18,9 @@ class User(Base):
 
     id = Column(Integer, primary_key=True, index=True)
     username = Column(String, unique=True, nullable=False, index=True)
+    email = Column(String, unique=True, nullable=True, index=True)
+    first_name = Column(String, nullable=False, default="")
+    last_name = Column(String, nullable=False, default="")
     password_hash = Column(String, nullable=False)
     role = Column(SAEnum(RoleEnum), default=RoleEnum.teacher, nullable=False)
     is_active = Column(Boolean, default=True, nullable=False)
@@ -46,6 +50,15 @@ class Assessment(Base):
     razred = Column(String, nullable=False, index=True)
     date = Column(Date, nullable=False, index=True)
     ponavljanje = Column(Boolean, default=False, nullable=False)
-
     teacher_id = Column(Integer, ForeignKey("users.id"), nullable=False)
     teacher = relationship("User", back_populates="assessments")
+
+
+class BlockedDate(Base):
+    __tablename__ = "blocked_dates"
+
+    id = Column(Integer, primary_key=True, index=True)
+    razred = Column(String, nullable=False, index=True)
+    date = Column(Date, nullable=False, index=True)
+    created_by_id = Column(Integer, ForeignKey("users.id"), nullable=False)
+    created_by = relationship("User")

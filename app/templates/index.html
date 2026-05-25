@@ -62,6 +62,7 @@
     .calendar-day .day-num { font-weight: 600; font-size: 0.85rem; margin-bottom: 0.3rem; }
     .calendar-day.other-month { opacity: 0.4; }
     .calendar-day.today { border-color: #4a6cf7; }
+    .calendar-day.blocked-date { background: #f3e8ff; border-color: #7c3aed; opacity: 0.85; }
     .assessment-badge { font-size: 0.72rem; padding: 0.15rem 0.3rem; border-radius: 3px; margin-bottom: 2px; display: flex; justify-content: space-between; align-items: center; gap: 2px; }
     .assessment-normal { background: #cce5ff; color: #004085; }
     .assessment-ponavljanje { background: #ffcccc; color: #8b0000; }
@@ -104,6 +105,7 @@
     <a href="#" data-tab="ocenjevanja">Ocenjevanje</a>
     <span class="spacer"></span>
     <span class="user-info" id="userInfo"></span>
+    <a href="#" onclick="openChangePasswordModal(); return false;">Spremeni geslo</a>
     <a href="/auth/logout">Odjava</a>
   </nav>
 
@@ -140,6 +142,7 @@
           </div>
           <button class="btn btn-primary" onclick="loadAssessments()">Osveži</button>
           <button class="btn btn-outline" onclick="openOcModal()">+ Novo ocenjevanje</button>
+          <span id="block-btn-container"><button class="btn btn-outline" onclick="openBlockModal()">🚫 Zasedeni datumi</button></span>
         </div>
         <div id="oc-calendar-container">
           <p style="text-align:center;color:#999;padding:2rem;">Nalaganje ...</p>
@@ -155,10 +158,6 @@
       <div class="form-group">
         <label>Prostor</label>
         <select id="rez-form-prostor"></select>
-      </div>
-      <div class="form-group">
-        <label>Razred</label>
-        <select id="rez-form-razred"></select>
       </div>
       <div class="form-group">
         <label>Datum</label>
@@ -202,6 +201,57 @@
     </div>
   </div>
 
+  <!-- ===== MODAL - Blocked Dates ===== -->
+  <div class="modal-overlay" id="block-modal">
+    <div class="modal" style="max-width:500px;">
+      <h3>🚫 Zasedeni datumi</h3>
+      <div class="form-group">
+        <label>Razredi (držite Ctrl za več)</label>
+        <select id="block-razredi" multiple style="height:180px;width:100%;"></select>
+      </div>
+      <div style="display:flex;gap:10px;">
+        <div class="form-group" style="flex:1;">
+          <label>Od datuma</label>
+          <input type="date" id="block-date-from">
+        </div>
+        <div class="form-group" style="flex:1;">
+          <label>Do datuma</label>
+          <input type="date" id="block-date-to">
+        </div>
+      </div>
+      <div class="form-actions">
+        <button class="btn btn-primary" onclick="addBlockedDates()">Dodaj zasedene datume</button>
+        <button class="btn btn-cancel" onclick="closeModal('block-modal')">Zapri</button>
+      </div>
+      <div id="block-msg" style="margin-top:10px;font-size:0.9rem;"></div>
+      <div id="block-list" style="margin-top:15px;max-height:250px;overflow-y:auto;"></div>
+    </div>
+  </div>
+
+  <!-- ===== MODAL - Change Password ===== -->
+  <div class="modal-overlay" id="pw-modal">
+    <div class="modal" style="max-width:400px;">
+      <h3>Sprememba gesla</h3>
+      <div class="form-group">
+        <label>Trenutno geslo</label>
+        <input type="password" id="pw-old" placeholder="Vnesite trenutno geslo">
+      </div>
+      <div class="form-group">
+        <label>Novo geslo</label>
+        <input type="password" id="pw-new1" placeholder="Vnesite novo geslo">
+      </div>
+      <div class="form-group">
+        <label>Novo geslo (ponovno)</label>
+        <input type="password" id="pw-new2" placeholder="Ponovite novo geslo">
+      </div>
+      <div class="form-actions">
+        <button class="btn btn-cancel" onclick="closeModal('pw-modal')">Prekliči</button>
+        <button class="btn btn-primary" onclick="submitChangePassword()">Spremeni geslo</button>
+      </div>
+      <div id="pw-msg" style="margin-top:10px;font-size:0.9rem;"></div>
+    </div>
+  </div>
+
   <script>
     // ── Global state ──
     let schedule = {};
@@ -210,6 +260,26 @@
     let currentUser = null;
     let currentOcMonth = '';
     let currentOcRazred = '';
+    let blockedDates = {}; // {razred: {dateStr: true, ...}, ...}
+    let allBlocked = []; // flat list of all blocked dates
+    // ── Timeout za neaktivnost ──
+    let inactivityTimer = null;
+    const INACTIVITY_TIMEOUT_MS = 60 * 60 * 1000; // 1 ura v milisekundah
+
+    function resetInactivityTimer() {
+      if (inactivityTimer) clearTimeout(inactivityTimer);
+      inactivityTimer = setTimeout(() => {
+        // Preusmeri na odjavo
+        window.location.href = '/auth/logout';
+      }, INACTIVITY_TIMEOUT_MS);
+    }
+
+    // Vsak klik, premik miške, tipkanje ali scroll resetira timer
+    document.addEventListener('click', resetInactivityTimer);
+    document.addEventListener('mousemove', resetInactivityTimer);
+    document.addEventListener('keydown', resetInactivityTimer);
+    document.addEventListener('scroll', resetInactivityTimer);
+    document.addEventListener('touchstart', resetInactivityTimer);
 
     // ── Init ──
     document.addEventListener('DOMContentLoaded', async () => {
@@ -222,14 +292,23 @@
       if (meRes.ok) currentUser = await meRes.json();
 
       if (currentUser) {
-        document.getElementById('userInfo').textContent = `${currentUser.username} (${currentUser.role})`;
+        document.getElementById('userInfo').textContent = `${currentUser.full_name || currentUser.username} (${currentUser.role === 'admin' ? 'admin' : currentUser.role === 'vodstvo' ? 'vodstvo' : 'učitelj'})`;
+        
+        // Show/hide blocked dates button based on permissions
+        const allowedIds = [1, 2, 3, 4]; // admin, Gaber, Mateja, Sanela
+        const allowedRoles = ['admin', 'vodstvo'];
+        const btnContainer = document.getElementById('block-btn-container');
+        if (allowedIds.includes(currentUser.id) || allowedRoles.includes(currentUser.role)) {
+          btnContainer.style.display = 'inline';
+        } else {
+          btnContainer.style.display = 'none';
+        }
       }
 
       // Populate selects
       populateSelect('rez-form-prostor', prostori);
-      populateSelect('rez-form-razred', razredi);
-      populateSelect('oc-razred', razredi, true);
-      populateSelect('oc-form-razred', razredi);
+      populateOcRazredi('oc-razred', razredi, true);
+      populateOcRazredi('oc-form-razred', razredi);
       populateHours('rez-form-hour');
 
       // Set default week start to this Monday
@@ -270,6 +349,7 @@
       // Auto-load everything
       loadAllReservations();
       currentOcMonth = new Date().getFullYear() + '-' + String(new Date().getMonth() + 1).padStart(2, '0');
+      loadAllBlockedDates();
       loadAssessments();
     });
 
@@ -281,15 +361,19 @@
 
     function getMonday(d) {
       const date = new Date(d);
-      const day = date.getDay();
-      const diff = date.getDate() - day + (day === 0 ? -6 : 1);
-      date.setDate(diff);
+      const day = date.getDay(); // 0=Sun, 1=Mon, ...
+      // Calculate days to subtract: if Sunday (0), go back 6 days; otherwise go back (day-1) days
+      const diff = (day === 0) ? 6 : day - 1;
+      date.setDate(date.getDate() - diff);
       date.setHours(0,0,0,0);
       return date;
     }
 
     function formatDate(d) {
-      return d.toISOString().split('T')[0];
+      const y = d.getFullYear();
+      const m = String(d.getMonth() + 1).padStart(2, '0');
+      const day = String(d.getDate()).padStart(2, '0');
+      return `${y}-${m}-${day}`;
     }
 
     function formatDateSI(d) {
@@ -317,6 +401,41 @@
       sel.innerHTML = html;
     }
 
+    // Za ocenjevanje - združimo v 8. in 9. razred
+    function populateOcRazredi(id, items, addAll) {
+      const sel = document.getElementById(id);
+      const osmice = items.filter(r => r.startsWith('8.')).sort();
+      const devetke = items.filter(r => r.startsWith('9.')).sort();
+      const ostalo = items.filter(r => !r.startsWith('8.') && !r.startsWith('9.')).sort();
+      
+      let html = '';
+      if (addAll) html += '<option value="">Vsi razredi</option>';
+      
+      // Za filter (oc-razred) dodamo še skupinski opciji
+      if (id === 'oc-razred') {
+        html += '<option value="__8__">🗂️ 8. razred (vsi)</option>';
+        html += '<option value="__9__">🗂️ 9. razred (vsi)</option>';
+        html += '<option value="" disabled style="font-size:1px;">—</option>';
+      }
+      
+      ostalo.forEach(r => { html += `<option value="${r}">${r}</option>`; });
+      
+      if (osmice.length > 0) {
+        if (id !== 'oc-razred') {
+          html += '<option value="" disabled style="font-weight:bold;background:#eee;">— 8. razred —</option>';
+        }
+        osmice.forEach(r => { html += `<option value="${r}">${r}</option>`; });
+      }
+      if (devetke.length > 0) {
+        if (id !== 'oc-razred') {
+          html += '<option value="" disabled style="font-weight:bold;background:#eee;">— 9. razred —</option>';
+        }
+        devetke.forEach(r => { html += `<option value="${r}">${r}</option>`; });
+      }
+      
+      sel.innerHTML = html;
+    }
+
     function populateHours(id) {
       const sel = document.getElementById(id);
       sel.innerHTML = Object.entries(schedule).map(([k,v]) => `<option value="${k}">${k}: ${v}</option>`).join('');
@@ -329,8 +448,160 @@
       setTimeout(() => { el.className = 'msg'; }, 5000);
     }
 
-    function openModal(id) { document.getElementById(id).classList.add('active'); }
+    function openModal(id) { 
+      document.getElementById(id).classList.add('active'); 
+      if (id === 'pw-modal') {
+        document.getElementById('pw-msg').textContent = '';
+        document.getElementById('pw-old').value = '';
+        document.getElementById('pw-new1').value = '';
+        document.getElementById('pw-new2').value = '';
+      }
+    }
     function closeModal(id) { document.getElementById(id).classList.remove('active'); }
+
+    // ── Sprememba gesla ──
+    function openChangePasswordModal() {
+      openModal('pw-modal');
+    }
+
+    async function submitChangePassword() {
+      const oldPw = document.getElementById('pw-old').value;
+      const newPw1 = document.getElementById('pw-new1').value;
+      const newPw2 = document.getElementById('pw-new2').value;
+      const msgEl = document.getElementById('pw-msg');
+
+      if (!oldPw || !newPw1 || !newPw2) {
+        msgEl.style.color = 'red';
+        msgEl.textContent = 'Izpolnite vsa polja.';
+        return;
+      }
+      if (newPw1 !== newPw2) {
+        msgEl.style.color = 'red';
+        msgEl.textContent = 'Novi gesli se ne ujemata.';
+        return;
+      }
+      if (newPw1.length < 3) {
+        msgEl.style.color = 'red';
+        msgEl.textContent = 'Novo geslo mora imeti vsaj 3 znake.';
+        return;
+      }
+
+      try {
+        const formData = new FormData();
+        formData.append('old_password', oldPw);
+        formData.append('new_password', newPw1);
+
+        const res = await fetch('/auth/change-password', {
+          method: 'POST',
+          body: formData,
+        });
+        const json = await res.json();
+        if (res.ok) {
+          msgEl.style.color = 'green';
+          msgEl.textContent = 'Geslo uspešno spremenjeno!';
+          setTimeout(() => closeModal('pw-modal'), 1500);
+        } else {
+          msgEl.style.color = 'red';
+          msgEl.textContent = json.detail || 'Napaka pri spreminjanju gesla.';
+        }
+      } catch(e) {
+        msgEl.style.color = 'red';
+        msgEl.textContent = 'Napaka pri povezavi s strežnikom.';
+      }
+    }
+
+    // ── Zasedeni datumi ──
+    async function loadAllBlockedDates() {
+      try {
+        const res = await fetch('/api/blocked-dates');
+        if (!res.ok) return;
+        allBlocked = await res.json();
+        // Build lookup: blockedDates[razred][dateStr] = true
+        blockedDates = {};
+        allBlocked.forEach(b => {
+          if (!blockedDates[b.razred]) blockedDates[b.razred] = {};
+          blockedDates[b.razred][b.date] = true;
+        });
+      } catch(e) {}
+    }
+
+    function isDateBlocked(razred, dateStr) {
+      return blockedDates[razred] && blockedDates[razred][dateStr];
+    }
+
+    function openBlockModal() {
+      const sel = document.getElementById('block-razredi');
+      sel.innerHTML = razredi.map(r => `<option value="${r}">${r}</option>`).join('');
+      const today = new Date().toISOString().split('T')[0];
+      document.getElementById('block-date-from').value = today;
+      document.getElementById('block-date-to').value = today;
+      document.getElementById('block-msg').textContent = '';
+      renderBlockList();
+      openModal('block-modal');
+    }
+
+    async function renderBlockList() {
+      const container = document.getElementById('block-list');
+      if (allBlocked.length === 0) {
+        container.innerHTML = '<p style="color:#999;">Ni zasedenih datumov.</p>';
+        return;
+      }
+      let html = '<h4 style="margin-bottom:8px;">Obstoječi zasedeni datumi:</h4>';
+      const sorted = [...allBlocked].sort((a,b) => a.date.localeCompare(b.date));
+      for (const b of sorted) {
+        html += `<div style="display:flex;justify-content:space-between;padding:4px 0;border-bottom:1px solid #eee;">
+          <span>${b.razred} - ${b.date}</span>
+          <span class="del-asm" onclick="deleteBlockedDate(${b.id})" style="cursor:pointer;">✕</span>
+        </div>`;
+      }
+      container.innerHTML = html;
+    }
+
+    async function addBlockedDates() {
+      const sel = document.getElementById('block-razredi');
+      const selected = Array.from(sel.selectedOptions).map(o => o.value);
+      const dateFrom = document.getElementById('block-date-from').value;
+      const dateTo = document.getElementById('block-date-to').value;
+      const msgEl = document.getElementById('block-msg');
+
+      if (selected.length === 0 || !dateFrom || !dateTo) {
+        msgEl.style.color = 'red'; msgEl.textContent = 'Izberite vsaj en razred in datum od-do.'; return;
+      }
+
+      try {
+        const res = await fetch('/api/blocked-dates', {
+          method: 'POST',
+          headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify({razredi: selected, date_from: dateFrom, date_to: dateTo}),
+        });
+        const json = await res.json();
+        if (res.ok) {
+          msgEl.style.color = 'green';
+          msgEl.textContent = json.message || 'Zasedeni datumi dodani!';
+          if (json.deleted_assessments > 0) {
+            msgEl.textContent += ` (izbrisanih ${json.deleted_assessments} ocenjevanj, poslanih ${json.emails_sent} emailov)`;
+          }
+          await loadAllBlockedDates();
+          renderBlockList();
+          loadAssessments();
+        } else {
+          msgEl.style.color = 'red'; msgEl.textContent = json.detail || 'Napaka.';
+        }
+      } catch(e) {
+        msgEl.style.color = 'red'; msgEl.textContent = 'Napaka pri povezavi.';
+      }
+    }
+
+    async function deleteBlockedDate(id) {
+      try {
+        const res = await fetch(`/api/blocked-dates/${id}`, { method: 'DELETE' });
+        if (res.ok) {
+          await loadAllBlockedDates();
+          renderBlockList();
+          loadAssessments();
+        }
+      } catch(e) {}
+    }
 
     // ── Rezervacije ──
     function switchProstor(p) {
@@ -408,15 +679,25 @@
           if (resList && resList.length > 0) {
             html += `<td class="slot-taken">`;
             for (const res of resList) {
-              // prostor · razred · (qty) · uporabnik
-              const parts = [prostorLabel(prostor), res.razred];
-              if (prostor === 'tablice' && res.qty) parts.push(`${res.qty} kos`);
-              parts.push(res.teacher_name || '?');
-              const label = parts.join(' · ');
-              html += `<div class="rez-label">${label}</div>`;
-              if (currentUser && res.teacher_id === currentUser.id) {
+              if (prostor === 'tablice') {
+                const parts = [];
+                if (res.qty) parts.push(`${res.qty} kos`);
+                parts.push(res.teacher_name || '?');
+                const label = parts.join(' : ');
+                html += `<div class="rez-label">${label}</div>`;
+              } else {
+                // Samo ime priimik, brez razreda
+                html += `<div class="rez-label">${res.teacher_name || '?'}</div>`;
+              }
+              if (currentUser && (res.teacher_id === currentUser.id || currentUser.role === 'admin')) {
                 html += `<button class="btn btn-danger btn-sm" onclick="deleteReservation(${res.id})">✕</button>`;
               }
+            }
+            // For tablice, show available count even when slot is taken
+            if (prostor === 'tablice') {
+              const used = tabliceMap[key] || 0;
+              const free = 28 - used;
+              html += `<div class="slot-info" style="margin-top:4px;">Prosto: ${free}/28</div>`;
             }
             html += `</td>`;
           } else {
@@ -464,7 +745,6 @@
     async function submitRezervacija() {
       const data = {
         prostor: document.getElementById('rez-form-prostor').value,
-        razred: document.getElementById('rez-form-razred').value,
         date: document.getElementById('rez-form-date').value,
         hour: parseInt(document.getElementById('rez-form-hour').value),
         teacher_id: currentUser.id,
@@ -521,13 +801,29 @@
       }
 
       let url = `/api/ocenjevanja?month=${month}`;
-      if (razred) url += `&razred=${razred}`;
+      
+      // Če je izbran "8. razred (vsi)" ali "9. razred (vsi)", ne pošljemo razred filter,
+      // ampak vseeno prikažemo samo tiste
+      let filterPrefix = '';
+      if (razred === '__8__') {
+        filterPrefix = '8.';
+      } else if (razred === '__9__') {
+        filterPrefix = '9.';
+      } else if (razred) {
+        url += `&razred=${razred}`;
+      }
 
       try {
         const res = await fetch(url);
         if (!res.ok) { showMsg('Napaka pri nalaganju ocenjevanj.', 'error'); return; }
-        const assessments = await res.json();
-        renderMonthlyCalendar(razred || 'Vsi razredi', month, assessments, razred === '');
+        let assessments = await res.json();
+        
+        // Če imamo prefix filter, filtriramo na strani
+        if (filterPrefix) {
+          assessments = assessments.filter(a => a.razred && a.razred.startsWith(filterPrefix));
+        }
+        
+        renderMonthlyCalendar(razred || 'Vsi razredi', month, assessments, razred === '' || filterPrefix !== '');
       } catch(e) {
         showMsg('Napaka pri povezavi s strežnikom.', 'error');
       }
@@ -572,13 +868,47 @@
         const cellDate = new Date(year, mon-1, day);
         const isToday = cellDate.toDateString() === today.toDateString();
         const isWeekend = cellDate.getDay() === 0 || cellDate.getDay() === 6;
+        const dateStr = `${year}-${String(mon).padStart(2,'0')}-${String(day).padStart(2,'0')}`;
+        
+        // Check if this date has any blocked classes globally
+        let hasBlockedOnDate = false;
+        const blockedRazredi = [];
+        for (const r of Object.keys(blockedDates)) {
+          if (blockedDates[r][dateStr]) {
+            hasBlockedOnDate = true;
+            blockedRazredi.push(r);
+          }
+        }
+        blockedRazredi.sort();
+        
+        // Determine if the blocked date should be shown for the current filter
+        let showBlocked = false;
+        if (hasBlockedOnDate && razred && razred !== 'Vsi razredi') {
+          if (razred.startsWith('__')) {
+            const prefix = razred === '__8__' ? '8.' : '9.';
+            showBlocked = blockedRazredi.some(r => r.startsWith(prefix));
+          } else if (blockedDates[razred] && blockedDates[razred][dateStr]) {
+            showBlocked = true;
+          }
+        } else if (hasBlockedOnDate && (!razred || razred === 'Vsi razredi')) {
+          showBlocked = true;
+        }
+        
         let cls = 'calendar-day';
         if (isToday) cls += ' today';
         if (isWeekend) cls += ' other-month';
 
-        html += `<div class="${cls}" onclick="quickOc('${razred}','${year}-${String(mon).padStart(2,'0')}-${String(day).padStart(2,'0')}')">
+        html += `<div class="${cls}" ${showBlocked ? '' : `onclick="quickOc('${razred}','${dateStr}')"`}>
           <div class="day-num">${day}</div>`;
 
+        // Show blocked classes in one line with purple background
+        if (showBlocked) {
+          html += `<div class="assessment-badge" style="background:#7c3aed;color:#fff;font-weight:600;">
+            <span>Zasedeni: ${blockedRazredi.join(' ')}</span>
+          </div>`;
+        }
+
+        // Also show assessments if there are any (in addition to blocked dates)
         if (asmMap[day]) {
           asmMap[day].forEach(a => {
             const asmCls = a.ponavljanje ? 'assessment-ponavljanje' : 'assessment-normal';
@@ -586,10 +916,12 @@
             const label = `Ocenjevanje${clsLabel}: ${a.teacher_name || '?'}`;
             html += `<div class="assessment-badge ${asmCls}">
               <span>${a.ponavljanje ? '🔄 ' : ''}${label}</span>
-              <span class="del-asm" onclick="event.stopPropagation();deleteAssessment(${a.id})">✕</span>
+              ${currentUser && (a.teacher_id === currentUser.id || currentUser.role === 'admin') ? `<span class="del-asm" onclick="event.stopPropagation();deleteAssessment(${a.id})">✕</span>` : ''}
             </div>`;
           });
-        } else if (!isWeekend) {
+        }
+
+        if (!asmMap[day] && !showBlocked && !isWeekend) {
           html += `<div class="add-asm-btn" onclick="event.stopPropagation();quickOc('${razred}','${year}-${String(mon).padStart(2,'0')}-${String(day).padStart(2,'0')}')">+</div>`;
         }
 
@@ -603,6 +935,14 @@
       }
 
       html += `</div>`;
+      
+      // Legend
+      html += `<div style="display:flex;gap:15px;justify-content:center;margin-top:10px;font-size:0.75rem;">
+        <span><span style="display:inline-block;width:12px;height:12px;background:#cce5ff;border-radius:2px;vertical-align:middle;"></span> Običajno ocenjevanje</span>
+        <span><span style="display:inline-block;width:12px;height:12px;background:#ffcccc;border-radius:2px;vertical-align:middle;"></span> Ponavljanje</span>
+        <span><span style="display:inline-block;width:12px;height:12px;background:#7c3aed;border-radius:2px;vertical-align:middle;"></span> Zaseden datum</span>
+      </div>`;
+      
       document.getElementById('oc-calendar-container').innerHTML = html;
     }
 
