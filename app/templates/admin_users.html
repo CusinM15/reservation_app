@@ -8,8 +8,10 @@
         body { font-family: Arial, sans-serif; margin: 20px; background: #f5f5f5; }
         .container { max-width: 1400px; margin: auto; background: white; padding: 20px; border-radius: 10px; }
         table { width: 100%; border-collapse: collapse; margin-top: 20px; }
-        th, td { padding: 8px; text-align: left; border-bottom: 1px solid #ddd; font-size: 14px; }
-        th { background: #007bff; color: white; }
+        td { padding: 8px; text-align: left; border-bottom: 1px solid #ddd; font-size: 14px; }
+        th { padding: 8px; text-align: left; border-bottom: 1px solid #ddd; font-size: 14px; background: #007bff; color: white; cursor: pointer; user-select: none; }
+        th:hover { background: #0056b3; }
+        th .sort-arrow { margin-left: 4px; font-size: 11px; }
         .btn { padding: 4px 8px; background: #007bff; color: white; text-decoration: none; border-radius: 3px; font-size: 12px; border: none; cursor: pointer; display: inline-block; margin: 1px; }
         .btn-danger { background: #dc3545; }
         .btn-success { background: #28a745; }
@@ -53,16 +55,16 @@
         </form>
         
         <h3>Seznam uporabnikov</h3>
-        <table>
+        <table id="user-table">
             <thead>
                 <tr>
-                    <th>ID</th>
-                    <th>Uporabniško ime</th>
-                    <th>Email</th>
-                    <th>Ime</th>
-                    <th>Priimek</th>
-                    <th>Vloga</th>
-                    <th>Aktiven</th>
+                    <th onclick="sortTable(0)">ID <span class="sort-arrow"></span></th>
+                    <th onclick="sortTable(1)">Uporabniško ime <span class="sort-arrow"></span></th>
+                    <th onclick="sortTable(2)">Email <span class="sort-arrow"></span></th>
+                    <th onclick="sortTable(3)">Ime <span class="sort-arrow"></span></th>
+                    <th onclick="sortTable(4)">Priimek <span class="sort-arrow"></span></th>
+                    <th onclick="sortTable(5)">Vloga <span class="sort-arrow"></span></th>
+                    <th onclick="sortTable(6)">Aktiven <span class="sort-arrow"></span></th>
                     <th>Akcije</th>
                 </tr>
             </thead>
@@ -132,6 +134,43 @@
         function toggleEdit(id) {
             const row = document.getElementById('edit-row-' + id);
             row.classList.toggle('active');
+        }
+
+        let sortDir = {};
+        function sortTable(col) {
+            const table = document.getElementById('user-table');
+            const tbody = table.querySelector('tbody');
+            const rows = Array.from(tbody.querySelectorAll('tr:not(.edit-form)'));
+            const isNumber = col === 0;
+
+            sortDir[col] = !sortDir[col];
+
+            rows.sort((a, b) => {
+                const aVal = a.children[col].textContent.trim();
+                const bVal = b.children[col].textContent.trim();
+                let cmp;
+                if (isNumber) {
+                    cmp = parseInt(aVal) - parseInt(bVal);
+                } else {
+                    cmp = aVal.localeCompare(bVal, 'sl');
+                }
+                return sortDir[col] ? cmp : -cmp;
+            });
+
+            // Remove old rows and re-insert sorted
+            rows.forEach(r => r.remove());
+            rows.forEach(r => tbody.appendChild(r));
+
+            // Re-append edit rows after their parent rows
+            rows.forEach(r => {
+                const editRow = document.getElementById('edit-row-' + r.children[0].textContent.trim());
+                if (editRow) tbody.appendChild(editRow);
+            });
+
+            // Update arrow indicators
+            document.querySelectorAll('th .sort-arrow').forEach(el => el.textContent = '');
+            const arrow = document.querySelector(`th:nth-child(${col + 1}) .sort-arrow`);
+            if (arrow) arrow.textContent = sortDir[col] ? '▲' : '▼';
         }
     </script>
 </body>
