@@ -64,28 +64,25 @@ def _check_weekly_limit(db: Session, razred: str, nova_date: date, je_ponavljanj
                 detail="V istem tednu ne morete imeti dveh ocenjevanj na isti dan."
             )
     
-    # Normal assessment: max 2 normal assessments per week
-    # Ponavljanje: max 3 total assessments per week
-    if je_ponavljanje:
-        max_allowed = 3
-        if len(assessments) >= max_allowed:
-            detail = f"V tem tednu ({week_start.strftime('%d.%m.%Y')}-{week_end.strftime('%d.%m.%Y')}) so že 3 ocenjevanja. Za ponavljanje je dovoljeno maksimalno 3."
-            raise HTTPException(status_code=400, detail=detail)
-    else:
-        # Only count existing normal assessments for the normal limit
+    # Skupaj max 3 ocenjevanja na teden (ne glede na vrsto)
+    if len(assessments) >= 3:
+        detail = f"V tem tednu ({week_start.strftime('%d.%m.%Y')}-{week_end.strftime('%d.%m.%Y')}) so že 3 ocenjevanja. Maksimalno 3 na teden."
+        raise HTTPException(status_code=400, detail=detail)
+    
+    # Običajna ocenjevanja: max 2 na teden
+    if not je_ponavljanje:
         normal_count = sum(1 for a in assessments if not a.ponavljanje)
         if normal_count >= 2:
-            detail = f"V tem tednu ({week_start.strftime('%d.%m.%Y')}-{week_end.strftime('%d.%m.%Y')}) so že 2 običajni ocenjevanji."
+            detail = f"V tem tednu ({week_start.strftime('%d.%m.%Y')}-{week_end.strftime('%d.%m.%Y')}) sta že 2 običajni ocenjevanji. Maksimalno 2 običajni na teden."
             raise HTTPException(status_code=400, detail=detail)
     
-    # Za ponavljanje preveri se 3 zaporedne dni
-    if je_ponavljanje:
-        vse_dates = [a.date for a in assessments] + [nova_date]
-        if _check_consecutive_days(vse_dates):
-            raise HTTPException(
-                status_code=400,
-                detail="Pri ponavljanju ocenjevanja ne smejo biti na 3 zaporedne dni (npr. pon, tor, sre)."
-            )
+    # 3 zaporedni dnevi niso dovoljeni za NOBENO ocenjevanje
+    vse_dates = [a.date for a in assessments] + [nova_date]
+    if _check_consecutive_days(vse_dates):
+        raise HTTPException(
+            status_code=400,
+            detail="Ocenjevanja ne smejo biti na 3 zaporedne dni (npr. pon, tor, sre)."
+        )
 
 @router.get("", response_model=List[AssessmentOut])
 def list_ocenjevanja(
