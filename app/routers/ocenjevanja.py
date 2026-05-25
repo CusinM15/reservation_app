@@ -202,9 +202,9 @@ def delete_ocenjevanje(id: int, request: Request, db: Session = Depends(get_db))
     if not assessment:
         raise HTTPException(status_code=404, detail="Ocenjevanje ne obstaja")
     
-    # Only the creator or admin can delete
-    if assessment.teacher_id != current_user.id and current_user.role != RoleEnum.admin:
-        raise HTTPException(status_code=403, detail="Samo avtor ali admin lahko briše ocenjevanje")
+    # Only the creator, admin or vodstvo can delete
+    if assessment.teacher_id != current_user.id and current_user.role not in (RoleEnum.admin, RoleEnum.vodstvo):
+        raise HTTPException(status_code=403, detail="Samo avtor, admin ali vodstvo lahko briše ocenjevanje")
     
     db.delete(assessment)
     db.commit()

@@ -689,7 +689,7 @@
                 // Samo ime priimik, brez razreda
                 html += `<div class="rez-label">${res.teacher_name || '?'}</div>`;
               }
-              if (currentUser && (res.teacher_id === currentUser.id || currentUser.role === 'admin')) {
+              if (currentUser && (res.teacher_id === currentUser.id || currentUser.role === 'admin' || currentUser.role === 'vodstvo')) {
                 html += `<button class="btn btn-danger btn-sm" onclick="deleteReservation(${res.id})">✕</button>`;
               }
             }
@@ -916,7 +916,7 @@
             const label = `Ocenjevanje${clsLabel}: ${a.teacher_name || '?'}`;
             html += `<div class="assessment-badge ${asmCls}">
               <span>${a.ponavljanje ? '🔄 ' : ''}${label}</span>
-              ${currentUser && (a.teacher_id === currentUser.id || currentUser.role === 'admin') ? `<span class="del-asm" onclick="event.stopPropagation();deleteAssessment(${a.id})">✕</span>` : ''}
+              ${currentUser && (a.teacher_id === currentUser.id || currentUser.role === 'admin' || currentUser.role === 'vodstvo') ? `<span class="del-asm" onclick="event.stopPropagation();deleteAssessment(${a.id})">✕</span>` : ''}
             </div>`;
           });
         }

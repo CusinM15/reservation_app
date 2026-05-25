@@ -143,9 +143,9 @@ def delete_rezervacija(id: int, request: Request, db: Session = Depends(get_db))
     if not reservation:
         raise HTTPException(status_code=404, detail="Rezervacija ne obstaja")
     
-    # Only the creator or admin can delete
-    if reservation.teacher_id != current_user.id and current_user.role != RoleEnum.admin:
-        raise HTTPException(status_code=403, detail="Samo avtor ali admin lahko briše rezervacijo")
+    # Only the creator, admin or vodstvo can delete
+    if reservation.teacher_id != current_user.id and current_user.role not in (RoleEnum.admin, RoleEnum.vodstvo):
+        raise HTTPException(status_code=403, detail="Samo avtor, admin ali vodstvo lahko briše rezervacijo")
     
     db.delete(reservation)
     db.commit()
