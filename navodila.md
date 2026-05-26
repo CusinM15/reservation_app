@@ -104,7 +104,7 @@
 
 | Pravilo | Opis |
 |---|---|
-| **Največ 3 ocenjevanja na teden** | V enem tednu (pon–ned) lahko ima razred največ **3 ocenjevanja** skupaj. |
+| **Največ 3 ocenjevanja na teden** | V enem tednu lahko ima razred največ **3 ocenjevanja** skupaj. |
 | **Največ 2 običajni ocenjevanji na teden** | Od treh so lahko največ **2 običajni** (neponavljalni). Ponavljanje ne šteje v to omejitev. |
 | **Prepoved istega dne** | V istem tednu ne morete imeti dveh ocenjevanj na **isti dan**. |
 | **Prepoved 3 zaporednih dni** | Ocenjevanja **ne smejo** biti na **3 zaporedne dni** (npr. ponedeljek + torek + sreda). To velja za vsa ocenjevanja, ne glede na vrsto. |
