@@ -107,7 +107,6 @@ Vse nastavitve so v `.env` datoteki. Po spremembi je potreben restart aplikacije
 |---|---|---|
 | `APP_HOST` | `0.0.0.0` | Naslov za bind |
 | `APP_PORT` | `8001` | Vrata za HTTP |
-| `SECRET_KEY` | – | Skrivnost za kriptografske operacije |
 | `DATABASE_URL` | `sqlite:///./data/sola.db` | Povezava do baze (SQLite ali PostgreSQL) |
 | `BASE_URL` | `http://localhost:8001` | Javni URL aplikacije (za email povezave) |
 | `TABLICE_MAX` | `28` | Kapaciteta tablic |

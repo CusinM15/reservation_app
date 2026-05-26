@@ -9,7 +9,6 @@ load_dotenv()
 class Settings:
     APP_HOST = os.getenv("APP_HOST", "0.0.0.0")
     APP_PORT = int(os.getenv("APP_PORT", 8001))
-    SECRET_KEY = os.getenv("SECRET_KEY")
     DATABASE_URL = os.getenv("DATABASE_URL", f"sqlite:///{os.getenv('DB_PATH', './data/sola.db')}")
     TABLICE_MAX = int(os.getenv("TABLICE_MAX", 28))
     SCHEDULE = json.loads(os.getenv("SCHEDULE", "{}"))
@@ -23,6 +22,7 @@ class Settings:
     MAIL_PASSWORD = os.getenv("MAIL_PASSWORD", "")
     MAIL_SERVER = os.getenv("MAIL_SERVER", "mail.arnes.si")
     MAIL_PORT = int(os.getenv("MAIL_PORT", 587))
+    BACKUP_EMAIL = os.getenv("BACKUP_EMAIL", "admin@ostonecufar.local")
 
 
 settings = Settings()
