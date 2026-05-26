@@ -3,24 +3,30 @@ from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.templating import Jinja2Templates
 from sqlalchemy.orm import Session
 from passlib.context import CryptContext
-import os
+import os, secrets
 
 from app.database import get_db
 from app.models import User, RoleEnum
+from app.config import settings, validate_password_strength
+from app.routers.blocked_dates import _send_email
 
 router = APIRouter(prefix="/auth", tags=["auth"])
 templates = Jinja2Templates(directory="app/templates")
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
+
 def get_password_hash(password):
     return pwd_context.hash(password)
+
 
 def verify_password(plain_password, hashed_password):
     return pwd_context.verify(plain_password, hashed_password)
 
+
 @router.get("/login", response_class=HTMLResponse)
-def login_page(request: Request, error: str = None):
-    return templates.TemplateResponse("login.html", {"request": request, "error": error})
+def login_page(request: Request, error: str = None, info: str = None):
+    return templates.TemplateResponse("login.html", {"request": request, "error": error, "info": info})
+
 
 @router.post("/login")
 def login(
@@ -47,12 +53,14 @@ def login(
     response.set_cookie(key="role", value=user.role, httponly=True, samesite="lax")
     return response
 
+
 @router.get("/logout")
 def logout():
     response = RedirectResponse(url="/auth/login")
     response.delete_cookie("user_id")
     response.delete_cookie("role")
     return response
+
 
 @router.get("/me")
 def get_current_user(request: Request, db: Session = Depends(get_db)):
@@ -73,6 +81,113 @@ def get_current_user(request: Request, db: Session = Depends(get_db)):
         "role": user.role,
     }
 
+
+@router.get("/forgot-password", response_class=HTMLResponse)
+def forgot_password_page(request: Request, error: str = None, info: str = None):
+    return templates.TemplateResponse("login.html", {
+        "request": request,
+        "error": error,
+        "info": info,
+        "show_forgot": True,
+    })
+
+
+@router.post("/forgot-password")
+def forgot_password(
+    request: Request,
+    email: str = Form(...),
+    db: Session = Depends(get_db),
+):
+    user = db.query(User).filter(User.email == email).first()
+    if not user:
+        return templates.TemplateResponse("login.html", {
+            "request": request,
+            "error": "Uporabnik s tem emailom ne obstaja.",
+            "show_forgot": True,
+        })
+    
+    # Generate a reset token
+    token = secrets.token_urlsafe(32)
+    user.reset_token = token
+    db.commit()
+    
+    reset_link = f"{settings.BASE_URL}/auth/reset-password?token={token}&email={email}"
+    
+    _send_email(
+        to_email=email,
+        subject="Ponastavitev gesla - Šolski App",
+        body=f"Pozdravljeni,\n\n"
+             f"Za ponastavitev gesla kliknite na spodnjo povezavo:\n\n"
+             f"{reset_link}\n\n"
+             f"Če niste zahtevali ponastavitve gesla, to sporočilo ignorirajte.\n\n"
+             f"Lep pozdrav,\nŠolski App"
+    )
+    
+    return templates.TemplateResponse("login.html", {
+        "request": request,
+        "info": "Če email obstaja v sistemu, smo vam poslali povezavo za ponastavitev gesla.",
+    })
+
+
+@router.get("/reset-password", response_class=HTMLResponse)
+def reset_password_page(
+    request: Request,
+    token: str = "",
+    email: str = "",
+    error: str = None,
+    db: Session = Depends(get_db),
+):
+    user = db.query(User).filter(User.email == email, User.reset_token == token).first()
+    if not user:
+        return templates.TemplateResponse("login.html", {
+            "request": request,
+            "error": "Neveljavna ali potekla povezava za ponastavitev gesla.",
+        })
+    
+    return templates.TemplateResponse("login.html", {
+        "request": request,
+        "show_reset": True,
+        "reset_token": token,
+        "reset_email": email,
+    })
+
+
+@router.post("/reset-password")
+def reset_password(
+    request: Request,
+    token: str = Form(...),
+    email: str = Form(...),
+    new_password: str = Form(...),
+    db: Session = Depends(get_db),
+):
+    user = db.query(User).filter(User.email == email, User.reset_token == token).first()
+    if not user:
+        return templates.TemplateResponse("login.html", {
+            "request": request,
+            "error": "Neveljavna ali potekla povezava za ponastavitev gesla.",
+        })
+    
+    # Validate new password
+    err = validate_password_strength(new_password)
+    if err:
+        return templates.TemplateResponse("login.html", {
+            "request": request,
+            "error": err,
+            "show_reset": True,
+            "reset_token": token,
+            "reset_email": email,
+        })
+    
+    user.password_hash = get_password_hash(new_password)
+    user.reset_token = None
+    db.commit()
+    
+    return templates.TemplateResponse("login.html", {
+        "request": request,
+        "info": "Geslo uspešno spremenjeno. Sedaj se lahko prijavite.",
+    })
+
+
 @router.post("/change-password")
 def change_password(
     request: Request,
@@ -91,9 +206,14 @@ def change_password(
     if not verify_password(old_password, user.password_hash):
         raise HTTPException(status_code=400, detail="Staro geslo ni pravilno")
     
+    err = validate_password_strength(new_password)
+    if err:
+        raise HTTPException(status_code=400, detail=err)
+    
     user.password_hash = get_password_hash(new_password)
     db.commit()
     return {"message": "Geslo uspešno spremenjeno"}
+
 
 # Admin endpoints
 @router.get("/admin/users", response_class=HTMLResponse)
@@ -107,6 +227,7 @@ def admin_users_page(request: Request, db: Session = Depends(get_db)):
     
     users = db.query(User).all()
     return templates.TemplateResponse("admin_users.html", {"request": request, "users": users})
+
 
 @router.post("/admin/users")
 def create_user(
@@ -124,6 +245,10 @@ def create_user(
     if current_user.role != RoleEnum.admin:
         return HTMLResponse("Nimate admin pravic", status_code=403)
     
+    err = validate_password_strength(password)
+    if err:
+        return RedirectResponse(url=f"/auth/admin/users?error={err}", status_code=303)
+    
     existing = db.query(User).filter(User.username == username).first()
     if existing:
         return RedirectResponse(url="/auth/admin/users?error=Uporabnik že obstaja", status_code=303)
@@ -136,11 +261,12 @@ def create_user(
         last_name=last_name,
         password_hash=hashed,
         role=role,
-        is_active=True
+        is_active=True,
     )
     db.add(new_user)
     db.commit()
     return RedirectResponse(url="/auth/admin/users", status_code=303)
+
 
 @router.get("/admin/users/{id}/deactivate")
 def deactivate_user(id: int, request: Request, db: Session = Depends(get_db)):
@@ -155,6 +281,7 @@ def deactivate_user(id: int, request: Request, db: Session = Depends(get_db)):
         db.commit()
     return RedirectResponse(url="/auth/admin/users", status_code=303)
 
+
 @router.get("/admin/users/{id}/activate")
 def activate_user(id: int, request: Request, db: Session = Depends(get_db)):
     user_id = request.cookies.get("user_id")
@@ -167,6 +294,7 @@ def activate_user(id: int, request: Request, db: Session = Depends(get_db)):
         user.is_active = True
         db.commit()
     return RedirectResponse(url="/auth/admin/users", status_code=303)
+
 
 @router.get("/admin/users/{id}/delete")
 def delete_user(id: int, request: Request, db: Session = Depends(get_db)):
@@ -189,6 +317,7 @@ def delete_user(id: int, request: Request, db: Session = Depends(get_db)):
     db.commit()
     return RedirectResponse(url="/auth/admin/users", status_code=303)
 
+
 @router.post("/admin/users/{id}/update")
 def update_user(
     id: int,
@@ -210,12 +339,16 @@ def update_user(
     if not user:
         return RedirectResponse(url="/auth/admin/users?error=Uporabnik ne obstaja", status_code=303)
     
+    if new_password:
+        err = validate_password_strength(new_password)
+        if err:
+            return RedirectResponse(url=f"/auth/admin/users?error={err}", status_code=303)
+        user.password_hash = get_password_hash(new_password)
+    
     user.username = username
     user.email = email or None
     user.first_name = first_name
     user.last_name = last_name
     user.role = role
-    if new_password:
-        user.password_hash = get_password_hash(new_password)
     db.commit()
     return RedirectResponse(url="/auth/admin/users", status_code=303)

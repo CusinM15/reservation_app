@@ -7,23 +7,79 @@
     <style>
         body { font-family: Arial, sans-serif; margin: 50px; background: #f5f5f5; }
         .container { max-width: 400px; margin: auto; background: white; padding: 30px; border-radius: 10px; box-shadow: 0 0 10px rgba(0,0,0,0.1); }
-        input { width: 100%; padding: 10px; margin: 10px 0; border: 1px solid #ddd; border-radius: 5px; }
-        button { width: 100%; padding: 10px; background: #007bff; color: white; border: none; border-radius: 5px; cursor: pointer; }
+        input { width: 100%; padding: 10px; margin: 10px 0; border: 1px solid #ddd; border-radius: 5px; box-sizing: border-box; }
+        button { width: 100%; padding: 10px; background: #007bff; color: white; border: none; border-radius: 5px; cursor: pointer; margin-top: 5px; }
         button:hover { background: #0056b3; }
-        .error { color: red; margin-bottom: 10px; }
+        .btn-link { background: transparent; color: #007bff; padding: 5px 0; text-decoration: underline; display: inline; width: auto; border: none; cursor: pointer; font-size: 0.9rem; }
+        .btn-link:hover { background: transparent; color: #0056b3; }
+        .error { color: red; margin-bottom: 10px; font-size: 0.9rem; }
+        .info { color: green; margin-bottom: 10px; font-size: 0.9rem; }
+        .section { display: none; }
+        .section.active { display: block; }
+        .back-link { text-align: center; margin-top: 15px; font-size: 0.85rem; }
+        .back-link a { color: #007bff; text-decoration: none; }
+        .back-link a:hover { text-decoration: underline; }
+        h2 { text-align: center; }
     </style>
 </head>
 <body>
     <div class="container">
-        <h2>Prijava v sistem</h2>
-        {% if error %}
-        <div class="error">{{ error }}</div>
-        {% endif %}
-        <form method="POST" action="/auth/login">
-            <input type="text" name="username" placeholder="Uporabniško ime" required>
-            <input type="password" name="password" placeholder="Geslo" required>
-            <button type="submit">Prijava</button>
-        </form>
+        <!-- Prijava -->
+        <div id="section-login" class="section {% if not show_forgot and not show_reset %}active{% endif %}">
+            <h2>Prijava v sistem</h2>
+            {% if error and not show_forgot and not show_reset %}
+            <div class="error">{{ error }}</div>
+            {% endif %}
+            {% if info and not show_forgot and not show_reset %}
+            <div class="info">{{ info }}</div>
+            {% endif %}
+            <form method="POST" action="/auth/login">
+                <input type="text" name="username" placeholder="Uporabniško ime" required>
+                <input type="password" name="password" placeholder="Geslo" required>
+                <button type="submit">Prijava</button>
+            </form>
+            <div style="text-align:center;margin-top:15px;">
+                <a href="/auth/forgot-password" style="color:#007bff;text-decoration:none;font-size:0.85rem;">Pozabljeno geslo?</a>
+            </div>
+        </div>
+
+        <!-- Pozabljeno geslo -->
+        <div id="section-forgot" class="section {% if show_forgot %}active{% endif %}">
+            <h2>Pozabljeno geslo</h2>
+            {% if error and show_forgot %}
+            <div class="error">{{ error }}</div>
+            {% endif %}
+            {% if info and show_forgot %}
+            <div class="info">{{ info }}</div>
+            {% endif %}
+            <form method="POST" action="/auth/forgot-password">
+                <input type="email" name="email" placeholder="Vnesite vaš službeni email" required>
+                <button type="submit">Pošlji povezavo</button>
+            </form>
+            <div class="back-link">
+                <a href="/auth/login">← Nazaj na prijavo</a>
+            </div>
+        </div>
+
+        <!-- Ponastavitev gesla -->
+        <div id="section-reset" class="section {% if show_reset %}active{% endif %}">
+            <h2>Ponastavitev gesla</h2>
+            {% if error and show_reset %}
+            <div class="error">{{ error }}</div>
+            {% endif %}
+            <form method="POST" action="/auth/reset-password">
+                <input type="hidden" name="token" value="{{ reset_token }}">
+                <input type="hidden" name="email" value="{{ reset_email }}">
+                <input type="password" name="new_password" placeholder="Novo geslo" required>
+                <p style="font-size:0.8rem;color:#666;margin:-5px 0 10px;">
+                    Geslo mora biti dolgo vsaj 5 znakov ter vsebovati vsaj eno malo črko, eno veliko črko in eno številko.
+                </p>
+                <button type="submit">Spremeni geslo</button>
+            </form>
+            <div class="back-link">
+                <a href="/auth/login">← Nazaj na prijavo</a>
+            </div>
+        </div>
     </div>
 </body>
 </html>

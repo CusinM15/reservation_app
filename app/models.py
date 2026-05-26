@@ -24,6 +24,7 @@ class User(Base):
     password_hash = Column(String, nullable=False)
     role = Column(SAEnum(RoleEnum), default=RoleEnum.teacher, nullable=False)
     is_active = Column(Boolean, default=True, nullable=False)
+    reset_token = Column(String, nullable=True, default=None, index=True)
 
     reservations = relationship("Reservation", back_populates="teacher")
     assessments = relationship("Assessment", back_populates="teacher")

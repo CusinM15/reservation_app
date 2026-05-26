@@ -9,10 +9,11 @@ Spletna aplikacija za OŠ Toneta Čufarja Jesenice za rezervacije prostorov (tab
 | Sloj | Tehnologija |
 |---|---|
 | Backend | Python 3.12, FastAPI, Uvicorn |
-| Podatkovna baza | SQLite (preko SQLAlchemy ORM) |
+| Podatkovna baza | PostgreSQL (produkcija) / SQLite (development) |
 | Frontend | Jinja2 template, plain HTML/CSS/JS |
 | Avtentikacija | cookie-based session z bcrypt hashom |
 | Email | SMTP preko Arnesa (`mail.arnes.si`) |
+| Storage | Longhorn (Kubernetes persistent volume) |
 
 ---
 
@@ -106,8 +107,9 @@ Vse nastavitve so v `.env` datoteki. Po spremembi je potreben restart aplikacije
 |---|---|---|
 | `APP_HOST` | `0.0.0.0` | Naslov za bind |
 | `APP_PORT` | `8001` | Vrata za HTTP |
-| `SECRET_KEY` | – | Skrivnost za morebitne kriptografske operacije |
-| `DB_PATH` | `./data/sola.db` | Pot do SQLite datoteke |
+| `SECRET_KEY` | – | Skrivnost za kriptografske operacije |
+| `DATABASE_URL` | `sqlite:///./data/sola.db` | Povezava do baze (SQLite ali PostgreSQL) |
+| `BASE_URL` | `http://localhost:8001` | Javni URL aplikacije (za email povezave) |
 | `TABLICE_MAX` | `28` | Kapaciteta tablic |
 | `SCHEDULE` | JSON objekt | Urnik – indeks ure → časovni interval |
 | `RAZREDI` | CSV | Seznam vseh razredov |
@@ -148,11 +150,33 @@ Ob prvem zagonu se samodejno ustvari admin uporabnik:
 
 ## 🗄️ Podatkovna baza
 
-### Lokacija
+### Produkcija (k3s)
 
-Privzeto: `./data/sola.db` (relativna pot glede na koren projekta).
+Produkcijska baza je PostgreSQL, ki teče v k3s clusterju. Storage je preko Longhorn persistent volume.
 
-### Struktura
+**Dump baze:**
+```bash
+kubectl exec deploy/postgres -- pg_dump -U sola sola > ./sola-backup.sql
+```
+
+**Obnovitev:**
+```bash
+cat ./sola-backup.sql | kubectl exec -i deploy/postgres -- psql -U sola sola
+```
+
+### Development (lokalno)
+
+Lokalno se uporablja SQLite za lažji razvoj. Baza se nahaja v `./data/sola.db`.
+
+### Konfiguracija v .env
+
+```bash
+# Za SQLite (development):
+DATABASE_URL=sqlite:///./data/sola.db
+
+# Za PostgreSQL (produkcija):
+DATABASE_URL=postgresql://sola:sola@postgres:5432/sola
+```
 
 Baza se ustvari **samodejno** ob prvem zagonu. Tabele:
 
@@ -161,9 +185,7 @@ Baza se ustvari **samodejno** ob prvem zagonu. Tabele:
 - `assessments` – napovedana ocenjevanja
 - `blocked_dates` – zasedeni datumi
 
-### Varnostno kopiranje
-
-Ker je baza SQLite, lahko preprosto kopirate datoteko:
+### Varnostno kopiranje (development - SQLite)
 
 ```bash
 # Varnostna kopija
@@ -243,124 +265,146 @@ sleep 1
 
 ## 🔄 Zamenjava master strežnika (ko glavni crkne)
 
-Aplikacija trenutno teče na enem strežniku. V primeru okvare:
+Aplikacija teče v **k3s Kubernetes** okolju z dvema workerjema in enim masterjem. Podatkovna baza je **PostgreSQL**, storage preko **Longhorn** persistent volume.
 
-### ✅ Če je podatkovna baza shranjena na Longhorn volumnu (Kubernetes)
+### ✅ Če master strežnik crkne (z Longhorn volume)
 
-Aplikacija naj bi v prihodnosti tekla v Kubernetes okolju z Longhorn za persistent storage.
-
-```bash
-# 1. Na novem strežniku kloniraj repozitorij
-git clone https://github.com/os-tc-jesenice/reservation_app.git
-cd reservation_app
-
-# 2. Pripravi okolje
-python3 -m venv .res_app
-source .res_app/bin/activate
-pip install -r requirements.txt
-
-# 3. Poveži Longhorn volume
-# Če Longhorn volume mountaš na /mnt/longhorn/sola:
-ln -s /mnt/longhorn/sola/data ./data
-
-# 4. Kopiraj .env
-# scp user@old-server:/home/admin_os/reservation_app/.env ./.env
-
-# 5. Zaženi
-nohup .res_app/bin/uvicorn app.main:app --host 127.0.0.1 --port 8002 > /tmp/sola-app.log 2>&1 &
-
-# 6. Preveri
-sleep 3
-curl -s http://127.0.0.1:8002/health
-
-# 7. Preusmeri DNS / proxy na nov IP
-```
-
-### ✅ Če je podatkovna baza samo na starem strežniku (ni skupnega diska)
+Longhorn volume je repliciran na vseh nodih, zato podatki niso izgubljeni. Nov master se samodejno postavi, če je k3s pravilno konfiguriran.
 
 ```bash
-# 1. Na starem stroju (če še deluje) ustvari varnostno kopijo baze
-cd /home/admin_os/reservation_app
-cp ./data/sola.db ./data/sola.db.backup
+# 1. Preveri stanje nodov
+kubectl get nodes
 
-# 2. Kopiraj celoten projekt na nov strežnik
-rsync -avz --progress /home/admin_os/reservation_app/ user@new-server:/home/admin_os/reservation_app/
+# 2. Preveri, če podi tečejo na workerjih
+kubectl get pods -o wide
 
-# ali preko scp:
-# scp -r /home/admin_os/reservation_app/ user@new-server:/home/admin_os/reservation_app/
-
-# 3. Na novem strežniku aktiviraj okolje in zaženi
-cd /home/admin_os/reservation_app
-source .res_app/bin/activate
-pip install -r requirements.txt  # če so se spremenile odvisnosti
-fuser -k 8002/tcp 2>/dev/null
-nohup .res_app/bin/uvicorn app.main:app --host 127.0.0.1 --port 8002 > /tmp/sola-app.log 2>&1 &
-
-# 4. Preveri
-sleep 3
-curl -s http://127.0.0.1:8002/health
-
-# 5. Posodobi DNS ali proxy, da kaže na nov strežnik
+# 3. Po popravilu masterja ali obnovitvi iz backupa:
+kubectl delete pod -l app=sola-app
+# k3s bo samodejno zagnal nov pod
 ```
 
-### ✅ Če stari strežnik ne deluje več in nimate backup-a baze
+### ✅ Obnova iz backupa baze
 
-1. Klonirajte repo na nov strežnik.
-2. Zaženite aplikacijo – baza se bo ustvarila prazna, vključno z admin uporabnikom.
-3. Uvozite uporabnike preko admin panela (ali preko `scripts/import_users.py` če obstaja CSV).
-4. **Podatki o rezervacijah in ocenjevanjih bodo izgubljeni** – zato redno delajte backup baze.
+```bash
+# 1. Poišči Longhorn PVC
+kubectl get pvc
+
+# 2. Ustvari backup pod za dostop do volumna
+kubectl apply -f - <<EOF
+apiVersion: v1
+kind: Pod
+metadata:
+  name: backup-pod
+spec:
+  containers:
+  - name: backup
+    image: postgres:16
+    command: ["sleep", "3600"]
+    volumeMounts:
+    - name: sola-data
+      mountPath: /data
+  volumes:
+  - name: sola-data
+    persistentVolumeClaim:
+      claimName: sola-pvc
+EOF
+
+# 3. Kopiraj backup v pod
+kubectl cp ./sola-backup.sql backup-pod:/data/
+
+# 4. Obnovi bazo
+kubectl exec backup-pod -- psql -h postgres -U sola -d sola -f /data/sola-backup.sql
+
+# 5. Počisti
+kubectl delete pod backup-pod
+```
+
+### ✅ Kako pridobiti dump baze
+
+```bash
+# Dump baze za varnostno kopijo
+kubectl exec deploy/postgres -- pg_dump -U sola sola > ./sola-backup.sql
+
+# Obnovitev
+cat ./sola-backup.sql | kubectl exec -i deploy/postgres -- psql -U sola sola
+```
+
+### ✅ Če stari strežnik ne deluje več in ni Longhorn replike
+
+1. Ponovno postavite k3s cluster.
+2. Namestite PostgreSQL preko Helm ali manifesta.
+3. Klonirajte aplikacijo, zgradite Docker sliko in deployajte.
+4. Uvozite uporabnike preko admin panela (ali `scripts/import_users.py`).
+5. **Podatki o rezervacijah in ocenjevanjih bodo izgubljeni** – redno delajte dump baze!
 
 ---
 
 ## ➕ Dodajanje worker strežnika (load balancing)
 
-Aplikacija trenutno ni zasnovana za več workerjev zaradi SQLite baze (ne podpira sočasnega pisanja). Če želite dodati worker:
+Aplikacija že teče v **k3s** z dvema workerjema. Če želite dodati dodatne workerje:
 
-### Opcija 1: Read-only worker (za pregledovanje)
+### V k3s okolju (obstoječi cluster)
 
 ```bash
-# Na worker strežniku
-git clone https://github.com/os-tc-jesenice/reservation_app.git
-cd reservation_app
+# 1. Namesti nov worker node
+curl -sfL https://get.k3s.io | K3S_URL=https://<master-ip>:6443 K3S_TOKEN=<token> sh -
 
-# Ustvari okolje
-python3 -m venv .res_app
-source .res_app/bin/activate
-pip install -r requirements.txt
+# 2. Preveri, da je node dodan
+kubectl get nodes
 
-# Kopiraj .env
-scp user@master-server:/home/admin_os/reservation_app/.env ./.env
-
-# Bazo mountaj iz Longhorn volume (če je na skupnem storage-u):
-ln -s /mnt/longhorn/sola/data ./data
-# Ali pa občasno sinkroniziraj:
-# rsync -av user@master-server:/home/admin_os/reservation_app/data/sola.db ./data/sola.db
-
-# Zaženi na drugih vratih (npr. 8003)
-nohup .res_app/bin/uvicorn app.main:app --host 127.0.0.1 --port 8003 > /tmp/sola-app.log 2>&1 &
+# 3. Posodobi deployment, če želiš več replik
+kubectl scale deployment sola-app --replicas=3
 ```
 
-**Omejitev:** Worker lahko služi samo za pregledovanje. Rezervacije in ocenjevanja bodo padla, ker SQLite ne podpira sočasnega pisanja.
+### V kolikor nimate k3s (development)
 
-### Opcija 2: Zamenjava SQLite s PostgreSQL (priporočeno za več workerjev)
-
-Če želite pravi load balancing, **zamenjajte SQLite s PostgreSQL**:
-
-1. Namestite PostgreSQL.
-2. Spremenite `app/database.py`:
-   ```python
-   engine = create_engine("postgresql://user:password@localhost/sola")
-   ```
-3. Dodajte zahtevo v `requirements.txt`: `psycopg2-binary`.
-4. Ponovno zaženite.
-
-Nato lahko zaženete več worker procesov:
+Aplikacija podpira PostgreSQL, zato lahko zaženete več workerjev:
 
 ```bash
-# Več workerjev na istem stroju
+# Več worker procesov na istem stroju (za development)
 .res_app/bin/uvicorn app.main:app --host 127.0.0.1 --port 8002 --workers 4
 
-# Ali več instanc na različnih strojih pred proxyjem (nginx)
+# Več instanc na različnih vratih pred nginx proxyjem
+.res_app/bin/uvicorn app.main:app --host 127.0.0.1 --port 8002 &
+.res_app/bin/uvicorn app.main:app --host 127.0.0.1 --port 8003 &
+```
+
+### Kubernetes deployment konfiguracija
+
+Aplikacija je containerizirana in se deploya preko Kubernetes manifestov. Za produkcijsko okolje:
+
+```yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: sola-app
+spec:
+  replicas: 3  # 1 master + 2 workerji
+  selector:
+    matchLabels:
+      app: sola-app
+  template:
+    metadata:
+      labels:
+        app: sola-app
+    spec:
+      containers:
+      - name: app
+        image: sola-app:latest
+        ports:
+        - containerPort: 8002
+        envFrom:
+        - configMapRef:
+            name: sola-config
+        - secretRef:
+            name: sola-secrets
+        volumeMounts:
+        - name: sola-data
+          mountPath: /app/data
+      volumes:
+      - name: sola-data
+        persistentVolumeClaim:
+          claimName: sola-pvc
 ```
 
 ---

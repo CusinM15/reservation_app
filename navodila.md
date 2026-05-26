@@ -19,6 +19,15 @@
 3. Po prijavi se v zgornjem desnem kotu izpiše vaše ime in vloga (učitelj / vodstvo / admin).
 4. Ob kliku na **Odjava** se izpišete.
 5. Če ste dlje časa neaktivni (1 ura), vas aplikacija samodejno odjavi.
+6. Če ste **pozabili geslo**, kliknite na povezavo "Pozabljeno geslo?" na prijavni strani, vnesite svoj službeni email in na email boste prejeli povezavo za ponastavitev gesla.
+
+### Pravila za gesla
+
+Geslo mora izpolnjevati naslednje zahteve:
+- Vsaj **5 znakov** dolžine
+- Vsaj **ena mala črka** (a–z)
+- Vsaj **ena velika črka** (A–Ž)
+- Vsaj **ena številka** (0–9)
 
 ---
 

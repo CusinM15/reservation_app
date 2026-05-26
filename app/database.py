@@ -4,8 +4,8 @@ from sqlalchemy.orm import sessionmaker, declarative_base
 from app.config import settings
 
 engine = create_engine(
-    f"sqlite:///{settings.DB_PATH}",
-    connect_args={"check_same_thread": False},
+    settings.DATABASE_URL,
+    connect_args={} if "postgresql" in settings.DATABASE_URL else {"check_same_thread": False},
 )
 
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
