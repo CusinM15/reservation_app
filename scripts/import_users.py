@@ -1,5 +1,8 @@
 """Import users from uporabniki.csv into the database.
 Usage: python -m scripts.import_users
+
+CSV format: uporabnisko_ime,geslo,ime,priimek,email[,vloga]
+If vloga column is present, values: teacher, vodstvo, admin
 """
 
 import csv, sys, os
@@ -11,6 +14,14 @@ from app.config import validate_password_strength
 from passlib.context import CryptContext
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+
+# Users that should be vodstvo
+VODSTVO_EMAILS = {
+    "gaber.klinar@guest.arnes.si",
+    "mateja.cuznar@guest.arnes.si",
+    "sanela.hajdarovic@guest.arnes.si",
+    "matej.cusin2@guest.arnes.si",
+}
 
 
 def run():
@@ -26,14 +37,16 @@ def run():
         reader = csv.reader(f)
         header = next(reader)
         for row in reader:
-            username, password, first_name, last_name, email = row
+            username, password, first_name, last_name, email = row[:5]
 
             existing = db.query(User).filter(User.username == username).first()
             if existing:
-                # Update password if CSV has a new one
+                # Update password hash if it's not already bcrypt
                 if not existing.password_hash.startswith("$2b$") and not existing.password_hash.startswith("$2a$"):
                     existing.password_hash = pwd_context.hash(password)
-                    print(f"  Updated password for {username}")
+                # Set vodstvo role for designated users
+                if username in VODSTVO_EMAILS:
+                    existing.role = RoleEnum.vodstvo
                 skipped += 1
                 continue
 
@@ -43,18 +56,21 @@ def run():
                 errors.append(f"{username}: {err}")
                 continue
 
+            # Determine role
+            role = RoleEnum.vodstvo if username in VODSTVO_EMAILS else RoleEnum.teacher
+
             user = User(
                 username=username,
                 email=email or None,
                 first_name=first_name,
                 last_name=last_name,
                 password_hash=pwd_context.hash(password),
-                role=RoleEnum.teacher,
+                role=role,
                 is_active=True,
             )
             db.add(user)
             imported += 1
-            print(f"  Imported {username} ({first_name} {last_name})")
+            print(f"  Imported {username} ({first_name} {last_name}) [{role.value}]")
 
     db.commit()
     db.close()
