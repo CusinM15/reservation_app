@@ -19,7 +19,7 @@
 3. Po prijavi se v zgornjem desnem kotu izpiše vaše ime in vloga (učitelj / vodstvo / admin).
 4. Ob kliku na **Odjava** se izpišete.
 5. Če ste dlje časa neaktivni (1 ura), vas aplikacija samodejno odjavi.
-6. Če ste **pozabili geslo**, kliknite na povezavo "Pozabljeno geslo?" na prijavni strani, vnesite svoj službeni email in na email boste prejeli povezavo za ponastavitev gesla.
+6. Če ste **pozabili geslo**, kliknite na povezavo "Pozabljeno geslo?" na prijavni strani, vnesite svoj službeni email in na email boste prejeli povezavo za ponastavitev gesla. S klikom na povezavo se vam odpre stran, kjer vnesete novo geslo.
 
 ### Pravila za gesla
 
@@ -166,10 +166,19 @@ V oknu "Zasedeni datumi" se v spodnjem delu prikaže seznam obstoječih blokad. 
 
 ## Sprememba gesla
 
+### Ko še poznate geslo
 1. V zgornji navigaciji kliknite **Spremeni geslo**.
 2. Vnesite **trenutno geslo** in **novo geslo** dvakrat.
 3. Kliknite **Spremeni geslo**.
 4. Ob uspehu se okno samodejno zapre po 1,5 sekunde.
+
+### Če ste pozabili geslo
+1. Na prijavni strani kliknite **"Pozabljeno geslo?"**.
+2. Vnesite **svoj službeni email** (enak kot ga uporabljate za prijavo).
+3. Na email boste prejeli povezavo za ponastavitev gesla.
+4. Kliknite na povezavo – odpre se stran, kjer vnesete **novo geslo**.
+5. Geslo mora ustrezati pravilom (glej poglavje Prijava > Pravila za gesla).
+6. Po uspešni spremembi se lahko prijavite z novim geslom.
 
 ---
 
