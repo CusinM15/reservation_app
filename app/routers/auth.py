@@ -111,23 +111,22 @@ def forgot_password(
     user.reset_token = token
     db.commit()
     
-    confirm_link = f"{settings.BASE_URL}/auth/reset-password?token={token}&email={email}"
+    reset_link = f"{settings.BASE_URL}/auth/reset-password?token={token}&email={email}"
     
     _send_email(
         to_email=email,
         subject="Ponastavitev gesla - Šolski App",
         body=f"Pozdravljeni {user.first_name} {user.last_name},\n\n"
-             f"Prejeli smo zahtevo za ponastavitev gesla za vaš račun.\n\n"
-             f"Če ste bili to VI, kliknite na spodnjo povezavo, da potrdite:\n"
-             f"{confirm_link}\n\n"
-             f"Po potrditvi vam bomo GENERIRALI novo geslo in vam ga poslali na ta email.\n\n"
-             f"Če NISTE zahtevali ponastavitve gesla, to sporočilo ignorirajte.\n\n"
+             f"Prejeli smo zahtevo za ponastavitev gesla.\n\n"
+             f"Za ponastavitev gesla kliknite na spodnjo povezavo:\n"
+             f"{reset_link}\n\n"
+             f"Če niste zahtevali ponastavitve gesla, to sporočilo ignorirajte.\n\n"
              f"Lep pozdrav,\nŠolski App"
     )
     
     return templates.TemplateResponse("login.html", {
         "request": request,
-        "info": "Če email obstaja v sistemu, smo vam poslali povezavo za potrditev.",
+        "info": "Če email obstaja v sistemu, smo vam poslali povezavo za ponastavitev gesla.",
     })
 
 
@@ -137,7 +136,6 @@ def reset_password_page(
     token: str = "",
     email: str = "",
     error: str = None,
-    info: str = None,
     db: Session = Depends(get_db),
 ):
     user = db.query(User).filter(User.email == email, User.reset_token == token).first()
@@ -149,7 +147,7 @@ def reset_password_page(
     
     return templates.TemplateResponse("login.html", {
         "request": request,
-        "show_confirm_reset": True,
+        "show_reset": True,
         "reset_token": token,
         "reset_email": email,
     })
@@ -160,6 +158,7 @@ def reset_password(
     request: Request,
     token: str = Form(...),
     email: str = Form(...),
+    new_password: str = Form(...),
     db: Session = Depends(get_db),
 ):
     user = db.query(User).filter(User.email == email, User.reset_token == token).first()
@@ -169,36 +168,24 @@ def reset_password(
             "error": "Neveljavna ali potekla povezava za ponastavitev gesla.",
         })
     
-    # Generate a random password that meets policy
-    import string
-    lower = secrets.choice(string.ascii_lowercase)
-    upper = secrets.choice(string.ascii_uppercase)
-    digit = secrets.choice(string.digits)
-    rest = ''.join(secrets.choice(string.ascii_letters + string.digits) for _ in range(2))
-    new_password = list(lower + upper + digit + rest)
-    secrets.SystemRandom().shuffle(new_password)
-    new_password = ''.join(new_password)
+    # Validate new password
+    err = validate_password_strength(new_password)
+    if err:
+        return templates.TemplateResponse("login.html", {
+            "request": request,
+            "error": err,
+            "show_reset": True,
+            "reset_token": token,
+            "reset_email": email,
+        })
     
     user.password_hash = get_password_hash(new_password)
     user.reset_token = None
     db.commit()
     
-    # Email the new password
-    _send_email(
-        to_email=email,
-        subject="Novo geslo - Šolski App",
-        body=f"Pozdravljeni {user.first_name} {user.last_name},\n\n"
-             f"Vaše novo geslo je:\n\n"
-             f"{new_password}\n\n"
-             f"Priporočamo, da ga po prijavi spremenite (Spremeni geslo v meniju).\n\n"
-             f"Geslo mora vsebovati vsaj 5 znakov, vsaj eno malo črko, vsaj eno veliko črko "
-             f"in vsaj eno številko.\n\n"
-             f"Lep pozdrav,\nŠolski App"
-    )
-    
     return templates.TemplateResponse("login.html", {
         "request": request,
-        "info": f"Novo geslo smo vam poslali na {email}. Preverite mapo Prejeto/Neželena pošta.",
+        "info": "Geslo uspešno spremenjeno. Sedaj se lahko prijavite.",
     })
 
 

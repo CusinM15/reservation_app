@@ -61,20 +61,20 @@
             </div>
         </div>
 
-        <!-- Potrditev ponastavitve -->
-        <div id="section-confirm-reset" class="section {% if show_confirm_reset %}active{% endif %}">
-            <h2>Potrditev ponastavitve</h2>
-            {% if error and show_confirm_reset %}
+        <!-- Ponastavitev gesla -->
+        <div id="section-reset" class="section {% if show_reset %}active{% endif %}">
+            <h2>Ponastavitev gesla</h2>
+            {% if error and show_reset %}
             <div class="error">{{ error }}</div>
             {% endif %}
-            <p style="text-align:center;font-size:0.9rem;margin:10px 0;">
-                S klikom na gumb boste potrdili, da želite ponastaviti geslo.<br>
-                <strong>Novo geslo vam bomo GENERIRALI in poslali na email.</strong>
-            </p>
             <form method="POST" action="/auth/reset-password">
                 <input type="hidden" name="token" value="{{ reset_token }}">
                 <input type="hidden" name="email" value="{{ reset_email }}">
-                <button type="submit">Potrjujem, generiraj novo geslo</button>
+                <input type="password" name="new_password" placeholder="Novo geslo" required>
+                <p style="font-size:0.8rem;color:#666;margin:-5px 0 10px;">
+                    Geslo mora biti dolgo vsaj 5 znakov ter vsebovati vsaj eno malo črko, eno veliko črko in eno številko.
+                </p>
+                <button type="submit">Spremeni geslo</button>
             </form>
             <div class="back-link">
                 <a href="/auth/login">← Nazaj na prijavo</a>
