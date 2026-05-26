@@ -106,17 +106,14 @@
 |---|---|
 | **Največ 3 ocenjevanja na teden** | V enem tednu lahko ima razred največ **3 ocenjevanja** skupaj. |
 | **Največ 2 običajni ocenjevanji na teden** | Od treh so lahko največ **2 običajni** (neponavljalni). Ponavljanje ne šteje v to omejitev. |
-| **Prepoved istega dne** | V istem tednu ne morete imeti dveh ocenjevanj na **isti dan**. |
+| **Prepoved istega dne** | Ne morete imeti dveh ocenjevanj na **isti dan**. |
 | **Prepoved 3 zaporednih dni** | Ocenjevanja **ne smejo** biti na **3 zaporedne dni** (npr. ponedeljek + torek + sreda). To velja za vsa ocenjevanja, ne glede na vrsto. |
-| **Vrstni red ni pomemben** | Pravila veljajo ne glede na vrstni red dodajanja. Če najprej dodate ponavljanje in nato dva običajna testa – vseeno veljajo ista pravila. |
+
 
 ### Legenda v koledarju
 - **🔵 Običajno ocenjevanje** – moder značek.
 - **🔄 Ponavljanje** – rdeč značek s simbolom 🔄.
 - **🟣 Zaseden datum** – vijoličen značek (razred ima ta dan dejavnost).
-
-### Kaj se zgodi, če dodate ocenjevanje na zaseden datum?
-Če razred označite kot zaseden (blokiran) in nekdo kasneje doda ocenjevanje na isti dan, bo ustvarjalec zasedenih datumov prejel email obvestilo.
 
 ---
 
@@ -149,11 +146,12 @@ V oknu "Zasedeni datumi" se v spodnjem delu prikaže seznam obstoječih blokad. 
 **Dostop:** V zgornji navigacijski vrstici se adminu prikaže gumb **Admin panel**.
 
 ### Funkcije
-- **Dodajanje uporabnikov** – vnesete AAI uporabniško ime, ime, priimek, geslo, vlogo (učitelj / vodstvo / admin).
+- **Dodajanje uporabnikov** – vnesete šolski mail, ime, priimek, geslo, vlogo (učitelj / vodstvo / admin).
 - **Pregled uporabnikov** – tabela z vsemi uporabniki, ki jo lahko razvrščate s klikom na ime stolpca (ID, uporabniško ime, email, ime, priimek, vloga, aktiven).
 - **Urejanje uporabnika** – kliknite "Uredi" ob uporabniku, spremenite podatke in shranite. Če pustite polje za geslo prazno, geslo ostane nespremenjeno.
 - **Deaktivacija / Aktivacija** – onemogočite ali ponovno omogočite dostop uporabniku. Deaktiviran uporabnik se ne more prijaviti.
 - **Brisanje uporabnika** – trajno izbriše uporabnika in vsa njegova ocenjevanja ter rezervacije. Admina z ID=1 ni mogoče izbrisati.
+- **Spremeni geslo** - admin lahko spremeni geslo uporabniku (v primeru da je geslo pozabil ga na tak način admin spremeni
 
 ---
 
