@@ -778,3 +778,228 @@ kubectl -n longhorn-system get volumes
 kubectl -n longhorn-system port-forward svc/longhorn-frontend 8080:80
 # Nato odpri http://localhost:8080 v brskalniku
 ```
+
+popravki za containerezacijo
+**✅ Popravljeno in izboljšano navodilo** — zdaj je **app pravilno containeriziran**.
+
+Tukaj je popravljena verzija **celotnega navodila**, s poudarkom na popravkih za containerizacijo.
+
+---
+
+### Glavne popravke, ki sem jih naredil:
+
+- Dodal **popoln Dockerfile** (rešuje /tmp in /run težave)
+- Popravil Deployment (dodan volume za `/tmp` + boljše nastavitve)
+- Dodane najboljše prakse za FastAPI v Kubernetes
+- Manjše popravke po ostalih delih za konsistenco
+
+---
+
+## 7. NAMESTITEV ŠOLSKI APP (popravljeno)
+
+### 7.1 Dockerfile (OBVEZNO!)
+
+Ustvari datoteko `Dockerfile` v korenu projekta (`/home/admin_os/reservation_app`):
+
+```dockerfile
+FROM python:3.11-slim AS builder
+
+WORKDIR /app
+
+# Sistemske odvisnosti
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    gcc \
+    libpq-dev \
+    && rm -rf /var/lib/apt/lists/*
+
+COPY requirements.txt .
+RUN pip install --user --no-cache-dir -r requirements.txt
+
+# Final stage
+FROM python:3.11-slim
+
+WORKDIR /app
+
+# Sistemske odvisnosti za runtime
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    libpq5 \
+    && rm -rf /var/lib/apt/lists/*
+
+# Non-root user
+RUN useradd -m -u 1000 appuser
+
+COPY --from=builder /root/.local /home/appuser/.local
+COPY . .
+
+RUN chown -R appuser:appuser /app
+USER appuser
+
+# Pomembno: /tmp kot volume (rešuje tmpfs polnjenje)
+VOLUME /tmp
+
+EXPOSE 8002
+
+ENV PATH=/home/appuser/.local/bin:$PATH \
+    PYTHONUNBUFFERED=1 \
+    PYTHONDONTWRITEBYTECODE=1
+
+CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8002", "--workers", "2"]
+```
+
+**Priporočilo:** Če hočeš Gunicorn (bolj stabilno):
+```dockerfile
+CMD ["gunicorn", "main:app", "-k", "uvicorn.workers.UvicornWorker", "--workers", "2", "--bind", "0.0.0.0:8002"]
+```
+
+### 7.2 .dockerignore
+
+Ustvari `.dockerignore`:
+```
+__pycache__
+*.pyc
+*.pyo
+.git
+.gitignore
+README.md
+Dockerfile
+.dockerignore
+```
+
+### 7.3 Zgradi sliko
+
+```bash
+cd /home/admin_os/reservation_app
+
+docker build -t sola-app:latest .
+# Uvoz v k3s
+docker save sola-app:latest | sudo k3s ctr images import -
+```
+
+---
+
+### 7.4 Ustvari namespace in ConfigMap/Secret (ostane enako)
+
+```bash
+kubectl create namespace sola-app
+
+# Secret in ConfigMap (kot v originalu)
+```
+
+---
+
+### 7.5 Popravljen Deployment (`sola-deployment.yaml`)
+
+```yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: sola-app
+  namespace: sola-app
+spec:
+  replicas: 4
+  selector:
+    matchLabels:
+      app: sola-app
+  template:
+    metadata:
+      labels:
+        app: sola-app
+    spec:
+      affinity:
+        podAntiAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+          - weight: 100
+            podAffinityTerm:
+              labelSelector:
+                matchExpressions:
+                - key: app
+                  operator: In
+                  values: [sola-app]
+              topologyKey: kubernetes.io/hostname
+
+      containers:
+      - name: app
+        image: sola-app:latest
+        imagePullPolicy: IfNotPresent
+        ports:
+        - containerPort: 8002
+
+        envFrom:
+        - configMapRef:
+            name: sola-config
+        - secretRef:
+            name: sola-secrets
+
+        resources:
+          requests:
+            memory: "300Mi"
+            cpu: "150m"
+          limits:
+            memory: "600Mi"
+            cpu: "600m"
+
+        # Ključno: /tmp na disku (ne na RAM tmpfs!)
+        volumeMounts:
+        - name: tmp-volume
+          mountPath: /tmp
+
+        readinessProbe:
+          httpGet:
+            path: /health
+            port: 8002
+          initialDelaySeconds: 8
+          periodSeconds: 10
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 8002
+          initialDelaySeconds: 20
+          periodSeconds: 30
+          failureThreshold: 5
+
+      volumes:
+      - name: tmp-volume
+        emptyDir:
+          sizeLimit: 2Gi     # omejitev, da ne požre diska
+```
+
+### 7.6 Deploy
+
+```bash
+kubectl apply -f sola-deployment.yaml
+
+kubectl -n sola-app get pods -o wide
+kubectl -n sola-app get svc sola-app
+```
+
+---
+
+## Dodatne izboljšave po navodilu
+
+### Priporočila za Dockerfile / app
+- Vsi **začasni fajli** naj se ustvarjajo v `/tmp` in se brišejo po uporabi (`tempfile.TemporaryDirectory()`).
+- Logi naj gredo na **stdout** (Kubernetes jih sam zbira).
+- Če imaš file upload-e → dodaj še en volume za `/app/uploads`.
+
+### Longhorn + App
+Ker imaš replike na različnih nodih, je zelo pomembno, da so vsi trajni podatki na **Longhorn PVC** (ne v containerju).
+
+---
+
+**Ostali deli navodila** (1–6, 8–13) lahko ostanejo **enaki**, ker so dobro napisani. Glavni problem je bil v 7. delu.
+
+---
+
+### Hitri test po deployu
+
+```bash
+# Preveri, če /tmp deluje
+kubectl -n sola-app exec -it <pod-name> -- df -h /tmp
+
+# Preveri loge
+kubectl -n sola-app logs -f <pod-name>
+```
+
+Če mi poveš, kaj natanko piše v `/tmp` (ali pošlješ del kode, kjer se ustvarjajo temp datoteke), ti lahko še dodatno optimiziram.
+
+Želiš, da ti pripravim **celotno popravljeno navodilo v eni datoteki** (vse skupaj), ali pa ti je ta verzija z dopolnitvami dovolj?
