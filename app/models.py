@@ -37,7 +37,7 @@ class Reservation(Base):
     prostor = Column(String, nullable=False, index=True)
     date = Column(Date, nullable=False, index=True)
     hour = Column(Integer, nullable=False)  # 0–7
-    razred = Column(String, nullable=False)
+    razred = Column(String, nullable=True, default="")
     qty = Column(Integer, nullable=True)  # only for tablice
 
     teacher_id = Column(Integer, ForeignKey("users.id"), nullable=False)
