@@ -3,7 +3,7 @@ from datetime import date
 from typing import Optional
 
 
-# ── Rezervacije ─────────────────────────────────────────────
+# ── Reservations ─────────────────────────────────────────────
 
 class ReservationCreate(BaseModel):
     date: date
@@ -27,7 +27,7 @@ class ReservationOut(BaseModel):
     model_config = {"from_attributes": True}
 
 
-# ── Ocenjevanja ─────────────────────────────────────────────
+# ── Assessments ─────────────────────────────────────────────
 
 class AssessmentCreate(BaseModel):
     razred: str
@@ -47,7 +47,7 @@ class AssessmentOut(BaseModel):
     model_config = {"from_attributes": True}
 
 
-# ── Uporabniki ──────────────────────────────────────────────
+# ── Users ──────────────────────────────────────────────
 
 class UserOut(BaseModel):
     id: int

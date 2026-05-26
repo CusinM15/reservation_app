@@ -245,7 +245,9 @@ sleep 1
 
 Aplikacija trenutno teče na enem strežniku. V primeru okvare:
 
-### ✅ Če je podatkovna baza na skupnem disku (NFS, NAS)
+### ✅ Če je podatkovna baza shranjena na Longhorn volumnu (Kubernetes)
+
+Aplikacija naj bi v prihodnosti tekla v Kubernetes okolju z Longhorn za persistent storage.
 
 ```bash
 # 1. Na novem strežniku kloniraj repozitorij
@@ -257,13 +259,11 @@ python3 -m venv .res_app
 source .res_app/bin/activate
 pip install -r requirements.txt
 
-# 3. Poveži bazo (ali kopiraj)
-# Če je na skupnem NAS-u:
-ln -s /mnt/nas/sola/data ./data
-# Ali če kopiraš:
-# scp user@old-server:/home/admin_os/reservation_app/data/sola.db ./data/sola.db
+# 3. Poveži Longhorn volume
+# Če Longhorn volume mountaš na /mnt/longhorn/sola:
+ln -s /mnt/longhorn/sola/data ./data
 
-# 4. Kopiraj .env (ali ustvari na novo)
+# 4. Kopiraj .env
 # scp user@old-server:/home/admin_os/reservation_app/.env ./.env
 
 # 5. Zaženi
@@ -331,8 +331,8 @@ pip install -r requirements.txt
 # Kopiraj .env
 scp user@master-server:/home/admin_os/reservation_app/.env ./.env
 
-# Bazo mountaj kot read-only (če je na NAS-u):
-ln -s /mnt/nas/sola/data ./data
+# Bazo mountaj iz Longhorn volume (če je na skupnem storage-u):
+ln -s /mnt/longhorn/sola/data ./data
 # Ali pa občasno sinkroniziraj:
 # rsync -av user@master-server:/home/admin_os/reservation_app/data/sola.db ./data/sola.db
 

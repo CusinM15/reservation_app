@@ -56,7 +56,7 @@ def _check_weekly_limit(db: Session, razred: str, nova_date: date, je_ponavljanj
     
     assessments = _get_assessments_in_week(db, razred, week_start)
     
-    # Preveri ce ze obstaja na isti dan
+    # Check if the same day already exists
     for a in assessments:
         if a.date == nova_date:
             raise HTTPException(
@@ -64,19 +64,19 @@ def _check_weekly_limit(db: Session, razred: str, nova_date: date, je_ponavljanj
                 detail="V istem tednu ne morete imeti dveh ocenjevanj na isti dan."
             )
     
-    # Skupaj max 3 ocenjevanja na teden (ne glede na vrsto)
+    # Max 3 total assessments per week (regardless of type)
     if len(assessments) >= 3:
         detail = f"V tem tednu ({week_start.strftime('%d.%m.%Y')}-{week_end.strftime('%d.%m.%Y')}) so že 3 ocenjevanja. Maksimalno 3 na teden."
         raise HTTPException(status_code=400, detail=detail)
     
-    # Običajna ocenjevanja: max 2 na teden
+    # Normal assessments: max 2 per week
     if not je_ponavljanje:
         normal_count = sum(1 for a in assessments if not a.ponavljanje)
         if normal_count >= 2:
             detail = f"V tem tednu ({week_start.strftime('%d.%m.%Y')}-{week_end.strftime('%d.%m.%Y')}) sta že 2 običajni ocenjevanji. Maksimalno 2 običajni na teden."
             raise HTTPException(status_code=400, detail=detail)
     
-    # 3 zaporedni dnevi niso dovoljeni za NOBENO ocenjevanje
+    # 3 consecutive days not allowed for ANY assessment
     vse_dates = [a.date for a in assessments] + [nova_date]
     if _check_consecutive_days(vse_dates):
         raise HTTPException(
@@ -145,7 +145,7 @@ def create_ocenjevanje(data: AssessmentCreate, request: Request, db: Session = D
                 detail=f"Termin ocenjevanja je v istem trenutku napovedal tudi {other}. Oba sta bila zavrnjena."
             )
         
-        # Preveri tedenske omejitve
+        # Check weekly limits
         _check_weekly_limit(db, data.razred, data.date, data.ponavljanje)
         
         assessment = Assessment(**data.model_dump())

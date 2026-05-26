@@ -42,7 +42,7 @@ def login(
         )
     
     response = RedirectResponse(url="/", status_code=303)
-    # Session cookies - brez max_age, izbrišejo se ob zaprtju brskalnika
+    # Session cookies - no max_age, deleted on browser close
     response.set_cookie(key="user_id", value=str(user.id), httponly=True, samesite="lax")
     response.set_cookie(key="role", value=user.role, httponly=True, samesite="lax")
     return response

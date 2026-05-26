@@ -261,21 +261,21 @@
     let currentUser = null;
     let currentOcMonth = '';
     let currentOcRazred = '';
-    let blockedDates = {}; // {razred: {dateStr: true, ...}, ...}
+    let blockedDates = {}; // {class: {dateStr: true, ...}, ...}
     let allBlocked = []; // flat list of all blocked dates
-    // ── Timeout za neaktivnost ──
+    // ── Inactivity timeout ──
     let inactivityTimer = null;
-    const INACTIVITY_TIMEOUT_MS = 60 * 60 * 1000; // 1 ura v milisekundah
+    const INACTIVITY_TIMEOUT_MS = 60 * 60 * 1000; // 1 hour in milliseconds
 
     function resetInactivityTimer() {
       if (inactivityTimer) clearTimeout(inactivityTimer);
       inactivityTimer = setTimeout(() => {
-        // Preusmeri na odjavo
+        // Redirect to logout
         window.location.href = '/auth/logout';
       }, INACTIVITY_TIMEOUT_MS);
     }
 
-    // Vsak klik, premik miške, tipkanje ali scroll resetira timer
+    // Any click, mouse move, keypress or scroll resets the timer
     document.addEventListener('click', resetInactivityTimer);
     document.addEventListener('mousemove', resetInactivityTimer);
     document.addEventListener('keydown', resetInactivityTimer);
@@ -407,7 +407,7 @@
       sel.innerHTML = html;
     }
 
-    // Za ocenjevanje - združimo v 8. in 9. razred
+    // For assessments - group 8th and 9th grade classes
     function populateOcRazredi(id, items, addAll) {
       const sel = document.getElementById(id);
       const osmice = items.filter(r => r.startsWith('8.')).sort();
@@ -417,7 +417,7 @@
       let html = '';
       if (addAll) html += '<option value="">Vsi razredi</option>';
       
-      // Za filter (oc-razred) dodamo še skupinski opciji
+      // For filter (oc-razred) add group options
       if (id === 'oc-razred') {
         html += '<option value="__8__">🗂️ 8. razred (vsi)</option>';
         html += '<option value="__9__">🗂️ 9. razred (vsi)</option>';
@@ -522,7 +522,7 @@
         const res = await fetch('/api/blocked-dates');
         if (!res.ok) return;
         allBlocked = await res.json();
-        // Build lookup: blockedDates[razred][dateStr] = true
+        // Build lookups from blocked dates
         blockedDates = {};
         allBlocked.forEach(b => {
           if (!blockedDates[b.razred]) blockedDates[b.razred] = {};
@@ -609,7 +609,7 @@
       } catch(e) {}
     }
 
-    // ── Rezervacije ──
+    // ── Reservations ──
     function switchProstor(p) {
       document.querySelectorAll('.prostor-tab').forEach(t => t.classList.toggle('active', t.dataset.prostor === p));
       document.querySelectorAll('.prostor-view').forEach(v => v.classList.toggle('active', v.id === 'prostor-view-' + p));
@@ -692,7 +692,7 @@
                 const label = parts.join(' : ');
                 html += `<div class="rez-label">${label}</div>`;
               } else {
-                // Samo ime priimik, brez razreda
+                // Show name only, without class
                 html += `<div class="rez-label">${res.teacher_name || '?'}</div>`;
               }
               if (currentUser && (res.teacher_id === currentUser.id || currentUser.role === 'admin' || currentUser.role === 'vodstvo')) {
@@ -794,7 +794,7 @@
       }
     }
 
-    // ── Ocenjevanje ──
+    // ── Assessments ──
     async function loadAssessments() {
       const razred = document.getElementById('oc-razred').value;
       currentOcRazred = razred;
@@ -808,8 +808,8 @@
 
       let url = `/api/ocenjevanja?month=${month}`;
       
-      // Če je izbran "8. razred (vsi)" ali "9. razred (vsi)", ne pošljemo razred filter,
-      // ampak vseeno prikažemo samo tiste
+      // If "8. razred (vsi)" or "9. razred (vsi)" is selected, don't send class filter,
+      // just filter results on the client side
       let filterPrefix = '';
       if (razred === '__8__') {
         filterPrefix = '8.';
@@ -824,7 +824,7 @@
         if (!res.ok) { showMsg('Napaka pri nalaganju ocenjevanj.', 'error'); return; }
         let assessments = await res.json();
         
-        // Če imamo prefix filter, filtriramo na strani
+        // If we have a prefix filter, filter on client side
         if (filterPrefix) {
           assessments = assessments.filter(a => a.razred && a.razred.startsWith(filterPrefix));
         }
