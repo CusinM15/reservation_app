@@ -1,6 +1,6 @@
 # k3s Setup – Šolski App
 
-Celotna navodila za postavitev k3s Kubernetes clusterja: en master, dva workerja, MetalLB load balancer, Longhorn storage (na vseh nodih), PostgreSQL baza in avtomatski backupi na email.
+Celotna navodila za postavitev k3s Kubernetes clusterja: en master, dva workerja, MetalLB load balancer, Longhorn storage na vseh nodih, PostgreSQL baza, containerizirana FastAPI aplikacija in avtomatski backupi na email.
 
 ---
 
@@ -13,14 +13,13 @@ Internet
 ostc.si (Cloudflare / DNS)
     │
     ▼
-┌─────────────────────────────────────────────────┐
-│  Reverse Proxy (nginx na masterju, :80/:443)    │
-│  → proxy_pass k3s MetalLB IP                    │
-└────────────────────────┬────────────────────────┘
+┌──────────────────────────────────────────────────┐
+│  Reverse Proxy (nginx na masterju, :80/:443)     │
+│  → proxy_pass k3s MetalLB IP                     │
+└────────────────────────┬─────────────────────────┘
                          │
                     ┌────┴────┐
-                    │ MetalLB │  (LoadBalancer IP)
-                    │ :8002   │
+                    │ MetalLB │  (LoadBalancer IP :8002)
                     └────┬────┘
                          │
           ┌──────────────┼──────────────┐
@@ -45,9 +44,14 @@ ostc.si (Cloudflare / DNS)
 - **root** ali `sudo` dostop na vseh mašinah
 - Mašine naj bodo v istem omrežju (medsebojna komunikacija)
 - Domena `ostc.si` (za reverse proxy)
+- Docker nameščen na masterju (za build slike):
+  ```bash
+  curl -fsSL https://get.docker.com | sudo sh
+  sudo usermod -aG docker $USER
+  # Odjavi/prijavi se ponovno
+  ```
 
 ---
-
 
 ## 1. NAMESTITEV MASTER NODE
 
@@ -66,18 +70,16 @@ curl -sfL https://get.k3s.io | sudo sh -s - server \
 
 | Parameter | Opis |
 |---|---|
-| `--disable=traefik` | Ne potrebujemo vgrajenega ingressa, uporabili bomo nginx 
+| `--disable=traefik` | Ne potrebujemo vgrajenega ingressa, uporabili bomo nginx |
 | `--disable=servicelb` | Ne potrebujemo vgrajenega LB, uporabili bomo MetalLB |
 | `--write-kubeconfig-mode=644` | Omogoči branje kubeconfig vsem uporabnikom |
 
 ### 1.2 Preveri, da k3s deluje
 
 ```bash
-# Preveri node
 kubectl get nodes
 # Izhod: master (Ready)
 
-# Preveri pode
 kubectl get pods -A
 # Vsi naj bodo Running
 ```
@@ -87,56 +89,48 @@ kubectl get pods -A
 ```bash
 sudo cat /var/lib/rancher/k3s/server/node-token
 ```
-Shrani ta token. Izgleda nekako takole: `K10e8a2...::server:...`
+Shrani ta token. Izgleda: `K10e8a2...::server:...`
 
 ### 1.4 Pridobi IP masterja
 
 ```bash
 ip a show | grep "inet " | grep -v 127.0.0.1
-# Npr. 192.168.1.100 ali 193.2.171.250
+# Npr. 192.168.1.100
 ```
 
 ---
 
 ## 2. NAMESTITEV WORKER NODE 1
 
-Prijavi se na **worker1** mašino.
-
-### 2.1 Namesti k3s agent
+Prijavi se na **worker1**.
 
 ```bash
 export K3S_URL="https://<MASTER_IP>:6443"
 export K3S_TOKEN="<TOKEN_IZ_1.3>"
-
 curl -sfL https://get.k3s.io | sudo K3S_URL=$K3S_URL K3S_TOKEN=$K3S_TOKEN sh -
 ```
 
 Zamenjaj `<MASTER_IP>` in `<TOKEN_IZ_1.3>`.
 
-### 2.2 Preveri na masterju
-
-Na masterju zaženi:
-
+Na masterju preveri:
 ```bash
 kubectl get nodes
+# Prikaz: master + worker1
 ```
-Prikazati mora master + worker1.
 
 ---
 
 ## 3. NAMESTITEV WORKER NODE 2
 
-Ponovi korak 2 na **worker2** mašini.
+Na **worker2** ponovi:
 
 ```bash
 export K3S_URL="https://<MASTER_IP>:6443"
 export K3S_TOKEN="<TOKEN_IZ_1.3>"
-
 curl -sfL https://get.k3s.io | sudo K3S_URL=$K3S_URL K3S_TOKEN=$K3S_TOKEN sh -
 ```
 
-Po koncu preveri:
-
+Preveri:
 ```bash
 kubectl get nodes
 # Prikaz: master, worker1, worker2 (vsi Ready)
@@ -146,24 +140,12 @@ kubectl get nodes
 
 ## 4. NAMESTITEV METALLB (LOAD BALANCER)
 
-MetalLB bo dodelil IP naslov servisom tipa `LoadBalancer`.
-
-### 4.1 Namesti MetalLB
-
 ```bash
 kubectl apply -f https://raw.githubusercontent.com/metallb/metallb/v0.14.9/config/manifests/metallb-native.yaml
-```
-
-### 4.2 Počakaj, da so podi pripravljeni
-
-```bash
 kubectl -n metallb-system wait --for=condition=ready pod --all --timeout=120s
-kubectl -n metallb-system get pods
 ```
 
-### 4.3 Konfiguriraj IP pool
-
-Ustvari datoteko `metallb-config.yaml`:
+Ustvari `metallb-config.yaml`:
 
 ```yaml
 apiVersion: metallb.io/v1beta1
@@ -173,7 +155,6 @@ metadata:
   namespace: metallb-system
 spec:
   addresses:
-  # Prilagodi glede na tvoje omrežje (naslednji prosti IP-ji v tvoji subnet)
   - 192.168.1.200-192.168.1.210
 ---
 apiVersion: metallb.io/v1beta1
@@ -183,7 +164,7 @@ metadata:
   namespace: metallb-system
 ```
 
-> **Pomembno:** IP range mora biti v istem omrežju kot tvoje mašine. Preveri svoj IP: `ip a | grep "inet "` in uporabi proste IP-je v istem rangu.
+> Prilagodi IP range glede na tvoje omrežje. Preveri: `ip a | grep "inet "`.
 
 ```bash
 kubectl apply -f metallb-config.yaml
@@ -193,22 +174,25 @@ kubectl apply -f metallb-config.yaml
 
 ## 5. NAMESTITEV LONGHORN STORAGE
 
-Longhorn bo zagotovil distributed persistent storage na **vseh nodih** (master + oba workerja).
+Longhorn bo zagotovil distributed persistent storage na **vseh nodih**.
 
-### 5.1 Namesti Longhorn preko Helm
+### 5.1 Namesti predpogoje na vsak node
 
 ```bash
-# Namesti Helm, če ga še nimaš
+# Poženi na master, worker1 in worker2:
+sudo apt-get install -y open-iscsi nfs-common
+sudo systemctl enable --now iscsid
+```
+
+### 5.2 Namesti Longhorn
+
+```bash
 curl -fsSL https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3 | sudo bash
 
-# Dodaj Helm repo
 helm repo add longhorn https://charts.longhorn.io
 helm repo update
-
-# Ustvari namespace
 kubectl create namespace longhorn-system
 
-# Namesti Longhorn
 helm install longhorn longhorn/longhorn \
   --namespace longhorn-system \
   --version 1.9.0 \
@@ -218,57 +202,21 @@ helm install longhorn longhorn/longhorn \
   --set persistence.defaultClass=true
 ```
 
-| Parameter | Opis |
-|---|---|
-| `defaultReplicaCount=3` | 3 replike (ena na vsak node) |
-| `persistence.defaultClassReplicaCount=3` | 3 replike za nove PVC |
-| `replicaSoftAntiAffinity=true` | Replike na različnih nodih |
-
-### 5.2 Preveri Longhorn
+### 5.3 Preveri
 
 ```bash
-# Počakaj, da so vsi podi Running
 kubectl -n longhorn-system get pods -w
-
-# Preveri storage class
-kubectl get storageclass
-# longhorn (default) bi moral biti viden
-
-# Preveri, da so vsi nodi pripravljeni za Longhorn
-kubectl -n longhorn-system get nodes
-```
-
-### 5.3 Preveri, da Longhorn vidi diske na vseh nodih
-
-```bash
-# Preveri, da so vsi 3 nodi dodani v Longhorn
-kubectl -n longhorn-system get pods -o wide | grep instance-manager
-
-# Preveri stanje diskov
-kubectl -n longhorn-system get volumes
-```
-
-> **Opomba:** Longhorn zahteva, da ima vsak node `open-iscsi` in `nfs-common` nameščena. Če ju ni, ju namesti:
-
-```bash
-# Poženi na vsakem nodu (master, worker1, worker2):
-sudo apt-get install -y open-iscsi nfs-common
-sudo systemctl enable --now iscsid
+kubectl get storageclass          # longhorn (default)
+kubectl -n longhorn-system get nodes  # vsi 3 nodi
 ```
 
 ---
 
 ## 6. NAMESTITEV POSTGRESQL
 
-### 6.1 Ustvari namespace
-
 ```bash
 kubectl create namespace sola
-```
 
-### 6.2 Namesti PostgreSQL preko Helm
-
-```bash
 helm repo add bitnami https://charts.bitnami.com/bitnami
 helm repo update
 
@@ -284,54 +232,77 @@ helm install sola-postgresql bitnami/postgresql \
   --set global.storageClass=longhorn
 ```
 
-Zamenjaj `<VARNOSTNO_GESLO>` z dejanskim geslom. Shrani ga za kasnejšo uporabo v ConfigMap.
-
-### 6.3 Preveri PostgreSQL
-
+Preveri:
 ```bash
 kubectl -n sola get pods
-kubectl -n sola get pvc
-# PVC naj bo Bound na longhorn storage
+kubectl -n sola get pvc   # Bound na longhorn
 ```
 
 ---
 
-## 7. NAMESTITEV ŠOLSKI APP
+## 7. CONTAINERIZACIJA IN NAMESTITEV ŠOLSKI APP
 
-### 7.1 Zgradi Docker sliko
+### 7.1 Dockerfile
 
-Na masterju zgradi Docker sliko:
+V korenu projekta (`/home/admin_os/reservation_app/Dockerfile`):
+
+```dockerfile
+FROM python:3.11-slim AS builder
+
+WORKDIR /app
+
+# Sistemske odvisnosti za build (psycopg2 potrebuje libpq-dev)
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    gcc libpq-dev \
+    && rm -rf /var/lib/apt/lists/*
+
+COPY requirements.txt .
+RUN pip install --user --no-cache-dir -r requirements.txt
+
+# Final stage
+FROM python:3.11-slim
+
+WORKDIR /app
+
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    libpq5 && rm -rf /var/lib/apt/lists/*
+
+# Non-root user
+RUN useradd -m -u 1000 appuser
+COPY --from=builder /root/.local /home/appuser/.local
+COPY . .
+
+RUN chown -R appuser:appuser /app
+USER appuser
+
+# /tmp kot volumen (rešuje tmpfs polnjenje)
+VOLUME /tmp
+
+EXPOSE 8002
+
+ENV PATH=/home/appuser/.local/bin:$PATH \
+    PYTHONUNBUFFERED=1 \
+    PYTHONDONTWRITEBYTECODE=1
+
+CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8002", "--workers", "2"]
+```
+
+### 7.2 Zgradi sliko
 
 ```bash
 cd /home/admin_os/reservation_app
 
-# Zgradi sliko
 docker build -t sola-app:latest .
 
-# Označi in pushaj v registry (ali uporabi local registry)
-# docker tag sola-app:latest ghcr.io/os-tc-jesenice/sola-app:latest
-# docker push ghcr.io/os-tc-jesenice/sola-app:latest
-```
-
-Če nimaš registra, lahko sliko naložiš direktno v k3s:
-
-```bash
-# Option 1: Import v k3s
-sudo k3s ctr images import -i sola-app:latest
-
-# Option 2: Če imaš local Docker in k3s, uporabi
+# Uvozi v k3s (brez registra)
 docker save sola-app:latest | sudo k3s ctr images import -
 ```
 
-### 7.2 Ustvari namespace
+### 7.3 Ustvari namespace in Secret
 
 ```bash
 kubectl create namespace sola-app
-```
 
-### 7.3 Ustvari Secret
-
-```bash
 kubectl create secret generic sola-secrets \
   --namespace sola-app \
   --from-literal=MAIL_USERNAME=oscuf \
@@ -357,11 +328,11 @@ kubectl create configmap sola-config \
   --from-literal=PROSTORI='tablice,racunalnica,ladja'
 ```
 
-> **Pomembno:** Zamenjaj `<VARNOSTNO_GESLO>` z istim geslom kot v koraku 6.2.
+> Zamenjaj `<VARNOSTNO_GESLO>` z istim geslom kot v koraku 6.
 
 ### 7.5 Deployment manifest
 
-Ustvari datoteko `sola-deployment.yaml`:
+Ustvari `sola-deployment.yaml`:
 
 ```yaml
 apiVersion: apps/v1
@@ -388,20 +359,22 @@ spec:
                 matchExpressions:
                 - key: app
                   operator: In
-                  values:
-                  - sola-app
+                  values: [sola-app]
               topologyKey: kubernetes.io/hostname
+
       containers:
       - name: app
         image: sola-app:latest
         imagePullPolicy: IfNotPresent
         ports:
         - containerPort: 8002
+
         envFrom:
         - configMapRef:
             name: sola-config
         - secretRef:
             name: sola-secrets
+
         resources:
           requests:
             memory: "256Mi"
@@ -409,18 +382,30 @@ spec:
           limits:
             memory: "512Mi"
             cpu: "500m"
+
+        # /tmp na disku (ne na RAM tmpfs!) – pomembno za FastAPI
+        volumeMounts:
+        - name: tmp-volume
+          mountPath: /tmp
+
         readinessProbe:
           httpGet:
             path: /health
             port: 8002
-          initialDelaySeconds: 5
+          initialDelaySeconds: 8
           periodSeconds: 10
         livenessProbe:
           httpGet:
             path: /health
             port: 8002
-          initialDelaySeconds: 15
-          periodSeconds: 20
+          initialDelaySeconds: 20
+          periodSeconds: 30
+          failureThreshold: 5
+
+      volumes:
+      - name: tmp-volume
+        emptyDir:
+          sizeLimit: 2Gi
 ---
 apiVersion: v1
 kind: Service
@@ -436,32 +421,22 @@ spec:
     app: sola-app
 ```
 
-### 7.6 Deployaj aplikacijo
+### 7.6 Deployaj
 
 ```bash
 kubectl apply -f sola-deployment.yaml
 
-# Preveri deployment
+# Preveri
 kubectl -n sola-app get pods -o wide
-# Preveri, da so podi na različnih nodih
-
-# Preveri LoadBalancer IP
 kubectl -n sola-app get svc sola-app
 # EXTERNAL-IP naj bo iz MetalLB pool-a (npr. 192.168.1.200)
 ```
 
 ### 7.7 Uvozi uporabnike
 
-Ko aplikacija teče, uvozi uporabnike:
-
 ```bash
-# Najdi enega od podov
 POD=$(kubectl -n sola-app get pods -l app=sola-app -o jsonpath='{.items[0].metadata.name}')
-
-# Kopiraj CSV v pod
 kubectl -n sola-app cp ./uporabniki.csv $POD:/app/uporabniki.csv
-
-# Poženi import
 kubectl -n sola-app exec $POD -- python -m scripts.import_users
 ```
 
@@ -470,8 +445,6 @@ kubectl -n sola-app exec $POD -- python -m scripts.import_users
 ## 8. REVERSE PROXY (ostc.si)
 
 ### 8.1 Namesti nginx na master
-
-Ker ima master javni IP, na njem namestimo nginx kot reverse proxy.
 
 ```bash
 sudo apt-get install -y nginx certbot python3-certbot-nginx
@@ -485,17 +458,13 @@ Ustvari `/etc/nginx/sites-available/sola-app`:
 server {
     listen 80;
     server_name ostc.si;
-
-    location / {
-        return 301 https://$host$request_uri;
-    }
+    return 301 https://$host$request_uri;
 }
 
 server {
     listen 443 ssl http2;
     server_name ostc.si;
 
-    # SSL bo dodal certbot
     ssl_certificate /etc/letsencrypt/live/ostc.si/fullchain.pem;
     ssl_certificate_key /etc/letsencrypt/live/ostc.si/privkey.pem;
 
@@ -509,24 +478,18 @@ server {
 }
 ```
 
-> **Opomba:** `192.168.1.200` je MetalLB IP iz koraka 4.3. Prilagodi ga svojemu IP-ju.
+> `192.168.1.200` je MetalLB IP. Prilagodi.
 
-### 8.3 Omogoči stran in pridobi SSL certifikat
+### 8.3 Omogoči in SSL
 
 ```bash
 sudo ln -s /etc/nginx/sites-available/sola-app /etc/nginx/sites-enabled/
 sudo nginx -t
-
-# Pridobi SSL certifikat (če domena kaže na ta IP)
 sudo certbot --nginx -d ostc.si
-
-# Preveri
 curl -I https://ostc.si
 ```
 
 ### 8.4 Posodobi BASE_URL
-
-V ConfigMap spremeni BASE_URL:
 
 ```bash
 kubectl -n sola-app set env configmap/sola-config BASE_URL=https://ostc.si
@@ -537,9 +500,9 @@ kubectl -n sola-app rollout restart deployment/sola-app
 
 ## 9. AVTOMATSKI BACKUP NA EMAIL
 
-### 9.1 Ustvari CronJob
+### 9.1 CronJob manifest
 
-Ustvari datoteko `sola-backup-cronjob.yaml`:
+Ustvari `sola-backup-cronjob.yaml`:
 
 ```yaml
 apiVersion: batch/v1
@@ -548,7 +511,7 @@ metadata:
   name: sola-db-backup
   namespace: sola-app
 spec:
-  schedule: "0 3 * * *"  # Vsak dan ob 3:00 zjutraj
+  schedule: "0 3 * * *"  # Vsak dan ob 3:00
   concurrencyPolicy: Forbid
   jobTemplate:
     spec:
@@ -601,21 +564,14 @@ spec:
           restartPolicy: OnFailure
 ```
 
-### 9.2 Deployaj CronJob
-
 ```bash
 kubectl apply -f sola-backup-cronjob.yaml
-
-# Preveri
-kubectl -n sola-app get cronjob sola-db-backup
 ```
 
-### 9.3 Testiraj backup ročno
+### 9.2 Testiraj backup
 
 ```bash
 kubectl -n sola-app create job --from=cronjob/sola-db-backup manual-backup-test
-
-# Spremljaj log
 kubectl -n sola-app logs -l job-name=manual-backup-test --tail=50 -f
 ```
 
@@ -623,12 +579,7 @@ kubectl -n sola-app logs -l job-name=manual-backup-test --tail=50 -f
 
 ## 10. SKALIRANJE
 
-### 10.1 Prilagodi število replik
-
 ```bash
-# 2 repliki (1 na worker):
-kubectl -n sola-app scale deployment sola-app --replicas=2
-
 # 4 replike (2 na worker):
 kubectl -n sola-app scale deployment sola-app --replicas=4
 
@@ -636,21 +587,11 @@ kubectl -n sola-app scale deployment sola-app --replicas=4
 kubectl -n sola-app scale deployment sola-app --replicas=6
 ```
 
-### 10.2 Preveri razporeditev
-
-```bash
-kubectl -n sola-app get pods -o wide
-# Podi naj bodo enakomerno razporejeni po workerjih
-```
-
-### 10.3 Tabela replik
-
-| Replike | Node master | Node worker1 | Node worker2 | Skupaj na workerjih |
-|---------|------------|-------------|-------------|-------------------|
-| 2 | 0 | 1 | 1 | 2 |
-| 3 | 0 | 2 | 1 | 3 |
-| 4 | 0 | 2 | 2 | 4 |
-| 6 | 0 | 3 | 3 | 6 |
+| Replike | Master | Worker1 | Worker2 |
+|---------|--------|---------|---------|
+| 2 | 0 | 1 | 1 |
+| 4 | 0 | 2 | 2 |
+| 6 | 0 | 3 | 3 |
 
 ---
 
@@ -659,22 +600,15 @@ kubectl -n sola-app get pods -o wide
 ### 11.1 Posodobitev aplikacije
 
 ```bash
-# 1. Povleci spremembe
 cd /home/admin_os/reservation_app
 git pull
-
-# 2. Zgradi novo sliko
 docker build -t sola-app:latest .
-
-# 3. Uvozi v k3s
 docker save sola-app:latest | sudo k3s ctr images import -
-
-# 4. Rolling update
 kubectl -n sola-app rollout restart deployment/sola-app
 kubectl -n sola-app rollout status deployment/sola-app
 ```
 
-### 11.2 Roka za posodobitev baze
+### 11.2 Dump in obnovitev baze
 
 ```bash
 # Dump
@@ -686,320 +620,64 @@ cat ./sola-backup.sql | kubectl -n sola exec -i deploy/sola-postgresql -- psql -
 
 ### 11.3 Zamenjava master node
 
-Če master crkne in je nepovratno izgubljen:
-
 ```bash
 # 1. Na novi mašini namesti k3s server
 curl -sfL https://get.k3s.io | sudo sh -s - server \
   --disable=traefik --disable=servicelb --write-kubeconfig-mode=644
 
-# 2. Kopiraj staro `/var/lib/rancher/k3s/server/db/state.db` (če obstaja)
-# ali inicializiraj nov cluster
+# 2. Če Longhorn volume še obstajajo na workerjih:
+sudo systemctl restart k3s-agent  # na workerjih
 
-# 3. Če Longhorn volume še obstajajo na workerjih:
-# Na workerjih restartaj k3s agent:
-sudo systemctl restart k3s-agent
-
-# 4. Preveri
+# 3. Preveri
 kubectl get nodes
 ```
 
 ### 11.4 Dodajanje novega worker node
 
 ```bash
-# 1. Pridobi token (na masterju)
-sudo cat /var/lib/rancher/k3s/server/node-token
-
-# 2. Na novi mašini:
+sudo cat /var/lib/rancher/k3s/server/node-token  # na masterju
 curl -sfL https://get.k3s.io | sudo K3S_URL=https://<MASTER_IP>:6443 K3S_TOKEN=<TOKEN> sh -
-
-# 3. Namesti Longhorn preduvjete
 sudo apt-get install -y open-iscsi nfs-common
 sudo systemctl enable --now iscsid
-
-# 4. Preveri na masterju
-kubectl get nodes
 ```
 
 ---
 
 ## 12. UPORABNA POVEZAVE
 
-| Storitev | URL | Opis |
-|---|---|---|
-| Aplikacija | https://ostc.si | Šolski App preko reverse proxy |
-| Longhorn UI | `kubectl port-forward -n longhorn-system svc/longhorn-frontend 8080:80` | Longhorn dashboard na localhost:8080 |
-| MetalLB | `kubectl -n metallb-system get pods` | Load balancer status |
+| Storitev | URL / ukaz |
+|---|---|
+| Aplikacija | https://ostc.si |
+| Longhorn UI | `kubectl port-forward -n longhorn-system svc/longhorn-frontend 8080:80` → http://localhost:8080 |
 
 ---
 
 ## 13. ODPRAVLJANJE TEŽAV
 
 ### Pod se ne zažene
-
 ```bash
-# Preveri log
 kubectl -n sola-app logs <pod-name>
-
-# Preveri opis
 kubectl -n sola-app describe pod <pod-name>
 ```
 
 ### PostgreSQL se ne poveže
-
 ```bash
-# Preveri, da PostgreSQL teče
 kubectl -n sola get pods
-
-# Preveri povezavo iz poda
 kubectl -n sola-app exec <sola-pod> -- python3 -c "
-from app.config import settings
-from app.database import engine
-engine.connect()
-print('DB OK')
+from app.config import settings; from app.database import engine
+engine.connect(); print('DB OK')
 "
 ```
 
 ### MetalLB ne dodeli IP
-
 ```bash
-# Preveri pool
 kubectl -n metallb-system get ipaddresspool
-
-# Preveri servis
 kubectl -n sola-app describe svc sola-app
 ```
 
 ### Longhorn volume stuck
-
 ```bash
 kubectl -n longhorn-system get volumes
-# Če je volumen v stanju Degraded ali Faulted, preveri Longhorn UI
 kubectl -n longhorn-system port-forward svc/longhorn-frontend 8080:80
-# Nato odpri http://localhost:8080 v brskalniku
+# Odpri http://localhost:8080
 ```
-
-popravki za containerezacijo
-**✅ Popravljeno in izboljšano navodilo** — zdaj je **app pravilno containeriziran**.
-
-Tukaj je popravljena verzija **celotnega navodila**, s poudarkom na popravkih za containerizacijo.
-
----
-
-### Glavne popravke, ki sem jih naredil:
-
-- Dodal **popoln Dockerfile** (rešuje /tmp in /run težave)
-- Popravil Deployment (dodan volume za `/tmp` + boljše nastavitve)
-- Dodane najboljše prakse za FastAPI v Kubernetes
-- Manjše popravke po ostalih delih za konsistenco
-
----
-
-## 7. NAMESTITEV ŠOLSKI APP (popravljeno)
-
-### 7.1 Dockerfile (OBVEZNO!)
-
-Ustvari datoteko `Dockerfile` v korenu projekta (`/home/admin_os/reservation_app`):
-
-```dockerfile
-FROM python:3.11-slim AS builder
-
-WORKDIR /app
-
-# Sistemske odvisnosti
-RUN apt-get update && apt-get install -y --no-install-recommends \
-    gcc \
-    libpq-dev \
-    && rm -rf /var/lib/apt/lists/*
-
-COPY requirements.txt .
-RUN pip install --user --no-cache-dir -r requirements.txt
-
-# Final stage
-FROM python:3.11-slim
-
-WORKDIR /app
-
-# Sistemske odvisnosti za runtime
-RUN apt-get update && apt-get install -y --no-install-recommends \
-    libpq5 \
-    && rm -rf /var/lib/apt/lists/*
-
-# Non-root user
-RUN useradd -m -u 1000 appuser
-
-COPY --from=builder /root/.local /home/appuser/.local
-COPY . .
-
-RUN chown -R appuser:appuser /app
-USER appuser
-
-# Pomembno: /tmp kot volume (rešuje tmpfs polnjenje)
-VOLUME /tmp
-
-EXPOSE 8002
-
-ENV PATH=/home/appuser/.local/bin:$PATH \
-    PYTHONUNBUFFERED=1 \
-    PYTHONDONTWRITEBYTECODE=1
-
-CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8002", "--workers", "2"]
-```
-
-**Priporočilo:** Če hočeš Gunicorn (bolj stabilno):
-```dockerfile
-CMD ["gunicorn", "main:app", "-k", "uvicorn.workers.UvicornWorker", "--workers", "2", "--bind", "0.0.0.0:8002"]
-```
-
-### 7.2 .dockerignore
-
-Ustvari `.dockerignore`:
-```
-__pycache__
-*.pyc
-*.pyo
-.git
-.gitignore
-README.md
-Dockerfile
-.dockerignore
-```
-
-### 7.3 Zgradi sliko
-
-```bash
-cd /home/admin_os/reservation_app
-
-docker build -t sola-app:latest .
-# Uvoz v k3s
-docker save sola-app:latest | sudo k3s ctr images import -
-```
-
----
-
-### 7.4 Ustvari namespace in ConfigMap/Secret (ostane enako)
-
-```bash
-kubectl create namespace sola-app
-
-# Secret in ConfigMap (kot v originalu)
-```
-
----
-
-### 7.5 Popravljen Deployment (`sola-deployment.yaml`)
-
-```yaml
-apiVersion: apps/v1
-kind: Deployment
-metadata:
-  name: sola-app
-  namespace: sola-app
-spec:
-  replicas: 4
-  selector:
-    matchLabels:
-      app: sola-app
-  template:
-    metadata:
-      labels:
-        app: sola-app
-    spec:
-      affinity:
-        podAntiAffinity:
-          preferredDuringSchedulingIgnoredDuringExecution:
-          - weight: 100
-            podAffinityTerm:
-              labelSelector:
-                matchExpressions:
-                - key: app
-                  operator: In
-                  values: [sola-app]
-              topologyKey: kubernetes.io/hostname
-
-      containers:
-      - name: app
-        image: sola-app:latest
-        imagePullPolicy: IfNotPresent
-        ports:
-        - containerPort: 8002
-
-        envFrom:
-        - configMapRef:
-            name: sola-config
-        - secretRef:
-            name: sola-secrets
-
-        resources:
-          requests:
-            memory: "300Mi"
-            cpu: "150m"
-          limits:
-            memory: "600Mi"
-            cpu: "600m"
-
-        # Ključno: /tmp na disku (ne na RAM tmpfs!)
-        volumeMounts:
-        - name: tmp-volume
-          mountPath: /tmp
-
-        readinessProbe:
-          httpGet:
-            path: /health
-            port: 8002
-          initialDelaySeconds: 8
-          periodSeconds: 10
-        livenessProbe:
-          httpGet:
-            path: /health
-            port: 8002
-          initialDelaySeconds: 20
-          periodSeconds: 30
-          failureThreshold: 5
-
-      volumes:
-      - name: tmp-volume
-        emptyDir:
-          sizeLimit: 2Gi     # omejitev, da ne požre diska
-```
-
-### 7.6 Deploy
-
-```bash
-kubectl apply -f sola-deployment.yaml
-
-kubectl -n sola-app get pods -o wide
-kubectl -n sola-app get svc sola-app
-```
-
----
-
-## Dodatne izboljšave po navodilu
-
-### Priporočila za Dockerfile / app
-- Vsi **začasni fajli** naj se ustvarjajo v `/tmp` in se brišejo po uporabi (`tempfile.TemporaryDirectory()`).
-- Logi naj gredo na **stdout** (Kubernetes jih sam zbira).
-- Če imaš file upload-e → dodaj še en volume za `/app/uploads`.
-
-### Longhorn + App
-Ker imaš replike na različnih nodih, je zelo pomembno, da so vsi trajni podatki na **Longhorn PVC** (ne v containerju).
-
----
-
-**Ostali deli navodila** (1–6, 8–13) lahko ostanejo **enaki**, ker so dobro napisani. Glavni problem je bil v 7. delu.
-
----
-
-### Hitri test po deployu
-
-```bash
-# Preveri, če /tmp deluje
-kubectl -n sola-app exec -it <pod-name> -- df -h /tmp
-
-# Preveri loge
-kubectl -n sola-app logs -f <pod-name>
-```
-
-Če mi poveš, kaj natanko piše v `/tmp` (ali pošlješ del kode, kjer se ustvarjajo temp datoteke), ti lahko še dodatno optimiziram.
-
-Želiš, da ti pripravim **celotno popravljeno navodilo v eni datoteki** (vse skupaj), ali pa ti je ta verzija z dopolnitvami dovolj?
