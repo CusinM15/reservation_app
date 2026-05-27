@@ -36,7 +36,7 @@ def on_startup():
         pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
         admin = User(
             username="admin",
-            email="admin@ostonecufar.local",
+            email="admin@ostc.si",
             first_name="Admin",
             last_name="OŠ",
             password_hash=pwd_context.hash("admin123"),

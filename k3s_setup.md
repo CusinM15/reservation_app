@@ -26,8 +26,8 @@ ostc.si (Cloudflare / DNS)
           │              │              │
     ┌─────┴─────┐  ┌────┴─────┐  ┌────┴─────┐
     │  Master   │  │ Worker 1 │  │ Worker 2 │
-    │ostonecufar│  │          │  │          │
-    │           │  │ ┌──────┐ │  │ ┌──────┐ │
+    │k3s-master   │  │          │  │          │
+    │             │  │ ┌──────┐ │  │ ┌──────┐ │
     │PostgreSQL │  │ │sola  │ │  │ │sola  │ │
     │Longhorn   │  │ │pod   │ │  │ │pod   │ │
     │           │  │ └──────┘ │  │ └──────┘ │
@@ -55,7 +55,7 @@ ostc.si (Cloudflare / DNS)
 
 ## 1. NAMESTITEV MASTER NODE
 
-Prijavi se na master mašino (`ostonecufar`).
+Prijavi se na master mašino (`k3s-master`).
 
 ### 1.1 Namesti k3s server
 
@@ -310,7 +310,7 @@ kubectl create secret generic sola-secrets \
   --from-literal=MAIL_SERVER=mail.arnes.si \
   --from-literal=MAIL_PORT=587 \
   --from-literal=MAIL_FROM=os-toneta.cufarja-jesenice@guest.arnes.si \
-  --from-literal=BACKUP_EMAIL=admin@ostonecufar.local
+  --from-literal=BACKUP_EMAIL=admin@ostc.si
 ```
 
 ### 7.4 Ustvari ConfigMap
@@ -320,7 +320,7 @@ kubectl create configmap sola-config \
   --namespace sola-app \
   --from-literal=APP_HOST=0.0.0.0 \
   --from-literal=APP_PORT=8002 \
-  --from-literal=BASE_URL=https://ostonecufar.local \
+  --from-literal=BASE_URL=https://ostc.si \
   --from-literal=DATABASE_URL='postgresql://sola:<VARNOSTNO_GESLO>@sola-postgresql.sola:5432/sola' \
   --from-literal=TABLICE_MAX=28 \
   --from-literal=SCHEDULE='{"0":"07:30-08:15","1":"08:20-09:05","2":"09:15-10:00","3":"10:20-11:05","4":"11:10-11:55","5":"12:00-12:45","6":"12:50-13:35","7":"14:00-14:45"}' \

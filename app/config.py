@@ -22,7 +22,7 @@ class Settings:
     MAIL_PASSWORD = os.getenv("MAIL_PASSWORD", "")
     MAIL_SERVER = os.getenv("MAIL_SERVER", "mail.arnes.si")
     MAIL_PORT = int(os.getenv("MAIL_PORT", 587))
-    BACKUP_EMAIL = os.getenv("BACKUP_EMAIL", "admin@ostonecufar.local")
+    BACKUP_EMAIL = os.getenv("BACKUP_EMAIL", "admin@ostc.si")
 
 
 settings = Settings()
