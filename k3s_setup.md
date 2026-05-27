@@ -681,3 +681,293 @@ kubectl -n longhorn-system get volumes
 kubectl -n longhorn-system port-forward svc/longhorn-frontend 8080:80
 # Odpri http://localhost:8080
 ```
+
+Odlično, storageclass je zdaj pravilno nastavljen (`longhorn (default)`). Sedaj ti bom dal **vse YAML datoteke**, ki jih potrebuješ za deployment aplikacije. Shrani jih v mapo `~/reservation_app` na masterju.
+
+---
+
+## 📁 1. MetalLB konfiguracija (`metallb-config.yaml`)
+
+*Če je že obstajala, jo lahko prezreš; če ne, jo ustvari.*
+
+```yaml
+apiVersion: metallb.io/v1beta1
+kind: IPAddressPool
+metadata:
+  name: default-pool
+  namespace: metallb-system
+spec:
+  addresses:
+  - 193.2.171.200-193.2.171.210
+---
+apiVersion: metallb.io/v1beta1
+kind: L2Advertisement
+metadata:
+  name: default-advertisement
+  namespace: metallb-system
+```
+
+> **Prilagodi IP range** svojemu omrežju (preveri z `ip a` na masterju – če je master na `193.2.171.x`, pusti tako; če je na `192.168.1.x`, spremeni v `192.168.1.200-192.168.1.210`).
+
+Uporabi:
+```bash
+kubectl apply -f metallb-config.yaml
+```
+
+---
+
+## 📁 2. ConfigMap za aplikacijo (`sola-config.yaml`)
+
+**Pozor:** Zamenjaj `<VARNOSTNO_GESLO>` z geslom, ki si ga nastavil pri PostgreSQL namestitvi (v koraku 6, ko si z Helm namestil `sola-postgresql`). Če si ga pozabil, ga lahko dobiš z:
+```bash
+kubectl get secret -n sola sola-postgresql -o jsonpath='{.data.postgres-password}' | base64 -d
+```
+
+```yaml
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: sola-config
+  namespace: sola-app
+data:
+  APP_HOST: "0.0.0.0"
+  APP_PORT: "8002"
+  BASE_URL: "https://ostc.si"
+  DATABASE_URL: "postgresql://sola:<VARNOSTNO_GESLO>@sola-postgresql.sola:5432/sola"
+  TABLICE_MAX: "28"
+  SCHEDULE: '{"0":"07:30-08:15","1":"08:20-09:05","2":"09:15-10:00","3":"10:20-11:05","4":"11:10-11:55","5":"12:00-12:45","6":"12:50-13:35","7":"14:00-14:45"}'
+  RAZREDI: "IP/NIP/ID,1.a,1.b,1.c,1.č,2.a,2.b,2.c,2.č,3.a,3.b,3.c,3.č,4.a,4.b,4.c,4.č,5.a,5.b,5.c,5.č,6.a,6.b,6.c,6.č,7.a,7.b,7.c,8.a,8.b,8.c,8.č,8.1,8.2,8.3,8.4,8.5,8.6,9.a,9.b,9.c,9.1,9.2,9.3,9.4,9.5"
+  PROSTORI: "tablice,racunalnica,ladja"
+```
+
+Uporabi:
+```bash
+kubectl apply -f sola-config.yaml
+```
+
+---
+
+## 📁 3. Secret za aplikacijo (`sola-secrets.yaml`)
+
+**Priporočam, da ga ustvariš neposredno z ukazom** (brez shranjevanja YAML, ker vsebuje občutljive podatke):
+
+```bash
+kubectl create secret generic sola-secrets \
+  --namespace sola-app \
+  --from-literal=MAIL_USERNAME=oscuf \
+  --from-literal=MAIL_PASSWORD=wzdmccdt \
+  --from-literal=MAIL_SERVER=mail.arnes.si \
+  --from-literal=MAIL_PORT=587 \
+  --from-literal=MAIL_FROM=os-toneta.cufarja-jesenice@guest.arnes.si \
+  --from-literal=BACKUP_EMAIL=matej.cusin2@guest.arnes.si \
+  --dry-run=client -o yaml | kubectl apply -f -
+```
+
+Če hočeš shraniti YAML (npr. za varnostno kopijo), lahko izvoziš:
+```bash
+kubectl get secret sola-secrets -n sola-app -o yaml > sola-secrets.yaml
+```
+Vendar **ne committaj te datoteke v GitHub**!
+
+---
+
+## 📁 4. Deployment in Service (`sola-deployment.yaml`)
+
+```yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: sola-app
+  namespace: sola-app
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: sola-app
+  template:
+    metadata:
+      labels:
+        app: sola-app
+    spec:
+      affinity:
+        podAntiAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+          - weight: 100
+            podAffinityTerm:
+              labelSelector:
+                matchExpressions:
+                - key: app
+                  operator: In
+                  values: [sola-app]
+              topologyKey: kubernetes.io/hostname
+      containers:
+      - name: app
+        image: mato12345/sola-app:latest
+        imagePullPolicy: Always
+        ports:
+        - containerPort: 8002
+        envFrom:
+        - configMapRef:
+            name: sola-config
+        - secretRef:
+            name: sola-secrets
+        resources:
+          requests:
+            memory: "256Mi"
+            cpu: "100m"
+          limits:
+            memory: "512Mi"
+            cpu: "500m"
+        volumeMounts:
+        - name: tmp-volume
+          mountPath: /tmp
+        readinessProbe:
+          httpGet:
+            path: /health
+            port: 8002
+          initialDelaySeconds: 8
+          periodSeconds: 10
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 8002
+          initialDelaySeconds: 20
+          periodSeconds: 30
+          failureThreshold: 5
+      volumes:
+      - name: tmp-volume
+        emptyDir:
+          sizeLimit: 2Gi
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: sola-app
+  namespace: sola-app
+spec:
+  type: LoadBalancer
+  ports:
+  - port: 8002
+    targetPort: 8002
+  selector:
+    app: sola-app
+```
+
+Uporabi:
+```bash
+kubectl apply -f sola-deployment.yaml
+```
+
+Počakaj, da se podi zaženejo in da dobiš **EXTERNAL-IP**:
+```bash
+kubectl -n sola-app get svc sola-app -w
+```
+
+Ko se pojavi zunanji IP (npr. `193.2.171.200`), si ga zapiši – potreben bo za nginx.
+
+---
+
+## 📁 5. (Opcionalno) CronJob za backup (`sola-backup-cronjob.yaml`)
+
+```yaml
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: sola-db-backup
+  namespace: sola-app
+spec:
+  schedule: "0 3 * * *"
+  concurrencyPolicy: Forbid
+  jobTemplate:
+    spec:
+      template:
+        spec:
+          containers:
+          - name: backup
+            image: mato12345/sola-app:latest
+            imagePullPolicy: Always
+            command:
+            - python
+            - -m
+            - scripts.db_backup
+            env:
+            - name: DATABASE_URL
+              valueFrom:
+                configMapKeyRef:
+                  name: sola-config
+                  key: DATABASE_URL
+            - name: MAIL_USERNAME
+              valueFrom:
+                secretKeyRef:
+                  name: sola-secrets
+                  key: MAIL_USERNAME
+            - name: MAIL_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: sola-secrets
+                  key: MAIL_PASSWORD
+            - name: MAIL_SERVER
+              valueFrom:
+                secretKeyRef:
+                  name: sola-secrets
+                  key: MAIL_SERVER
+            - name: MAIL_PORT
+              valueFrom:
+                secretKeyRef:
+                  name: sola-secrets
+                  key: MAIL_PORT
+            - name: MAIL_FROM
+              valueFrom:
+                secretKeyRef:
+                  name: sola-secrets
+                  key: MAIL_FROM
+            - name: BACKUP_EMAIL
+              valueFrom:
+                secretKeyRef:
+                  name: sola-secrets
+                  key: BACKUP_EMAIL
+          restartPolicy: OnFailure
+```
+
+Uporabi:
+```bash
+kubectl apply -f sola-backup-cronjob.yaml
+```
+
+Testiraj:
+```bash
+kubectl -n sola-app create job --from=cronjob/sola-db-backup manual-backup-test
+kubectl -n sola-app logs -l job-name=manual-backup-test --tail=50 -f
+```
+
+---
+
+## 🚀 Po uspešnem deploymentu
+
+1. **Preveri, da so vsi podi Running**:
+   ```bash
+   kubectl -n sola-app get pods
+   ```
+
+2. **Pridobi EXTERNAL-IP** servisa (npr. `193.2.171.200`):
+   ```bash
+   kubectl -n sola-app get svc sola-app
+   ```
+
+3. **Namesti nginx reverse proxy** (na master OS, ne v K8s) – to bomo naredili, ko bo servis imel IP.
+
+4. **Uvozi uporabnike**:
+   ```bash
+   POD=$(kubectl -n sola-app get pods -l app=sola-app -o jsonpath='{.items[0].metadata.name}')
+   kubectl -n sola-app cp ./uporabniki.csv $POD:/app/uporabniki.csv
+   kubectl -n sola-app exec $POD -- python -m scripts.import_users
+   ```
+
+---
+
+Če imaš težave s povezavo na PostgreSQL (npr. podi se ne zaženejo zaradi `DATABASE_URL`), preveri, da si v ConfigMap vpisal pravilno geslo. Če ga ne veš, si ga poglej z:
+```bash
+kubectl get secret -n sola sola-postgresql -o jsonpath='{.data.postgres-password}' | base64 -d
+```
+
+Sporoči, ko boš imel servis z EXTERNAL-IP, in ti bom pomagal še z nginx in SSL.
