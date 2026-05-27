@@ -17,12 +17,13 @@ class Settings:
     BASE_URL = os.getenv("BASE_URL", "http://localhost:8001")
 
     # Email
-    MAIL_FROM = os.getenv("MAIL_FROM", "matej.cusin2+ocenjevanje@guest.arnes.si")
-    MAIL_USERNAME = os.getenv("MAIL_USERNAME", "matcus1")
+    MAIL_FROM = os.getenv("MAIL_FROM", "")
+    MAIL_USERNAME = os.getenv("MAIL_USERNAME", "")
     MAIL_PASSWORD = os.getenv("MAIL_PASSWORD", "")
     MAIL_SERVER = os.getenv("MAIL_SERVER", "mail.arnes.si")
     MAIL_PORT = int(os.getenv("MAIL_PORT", 587))
-    BACKUP_EMAIL = os.getenv("BACKUP_EMAIL", "admin@ostc.si")
+    BACKUP_EMAIL = os.getenv("BACKUP_EMAIL", "")
+    ADMIN_EMAIL = os.getenv("ADMIN_EMAIL", "admin@ostc.si")
 
 
 settings = Settings()

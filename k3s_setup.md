@@ -310,7 +310,7 @@ kubectl create secret generic sola-secrets \
   --from-literal=MAIL_SERVER=mail.arnes.si \
   --from-literal=MAIL_PORT=587 \
   --from-literal=MAIL_FROM=os-toneta.cufarja-jesenice@guest.arnes.si \
-  --from-literal=BACKUP_EMAIL=admin@ostc.si
+  --from-literal=BACKUP_EMAIL=matej.cusin2@guest.arnes.si
 ```
 
 ### 7.4 Ustvari ConfigMap
