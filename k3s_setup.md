@@ -682,292 +682,107 @@ kubectl -n longhorn-system port-forward svc/longhorn-frontend 8080:80
 # Odpri http://localhost:8080
 ```
 
-Odlično, storageclass je zdaj pravilno nastavljen (`longhorn (default)`). Sedaj ti bom dal **vse YAML datoteke**, ki jih potrebuješ za deployment aplikacije. Shrani jih v mapo `~/reservation_app` na masterju.
 
 ---
 
-## 📁 1. MetalLB konfiguracija (`metallb-config.yaml`)
+## 2. 🌐 Nastavitev reverse proxy na `ostc.si/solski-app`
 
-*Če je že obstajala, jo lahko prezreš; če ne, jo ustvari.*
+Ker želiš, da aplikacija deluje na poti `/solski-app`, moramo nginx konfigurirati tako, da:
 
-```yaml
-apiVersion: metallb.io/v1beta1
-kind: IPAddressPool
-metadata:
-  name: default-pool
-  namespace: metallb-system
-spec:
-  addresses:
-  - 193.2.171.200-193.2.171.210
----
-apiVersion: metallb.io/v1beta1
-kind: L2Advertisement
-metadata:
-  name: default-advertisement
-  namespace: metallb-system
-```
+- Sprejema zahteve na `ostc.si/solski-app`
+- Jih posreduje na `http://193.2.171.200:8002` **brez** poti `/solski-app` (če app pričakuje koren) ali **s potjo** (odvisno od app-a).
 
-> **Prilagodi IP range** svojemu omrežju (preveri z `ip a` na masterju – če je master na `193.2.171.x`, pusti tako; če je na `192.168.1.x`, spremeni v `192.168.1.200-192.168.1.210`).
+Tvoja aplikacija je verjetno napisana za koren (`/`), zato bomo v nginx-u odstranili prefiks `/solski-app` s pravilom `rewrite` ali `proxy_pass` z `location /solski-app/`.
 
-Uporabi:
-```bash
-kubectl apply -f metallb-config.yaml
-```
+### Predpogoji
 
----
+- `ostc.si` DNS naj kaže na javni IP tvojega master vozlišča (kjer bo tekel nginx).
+- MetalLB naslov `193.2.171.200` je dosegljiv iz masterja (ker sta v istem omrežju).
 
-## 📁 2. ConfigMap za aplikacijo (`sola-config.yaml`)
-
-**Pozor:** Zamenjaj `<VARNOSTNO_GESLO>` z geslom, ki si ga nastavil pri PostgreSQL namestitvi (v koraku 6, ko si z Helm namestil `sola-postgresql`). Če si ga pozabil, ga lahko dobiš z:
-```bash
-kubectl get secret -n sola sola-postgresql -o jsonpath='{.data.postgres-password}' | base64 -d
-```
-
-```yaml
-apiVersion: v1
-kind: ConfigMap
-metadata:
-  name: sola-config
-  namespace: sola-app
-data:
-  APP_HOST: "0.0.0.0"
-  APP_PORT: "8002"
-  BASE_URL: "https://ostc.si"
-  DATABASE_URL: "postgresql://sola:<VARNOSTNO_GESLO>@sola-postgresql.sola:5432/sola"
-  TABLICE_MAX: "28"
-  SCHEDULE: '{"0":"07:30-08:15","1":"08:20-09:05","2":"09:15-10:00","3":"10:20-11:05","4":"11:10-11:55","5":"12:00-12:45","6":"12:50-13:35","7":"14:00-14:45"}'
-  RAZREDI: "IP/NIP/ID,1.a,1.b,1.c,1.č,2.a,2.b,2.c,2.č,3.a,3.b,3.c,3.č,4.a,4.b,4.c,4.č,5.a,5.b,5.c,5.č,6.a,6.b,6.c,6.č,7.a,7.b,7.c,8.a,8.b,8.c,8.č,8.1,8.2,8.3,8.4,8.5,8.6,9.a,9.b,9.c,9.1,9.2,9.3,9.4,9.5"
-  PROSTORI: "tablice,racunalnica,ladja"
-```
-
-Uporabi:
-```bash
-kubectl apply -f sola-config.yaml
-```
-
----
-
-## 📁 3. Secret za aplikacijo (`sola-secrets.yaml`)
-
-**Priporočam, da ga ustvariš neposredno z ukazom** (brez shranjevanja YAML, ker vsebuje občutljive podatke):
+### Namestitev nginx na master (OS)
 
 ```bash
-kubectl create secret generic sola-secrets \
-  --namespace sola-app \
-  --from-literal=MAIL_USERNAME=oscuf \
-  --from-literal=MAIL_PASSWORD=wzdmccdt \
-  --from-literal=MAIL_SERVER=mail.arnes.si \
-  --from-literal=MAIL_PORT=587 \
-  --from-literal=MAIL_FROM=os-toneta.cufarja-jesenice@guest.arnes.si \
-  --from-literal=BACKUP_EMAIL=matej.cusin2@guest.arnes.si \
-  --dry-run=client -o yaml | kubectl apply -f -
+sudo apt update && sudo apt install -y nginx certbot python3-certbot-nginx
 ```
 
-Če hočeš shraniti YAML (npr. za varnostno kopijo), lahko izvoziš:
-```bash
-kubectl get secret sola-secrets -n sola-app -o yaml > sola-secrets.yaml
+### Konfiguracija nginx (z upoštevanjem podpoti)
+
+Ustvari `/etc/nginx/sites-available/sola-app`:
+
+```nginx
+server {
+    listen 80;
+    server_name ostc.si;
+    return 301 https://$host$request_uri;
+}
+
+server {
+    listen 443 ssl http2;
+    server_name ostc.si;
+
+    ssl_certificate /etc/letsencrypt/live/ostc.si/fullchain.pem;
+    ssl_certificate_key /etc/letsencrypt/live/ostc.si/privkey.pem;
+
+    # Glavna lokacija za aplikacijo pod /solski-app
+    location /solski-app/ {
+        proxy_pass http://193.2.171.200:8002/;   # končna poševnica odstrani /solski-app
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_set_header X-Forwarded-Prefix /solski-app;
+    }
+
+    # Če želiš, da tudi koren (ostc.si) kamorkoli preusmeri, lahko dodaš:
+    location / {
+        return 302 https://ostc.si/solski-app/;
+    }
+}
 ```
-Vendar **ne committaj te datoteke v GitHub**!
+
+> **Pomembno**: `proxy_pass http://193.2.171.200:8002/;` s končno poševnico **odstrani** prefiks `/solski-app` iz zahteve. Tako app dobi zahtevo na `/` (koren). Če pa tvoj app pričakuje, da bo gostoval pod `/solski-app` (ima npr. `root_path="/solski-app"`), potem pusti `proxy_pass http://193.2.171.200:8002;` (brez končne poševnice) in dodaš `proxy_set_header X-Forwarded-Prefix /solski-app;` (že zgoraj).
+
+### Omogoči in pridobi SSL
+
+```bash
+sudo ln -s /etc/nginx/sites-available/sola-app /etc/nginx/sites-enabled/
+sudo nginx -t
+sudo certbot --nginx -d ostc.si
+```
+
+Po pridobitvi SSL bo nginx samodejno uporabljal HTTPS.
 
 ---
 
-## 📁 4. Deployment in Service (`sola-deployment.yaml`)
+## 3. ⚙️ Posodobi `BASE_URL` v ConfigMap
 
-```yaml
-apiVersion: apps/v1
-kind: Deployment
-metadata:
-  name: sola-app
-  namespace: sola-app
-spec:
-  replicas: 2
-  selector:
-    matchLabels:
-      app: sola-app
-  template:
-    metadata:
-      labels:
-        app: sola-app
-    spec:
-      affinity:
-        podAntiAffinity:
-          preferredDuringSchedulingIgnoredDuringExecution:
-          - weight: 100
-            podAffinityTerm:
-              labelSelector:
-                matchExpressions:
-                - key: app
-                  operator: In
-                  values: [sola-app]
-              topologyKey: kubernetes.io/hostname
-      containers:
-      - name: app
-        image: mato12345/sola-app:latest
-        imagePullPolicy: Always
-        ports:
-        - containerPort: 8002
-        envFrom:
-        - configMapRef:
-            name: sola-config
-        - secretRef:
-            name: sola-secrets
-        resources:
-          requests:
-            memory: "256Mi"
-            cpu: "100m"
-          limits:
-            memory: "512Mi"
-            cpu: "500m"
-        volumeMounts:
-        - name: tmp-volume
-          mountPath: /tmp
-        readinessProbe:
-          httpGet:
-            path: /health
-            port: 8002
-          initialDelaySeconds: 8
-          periodSeconds: 10
-        livenessProbe:
-          httpGet:
-            path: /health
-            port: 8002
-          initialDelaySeconds: 20
-          periodSeconds: 30
-          failureThreshold: 5
-      volumes:
-      - name: tmp-volume
-        emptyDir:
-          sizeLimit: 2Gi
----
-apiVersion: v1
-kind: Service
-metadata:
-  name: sola-app
-  namespace: sola-app
-spec:
-  type: LoadBalancer
-  ports:
-  - port: 8002
-    targetPort: 8002
-  selector:
-    app: sola-app
-```
+Aplikacija bo zdaj dostopna na `https://ostc.si/solski-app/`, zato mora `BASE_URL` kazati tja:
 
-Uporabi:
 ```bash
-kubectl apply -f sola-deployment.yaml
-```
-
-Počakaj, da se podi zaženejo in da dobiš **EXTERNAL-IP**:
-```bash
-kubectl -n sola-app get svc sola-app -w
-```
-
-Ko se pojavi zunanji IP (npr. `193.2.171.200`), si ga zapiši – potreben bo za nginx.
-
----
-
-## 📁 5. (Opcionalno) CronJob za backup (`sola-backup-cronjob.yaml`)
-
-```yaml
-apiVersion: batch/v1
-kind: CronJob
-metadata:
-  name: sola-db-backup
-  namespace: sola-app
-spec:
-  schedule: "0 3 * * *"
-  concurrencyPolicy: Forbid
-  jobTemplate:
-    spec:
-      template:
-        spec:
-          containers:
-          - name: backup
-            image: mato12345/sola-app:latest
-            imagePullPolicy: Always
-            command:
-            - python
-            - -m
-            - scripts.db_backup
-            env:
-            - name: DATABASE_URL
-              valueFrom:
-                configMapKeyRef:
-                  name: sola-config
-                  key: DATABASE_URL
-            - name: MAIL_USERNAME
-              valueFrom:
-                secretKeyRef:
-                  name: sola-secrets
-                  key: MAIL_USERNAME
-            - name: MAIL_PASSWORD
-              valueFrom:
-                secretKeyRef:
-                  name: sola-secrets
-                  key: MAIL_PASSWORD
-            - name: MAIL_SERVER
-              valueFrom:
-                secretKeyRef:
-                  name: sola-secrets
-                  key: MAIL_SERVER
-            - name: MAIL_PORT
-              valueFrom:
-                secretKeyRef:
-                  name: sola-secrets
-                  key: MAIL_PORT
-            - name: MAIL_FROM
-              valueFrom:
-                secretKeyRef:
-                  name: sola-secrets
-                  key: MAIL_FROM
-            - name: BACKUP_EMAIL
-              valueFrom:
-                secretKeyRef:
-                  name: sola-secrets
-                  key: BACKUP_EMAIL
-          restartPolicy: OnFailure
-```
-
-Uporabi:
-```bash
-kubectl apply -f sola-backup-cronjob.yaml
-```
-
-Testiraj:
-```bash
-kubectl -n sola-app create job --from=cronjob/sola-db-backup manual-backup-test
-kubectl -n sola-app logs -l job-name=manual-backup-test --tail=50 -f
+kubectl -n sola-app set env configmap/sola-config BASE_URL=https://ostc.si/solski-app
+kubectl -n sola-app rollout restart deployment/sola-app
 ```
 
 ---
 
-## 🚀 Po uspešnem deploymentu
+## 4. 🧪 Testiranje
 
-1. **Preveri, da so vsi podi Running**:
-   ```bash
-   kubectl -n sola-app get pods
-   ```
+Ko je nginx nastavljen in app podi stabilni, odpri brskalnik na `https://ostc.si/solski-app/`. Če app nima posebnega usmerjanja, bi morala biti prikazana (npr. loginska stran).
 
-2. **Pridobi EXTERNAL-IP** servisa (npr. `193.2.171.200`):
-   ```bash
-   kubectl -n sola-app get svc sola-app
-   ```
+Če še vedno dobivaš `502 Bad Gateway`, preveri, da nginx dosega MetalLB naslov:
 
-3. **Namesti nginx reverse proxy** (na master OS, ne v K8s) – to bomo naredili, ko bo servis imel IP.
+```bash
+curl -I http://193.2.171.200:8002/health
+```
 
-4. **Uvozi uporabnike**:
-   ```bash
-   POD=$(kubectl -n sola-app get pods -l app=sola-app -o jsonpath='{.items[0].metadata.name}')
-   kubectl -n sola-app cp ./uporabniki.csv $POD:/app/uporabniki.csv
-   kubectl -n sola-app exec $POD -- python -m scripts.import_users
-   ```
+Če to deluje, potem je težava v nginx konfiguraciji.
 
 ---
 
-Če imaš težave s povezavo na PostgreSQL (npr. podi se ne zaženejo zaradi `DATABASE_URL`), preveri, da si v ConfigMap vpisal pravilno geslo. Če ga ne veš, si ga poglej z:
-```bash
-kubectl get secret -n sola sola-postgresql -o jsonpath='{.data.postgres-password}' | base64 -d
-```
+## 5. 🧹 Glede backupa
 
-Sporoči, ko boš imel servis z EXTERNAL-IP, in ti bom pomagal še z nginx in SSL.
+Backup (CronJob) bo deloval, ko bo aplikacija stabilna in ko bo `pg_dump` prisoten v sliki (kot sva že popravila Dockerfile). Worker node ni potreben za backup, saj se job izvaja na kateremkoli nodu (verjetno master). Ker si že posodobil Dockerfile in ponovno buildal ter pushal sliko, bo novi pod uporabil pravilno sliko. Toda najprej rešiva, da app sploh teče.
+
+---
+
+Počakam na izpis logov (iz koraka 1), da vidiva, zakaj se podi restartajo. Brez tega ne bova mogla stabilno postaviti app-a.
