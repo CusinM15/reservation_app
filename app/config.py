@@ -13,7 +13,9 @@ class Settings:
     TABLICE_MAX = int(os.getenv("TABLICE_MAX", 28))
     SCHEDULE = json.loads(os.getenv("SCHEDULE", "{}"))
     RAZREDI = os.getenv("RAZREDI", "").split(",")
+    RAZREDI = [r for r in RAZREDI if r]  # filtriramo prazne
     PROSTORI = os.getenv("PROSTORI", "").split(",")
+    PROSTORI = [p for p in PROSTORI if p]  # filtriramo prazne
     BASE_URL = os.getenv("BASE_URL", "http://localhost:8001")
 
     # Email

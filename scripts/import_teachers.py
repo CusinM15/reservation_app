@@ -6,8 +6,8 @@ import_teachers.py
 Uvozi vse učitelje z javne strani OŠ Toneta Čufarja
 (https://www.tonecufar.si/o-soli/zaposleni/) v Šolski App.
 
-Gesla se NE shranjujejo lokalno. Vsak učitelj dobi email za
-ponastavitev gesla (forgot-password) takoj po uvozu.
+Gesla se NE shranjujejo lokalno. Učitelji si geslo nastavijo
+sami preko 'Pozabljeno geslo' na login strani.
 
 Pravila:
   - username = email
@@ -198,12 +198,6 @@ def create_user(session: requests.Session, base_url: str, t: Teacher) -> str:
     return "created"
 
 
-def trigger_forgot_password(session: requests.Session, base_url: str, email: str) -> None:
-    """Pošlji email za ponastavitev gesla (forgot-password)."""
-    url = base_url.rstrip("/") + "/auth/forgot-password"
-    session.post(url, data={"email": email}, allow_redirects=False)
-
-
 # ── Main ──────────────────────────────────────────────────────────────
 
 def main(argv: Iterable[str] | None = None) -> int:
@@ -251,23 +245,17 @@ def main(argv: Iterable[str] | None = None) -> int:
     login(session, args.base_url, args.admin_user, args.admin_pass)
 
     print(f"[3/4] Ustvarjam {len(teachers)} uporabnikov ...", file=sys.stderr)
-    forgot_sent = 0
     for i, t in enumerate(teachers, 1):
         t.status = create_user(session, args.base_url, t)
         marker = {"created": "✓", "exists": "·"}.get(t.status, "✗")
         print(f"  [{i:3d}/{len(teachers)}] {marker} {t.email}  [{t.status}]", file=sys.stderr)
-        if t.status == "created":
-            trigger_forgot_password(session, args.base_url, t.email)
-            forgot_sent += 1
-            if forgot_sent % 5 == 0:
-                print(f"      → forgot-password poslan za {forgot_sent} učiteljev", file=sys.stderr)
 
     created = sum(1 for t in teachers if t.status == "created")
     exists = sum(1 for t in teachers if t.status == "exists")
     errors = sum(1 for t in teachers if t.status.startswith("error"))
     print(f"\nPovzetek: {created} ustvarjenih, {exists} že obstaja, {errors} napak.", file=sys.stderr)
-    print(f"Forgot-password email poslan: {forgot_sent}", file=sys.stderr)
-    print(f"Gesla NISO shranjena lokalno — uporabniki si jih nastavijo preko forgot-password.", file=sys.stderr)
+    print(f"Gesla NISO shranjena lokalno.", file=sys.stderr)
+    print(f"Učitelji naj kliknejo 'Pozabljeno geslo' na login strani za nastavitev gesla.", file=sys.stderr)
     return 0 if errors == 0 else 1
 
 
