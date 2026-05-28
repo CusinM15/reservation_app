@@ -124,6 +124,11 @@
           </div>
           <button class="btn btn-primary" onclick="loadAllReservations()">Osveži</button>
           <button class="btn btn-outline" onclick="openRezModal()">+ Nova rezervacija</button>
+          <!-- Gumbi za serije (samo admin/vodstvo) -->
+          <div id="series-buttons" style="display:none;">
+            <button class="btn btn-outline" onclick="openWeeklySeriesModal()">📅 Tedenska serija</button>
+            <button class="btn btn-outline" onclick="openFullDaySeriesModal()">☀️ Celodnevna serija</button>
+          </div>
         </div>
 
         <div class="prostor-tabs" id="prostor-tabs"></div>
@@ -175,6 +180,96 @@
       <div class="form-actions">
         <button class="btn btn-cancel" onclick="closeModal('rez-modal')">Prekliči</button>
         <button class="btn btn-primary" onclick="submitRezervacija()">Shrani</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== MODAL - Tedenska serija ===== -->
+  <div class="modal-overlay" id="weekly-series-modal">
+    <div class="modal" style="max-width:500px;">
+      <h3>Tedenska ponavljajoča rezervacija</h3>
+      <div class="form-group">
+        <label>Prostor</label>
+        <select id="weekly-prostor"></select>
+      </div>
+      <div class="form-group">
+        <label>Ura (0-7)</label>
+        <input type="number" id="weekly-hour" min="0" max="7" step="1" value="0">
+      </div>
+      <div class="form-group">
+        <label>Dan v tednu (0=Pon, 6=Ned)</label>
+        <input type="number" id="weekly-weekday" min="0" max="6" step="1" value="0">
+      </div>
+      <div class="form-group">
+        <label>Od datuma</label>
+        <input type="date" id="weekly-date-from">
+      </div>
+      <div class="form-group">
+        <label>Do datuma</label>
+        <input type="date" id="weekly-date-to">
+      </div>
+      <div class="form-group">
+        <label>Razred (npr. 7a)</label>
+        <input type="text" id="weekly-razred" placeholder="Izbirno">
+      </div>
+      <div class="form-group">
+        <label>ID učitelja</label>
+        <input type="number" id="weekly-teacher-id" value="1" step="1">
+      </div>
+      <div class="form-group" id="weekly-qty-group">
+        <label>Število tablic (samo za tablice)</label>
+        <input type="number" id="weekly-qty" min="1" max="28" value="1">
+      </div>
+      <div class="form-checkbox">
+        <input type="checkbox" id="weekly-skip-conflicts">
+        <label>Preskoči konfliktne termine (namesto napake)</label>
+      </div>
+      <div class="form-actions">
+        <button class="btn btn-cancel" onclick="closeModal('weekly-series-modal')">Prekliči</button>
+        <button class="btn btn-primary" onclick="submitWeeklySeries()">Ustvari serijo</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== MODAL - Celodnevna serija ===== -->
+  <div class="modal-overlay" id="fullday-series-modal">
+    <div class="modal" style="max-width:500px;">
+      <h3>Celodnevna serija (vse ure)</h3>
+      <div class="form-group">
+        <label>Prostor</label>
+        <select id="fullday-prostor"></select>
+      </div>
+      <div class="form-group">
+        <label>Od datuma</label>
+        <input type="date" id="fullday-date-from">
+      </div>
+      <div class="form-group">
+        <label>Do datuma</label>
+        <input type="date" id="fullday-date-to">
+      </div>
+      <div class="form-group">
+        <label>Razred (npr. 7a)</label>
+        <input type="text" id="fullday-razred" placeholder="Izbirno">
+      </div>
+      <div class="form-group">
+        <label>ID učitelja</label>
+        <input type="number" id="fullday-teacher-id" value="1" step="1">
+      </div>
+      <div class="form-group" id="fullday-qty-group">
+        <label>Število tablic (samo za tablice)</label>
+        <input type="number" id="fullday-qty" min="1" max="28" value="1">
+      </div>
+      <div class="form-group">
+        <label>Ure (prazno za vse, npr. 0,1,2)</label>
+        <input type="text" id="fullday-hours" placeholder="0,1,2">
+      </div>
+      <div class="form-checkbox">
+        <input type="checkbox" id="fullday-skip-conflicts">
+        <label>Preskoči konfliktne termine</label>
+      </div>
+      <div class="form-actions">
+        <button class="btn btn-cancel" onclick="closeModal('fullday-series-modal')">Prekliči</button>
+        <button class="btn btn-primary" onclick="submitFullDaySeries()">Ustvari serijo</button>
       </div>
     </div>
   </div>
@@ -310,10 +405,21 @@
         } else {
           btnContainer.style.display = 'none';
         }
+
+        // Show series buttons for admin/vodstvo
+        const seriesDiv = document.getElementById('series-buttons');
+        if (currentUser.role === 'admin' || currentUser.role === 'vodstvo') {
+          seriesDiv.style.display = 'inline-flex';
+          seriesDiv.style.gap = '0.5rem';
+        } else {
+          seriesDiv.style.display = 'none';
+        }
       }
 
       // Populate selects
       populateSelect('rez-form-prostor', prostori);
+      populateSelect('weekly-prostor', prostori);
+      populateSelect('fullday-prostor', prostori);
       populateOcRazredi('oc-razred', razredi, true);
       populateOcRazredi('oc-form-razred', razredi);
       populateHours('rez-form-hour');
@@ -610,6 +716,127 @@
       } catch(e) {}
     }
 
+    // ── Series modals and submission ──
+    function openWeeklySeriesModal() {
+      document.getElementById('weekly-prostor').value = prostori[0] || '';
+      document.getElementById('weekly-hour').value = '0';
+      document.getElementById('weekly-weekday').value = '0';
+      const today = new Date().toISOString().split('T')[0];
+      document.getElementById('weekly-date-from').value = today;
+      const nextMonth = new Date();
+      nextMonth.setMonth(nextMonth.getMonth() + 3);
+      document.getElementById('weekly-date-to').value = nextMonth.toISOString().split('T')[0];
+      document.getElementById('weekly-razred').value = '';
+      document.getElementById('weekly-teacher-id').value = currentUser ? currentUser.id : 1;
+      document.getElementById('weekly-qty').value = '1';
+      document.getElementById('weekly-skip-conflicts').checked = false;
+      // Show/hide qty based on selected prostor
+      const prostorSelect = document.getElementById('weekly-prostor');
+      const qtyGroup = document.getElementById('weekly-qty-group');
+      const toggleQty = () => { qtyGroup.style.display = prostorSelect.value === 'tablice' ? 'block' : 'none'; };
+      prostorSelect.addEventListener('change', toggleQty);
+      toggleQty();
+      openModal('weekly-series-modal');
+    }
+
+    async function submitWeeklySeries() {
+      const prostor = document.getElementById('weekly-prostor').value;
+      const data = {
+        prostor: prostor,
+        hour: parseInt(document.getElementById('weekly-hour').value),
+        weekday: parseInt(document.getElementById('weekly-weekday').value),
+        date_from: document.getElementById('weekly-date-from').value,
+        date_to: document.getElementById('weekly-date-to').value,
+        razred: document.getElementById('weekly-razred').value || null,
+        teacher_id: parseInt(document.getElementById('weekly-teacher-id').value),
+        skip_conflicts: document.getElementById('weekly-skip-conflicts').checked,
+      };
+      if (prostor === 'tablice') {
+        data.qty = parseInt(document.getElementById('weekly-qty').value) || 1;
+      }
+
+      try {
+        const res = await fetch('/api/rezervacije/series/weekly', {
+          method: 'POST',
+          headers: {'Content-Type': 'application/json'},
+          credentials: 'include',
+          body: JSON.stringify(data),
+        });
+        const json = await res.json();
+        if (res.ok) {
+          showMsg(`Serija ustvarjena (${json.created} terminov). Preskočeni: ${json.skipped?.length || 0}`, 'success');
+          closeModal('weekly-series-modal');
+          loadAllReservations();
+        } else {
+          showMsg(json.detail || 'Napaka pri ustvarjanju serije.', 'error');
+        }
+      } catch(e) {
+        showMsg('Napaka pri povezavi s strežnikom.', 'error');
+      }
+    }
+
+    function openFullDaySeriesModal() {
+      document.getElementById('fullday-prostor').value = prostori[0] || '';
+      const today = new Date().toISOString().split('T')[0];
+      document.getElementById('fullday-date-from').value = today;
+      const nextWeek = new Date();
+      nextWeek.setDate(nextWeek.getDate() + 7);
+      document.getElementById('fullday-date-to').value = nextWeek.toISOString().split('T')[0];
+      document.getElementById('fullday-razred').value = '';
+      document.getElementById('fullday-teacher-id').value = currentUser ? currentUser.id : 1;
+      document.getElementById('fullday-qty').value = '1';
+      document.getElementById('fullday-hours').value = '';
+      document.getElementById('fullday-skip-conflicts').checked = false;
+      const prostorSelect = document.getElementById('fullday-prostor');
+      const qtyGroup = document.getElementById('fullday-qty-group');
+      const toggleQty = () => { qtyGroup.style.display = prostorSelect.value === 'tablice' ? 'block' : 'none'; };
+      prostorSelect.addEventListener('change', toggleQty);
+      toggleQty();
+      openModal('fullday-series-modal');
+    }
+
+    async function submitFullDaySeries() {
+      const prostor = document.getElementById('fullday-prostor').value;
+      let hours = document.getElementById('fullday-hours').value;
+      let hoursArray = null;
+      if (hours && hours.trim() !== '') {
+        hoursArray = hours.split(',').map(h => parseInt(h.trim())).filter(n => !isNaN(n));
+      }
+      const data = {
+        prostor: prostor,
+        date_from: document.getElementById('fullday-date-from').value,
+        date_to: document.getElementById('fullday-date-to').value,
+        razred: document.getElementById('fullday-razred').value || null,
+        teacher_id: parseInt(document.getElementById('fullday-teacher-id').value),
+        skip_conflicts: document.getElementById('fullday-skip-conflicts').checked,
+      };
+      if (prostor === 'tablice') {
+        data.qty = parseInt(document.getElementById('fullday-qty').value) || 1;
+      }
+      if (hoursArray && hoursArray.length > 0) {
+        data.hours = hoursArray;
+      }
+
+      try {
+        const res = await fetch('/api/rezervacije/series/full-day', {
+          method: 'POST',
+          headers: {'Content-Type': 'application/json'},
+          credentials: 'include',
+          body: JSON.stringify(data),
+        });
+        const json = await res.json();
+        if (res.ok) {
+          showMsg(`Celodnevna serija ustvarjena (${json.created} terminov). Preskočeni: ${json.skipped?.length || 0}`, 'success');
+          closeModal('fullday-series-modal');
+          loadAllReservations();
+        } else {
+          showMsg(json.detail || 'Napaka pri ustvarjanju serije.', 'error');
+        }
+      } catch(e) {
+        showMsg('Napaka pri povezavi s strežnikom.', 'error');
+      }
+    }
+
     // ── Reservations ──
     function switchProstor(p) {
       document.querySelectorAll('.prostor-tab').forEach(t => t.classList.toggle('active', t.dataset.prostor === p));
@@ -670,11 +897,11 @@
       const dayNames = ['Ponedeljek', 'Torek', 'Sreda', 'Četrtek', 'Petek'];
       const hours = Object.entries(schedule);
 
-      html += `<table><thead><tr><th>Ura</th>`;
+      html += `<tr><thead><tr><th>Ura</th>`;
       days.forEach((d, i) => {
         html += `<th>${dayNames[i]}<br><small>${formatDateSI(d)}</small></th>`;
       });
-      html += `</tr></thead><tbody>`;
+      html += `</thead><tbody>`;
 
       for (const [hourIdx, hourLabel] of hours) {
         html += `<tr><td><strong>${hourIdx}</strong><br><small>${hourLabel}</small></td>`;
