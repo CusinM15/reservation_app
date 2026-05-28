@@ -6,7 +6,7 @@ metadata:
 data:
   APP_HOST: "0.0.0.0"
   APP_PORT: "8002"
-  BASE_URL: "https://ostc.si/solski-app"
+  BASE_URL: "https://sola-app.ostc.si"
   DATABASE_URL: "postgresql://sola:sTTLuGg5b8uqp9CTZNE0@sola-postgresql.sola:5432/sola"
   TABLICE_MAX: "28"
   SCHEDULE: '{"0":"07:30-08:15","1":"08:20-09:05","2":"09:15-10:00","3":"10:20-11:05","4":"11:10-11:55","5":"12:00-12:45","6":"12:50-13:35","7":"14:00-14:45"}'
