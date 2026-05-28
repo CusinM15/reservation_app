@@ -6,42 +6,33 @@ import_teachers.py
 Uvozi vse učitelje z javne strani OŠ Toneta Čufarja
 (https://www.tonecufar.si/o-soli/zaposleni/) v Šolski App.
 
+Gesla se NE shranjujejo lokalno. Vsak učitelj dobi email za
+ponastavitev gesla (forgot-password) takoj po uvozu.
+
 Pravila:
   - username = email
-  - geslo se generira: 7 znakov, vsebuje >=1 malo, >=1 veliko, >=1 številko
-    (skladno z validate_password_strength v app/config.py — min 5 znakov,
-    7 znakov da malce več varnosti, kot je zahteval naročnik).
+  - geslo se generira začasno samo za klic API-ja (nikoli na disk)
   - vloga (role):
         VODSTVO            -> "vodstvo"
         vsi ostali tabi    -> "teacher"
-        (administracija/tehnično lahko preskočiš s --skip-non-teaching)
-  - če uporabnik z istim username že obstaja, ga PRESKOČI (server vrne
-    redirect z ?error=Uporabnik%20že%20obstaja, kar ujamemo).
+  - če uporabnik že obstaja, se preskoči
 
 Uporaba:
     pip install requests beautifulsoup4 lxml
     python3 import_teachers.py \\
-        --base-url https://ostc.si/solski-app \\
-        --admin-user admin \\
-        --admin-pass 'admin123' \\
-        --out gesla_ucitelji.csv
+        --base-url https://ostc.si/solski-app
 
     # Dry-run (samo izpis, brez ustvarjanja):
     python3 import_teachers.py --dry-run
 
     # Vključi tudi administracijo in tehnično osebje:
     python3 import_teachers.py --include-all
-
-Output:
-    CSV s kolonami: email, ime, priimek, vloga, geslo, status
 """
 from __future__ import annotations
 
 import argparse
-import csv
 import random
 import re
-import string
 import sys
 from dataclasses import dataclass, field
 from typing import Iterable
@@ -182,14 +173,14 @@ def login(session: requests.Session, base_url: str, username: str, password: str
 
 
 def create_user(session: requests.Session, base_url: str, t: Teacher) -> str:
-    """Vrni 'created' / 'exists' / 'error: ...'."""
+    """Vrni 'created' / 'exists' / 'error: ...'. Uporabi začasno geslo."""
     url = base_url.rstrip("/") + "/auth/admin/users"
     data = {
         "username": t.email,        # username = email, kot je zahtevano
         "email": t.email,
         "first_name": t.first_name,
         "last_name": t.last_name,
-        "password": t.password,
+        "password": t.password,     # začasno geslo, nikoli shranjeno na disk
         "role": t.role,
     }
     r = session.post(url, data=data, allow_redirects=False)
@@ -199,13 +190,18 @@ def create_user(session: requests.Session, base_url: str, t: Teacher) -> str:
         return f"error: HTTP {r.status_code}"
     loc = r.headers.get("location", "")
     if "error=" in loc:
-        # urldecode
         from urllib.parse import unquote
         err = unquote(loc.split("error=", 1)[1])
         if "že obstaja" in err or "ze obstaja" in err.lower():
             return "exists"
         return f"error: {err}"
     return "created"
+
+
+def trigger_forgot_password(session: requests.Session, base_url: str, email: str) -> None:
+    """Pošlji email za ponastavitev gesla (forgot-password)."""
+    url = base_url.rstrip("/") + "/auth/forgot-password"
+    session.post(url, data={"email": email}, allow_redirects=False)
 
 
 # ── Main ──────────────────────────────────────────────────────────────
@@ -217,12 +213,11 @@ def main(argv: Iterable[str] | None = None) -> int:
     p.add_argument("--admin-user", default="admin")
     p.add_argument("--admin-pass", default="admin123")
     p.add_argument("--source", default=SCRAPE_URL, help="URL za scrape (privzeto tonecufar.si)")
-    p.add_argument("--out", default="gesla_ucitelji.csv", help="Izhodni CSV z gesli")
     p.add_argument("--include-all", action="store_true",
                    help="Vključi tudi administracijo in tehnično osebje (privzeto preskočeno)")
     p.add_argument("--dry-run", action="store_true", help="Samo izpiši, ne kliči API-ja")
     p.add_argument("--password-length", type=int, default=7)
-    p.add_argument("--seed", type=int, default=None, help="Random seed za reproducibilna gesla")
+    p.add_argument("--seed", type=int, default=None, help="Random seed za reproducibilnost")
     args = p.parse_args(list(argv) if argv is not None else None)
 
     if args.seed is not None:
@@ -240,17 +235,15 @@ def main(argv: Iterable[str] | None = None) -> int:
         print(f"      → preskočenih {before - len(teachers)} ne-učnih (administracija, tehnično)",
               file=sys.stderr)
 
-    # Generiraj gesla vsem
+    # Generiraj začasna gesla samo v spominu — nikoli na disk
     for t in teachers:
         t.password = generate_password(args.password_length)
 
     if args.dry_run:
-        print("[DRY-RUN] Ne kličem API-ja. Spodaj seznam, ki bi se uvozil:", file=sys.stderr)
+        print("[DRY-RUN] Ne kličem API-ja. Seznam za uvoz:", file=sys.stderr)
         for t in teachers:
-            print(f"  {t.role:8s}  {t.email:50s}  {t.first_name} {t.last_name}  (geslo: {t.password})")
-        # vseeno zapiši CSV
-        _write_csv(args.out, teachers)
-        print(f"\nGesla zapisana v: {args.out}", file=sys.stderr)
+            print(f"  {t.role:8s}  {t.email:50s}  {t.first_name} {t.last_name}", file=sys.stderr)
+        print(f"\nSkupaj: {len(teachers)} oseb", file=sys.stderr)
         return 0
 
     print(f"[2/4] Prijava kot admin '{args.admin_user}' na {args.base_url}", file=sys.stderr)
@@ -258,27 +251,24 @@ def main(argv: Iterable[str] | None = None) -> int:
     login(session, args.base_url, args.admin_user, args.admin_pass)
 
     print(f"[3/4] Ustvarjam {len(teachers)} uporabnikov ...", file=sys.stderr)
+    forgot_sent = 0
     for i, t in enumerate(teachers, 1):
         t.status = create_user(session, args.base_url, t)
         marker = {"created": "✓", "exists": "·"}.get(t.status, "✗")
         print(f"  [{i:3d}/{len(teachers)}] {marker} {t.email}  [{t.status}]", file=sys.stderr)
-
-    print(f"[4/4] Pišem CSV: {args.out}", file=sys.stderr)
-    _write_csv(args.out, teachers)
+        if t.status == "created":
+            trigger_forgot_password(session, args.base_url, t.email)
+            forgot_sent += 1
+            if forgot_sent % 5 == 0:
+                print(f"      → forgot-password poslan za {forgot_sent} učiteljev", file=sys.stderr)
 
     created = sum(1 for t in teachers if t.status == "created")
     exists = sum(1 for t in teachers if t.status == "exists")
     errors = sum(1 for t in teachers if t.status.startswith("error"))
     print(f"\nPovzetek: {created} ustvarjenih, {exists} že obstaja, {errors} napak.", file=sys.stderr)
+    print(f"Forgot-password email poslan: {forgot_sent}", file=sys.stderr)
+    print(f"Gesla NISO shranjena lokalno — uporabniki si jih nastavijo preko forgot-password.", file=sys.stderr)
     return 0 if errors == 0 else 1
-
-
-def _write_csv(path: str, teachers: list[Teacher]) -> None:
-    with open(path, "w", newline="", encoding="utf-8") as f:
-        w = csv.writer(f)
-        w.writerow(["email", "ime", "priimek", "vloga", "geslo", "tab", "status"])
-        for t in teachers:
-            w.writerow([t.email, t.first_name, t.last_name, t.role, t.password, t.source_tab, t.status])
 
 
 if __name__ == "__main__":
