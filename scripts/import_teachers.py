@@ -94,17 +94,25 @@ def generate_password(length: int = 7) -> str:
 # ── Scraping ──────────────────────────────────────────────────────────
 
 def scrape_employees(html: str) -> list[Teacher]:
-    """Vsaka tabela na strani je en tab. Naslove tabov najdemo v gumbu/labelu."""
+    """Vsaka tabela na strani je en tab. Naslove tabov najdemo v gumbu/labelu Divi theme."""
     soup = BeautifulSoup(html, "lxml")
     teachers: list[Teacher] = []
 
-    # Pristop: stran ima 8 tabel; vrstni red tabel odgovarja vrstnemu redu tabov
-    # (ki ga vrne JS na frontu). Poiščemo vse tabele in vse "tab title" gumbe.
+    # Divi theme: tab titles so v <li class="et_pb_tab_N"><a>...</a></li>
     tab_titles: list[str] = []
-    for el in soup.select('[role="tab"], .elementor-tab-title, .e-n-tab-title'):
-        t = el.get_text(strip=True)
-        if t and t not in tab_titles:
-            tab_titles.append(t)
+    for li in soup.select('li[class*="et_pb_tab_"]'):
+        a = li.find('a')
+        if a:
+            t = a.get_text(strip=True)
+            if t:
+                tab_titles.append(t)
+
+    # Fallback: poskusi standardne tab selektorje (Elementor/Divi)
+    if not tab_titles:
+        for el in soup.select('[role="tab"], .elementor-tab-title, .e-n-tab-title, .et_pb_tab_control a'):
+            t = el.get_text(strip=True)
+            if t and t not in tab_titles:
+                tab_titles.append(t)
 
     tables = soup.find_all("table")
     if not tables:
@@ -159,10 +167,10 @@ def scrape_employees(html: str) -> list[Teacher]:
 
 # ── Klic v naš API ────────────────────────────────────────────────────
 
-def login(session: requests.Session, base_url: str, username: str, password: str) -> None:
+def login(session: requests.Session, base_url: str, username: str, password: str, verify: bool = True) -> None:
     """Prijavi se kot admin. Naš /auth/login je form-based in nastavi cookie user_id."""
     url = base_url.rstrip("/") + "/auth/login"
-    r = session.post(url, data={"username": username, "password": password}, allow_redirects=False)
+    r = session.post(url, data={"username": username, "password": password}, allow_redirects=False, verify=verify)
     if r.status_code not in (302, 303):
         raise RuntimeError(f"Login spodletel: HTTP {r.status_code} — {r.text[:200]}")
     if "user_id" not in session.cookies:
@@ -172,7 +180,7 @@ def login(session: requests.Session, base_url: str, username: str, password: str
             raise RuntimeError("Login: cookie user_id ni bil nastavljen. Preveri credentiale.")
 
 
-def create_user(session: requests.Session, base_url: str, t: Teacher) -> str:
+def create_user(session: requests.Session, base_url: str, t: Teacher, verify: bool = True) -> str:
     """Vrni 'created' / 'exists' / 'error: ...'. Uporabi začasno geslo."""
     url = base_url.rstrip("/") + "/auth/admin/users"
     data = {
@@ -183,7 +191,7 @@ def create_user(session: requests.Session, base_url: str, t: Teacher) -> str:
         "password": t.password,     # začasno geslo, nikoli shranjeno na disk
         "role": t.role,
     }
-    r = session.post(url, data=data, allow_redirects=False)
+    r = session.post(url, data=data, allow_redirects=False, verify=verify)
     if r.status_code == 403:
         return "error: nimate admin pravic"
     if r.status_code not in (302, 303):
@@ -212,10 +220,15 @@ def main(argv: Iterable[str] | None = None) -> int:
     p.add_argument("--dry-run", action="store_true", help="Samo izpiši, ne kliči API-ja")
     p.add_argument("--password-length", type=int, default=7)
     p.add_argument("--seed", type=int, default=None, help="Random seed za reproducibilnost")
+    p.add_argument("--no-verify-ssl", action="store_true",
+                   help="Izklopi SSL verification (če cert ni za ostc.si ampak za interno IP)")
     args = p.parse_args(list(argv) if argv is not None else None)
 
     if args.seed is not None:
         random.seed(args.seed)
+
+    # SSL verify
+    verify_ssl = not args.no_verify_ssl
 
     print(f"[1/4] Scraping {args.source}", file=sys.stderr)
     r = requests.get(args.source, timeout=20, headers={"User-Agent": "SolskiApp/1.0"})
@@ -242,11 +255,11 @@ def main(argv: Iterable[str] | None = None) -> int:
 
     print(f"[2/4] Prijava kot admin '{args.admin_user}' na {args.base_url}", file=sys.stderr)
     session = requests.Session()
-    login(session, args.base_url, args.admin_user, args.admin_pass)
+    login(session, args.base_url, args.admin_user, args.admin_pass, verify=verify_ssl)
 
     print(f"[3/4] Ustvarjam {len(teachers)} uporabnikov ...", file=sys.stderr)
     for i, t in enumerate(teachers, 1):
-        t.status = create_user(session, args.base_url, t)
+        t.status = create_user(session, args.base_url, t, verify=verify_ssl)
         marker = {"created": "✓", "exists": "·"}.get(t.status, "✗")
         print(f"  [{i:3d}/{len(teachers)}] {marker} {t.email}  [{t.status}]", file=sys.stderr)
 
