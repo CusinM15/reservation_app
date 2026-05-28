@@ -54,7 +54,7 @@ ROLE_MAP = {
 }
 
 # Tabi, ki se preskočijo če uporabnik ne podaš --include-all
-NON_TEACHING_TABS = {"ADMINISTRACIJA", "TEHNIČNO OSEBJE", "KABINETI"}
+NON_TEACHING_TABS = set()  # privzeto vključimo vse
 
 EMAIL_RE = re.compile(r"[\w.\-]+@[\w.\-]+\.[A-Za-z]{2,}")
 

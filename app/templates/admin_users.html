@@ -55,6 +55,9 @@
         </form>
         
         <h3>Seznam uporabnikov</h3>
+        <div style="margin-bottom: 10px;">
+            <input type="text" id="user-search" placeholder="🔍 Išči po imenu, priimku ali emailu..." style="width:100%;max-width:400px;padding:8px;font-size:14px;" oninput="filterUsers()">
+        </div>
         <table id="user-table">
             <thead>
                 <tr>
@@ -131,6 +134,22 @@
         </table>
     </div>
     <script>
+        function filterUsers() {
+            const query = document.getElementById('user-search').value.toLowerCase();
+            const table = document.getElementById('user-table');
+            const tbody = table.querySelector('tbody');
+            const rows = tbody.querySelectorAll('tr:not(.edit-form)');
+            rows.forEach(r => {
+                const text = Array.from(r.querySelectorAll('td'))
+                    .map(td => td.textContent.toLowerCase())
+                    .join(' ');
+                const match = !query || text.includes(query);
+                r.style.display = match ? '' : 'none';
+                const editRow = document.getElementById('edit-row-' + r.children[0]?.textContent.trim());
+                if (editRow) editRow.style.display = match ? '' : 'none';
+            });
+        }
+
         function toggleEdit(id) {
             const row = document.getElementById('edit-row-' + id);
             row.classList.toggle('active');
