@@ -207,15 +207,11 @@ def _commit_series(
     planned: list[tuple[DateType, int]],
     *,
     prostor: str,
-    razred: Optional[str],
     teacher_id: int,
     qty: Optional[int],
-    skip_conflicts: bool,
 ) -> SeriesResult:
-    """Skupna logika: planned = seznam (date, hour). Vse ali nič, razen če skip_conflicts."""
+    """Skupna logika: planned = seznam (date, hour). Če je konflikt vrne 409 s seznamom."""
     _validate_prostor(prostor)
-    if razred:
-        _validate_razred(razred)
     for _, h in planned:
         _validate_hour(h)
     if prostor == "tablice" and qty is None:
@@ -228,32 +224,26 @@ def _commit_series(
         if reason:
             conflicts.append({"date": d.isoformat(), "hour": h, "reason": reason})
 
-    if conflicts and not skip_conflicts:
+    if conflicts:
         raise HTTPException(
             status_code=409,
             detail={
-                "message": "Serija ima konflikte. Pošlji skip_conflicts=true za delno rezervacijo.",
+                "message": "Serija ima konflikte. Odstrani jih ročno in poskusi znova.",
                 "conflicts": conflicts,
             },
         )
 
-    # 2) ustvari zapise (preskoči konfliktne, če skip_conflicts)
+    # 2) ustvari vse zapise
     series_id = str(uuid.uuid4())
-    conflict_keys = {(c["date"], c["hour"]) for c in conflicts}
-    created = 0
     for d, h in planned:
-        if (d.isoformat(), h) in conflict_keys:
-            continue
         db.add(Reservation(
             prostor=prostor,
             date=d,
             hour=h,
-            razred=razred or "",
             teacher_id=teacher_id,
             qty=qty,
             series_id=series_id,
         ))
-        created += 1
 
     try:
         db.commit()
@@ -261,7 +251,7 @@ def _commit_series(
         db.rollback()
         raise HTTPException(status_code=500, detail=f"Napaka pri shranjevanju serije: {e}")
 
-    return SeriesResult(series_id=series_id, created=created, skipped=conflicts)
+    return SeriesResult(series_id=series_id, created=len(planned), skipped=[])
 
 
 @router.post("/series/weekly", response_model=SeriesResult, status_code=201)
@@ -271,7 +261,7 @@ def create_weekly_series(
     db: Session = Depends(get_db),
 ):
     """Vsak teden isti dan, ista ura, med date_from in date_to. Samo admin/vodstvo."""
-    _require_admin_or_vodstvo(request, db)
+    user = _require_admin_or_vodstvo(request, db)
 
     if data.date_to < data.date_from:
         raise HTTPException(status_code=400, detail="date_to mora biti >= date_from")
@@ -293,10 +283,8 @@ def create_weekly_series(
     return _commit_series(
         db, planned,
         prostor=data.prostor,
-        razred=data.razred,
-        teacher_id=data.teacher_id,
+        teacher_id=user.id,
         qty=data.qty,
-        skip_conflicts=data.skip_conflicts,
     )
 
 
@@ -307,7 +295,7 @@ def create_full_day_series(
     db: Session = Depends(get_db),
 ):
     """Vse ure (privzeto 0..7) za vsak dan v razponu. Samo admin/vodstvo."""
-    _require_admin_or_vodstvo(request, db)
+    user = _require_admin_or_vodstvo(request, db)
 
     if data.date_to < data.date_from:
         raise HTTPException(status_code=400, detail="date_to mora biti >= date_from")
@@ -320,8 +308,7 @@ def create_full_day_series(
     planned: list[tuple[DateType, int]] = []
     d = data.date_from
     while d <= data.date_to:
-        # Preskoči vikend (sobota=5, nedelja=6) — šola ne dela. Če bi želel
-        # rezervirati tudi vikend, lahko to spremeniš ali doda flag.
+        # Preskoči vikend (sobota=5, nedelja=6) — šola ne dela.
         if d.weekday() < 5:
             for h in hours:
                 planned.append((d, h))
@@ -333,10 +320,8 @@ def create_full_day_series(
     return _commit_series(
         db, planned,
         prostor=data.prostor,
-        razred=data.razred,
-        teacher_id=data.teacher_id,
+        teacher_id=user.id,
         qty=data.qty,
-        skip_conflicts=data.skip_conflicts,
     )
 
 
