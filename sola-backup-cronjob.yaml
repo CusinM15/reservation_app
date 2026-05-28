@@ -1,0 +1,57 @@
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: sola-db-backup
+  namespace: sola-app
+spec:
+  schedule: "0 3 * * *"
+  concurrencyPolicy: Forbid
+  jobTemplate:
+    spec:
+      template:
+        spec:
+          containers:
+          - name: backup
+            image: mato12345/sola-app:latest
+            imagePullPolicy: Always
+            command:
+            - python
+            - -m
+            - scripts.db_backup
+            env:
+            - name: DATABASE_URL
+              valueFrom:
+                configMapKeyRef:
+                  name: sola-config
+                  key: DATABASE_URL
+            - name: MAIL_USERNAME
+              valueFrom:
+                secretKeyRef:
+                  name: sola-secrets
+                  key: MAIL_USERNAME
+            - name: MAIL_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: sola-secrets
+                  key: MAIL_PASSWORD
+            - name: MAIL_SERVER
+              valueFrom:
+                secretKeyRef:
+                  name: sola-secrets
+                  key: MAIL_SERVER
+            - name: MAIL_PORT
+              valueFrom:
+                secretKeyRef:
+                  name: sola-secrets
+                  key: MAIL_PORT
+            - name: MAIL_FROM
+              valueFrom:
+                secretKeyRef:
+                  name: sola-secrets
+                  key: MAIL_FROM
+            - name: BACKUP_EMAIL
+              valueFrom:
+                secretKeyRef:
+                  name: sola-secrets
+                  key: BACKUP_EMAIL
+          restartPolicy: OnFailure

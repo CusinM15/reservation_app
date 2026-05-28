@@ -23,8 +23,48 @@ class ReservationOut(BaseModel):
     teacher_id: int
     qty: Optional[int] = None
     teacher_name: Optional[str] = None  # filled by query join
+    series_id: Optional[str] = None
 
     model_config = {"from_attributes": True}
+
+
+# ── Serijske rezervacije (samo admin/vodstvo) ──────────────────
+
+class WeeklySeriesCreate(BaseModel):
+    """Rezerviraj isto uro vsak teden na isti dan v tednu, med date_from in date_to (vključno)."""
+    prostor: str
+    hour: int = Field(..., ge=0, le=7)
+    weekday: int = Field(..., ge=0, le=6, description="0=ponedeljek ... 6=nedelja (Python weekday())")
+    date_from: date
+    date_to: date
+    razred: Optional[str] = None
+    teacher_id: int
+    qty: Optional[int] = None
+    skip_conflicts: bool = Field(
+        default=False,
+        description="Če True, preskoči termine ki so že zasedeni; sicer prekliče vse in vrne 409.",
+    )
+
+
+class FullDaySeriesCreate(BaseModel):
+    """Rezerviraj vse ure (0–7) za en ali več dni (npr. naravoslovni dan)."""
+    prostor: str
+    date_from: date
+    date_to: date  # za en sam dan: date_from == date_to
+    razred: Optional[str] = None
+    teacher_id: int
+    qty: Optional[int] = None
+    hours: Optional[list[int]] = Field(
+        default=None,
+        description="Privzeto vse ure 0..7. Lahko se omeji npr. na [0,1,2,3,4,5] za 6 ur.",
+    )
+    skip_conflicts: bool = False
+
+
+class SeriesResult(BaseModel):
+    series_id: str
+    created: int
+    skipped: list[dict] = Field(default_factory=list)  # [{date, hour, reason}]
 
 
 # ── Assessments ─────────────────────────────────────────────

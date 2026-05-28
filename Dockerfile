@@ -37,6 +37,7 @@ EXPOSE 8002
 
 ENV PATH=/home/appuser/.local/bin:$PATH \
     PYTHONUNBUFFERED=1 \
-    PYTHONDONTWRITEBYTECODE=1
+    PYTHONDONTWRITEBYTECODE=1\
+    PASSLIB_BCRYPT_AVOID_WRAP_BUG=1
 
 CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8002", "--workers", "2"]

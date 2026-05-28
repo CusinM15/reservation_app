@@ -43,6 +43,11 @@ class Reservation(Base):
     teacher_id = Column(Integer, ForeignKey("users.id"), nullable=False)
     teacher = relationship("User", back_populates="reservations")
 
+    # Identifier of a recurring/full-day series. NULL = enkratna rezervacija.
+    # Vsi zapisi iste serije (npr. "vsak četrtek predura računalnica" ali
+    # "naravoslovni dan: vse ure istega dne") delijo isti series_id.
+    series_id = Column(String, nullable=True, index=True)
+
 
 class Assessment(Base):
     __tablename__ = "assessments"
