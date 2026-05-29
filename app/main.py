@@ -55,9 +55,19 @@ def health():
 def root(request: Request):
     user_id = request.cookies.get("user_id")
     if user_id:
+        from app.database import SessionLocal
+        db = SessionLocal()
+        user = db.query(User).filter(User.id == int(user_id)).first()
+        db.close()
+
+        if user and user.role in (RoleEnum.admin, RoleEnum.vodstvo):
+            timeout_ms = settings.INACTIVITY_TIMEOUT_ADMIN_MINUTES * 60 * 1000
+        else:
+            timeout_ms = settings.INACTIVITY_TIMEOUT_MINUTES * 60 * 1000
+
         return templates.TemplateResponse("index.html", {
             "request": request,
-            "inactivity_timeout_ms": settings.INACTIVITY_TIMEOUT_MINUTES * 60 * 1000
+            "inactivity_timeout_ms": timeout_ms
         })
     return RedirectResponse(url="/auth/login")
 

@@ -17,7 +17,8 @@ class Settings:
     PROSTORI = os.getenv("PROSTORI", "").split(",")
     PROSTORI = [p for p in PROSTORI if p]  # filtriramo prazne
     BASE_URL = os.getenv("BASE_URL", "http://localhost:8001")
-    INACTIVITY_TIMEOUT_MINUTES = int(os.getenv("INACTIVITY_TIMEOUT_MINUTES", 60))
+    INACTIVITY_TIMEOUT_MINUTES = int(os.getenv("INACTIVITY_TIMEOUT_MINUTES", 30))
+    INACTIVITY_TIMEOUT_ADMIN_MINUTES = int(os.getenv("INACTIVITY_TIMEOUT_ADMIN_MINUTES", 20))
 
     # Email
     MAIL_FROM = os.getenv("MAIL_FROM", "")
