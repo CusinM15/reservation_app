@@ -1,0 +1,17 @@
+# Caddyfile za javni strežnik (185.69.149.101)
+#
+# PREDPOGOJ: v frps.toml spremeni vhostHTTPPort na 8080
+#   bindPort = 7000
+#   vhostHTTPPort = 8080    <-- namesto 80
+#
+# Caddy bo poslušal na :80 in :443, frps pa na :8080
+
+sola-app.ostc.si {
+    reverse_proxy localhost:8080 {
+        header_up Host sola-app.ostc.si
+    }
+}
+
+sola-app.ostc.si:80 {
+    redir https://sola-app.ostc.si{uri} permanent
+}

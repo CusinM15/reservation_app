@@ -1,0 +1,10 @@
+serverAddr = "185.69.149.101"
+serverPort = 7000
+auth.token = "SolaApp2025!MojeSuperGeslo123"
+
+[[proxies]]
+name = "sola-app"
+type = "http"
+localIP = "10.43.122.112"
+localPort = 8002
+customDomains = ["sola-app.ostc.si"]
