@@ -55,7 +55,10 @@ def health():
 def root(request: Request):
     user_id = request.cookies.get("user_id")
     if user_id:
-        return templates.TemplateResponse("index.html", {"request": request})
+        return templates.TemplateResponse("index.html", {
+            "request": request,
+            "inactivity_timeout_ms": settings.INACTIVITY_TIMEOUT_MINUTES * 60 * 1000
+        })
     return RedirectResponse(url="/auth/login")
 
 @app.get("/admin/users")

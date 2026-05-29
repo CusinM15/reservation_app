@@ -72,6 +72,7 @@ def run():
         # Send backup as email attachment (if small enough) or just notification
         if file_size < 25 * 1024 * 1024:  # 25MB limit
             from email.mime.multipart import MIMEMultipart
+            from email.mime.text import MIMEText
             from email.mime.base import MIMEBase
             from email import encoders
             import smtplib, ssl

@@ -331,7 +331,7 @@
     let blockedDates = {};
     let allBlocked = [];
     let inactivityTimer = null;
-    const INACTIVITY_TIMEOUT_MS = 60 * 60 * 1000;
+    const INACTIVITY_TIMEOUT_MS = {{ inactivity_timeout_ms }};
 
     function resetInactivityTimer() {
       if (inactivityTimer) clearTimeout(inactivityTimer);
