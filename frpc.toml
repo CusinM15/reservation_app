@@ -1,10 +1,10 @@
-serverAddr = "185.69.149.101"
-serverPort = 7000
+serverAddr = "185.69.149.101"  
+serverPort = 7200
 auth.token = "FIpnSKNjoNbWZTsPpi3Nb4etUD9ClD6myChIxbpxYPriTHkU3O"
 
 [[proxies]]
 name = "sola-app"
 type = "http"
-localIP = "10.43.122.112"
-localPort = 8002
+localIP = "193.2.171.200"  # IP loadbalancerja k3s
+localPort = 80
 customDomains = ["sola-app.ostc.si"]

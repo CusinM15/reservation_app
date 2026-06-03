@@ -15,6 +15,7 @@ from app.schemas import (
 )
 from app.config import settings
 from app.race import register_intent, check_and_raise, cleanup, get_lock
+from app.routers.blocked_dates import _send_email
 
 router = APIRouter(prefix="/api/rezervacije", tags=["rezervacije"])
 
@@ -179,27 +180,73 @@ def _require_admin_or_vodstvo(request: Request, db: Session) -> User:
     return user
 
 
-def _conflict_reason(db: Session, prostor: str, d: DateType, hour: int, qty: int | None) -> str | None:
-    """Vrne razlog konflikta ali None, če je termin prost. Brez vrženja izjeme."""
-    if prostor == "tablice":
-        existing = db.query(Reservation).filter(
-            Reservation.prostor == "tablice",
-            Reservation.date == d,
-            Reservation.hour == hour,
-        ).all()
-        used = sum(r.qty or 0 for r in existing)
-        need = qty or 0
-        if used + need > settings.TABLICE_MAX:
-            return f"tablice presežene ({used}+{need} > {settings.TABLICE_MAX})"
-        return None
-    existing = db.query(Reservation).filter(
-        Reservation.prostor == prostor,
-        Reservation.date == d,
-        Reservation.hour == hour,
-    ).first()
-    if existing:
-        return "termin že zaseden"
-    return None
+def _resolve_conflicts_and_notify(
+    db: Session,
+    planned: list[tuple[DateType, int]],
+    *,
+    prostor: str,
+    creator_name: str,
+    qty: int | None,
+) -> int:
+    """Poišči konfliktne rezervacije, jih pobriši in pošlji email prvotnemu lastniku.
+    Vrne število pobrisanih konfliktnih rezervacij."""
+    removed = 0
+    for d, h in planned:
+        if prostor == "tablice":
+            existing = db.query(Reservation).options(joinedload(Reservation.teacher)).filter(
+                Reservation.prostor == "tablice",
+                Reservation.date == d,
+                Reservation.hour == h,
+            ).all()
+            need = qty or 0
+            if existing:
+                still_used = sum(r.qty or 0 for r in existing)
+            else:
+                still_used = 0
+            while still_used + need > settings.TABLICE_MAX and existing:
+                res = existing.pop(0)
+                teacher = res.teacher
+                date_str = d.strftime("%d.%m.%Y")
+                hour_key = str(h)
+                hour_label = settings.SCHEDULE.get(hour_key, f"ura {h}")
+                db.delete(res)
+                removed += 1
+                still_used = sum(r.qty or 0 for r in existing)
+                if teacher and teacher.email:
+                    _send_email(
+                        to_email=teacher.email,
+                        subject=f"Rezervacija za tablice preklicana — {date_str} {hour_label}",
+                        body=f"Pozdravljeni,\n\n"
+                             f"vaša rezervacija za **tablice** na dan {date_str} ob {hour_label} "
+                             f"je bila preklicana, ker je {creator_name} ustvaril(a) serijsko "
+                             f"rezervacijo, ki pokriva ta termin.\n\n"
+                             f"Lep pozdrav,\nŠolski App"
+                    )
+        else:
+            existing = db.query(Reservation).options(joinedload(Reservation.teacher)).filter(
+                Reservation.prostor == prostor,
+                Reservation.date == d,
+                Reservation.hour == h,
+            ).first()
+            if existing:
+                teacher = existing.teacher
+                date_str = d.strftime("%d.%m.%Y")
+                hour_key = str(h)
+                hour_label = settings.SCHEDULE.get(hour_key, f"ura {h}")
+                prostor_label = {"tablice": "tablice", "racunalnica": "računalnico", "ladja": "ladjo"}.get(prostor, prostor)
+                db.delete(existing)
+                removed += 1
+                if teacher and teacher.email:
+                    _send_email(
+                        to_email=teacher.email,
+                        subject=f"Rezervacija za {prostor} preklicana — {date_str} {hour_label}",
+                        body=f"Pozdravljeni,\n\n"
+                             f"vaša rezervacija za {prostor_label} na dan {date_str} ob {hour_label} "
+                             f"je bila preklicana, ker je {creator_name} ustvaril(a) serijsko "
+                             f"rezervacijo, ki pokriva ta termin.\n\n"
+                             f"Lep pozdrav,\nŠolski App"
+                    )
+    return removed
 
 
 def _commit_series(
@@ -208,32 +255,21 @@ def _commit_series(
     *,
     prostor: str,
     teacher_id: int,
+    creator_name: str,
     qty: Optional[int],
 ) -> SeriesResult:
-    """Skupna logika: planned = seznam (date, hour). Če je konflikt vrne 409 s seznamom."""
+    """Ustvari serijske rezervacije. Obstoječe konfliktne rezervacije se avtomatsko
+    pobrišejo, prvotni lastnik pa dobi email obvestilo."""
     _validate_prostor(prostor)
     for _, h in planned:
         _validate_hour(h)
     if prostor == "tablice" and qty is None:
         raise HTTPException(status_code=400, detail="Za tablice morate navesti število (qty)")
 
-    # 1) prečekiraj vse konflikte vnaprej
-    conflicts: list[dict] = []
-    for d, h in planned:
-        reason = _conflict_reason(db, prostor, d, h, qty)
-        if reason:
-            conflicts.append({"date": d.isoformat(), "hour": h, "reason": reason})
+    # 1) Pobriši konfliktne rezervacije in pošlji obvestila
+    removed = _resolve_conflicts_and_notify(db, planned, prostor=prostor, creator_name=creator_name, qty=qty)
 
-    if conflicts:
-        raise HTTPException(
-            status_code=409,
-            detail={
-                "message": "Serija ima konflikte. Odstrani jih ročno in poskusi znova.",
-                "conflicts": conflicts,
-            },
-        )
-
-    # 2) ustvari vse zapise
+    # 2) Ustvari nove zapise
     series_id = str(uuid.uuid4())
     for d, h in planned:
         db.add(Reservation(
@@ -251,7 +287,7 @@ def _commit_series(
         db.rollback()
         raise HTTPException(status_code=500, detail=f"Napaka pri shranjevanju serije: {e}")
 
-    return SeriesResult(series_id=series_id, created=len(planned), skipped=[])
+    return SeriesResult(series_id=series_id, created=len(planned), skipped=[], removed=removed)
 
 
 @router.post("/series/weekly", response_model=SeriesResult, status_code=201)
@@ -262,6 +298,7 @@ def create_weekly_series(
 ):
     """Vsak teden isti dan, ista ura, med date_from in date_to. Samo admin/vodstvo."""
     user = _require_admin_or_vodstvo(request, db)
+    creator_name = f"{user.first_name} {user.last_name}".strip() or user.username
 
     if data.date_to < data.date_from:
         raise HTTPException(status_code=400, detail="date_to mora biti >= date_from")
@@ -284,6 +321,7 @@ def create_weekly_series(
         db, planned,
         prostor=data.prostor,
         teacher_id=user.id,
+        creator_name=creator_name,
         qty=data.qty,
     )
 
@@ -296,6 +334,7 @@ def create_full_day_series(
 ):
     """Vse ure (privzeto 0..7) za vsak dan v razponu. Samo admin/vodstvo."""
     user = _require_admin_or_vodstvo(request, db)
+    creator_name = f"{user.first_name} {user.last_name}".strip() or user.username
 
     if data.date_to < data.date_from:
         raise HTTPException(status_code=400, detail="date_to mora biti >= date_from")
@@ -321,6 +360,7 @@ def create_full_day_series(
         db, planned,
         prostor=data.prostor,
         teacher_id=user.id,
+        creator_name=creator_name,
         qty=data.qty,
     )
 

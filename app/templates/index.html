@@ -522,7 +522,13 @@
       try {
         const res = await fetch('/api/rezervacije/series/weekly', { method: 'POST', headers: {'Content-Type': 'application/json'}, credentials: 'include', body: JSON.stringify(data) });
         const json = await res.json();
-        if (res.ok) { showMsg(`Serija ustvarjena (${json.created} terminov).`, 'success'); closeModal('weekly-series-modal'); loadAllReservations(); }
+        if (res.ok) { 
+          let msg = `Serija ustvarjena (${json.created} terminov).`;
+          if (json.removed > 0) msg += ` Pobrisanih konfliktnih: ${json.removed}.`;
+          showMsg(msg, 'success'); 
+          closeModal('weekly-series-modal'); 
+          loadAllReservations(); 
+        }
         else { showMsg(json.detail?.message || json.detail || 'Napaka pri ustvarjanju serije.', 'error'); }
       } catch(e) { showMsg('Napaka pri povezavi s strežnikom.', 'error'); }
     }
@@ -551,7 +557,13 @@
       try {
         const res = await fetch('/api/rezervacije/series/full-day', { method: 'POST', headers: {'Content-Type': 'application/json'}, credentials: 'include', body: JSON.stringify(data) });
         const json = await res.json();
-        if (res.ok) { showMsg(`Celodnevna serija ustvarjena (${json.created} terminov).`, 'success'); closeModal('fullday-series-modal'); loadAllReservations(); }
+        if (res.ok) { 
+          let msg = `Celodnevna serija ustvarjena (${json.created} terminov).`;
+          if (json.removed > 0) msg += ` Pobrisanih konfliktnih: ${json.removed}.`;
+          showMsg(msg, 'success'); 
+          closeModal('fullday-series-modal'); 
+          loadAllReservations(); 
+        }
         else { showMsg(json.detail?.message || json.detail || 'Napaka pri ustvarjanju serije.', 'error'); }
       } catch(e) { showMsg('Napaka pri povezavi s strežnikom.', 'error'); }
     }

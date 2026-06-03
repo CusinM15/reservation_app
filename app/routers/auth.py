@@ -111,7 +111,8 @@ def forgot_password(
     user.reset_token = token
     db.commit()
     
-    reset_link = f"{settings.BASE_URL}/auth/reset-password?token={token}&email={email}"
+    # Uporabi trenutno zahtevan URL — deluje na vsaki domeni (ngrok, ostc.si, localhost)
+    reset_link = f"{request.base_url}auth/reset-password?token={token}&email={email}"
     
     _send_email(
         to_email=email,

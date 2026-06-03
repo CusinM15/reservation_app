@@ -56,6 +56,7 @@ class SeriesResult(BaseModel):
     series_id: str
     created: int
     skipped: list[dict] = Field(default_factory=list)  # [{date, hour, reason}]
+    removed: int = 0  # število pobrisanih konfliktnih rezervacij
 
 
 # ── Assessments ─────────────────────────────────────────────
