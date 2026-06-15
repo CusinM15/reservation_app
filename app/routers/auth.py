@@ -4,6 +4,7 @@ from fastapi.templating import Jinja2Templates
 from sqlalchemy.orm import Session
 from passlib.context import CryptContext
 import os, secrets
+from datetime import datetime, timedelta, timezone
 
 from app.database import get_db
 from app.models import User, RoleEnum
@@ -13,6 +14,27 @@ from app.routers.blocked_dates import _send_email
 router = APIRouter(prefix="/auth", tags=["auth"])
 templates = Jinja2Templates(directory="app/templates")
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+
+
+def _reset_token_expires_at() -> datetime:
+    return datetime.now(timezone.utc) + timedelta(minutes=settings.RESET_TOKEN_EXPIRATION_MINUTES)
+
+
+def _encode_reset_token(raw_token: str) -> str:
+    return f"{raw_token}:{int(_reset_token_expires_at().timestamp())}"
+
+
+def _decode_reset_token(stored_token: str | None) -> str | None:
+    if not stored_token or ":" not in stored_token:
+        return None
+    token, expires_at_raw = stored_token.rsplit(":", 1)
+    try:
+        expires_at = datetime.fromtimestamp(int(expires_at_raw), timezone.utc)
+    except ValueError:
+        return None
+    if expires_at < datetime.now(timezone.utc):
+        return None
+    return token
 
 
 def get_password_hash(password):
@@ -106,8 +128,8 @@ def forgot_password(
             "show_forgot": True,
         })
     
-    # Generate a reset token
-    token = secrets.token_urlsafe(32)
+    # Generate a reset token. Stored as "<token>:<unix_expires_at>" so old links expire after 30 minutes.
+    token = _encode_reset_token(secrets.token_urlsafe(32))
     user.reset_token = token
     db.commit()
     
@@ -139,8 +161,9 @@ def reset_password_page(
     error: str = None,
     db: Session = Depends(get_db),
 ):
-    user = db.query(User).filter(User.email == email, User.reset_token == token).first()
-    if not user:
+    stored_token = request.query_params.get("token", "")
+    user = db.query(User).filter(User.email == email, User.reset_token == stored_token).first()
+    if not user or _decode_reset_token(user.reset_token) != stored_token:
         return templates.TemplateResponse("login.html", {
             "request": request,
             "error": "Neveljavna ali potekla povezava za ponastavitev gesla.",
@@ -163,7 +186,7 @@ def reset_password(
     db: Session = Depends(get_db),
 ):
     user = db.query(User).filter(User.email == email, User.reset_token == token).first()
-    if not user:
+    if not user or _decode_reset_token(user.reset_token) != token:
         return templates.TemplateResponse("login.html", {
             "request": request,
             "error": "Neveljavna ali potekla povezava za ponastavitev gesla.",

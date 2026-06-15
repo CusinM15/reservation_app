@@ -19,6 +19,7 @@ class Settings:
     BASE_URL = os.getenv("BASE_URL", "http://localhost:8001")
     INACTIVITY_TIMEOUT_MINUTES = int(os.getenv("INACTIVITY_TIMEOUT_MINUTES", 30))
     INACTIVITY_TIMEOUT_ADMIN_MINUTES = int(os.getenv("INACTIVITY_TIMEOUT_ADMIN_MINUTES", 20))
+    RESET_TOKEN_EXPIRATION_MINUTES = int(os.getenv("RESET_TOKEN_EXPIRATION_MINUTES", 30))
 
     # Email
     MAIL_FROM = os.getenv("MAIL_FROM", "")
@@ -27,6 +28,7 @@ class Settings:
     MAIL_SERVER = os.getenv("MAIL_SERVER", "mail.arnes.si")
     MAIL_PORT = int(os.getenv("MAIL_PORT", 587))
     BACKUP_EMAIL = os.getenv("BACKUP_EMAIL", "")
+    STANJE_MAIL = os.getenv("STANJE_MAIL", "")
     ADMIN_EMAIL = os.getenv("ADMIN_EMAIL", "admin@ostc.si")
 
 
