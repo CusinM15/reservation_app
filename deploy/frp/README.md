@@ -42,23 +42,16 @@ Preveri:
 kubectl get svc -n sola-app sola-app
 ```
 
-Če ga slučajno ni, ga ustvari:
+Če ga slučajno ni oziroma če je Service trenutno LoadBalancer, apliciraj FRP overlay, ki ga spremeni v `ClusterIP`:
 
 ```bash
-kubectl apply -f - <<'EOF'
-apiVersion: v1
-kind: Service
-metadata:
-  name: sola-app
-  namespace: sola-app
-spec:
-  selector:
-    app: sola-app
-  ports:
-    - port: 8002
-      targetPort: 8002
-  type: ClusterIP
-EOF
+kubectl apply -k k8s/app/overlays/frp
+```
+
+Preveri:
+
+```bash
+kubectl get svc -n sola-app sola-app
 ```
 
 ---

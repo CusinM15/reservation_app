@@ -145,29 +145,10 @@ kubectl apply -f https://raw.githubusercontent.com/metallb/metallb/v0.14.9/confi
 kubectl -n metallb-system wait --for=condition=ready pod --all --timeout=120s
 ```
 
-Ustvari `metallb-config.yaml`:
-
-```yaml
-apiVersion: metallb.io/v1beta1
-kind: IPAddressPool
-metadata:
-  name: default-pool
-  namespace: metallb-system
-spec:
-  addresses:
-  - 192.168.1.200-192.168.1.210
----
-apiVersion: metallb.io/v1beta1
-kind: L2Advertisement
-metadata:
-  name: default-advertisement
-  namespace: metallb-system
-```
-
-> Prilagodi IP range glede na tvoje omrežje. Preveri: `ip a | grep "inet "`.
+MetalLB IP pool je zdaj shranjen v repozitoriju kot `k8s/cluster/metallb-config.yaml`. Pred uporabo preveri IP range glede na tvoje omrežje (`ip a | grep "inet "`) in ga po potrebi popravi v tej datoteki.
 
 ```bash
-kubectl apply -f metallb-config.yaml
+kubectl apply -f k8s/cluster/metallb-config.yaml
 ```
 
 ---
@@ -313,123 +294,48 @@ kubectl create secret generic sola-secrets \
   --from-literal=BACKUP_EMAIL=matej.cusin2@guest.arnes.si
 ```
 
-### 7.4 Ustvari ConfigMap
+### 7.4 ConfigMap in Deployment
+
+Namesto ročnega ustvarjanja ConfigMapa in Deploymenta uporabi Kustomize overlaye v mapi `k8s/`.
+
+Manifesti so organizirani takole:
+
+- `k8s/app/base/` — Namespace, ConfigMap, Deployment, Service (`ClusterIP`) in CronJob.
+- `k8s/app/overlays/production-lb/` — ista osnova, Service pa spremeni v MetalLB `LoadBalancer`.
+- `k8s/app/overlays/ingress/` — ista osnova, dodan Ingress in Service ostane `ClusterIP`.
+- `k8s/app/overlays/frp/` — ista osnova za FRP/tunel varianto, Service ostane `ClusterIP`.
+
+Občutljive vrednosti ostanejo v Secretu `sola-secrets`; `DATABASE_URL` ni več v ConfigMapu.
+
+Deploy z LoadBalancer servisom:
 
 ```bash
-kubectl create configmap sola-config \
-  --namespace sola-app \
-  --from-literal=APP_HOST=0.0.0.0 \
-  --from-literal=APP_PORT=8002 \
-  --from-literal=BASE_URL=https://ostc.si \
-  --from-literal=DATABASE_URL='postgresql://sola:<VARNOSTNO_GESLO>@sola-postgresql.sola:5432/sola' \
-  --from-literal=TABLICE_MAX=28 \
-  --from-literal=SCHEDULE='{"0":"07:30-08:15","1":"08:20-09:05","2":"09:15-10:00","3":"10:20-11:05","4":"11:10-11:55","5":"12:00-12:45","6":"12:50-13:35","7":"14:00-14:45"}' \
-  --from-literal=RAZREDI='IP/NIP/ID,1.a,1.b,1.c,1.č,2.a,2.b,2.c,2.č,3.a,3.b,3.c,3.č,4.a,4.b,4.c,4.č,5.a,5.b,5.c,5.č,6.a,6.b,6.c,6.č,7.a,7.b,7.c,8.a,8.b,8.c,8.č,8.1,8.2,8.3,8.4,8.5,8.6,9.a,9.b,9.c,9.1,9.2,9.3,9.4,9.5' \
-  --from-literal=PROSTORI='tablice,racunalnica,ladja'
-```
-
-> Zamenjaj `<VARNOSTNO_GESLO>` z istim geslom kot v koraku 6.
-
-### 7.5 Deployment manifest
-
-Ustvari `sola-deployment.yaml`:
-
-```yaml
-apiVersion: apps/v1
-kind: Deployment
-metadata:
-  name: sola-app
-  namespace: sola-app
-spec:
-  replicas: 4
-  selector:
-    matchLabels:
-      app: sola-app
-  template:
-    metadata:
-      labels:
-        app: sola-app
-    spec:
-      affinity:
-        podAntiAffinity:
-          preferredDuringSchedulingIgnoredDuringExecution:
-          - weight: 100
-            podAffinityTerm:
-              labelSelector:
-                matchExpressions:
-                - key: app
-                  operator: In
-                  values: [sola-app]
-              topologyKey: kubernetes.io/hostname
-
-      containers:
-      - name: app
-        image: sola-app:latest
-        imagePullPolicy: IfNotPresent
-        ports:
-        - containerPort: 8002
-
-        envFrom:
-        - configMapRef:
-            name: sola-config
-        - secretRef:
-            name: sola-secrets
-
-        resources:
-          requests:
-            memory: "256Mi"
-            cpu: "100m"
-          limits:
-            memory: "512Mi"
-            cpu: "500m"
-
-        # /tmp na disku (ne na RAM tmpfs!) – pomembno za FastAPI
-        volumeMounts:
-        - name: tmp-volume
-          mountPath: /tmp
-
-        readinessProbe:
-          httpGet:
-            path: /health
-            port: 8002
-          initialDelaySeconds: 8
-          periodSeconds: 10
-        livenessProbe:
-          httpGet:
-            path: /health
-            port: 8002
-          initialDelaySeconds: 20
-          periodSeconds: 30
-          failureThreshold: 5
-
-      volumes:
-      - name: tmp-volume
-        emptyDir:
-          sizeLimit: 2Gi
----
-apiVersion: v1
-kind: Service
-metadata:
-  name: sola-app
-  namespace: sola-app
-spec:
-  type: LoadBalancer
-  ports:
-  - port: 8002
-    targetPort: 8002
-  selector:
-    app: sola-app
-```
-
-### 7.6 Deployaj
-
-```bash
-kubectl apply -f sola-deployment.yaml
+kubectl apply -k k8s/app/overlays/production-lb
 
 # Preveri
 kubectl -n sola-app get pods -o wide
 kubectl -n sola-app get svc sola-app
-# EXTERNAL-IP naj bo iz MetalLB pool-a (npr. 192.168.1.200)
+# EXTERNAL-IP naj bo iz MetalLB pool-a
+```
+
+Deploy z Ingressom:
+
+```bash
+kubectl apply -k k8s/app/overlays/ingress
+```
+
+Deploy za FRP/tunel:
+
+```bash
+kubectl apply -k k8s/app/overlays/frp
+```
+
+Za pregled generiranih manifestov brez spreminjanja klasterja:
+
+```bash
+kubectl kustomize k8s/app/overlays/production-lb
+kubectl kustomize k8s/app/overlays/ingress
+kubectl kustomize k8s/app/overlays/frp
 ```
 
 ### 7.7 Uvozi uporabnike
@@ -492,8 +398,10 @@ curl -I https://ostc.si
 ### 8.4 Posodobi BASE_URL
 
 ```bash
-kubectl -n sola-app set env configmap/sola-config BASE_URL=https://ostc.si
+kubectl -n sola-app patch configmap/sola-config --type merge \
+  -p '{"data":{"BASE_URL":"https://ostc.si"}}'
 kubectl -n sola-app rollout restart deployment/sola-app
+kubectl -n sola-app rollout status deployment/sola-app
 ```
 
 ---
@@ -502,70 +410,22 @@ kubectl -n sola-app rollout restart deployment/sola-app
 
 ### 9.1 CronJob manifest
 
-Ustvari `sola-backup-cronjob.yaml`:
+CronJob je zdaj del `k8s/app/base/sola-backup-cronjob.yaml`. Ker `DATABASE_URL` ni več v ConfigMapu, ga CronJob bere iz Secreta `sola-secrets`.
 
-```yaml
-apiVersion: batch/v1
-kind: CronJob
-metadata:
-  name: sola-db-backup
-  namespace: sola-app
-spec:
-  schedule: "0 3 * * *"  # Vsak dan ob 3:00
-  concurrencyPolicy: Forbid
-  jobTemplate:
-    spec:
-      template:
-        spec:
-          containers:
-          - name: backup
-            image: sola-app:latest
-            imagePullPolicy: IfNotPresent
-            command:
-            - python
-            - -m
-            - scripts.db_backup
-            env:
-            - name: DATABASE_URL
-              valueFrom:
-                configMapKeyRef:
-                  name: sola-config
-                  key: DATABASE_URL
-            - name: MAIL_USERNAME
-              valueFrom:
-                secretKeyRef:
-                  name: sola-secrets
-                  key: MAIL_USERNAME
-            - name: MAIL_PASSWORD
-              valueFrom:
-                secretKeyRef:
-                  name: sola-secrets
-                  key: MAIL_PASSWORD
-            - name: MAIL_SERVER
-              valueFrom:
-                secretKeyRef:
-                  name: sola-secrets
-                  key: MAIL_SERVER
-            - name: MAIL_PORT
-              valueFrom:
-                secretKeyRef:
-                  name: sola-secrets
-                  key: MAIL_PORT
-            - name: MAIL_FROM
-              valueFrom:
-                secretKeyRef:
-                  name: sola-secrets
-                  key: MAIL_FROM
-            - name: BACKUP_EMAIL
-              valueFrom:
-                secretKeyRef:
-                  name: sola-secrets
-                  key: BACKUP_EMAIL
-          restartPolicy: OnFailure
-```
+Če uporabljaš Kustomize overlay, se CronJob deploya skupaj z aplikacijo:
 
 ```bash
-kubectl apply -f sola-backup-cronjob.yaml
+kubectl apply -k k8s/app/overlays/production-lb
+# ali
+kubectl apply -k k8s/app/overlays/ingress
+# ali
+kubectl apply -k k8s/app/overlays/frp
+```
+
+Če želiš aplicirati samo osnovo:
+
+```bash
+kubectl apply -k k8s/app/base
 ```
 
 ### 9.2 Testiraj backup
@@ -759,8 +619,10 @@ Po pridobitvi SSL bo nginx samodejno uporabljal HTTPS.
 Aplikacija bo zdaj dostopna na `https://ostc.si/solski-app/`, zato mora `BASE_URL` kazati tja:
 
 ```bash
-kubectl -n sola-app set env configmap/sola-config BASE_URL=https://ostc.si/solski-app
+kubectl -n sola-app patch configmap/sola-config --type merge \
+  -p '{"data":{"BASE_URL":"https://ostc.si/solski-app"}}'
 kubectl -n sola-app rollout restart deployment/sola-app
+kubectl -n sola-app rollout status deployment/sola-app
 ```
 
 ---

@@ -3,8 +3,15 @@ kind: Deployment
 metadata:
   name: sola-app
   namespace: sola-app
+  labels:
+    app: sola-app
 spec:
   replicas: 2
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 0
   selector:
     matchLabels:
       app: sola-app
@@ -30,6 +37,7 @@ spec:
         imagePullPolicy: Always
         ports:
         - containerPort: 8002
+          name: http
         envFrom:
         - configMapRef:
             name: sola-config
@@ -48,13 +56,13 @@ spec:
         readinessProbe:
           httpGet:
             path: /health
-            port: 8002
+            port: http
           initialDelaySeconds: 8
           periodSeconds: 10
         livenessProbe:
           httpGet:
             path: /health
-            port: 8002
+            port: http
           initialDelaySeconds: 20
           periodSeconds: 30
           failureThreshold: 5
@@ -62,16 +70,3 @@ spec:
       - name: tmp-volume
         emptyDir:
           sizeLimit: 2Gi
----
-apiVersion: v1
-kind: Service
-metadata:
-  name: sola-app
-  namespace: sola-app
-spec:
-  type: LoadBalancer
-  ports:
-  - port: 8002
-    targetPort: 8002
-  selector:
-    app: sola-app

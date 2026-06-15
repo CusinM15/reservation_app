@@ -21,8 +21,8 @@ spec:
             env:
             - name: DATABASE_URL
               valueFrom:
-                configMapKeyRef:
-                  name: sola-config
+                secretKeyRef:
+                  name: sola-secrets
                   key: DATABASE_URL
             - name: MAIL_USERNAME
               valueFrom:

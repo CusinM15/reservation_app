@@ -368,42 +368,50 @@ Aplikacija podpira PostgreSQL, zato lahko zaženete več workerjev:
 .res_app/bin/uvicorn app.main:app --host 127.0.0.1 --port 8003 &
 ```
 
-### Kubernetes deployment konfiguracija
+### Kubernetes/k3s deployment konfiguracija
 
-Aplikacija je containerizirana in se deploya preko Kubernetes manifestov. Za produkcijsko okolje:
+Kubernetes manifesti so zdaj organizirani v mapi `k8s/` po Kustomize vzorcu:
 
-```yaml
-apiVersion: apps/v1
-kind: Deployment
-metadata:
-  name: sola-app
-spec:
-  replicas: 3  # 1 master + 2 workerji
-  selector:
-    matchLabels:
-      app: sola-app
-  template:
-    metadata:
-      labels:
-        app: sola-app
-    spec:
-      containers:
-      - name: app
-        image: sola-app:latest
-        ports:
-        - containerPort: 8002
-        envFrom:
-        - configMapRef:
-            name: sola-config
-        - secretRef:
-            name: sola-secrets
-        volumeMounts:
-        - name: sola-data
-          mountPath: /app/data
-      volumes:
-      - name: sola-data
-        persistentVolumeClaim:
-          claimName: sola-pvc
+- `k8s/app/base/` — osnovni objekti: Namespace, ConfigMap, Deployment, Service, CronJob.
+- `k8s/app/overlays/production-lb/` — produkcijski deploy z MetalLB `LoadBalancer` servisom.
+- `k8s/app/overlays/ingress/` — deploy z Ingressom in `ClusterIP` servisom.
+- `k8s/app/overlays/frp/` — deploy za FRP/tunel varianto s `ClusterIP` servisom.
+- `k8s/cluster/metallb-config.yaml` — MetalLB IP pool, če ga cluster še nima.
+
+Pred deployom v klasterju ustvari Secret `sola-secrets` v namespaceu `sola-app`. Vanj spadajo občutljive vrednosti, ki niso v repozitoriju: `DATABASE_URL`, `MAIL_USERNAME`, `MAIL_PASSWORD`, `MAIL_SERVER`, `MAIL_PORT`, `MAIL_FROM` in `BACKUP_EMAIL`.
+
+Primeri ukazov:
+
+```bash
+# Enkrat za MetalLB, če ga cluster še nima:
+kubectl apply -f k8s/cluster/metallb-config.yaml
+
+# Ustvari Secret z dejanskimi vrednostmi:
+kubectl -n sola-app create secret generic sola-secrets \
+  --from-literal=DATABASE_URL='postgresql://sola:<geslo>@postgres:5432/sola' \
+  --from-literal=MAIL_USERNAME='<uporabnik>' \
+  --from-literal=MAIL_PASSWORD='<geslo>' \
+  --from-literal=MAIL_SERVER='mail.arnes.si' \
+  --from-literal=MAIL_PORT='587' \
+  --from-literal=MAIL_FROM='<mail@domena.si>' \
+  --from-literal=BACKUP_EMAIL='<backup@domena.si>'
+
+# Deploy z LoadBalancer servisom:
+kubectl apply -k k8s/app/overlays/production-lb
+
+# Deploy z Ingressom:
+kubectl apply -k k8s/app/overlays/ingress
+
+# Deploy za FRP/tunel:
+kubectl apply -k k8s/app/overlays/frp
+```
+
+Za pregled generiranih manifestov brez spreminjanja klasterja:
+
+```bash
+kubectl kustomize k8s/app/overlays/production-lb
+kubectl kustomize k8s/app/overlays/ingress
+kubectl kustomize k8s/app/overlays/frp
 ```
 
 ---
@@ -471,6 +479,8 @@ reservation_app/
 │       └── admin_users.html # Admin panel
 ├── data/
 │   └── sola.db              # SQLite baza
+├── k8s/                     # Kubernetes/k3s manifesti in Kustomize overlayi
+├── scripts/                 # Skripte za backup, uvoz uporabnikov itd.
 ├── .env                     # Konfiguracija
 ├── .res_app/                # Virtualno okolje
 ├── requirements.txt

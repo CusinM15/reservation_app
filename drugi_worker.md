@@ -69,7 +69,7 @@ kubectl describe node worker-2
 
 ## 4) Dodaj oznako (label) — obvezno za naš deployment
 
-Naš `sola-deployment.yaml` uporablja `podAntiAffinity`, kar razporedi pod-e
+Naš deployment v `k8s/app/base/sola-deployment.yaml` uporablja `podAntiAffinity`, kar razporedi pod-e
 na različne vozle. Če želiš, da gredo pod-i samo na workerje (ne na master),
 dodaj labelo:
 
@@ -112,17 +112,17 @@ sola-app-xxxxx-xxxx         1/1     Running   0          1m    worker-2
 kubectl scale deployment/sola-app -n sola-app --replicas=4
 ```
 
-Ali uredi `sola-deployment.yaml`:
+Ali uredi `k8s/app/base/sola-deployment.yaml`:
 
 ```yaml
 spec:
   replicas: 4
 ```
 
-in apliciraj:
+in apliciraj overlay:
 
 ```bash
-kubectl apply -f sola-deployment.yaml
+kubectl apply -k k8s/app/overlays/production-lb
 ```
 
 ---

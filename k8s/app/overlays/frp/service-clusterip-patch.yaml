@@ -4,9 +4,4 @@ metadata:
   name: sola-app
   namespace: sola-app
 spec:
-  selector:
-    app: sola-app
-  ports:
-    - port: 8002
-      targetPort: 8002
   type: ClusterIP
