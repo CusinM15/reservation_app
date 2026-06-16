@@ -26,7 +26,7 @@ k8s/
 
 ## CronJob za dnevni backup
 
-CronJob `sola-db-backup` teče ob **04:00 po času Johannesburga** (`Africa/Johannesburg`, SAST/UTC+2).
+CronJob `sola-db-backup` teče ob **04:00 po času Ljubljane** (`Europe/Ljubljana`).
 Manifest je v `app/base/sola-backup-cronjob.yaml`.
 
 ```bash
