@@ -24,6 +24,16 @@ k8s/
     └── README.md
 ```
 
+## CronJob za dnevni backup
+
+CronJob `sola-db-backup` teče ob **04:00 po času Johannesburga** (`Africa/Johannesburg`, SAST/UTC+2).
+Manifest je v `app/base/sola-backup-cronjob.yaml`.
+
+```bash
+kubectl -n sola-app get cronjob sola-db-backup
+kubectl -n sola-app describe cronjob sola-db-backup
+```
+
 ## Secret
 
 Občutljivih vrednosti ne shranjujemo v repozitorij. Pred deployom ustvari Secret:
