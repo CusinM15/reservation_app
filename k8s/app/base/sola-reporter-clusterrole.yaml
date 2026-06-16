@@ -1,0 +1,46 @@
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: sola-reporter-readonly
+rules:
+  # Core k3s read-only objects used by the daily report.
+  - apiGroups: [""]
+    resources:
+      - nodes
+      - pods
+      - services
+      - persistentvolumeclaims
+      - persistentvolumes
+      - namespaces
+      - events
+    verbs: ["get", "list", "watch"]
+  # New Kubernetes event API, when present.
+  - apiGroups: ["events.k8s.io"]
+    resources:
+      - events
+    verbs: ["get", "list", "watch"]
+  # Workload inventory.
+  - apiGroups: ["apps"]
+    resources:
+      - deployments
+      - statefulsets
+      - daemonsets
+      - replicasets
+    verbs: ["get", "list", "watch"]
+  # Backup/report job inventory.
+  - apiGroups: ["batch"]
+    resources:
+      - jobs
+      - cronjobs
+    verbs: ["get", "list", "watch"]
+  # Longhorn CRDs for volume/replica/node health.
+  - apiGroups: ["longhorn.io"]
+    resources:
+      - volumes
+      - nodes
+      - engines
+      - replicas
+      - backups
+      - backuptargets
+      - settings
+    verbs: ["get", "list", "watch"]

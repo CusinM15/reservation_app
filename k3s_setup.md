@@ -435,6 +435,22 @@ kubectl -n sola-app create job --from=cronjob/sola-db-backup manual-backup-test
 kubectl -n sola-app logs -l job-name=manual-backup-test --tail=50 -f
 ```
 
+### 9.3 Dnevni k3s/Longhorn health report
+
+CronJob `sola-daily-report` teče ob **04:00 Europe/Ljubljana** in pošlje read-only report:
+
+- k3s agent: nodi, podi, workloadi, cronjobi, warning eventi
+- Longhorn agent: volumi, replike, degradacije, rebuildi, disk usage
+- node health / lifetime estimate agent: heuristic ocena tveganja po nodu
+
+RBAC je omejen na `get/list/watch` za potrebne resurse.
+
+```bash
+kubectl -n sola-app get cronjob sola-daily-report
+kubectl -n sola-app describe cronjob sola-daily-report
+kubectl -n sola-app logs -l job-name=<report-job> --tail=100
+```
+
 ---
 
 ## 10. SKALIRANJE

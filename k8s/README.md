@@ -34,6 +34,32 @@ kubectl -n sola-app get cronjob sola-db-backup
 kubectl -n sola-app describe cronjob sola-db-backup
 ```
 
+## CronJob za dnevni k3s/Longhorn report
+
+CronJob `sola-daily-report` teče ob **04:00 po času Ljubljane** (`Europe/Ljubljana`).
+Report je razdeljen na tri read-only “agent” sekcije:
+
+- `k3s agent`: nodi, podi, workloadi, cronjobi, warning eventi
+- `Longhorn agent`: volumi, replike, degradacije, rebuildi, disk usage
+- `node health / lifetime estimate agent`: heuristic ocena tveganja za posamezen node
+
+Manifesti:
+
+```text
+app/base/sola-daily-report-cronjob.yaml
+app/base/sola-reporter-serviceaccount.yaml
+app/base/sola-reporter-clusterrole.yaml
+app/base/sola-reporter-clusterrolebinding.yaml
+```
+
+RBAC je namerno read-only. CronJob ne bere logov in ne izvaja destructive ukazov.
+
+```bash
+kubectl -n sola-app get cronjob sola-daily-report
+kubectl -n sola-app describe cronjob sola-daily-report
+kubectl -n sola-app logs -l job-name=<job-name> --tail=100
+```
+
 ## Secret
 
 Občutljivih vrednosti ne shranjujemo v repozitorij. Pred deployom ustvari Secret:

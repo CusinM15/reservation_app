@@ -1,0 +1,32 @@
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: sola-daily-report
+  namespace: sola-app
+spec:
+  schedule: "0 4 * * *"
+  timeZone: "Europe/Ljubljana"
+  concurrencyPolicy: Forbid
+  successfulJobsHistoryLimit: 3
+  failedJobsHistoryLimit: 1
+  jobTemplate:
+    spec:
+      activeDeadlineSeconds: 600
+      template:
+        spec:
+          serviceAccountName: sola-reporter
+          restartPolicy: OnFailure
+          containers:
+            - name: report
+              image: mato12345/sola-app:latest
+              imagePullPolicy: Always
+              command:
+                - python
+                - -m
+                - scripts.daily_report
+              resources:
+                requests:
+                  cpu: 50m
+                  memory: 128Mi
+                limits:
+                  memory: 256Mi
