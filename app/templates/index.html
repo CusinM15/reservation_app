@@ -437,7 +437,7 @@
     }
     function populateSelect(id, items) {
       const sel = document.getElementById(id);
-      sel.innerHTML = items.map(v => `<option value="${v}">${v}</option>`).join('');
+      sel.innerHTML = items.map(v => `<option value="${v}">${prostorLabel(v)}</option>`).join('');
     }
     function populateOcRazredi(id, items, addAll) {
       const sel = document.getElementById(id);
