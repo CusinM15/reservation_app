@@ -44,7 +44,7 @@ cp .env.example .env
 ```env
 APP_HOST=0.0.0.0
 APP_PORT=8001
-BASE_URL=http://localhost:{{LOCAL_DEV_PORT}}
+BASE_URL=http://localhost:8001
 DATABASE_URL=sqlite:///./data/sola.db
 TABLICE_MAX=28
 SCHEDULE={"0":"07:30-08:15","1":"08:20-09:05","2":"09:15-10:00","3":"10:20-11:05","4":"11:10-11:55","5":"12:00-12:45","6":"12:50-13:35","7":"14:00-14:45"}
@@ -56,12 +56,12 @@ PROSTORI=tablice,racunalnica,ladja
 
 ```bash
 docker build -t sola-app .
-docker run -d --name sola-app -p 8001:{{LOCAL_DEV_PORT}} \
+docker run -d --name sola-app -p 8001:8001 \
   -v $(pwd)/data:/app/data \
   sola-app
 ```
 
-Aplikacija je na **http://localhost:{{LOCAL_DEV_PORT}}**.
+Aplikacija je na **http://localhost:8001**.
 
 Privzet dostop: `admin` / `your_password` (geslo takoj spremeni).
 
@@ -106,7 +106,7 @@ uvicorn app.main:app --host 0.0.0.0 --port 8001 --reload
 
 `--reload` pomeni samodejni restart ob spremembi kode (uporabno za razvoj).
 
-Aplikacija: **http://localhost:{{LOCAL_DEV_PORT}}**
+Aplikacija: **http://localhost:8001**
 Admin: `admin` / `your_password`
 
 ### 3c) Ustavi
@@ -139,11 +139,11 @@ pip install requests beautifulsoup4 lxml
 ### 5b) Zaženi uvoz
 
 ```bash
-# Če app teče na localhost:{{LOCAL_DEV_PORT}}:
-python3 scripts/import_teachers.py --base-url http://localhost:{{LOCAL_DEV_PORT}}
+# Če app teče na localhost:8001:
+python3 scripts/import_teachers.py --base-url http://localhost:8001
 
 # Samo poglej, kdo bi se uvozil (brez spreminjanja):
-python3 scripts/import_teachers.py --base-url http://localhost:{{LOCAL_DEV_PORT}} --dry-run
+python3 scripts/import_teachers.py --base-url http://localhost:8001 --dry-run
 ```
 
 ### 5c) Prilagodi za svojo šolo
@@ -154,7 +154,7 @@ Uredi `scripts/import_teachers.py`:
 
 ### 5d) Kako učitelji dostopajo?
 
-1. Gredo na **http://localhost:{{LOCAL_DEV_PORT}}** (ali tvoj URL)
+1. Gredo na **http://localhost:8001** (ali tvoj URL)
 2. Kliknejo **"Pozabljeno geslo"**
 3. Vnesejo svoj email
 4. Dobijo email z linkom za nastavitev gesla
@@ -178,7 +178,7 @@ Uredi `scripts/import_teachers.py`:
 
 | Težava | Rešitev |
 |---|---|
-| `Port already in use` | Spremeni `APP_PORT={{LB_PORT}}` v `.env` |
+| `Port already in use` | Spremeni `APP_PORT=8002` v `.env` |
 | SQLite `database is locked` | Ustavi app, zbriši `data/sola.db`, zaženi znova |
 | Učitelji niso uvoženi | Preveri `--dry-run` najprej |
 | Ne vidim prostorov | Preveri `PROSTORI` v `.env` |

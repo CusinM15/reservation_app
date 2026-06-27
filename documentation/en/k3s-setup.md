@@ -19,11 +19,11 @@ Instructions for setting up a k3s Kubernetes cluster on **two nodes** (both cont
 ## 📋 Architecture (current)
 
 ```
-Internet → Cloudflare → {{DOMAIN}}
+Internet → Cloudflare → ostc-app.org
                             │
                             ▼
                     k3s-2:8080 (nginx)
-                    proxy_pass {{LB_IP}}:{{LB_PORT}}
+                    proxy_pass 192.168.1.10:8002
                             │
                     MetalLB LoadBalancer
                             │
@@ -64,9 +64,9 @@ curl -sfL https://get.k3s.io | sh -s - server \
   --disable=traefik \
   --disable=servicelb \
   --write-kubeconfig-mode=644 \
-  --cluster-cidr={{CLUSTER_CIDR}} \
-  --service-cidr={{SERVICE_CIDR}} \
-  --node-ip={{K3S_1_IP}}
+  --cluster-cidr=10.42.0.0/16 \
+  --service-cidr=10.43.0.0/16 \
+  --node-ip=192.168.1.1
 ```
 
 ### 1.2 Get the token
@@ -79,12 +79,12 @@ sudo cat /var/lib/rancher/k3s/server/node-token
 
 ```bash
 curl -sfL https://get.k3s.io | sh -s - server \
-  --server https://{{K3S_1_IP}}:{{K3S_API_PORT}} \
+  --server https://192.168.1.1:6443 \
   --token <TOKEN> \
   --disable=traefik \
   --disable=servicelb \
   --write-kubeconfig-mode=644 \
-  --node-ip={{K3S_2_IP}}
+  --node-ip=192.168.1.2
 ```
 
 ### 1.4 Verify
@@ -213,7 +213,7 @@ kubectl create secret generic sola-secrets \
   --from-literal=MAIL_PORT=587 \
   --from-literal=MAIL_FROM=sola@example.com \
   --from-literal=BACKUP_EMAIL=admin@sola.si \
-  --from-literal=DATABASE_URL=postgresql://sola:***@sola-db-rw.sola:{{K8S_DB_PORT}}/sola
+  --from-literal=DATABASE_URL=postgresql://sola:***@sola-db-rw.sola:5432/sola
 ```
 
 ### 5.3 Deploy with overlays
@@ -236,9 +236,9 @@ Create `/etc/nginx/sites-available/default`:
 
 ```nginx
 server {
-    listen {{NGINX_PORT}};
+    listen 8080;
     location / {
-        proxy_pass http://{{LB_IP}}:{{LB_PORT}};
+        proxy_pass http://192.168.1.10:8002;
         proxy_set_header Host $host;
         proxy_set_header X-Real-IP $remote_addr;
         proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
@@ -273,7 +273,7 @@ sudo cat /var/lib/rancher/k3s/server/node-token
 
 # On the new node:
 curl -sfL https://get.k3s.io | sh -s - server \
-  --server https://<MASTER_IP>:{{K3S_API_PORT}} \
+  --server https://<MASTER_IP>:6443 \
   --token <TOKEN> \
   --node-ip <NEW_IP> \
   --disable traefik --disable=servicelb

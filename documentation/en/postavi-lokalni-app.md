@@ -44,7 +44,7 @@ cp .env.example .env
 ```env
 APP_HOST=0.0.0.0
 APP_PORT=8001
-BASE_URL=http://localhost:{{LOCAL_DEV_PORT}}
+BASE_URL=http://localhost:8001
 DATABASE_URL=sqlite:///./data/sola.db
 TABLICE_MAX=28
 SCHEDULE={"0":"07:30-08:15","1":"08:20-09:05","2":"09:15-10:00","3":"10:20-11:05","4":"11:10-11:55","5":"12:00-12:45","6":"12:50-13:35","7":"14:00-14:45"}
@@ -56,12 +56,12 @@ PROSTORI=tablice,racunalnica,ladja
 
 ```bash
 docker build -t sola-app .
-docker run -d --name sola-app -p 8001:{{LOCAL_DEV_PORT}} \
+docker run -d --name sola-app -p 8001:8001 \
   -v $(pwd)/data:/app/data \
   sola-app
 ```
 
-The application is at **http://localhost:{{LOCAL_DEV_PORT}}**.
+The application is at **http://localhost:8001**.
 
 Default access: `admin` / `your_password` (change password immediately).
 
@@ -106,7 +106,7 @@ uvicorn app.main:app --host 0.0.0.0 --port 8001 --reload
 
 `--reload` means automatic restart on code changes (useful for development).
 
-Application: **http://localhost:{{LOCAL_DEV_PORT}}**
+Application: **http://localhost:8001**
 Admin: `admin` / `your_password`
 
 ### 3c) Stop
@@ -139,11 +139,11 @@ pip install requests beautifulsoup4 lxml
 ### 5b) Run Import
 
 ```bash
-# If the app is running on localhost:{{LOCAL_DEV_PORT}}:
-python3 scripts/import_teachers.py --base-url http://localhost:{{LOCAL_DEV_PORT}}
+# If the app is running on localhost:8001:
+python3 scripts/import_teachers.py --base-url http://localhost:8001
 
 # Just preview who would be imported (without making changes):
-python3 scripts/import_teachers.py --base-url http://localhost:{{LOCAL_DEV_PORT}} --dry-run
+python3 scripts/import_teachers.py --base-url http://localhost:8001 --dry-run
 ```
 
 ### 5c) Adapt for Your School
@@ -154,7 +154,7 @@ Edit `scripts/import_teachers.py`:
 
 ### 5d) How Teachers Log In?
 
-1. They go to **http://localhost:{{LOCAL_DEV_PORT}}** (or your URL)
+1. They go to **http://localhost:8001** (or your URL)
 2. Click **"Forgot password"**
 3. Enter their email
 4. They receive an email with a link to set a password
@@ -178,7 +178,7 @@ If you don't have an email server, you can set passwords manually via the admin 
 
 | Issue | Solution |
 |---|---|
-| `Port already in use` | Change `APP_PORT={{LB_PORT}}` in `.env` |
+| `Port already in use` | Change `APP_PORT=8002` in `.env` |
 | SQLite `database is locked` | Stop the app, delete `data/sola.db`, restart |
 | Teachers not imported | Check with `--dry-run` first |
 | Cannot see rooms | Check `PROSTORI` in `.env` |

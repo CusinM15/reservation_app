@@ -68,13 +68,13 @@ network:
   ethernets:
     eth0:
       addresses:
-        - {{LB_IP}}/24
+        - 192.168.1.10/24
       routes:
         - to: default
-          via: {{K3S_1_IP}}
+          via: 192.168.1.1
       nameservers:
         addresses:
-          - {{LB_IP}}
+          - 192.168.1.10
           - 8.8.8.8
   version: 2
 ```
@@ -180,7 +180,7 @@ sudo cat /var/lib/rancher/k3s/server/token   # on any master
 
 ```bash
 curl -sfL https://get.k3s.io | sh -s - server \
-  --server https://<MASTER_IP>:{{K3S_API_PORT}} \
+  --server https://<MASTER_IP>:6443 \
   --token <TOKEN> \
   --node-ip <NEW_IP> \
   --disable traefik --disable=servicelb
