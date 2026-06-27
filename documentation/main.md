@@ -356,7 +356,7 @@ server {
 ```
 
 > **Cloudflare** uporablja **Flexible SSL** — HTTPS do uporabnika, HTTP do LoadBalancer IP (`{{LB_IP}}`, port 80).
-> Če LoadBalancer IP ni dosegljiv, lahko v Cloudflare dashboardu spremenimo origin IP (npr. na k3s-1 IP).
+> **HA zagotavlja MetalLB** — layer2 failover: če node z LB IP-jem crkne, drug node avtomatsko prevzame IP v nekaj sekundah. Cloudflare še naprej pošilja na isti IP, ničesar ni treba spreminjati.
 
 ---
 

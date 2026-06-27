@@ -568,8 +568,8 @@ server {
 }
 ```
 
-> **Cloudflare** uses **Flexible SSL** — HTTPS to the user, HTTP to LoadBalancer IP (`{{LB_IP}}`, port 80).  
-> If the LoadBalancer IP is unavailable, change the Cloudflare origin in the dashboard (e.g. to k3s-1 IP).
+> **Cloudflare** uses **Flexible SSL** — HTTPS to the user, HTTP to LoadBalancer IP (`{{LB_IP}}`, port 80).
+> **HA is provided by MetalLB** — layer2 failover: if the node currently holding the LB IP goes down, the other node automatically takes over the IP within seconds. Cloudflare keeps sending to the same IP — nothing needs to be changed.
 
 > **Note:** Cloudflare handles SSL (HTTPS). Nginx listens on port {{NGINX_PORT}} (not 80/443) and forwards to the MetalLB IP.
 
