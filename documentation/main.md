@@ -8,6 +8,17 @@
 
 ---
 
+> 💡 **Prilagodi dokumentacijo svojim IP-jem:**
+> 1. Uredi [`documentation/.env.ip`](.env.ip) — vnesi svoje IP-je in porte
+> 2. Poženi `./documentation/replace-ips.sh`
+> 3. Vsi `{{VAR}}` place holderji v dokumentaciji bodo samodejno zamenjani
+>
+> **Primer:** `{{K3S_1_IP}}` → `192.168.1.5` (tvoj IP)
+>
+> *Če želiš nazaj na {{VAR}}, ponastavi z `git checkout -- documentation/`*
+
+---
+
 # 🚀 **ostc-app — Rezervacijski sistem**
 ## **OŠ Toneta Čufarja — Dokumentacija**
 

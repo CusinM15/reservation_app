@@ -8,6 +8,17 @@
 
 ---
 
+> 💡 **Customize the documentation with your own IPs:**
+> 1. Edit [`documentation/.env.ip`](../.env.ip) — set your IPs and ports
+> 2. Run `./documentation/replace-ips.sh`
+> 3. All `{{VAR}}` placeholders in the documentation will be replaced automatically
+>
+> **Example:** `{{K3S_1_IP}}` → `192.168.1.5` (your IP)
+>
+> *To revert back to `{{VAR}}`, run `git checkout -- documentation/`*
+
+---
+
 ## 📚 Documentation Index
 
 | Document | Description |
