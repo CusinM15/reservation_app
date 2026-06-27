@@ -20,23 +20,19 @@ Instructions for setting up a k3s Kubernetes cluster on **two nodes** (both cont
 
 ```
 Internet → Cloudflare → ostc-app.org
-                            │
-                            ▼
-                    k3s-2:8080 (nginx)
-                    proxy_pass 192.168.1.10:8002
-                            │
-                    MetalLB LoadBalancer
-                            │
-               ┌────────────┴────────────┐
-               │                         │
-         k3s-1 (cp,etcd)          k3s-2 (cp,etcd)
-         ┌────────────┐          ┌────────────┐
-         │ sola-app   │          │ sola-app   │
-         │ sola-db-1  │◄────────►│ sola-db-2  │
-         │ (PRIMARY)  │  stream  │ (REPLICA)  │
-         │ Longhorn   │  repl.   │ Longhorn   │
-         │ MetalLB    │          │ MetalLB    │
-         └────────────┘          └────────────┘
+                  │
+          MetalLB LoadBalancer
+                  │
+     ┌────────────┴────────────┐
+     │                         │
+k3s-1 (cp,etcd)          k3s-2 (cp,etcd)
+     ┌────────────┐          ┌────────────┐
+     │ sola-app   │          │ sola-app   │
+     │ sola-db-1  │◄────────►│ sola-db-2  │
+     │ (PRIMARY)  │  stream  │ (REPLICA)  │
+     │ Longhorn   │  repl.   │ Longhorn   │
+     │ MetalLB    │          │ MetalLB    │
+     └────────────┘          └────────────┘
 ```
 
 ---
@@ -224,35 +220,7 @@ kubectl apply -k k8s/app/overlays/production-lb
 
 ---
 
-## 6. Nginx reverse proxy
-
-On k3s-2:
-
-```bash
-sudo apt install -y nginx
-```
-
-Create `/etc/nginx/sites-available/default`:
-
-```nginx
-server {
-    listen 8080;
-    location / {
-        proxy_pass http://192.168.1.10:8002;
-        proxy_set_header Host $host;
-        proxy_set_header X-Real-IP $remote_addr;
-        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-    }
-}
-```
-
-```bash
-sudo nginx -t && sudo systemctl restart nginx
-```
-
----
-
-## 7. Maintenance
+## 6. Maintenance
 
 ### Updating the application
 
@@ -285,7 +253,7 @@ sudo systemctl enable --now iscsid
 
 ---
 
-## 8. Common issues
+## 7. Common issues
 
 | Issue | Solution |
 |---|---|

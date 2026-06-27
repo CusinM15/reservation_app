@@ -39,11 +39,6 @@ Kubernetes Deployment sola-app
 ```
 Internet → ostc-app.org (Cloudflare)
                 │
-          ┌─────┴─────┐
-          ▼           ▼
-    k3s-1:8080   k3s-2:8080  (nginx — both identical)
-          │           │
-          └─────┬─────┘
                 ▼
    Service LoadBalancer 192.168.1.10:8002 (MetalLB)
                 │
@@ -52,11 +47,9 @@ Internet → ostc-app.org (Cloudflare)
    app pod (k3s-1)  app pod (k3s-2)
 ```
 
-- **Cloudflare** proxies to LoadBalancer IP `192.168.1.10` (MetalLB, port 80) or alternatively to any node via nginx (port 8080)
-- **Nginx** on **k3s-1** and **k3s-2** (both identical) proxy-passes to `192.168.1.10:8002`
+- **Cloudflare** proxies to LoadBalancer IP `192.168.1.10` (MetalLB, port 80)
 - **Service type LoadBalancer** (MetalLB) — fixed IP, layer2 failover
 - If one node fails, MetalLB takes over traffic on the other node
-- Nginx on both nodes provides redundancy — if one fails, Cloudflare can be redirected to the other
 
 ### 3. PostgreSQL Database — CloudNativePG (CNPG)
 
@@ -157,7 +150,6 @@ kubectl get cluster -n sola sola-db    # CNPG should have 2 ready instances
 ### 6. Important Notes
 
 - **Cloudflare** points to LoadBalancer IP `192.168.1.10` — if this IP changes, Cloudflare DNS must be updated
-- **Nginx** on **k3s-1** and **k3s-2** proxy-passes to the LoadBalancer IP — if the IP changes, update `/etc/nginx/sites-available/default` on both nodes
 - **Longhorn** takes care of PVCs — data is safe even if one node is lost
 - **No custom failover scripts** — everything is managed by the CNPG operator
 - **Failover is fully automatic** — no manual intervention required

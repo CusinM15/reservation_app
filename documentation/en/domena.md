@@ -38,10 +38,7 @@ Cloudflare proxy (orange cloud) means:
     → Cloudflare proxy → {{LB_IP}}:80 (LoadBalancer, MetalLB)
       → sola-app Pod (k3s-1 or k3s-2) :8002
 
-Alternative path (internal network — fallback if Cloudflare/LB is unreachable):
-http://{{K3S_1_IP}}:8080 → nginx on k3s-1 → proxy_pass {{LB_IP}}:{{LB_PORT}}
-http://{{K3S_2_IP}}:8080 → nginx on k3s-2 → proxy_pass {{LB_IP}}:{{LB_PORT}}
-http://{{LB_IP}}:{{LB_PORT}} → direct to LoadBalancer (internal only)
+(No alternative paths — the architecture uses Cloudflare directly to the LoadBalancer.)
 ```
 
 ---
@@ -85,21 +82,13 @@ kubectl -n sola-app patch configmap sola-config --type merge \
 kubectl -n sola-app rollout restart deployment/sola-app
 ```
 
-### 3. Update nginx (internal network — if IP changes)
-
-On both nodes (k3s-1 and k3s-2):
-```bash
-sudo sed -i 's/{{LB_IP}}/NEW_LB_IP/' /etc/nginx/sites-available/default
-sudo sed -i 's/{{DOMAIN}}/new-domain.si/' /etc/nginx/sites-available/default
-sudo systemctl restart nginx
-```
-
 ---
+
+
 
 ## 📌 Notes
 
-- **Cloudflare → LB IP** (`{{LB_IP}}`) — traffic goes directly to MetalLB, not through nginx
-- **Nginx** on both nodes (`:8080`) is **internal fallback only** — for when Cloudflare or LoadBalancer is unreachable from the school network
+- **Cloudflare → LB IP** (`{{LB_IP}}`) — traffic goes directly to MetalLB
 - **Cloudflare SSL** is "Flexible" — HTTPS between user and Cloudflare, HTTP between Cloudflare and LoadBalancer (`{{LB_IP}}:80`)
 - **LoadBalancer** (MetalLB) listens on port 80 and forwards to sola-app container port 8002
 - If you wanted **end-to-end HTTPS** (Cloudflare → origin), you would need certbot/letsencrypt and change SSL to "Full"
@@ -118,18 +107,6 @@ sudo systemctl restart nginx
 
 **Cloudflare doesn't know which node is alive** — it simply sends traffic to `{{LB_IP}}`. MetalLB ensures this IP is always on a healthy node.
 
-### What about nginx on both nodes?
+---
 
-Nginx on k3s-1 and k3s-2 (port `{{NGINX_PORT}}`) is for **internal network only**:
 
-```
-http://{{K3S_1_IP}}:{{NGINX_PORT}}  →  nginx proxy_pass  →  {{LB_IP}}:{{LB_PORT}}
-http://{{K3S_2_IP}}:{{NGINX_PORT}}  →  nginx proxy_pass  →  {{LB_IP}}:{{LB_PORT}}
-```
-
-Useful when:
-- Cloudflare is unreachable (internet outage)
-- LoadBalancer IP is temporarily unavailable
-- You want to access directly through the school network
-
-**In normal operation, nginx is NOT in the Cloudflare → application traffic path.**

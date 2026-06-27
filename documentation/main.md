@@ -55,12 +55,11 @@ Ta datoteka je **glavni vstopni dokument**. Spodaj so povezave na specializirane
 4. [Aplikacija Sola App](#aplikacija-sola-app)
 5. [PostgreSQL HA — CloudNativePG](#postgresql-ha--cloudnativepg)
 6. [MetalLB LoadBalancer](#metallb-loadbalancer)
-7. [Nginx Reverse Proxy](#nginx-reverse-proxy)
-8. [Cloudflare DNS](#cloudflare-dns)
-9. [Longhorn Storage](#longhorn-storage)
-10. [Dnevni backup in reporti](#dnevni-backup-in-reporti)
-11. [Vzdrževanje in okvare](#vzdrževanje-in-okvare)
-12. [Celoten sklic ukazov](#celoten-sklic-ukazov)
+7. [Cloudflare DNS](#cloudflare-dns)
+8. [Longhorn Storage](#longhorn-storage)
+9. [Dnevni backup in reporti](#dnevni-backup-in-reporti)
+10. [Vzdrževanje in okvare](#vzdrževanje-in-okvare)
+11. [Celoten sklic ukazov](#celoten-sklic-ukazov)
 
 ---
 
@@ -94,13 +93,7 @@ Ta datoteka je **glavni vstopni dokument**. Spodaj so povezave na specializirane
 │  │  │ Instance Manager  │   │    │  │ Instance Manager  │   │            │
 │  │  └───────────────────┘   │    │  └───────────────────┘   │            │
 │  │                          │    │                          │            │
-│  │  ┌───────────────────┐   │    │  ┌───────────────────┐   │            │
-│  │  │ nginx             │   │    │  │ nginx             │   │            │
-│  │  │(port 8080)  │    │  │ (port 8080) │            │
-│  │  └───────────────────┘   │    │  └───────────┬───────┘   │            │
-│  └──────────────────────────┘    └───────────────┼──────────┘            │
-│                                                  │                       │
-│                                  proxy_pass│192.168.1.10:8002        │
+│  └──────────────────────────┘    └──────────────────────────┘            │
 │                                                  │                       │
 │                    ┌─────────────────────────────┘                       │
 │                    │                                                     │
@@ -131,25 +124,21 @@ Ta datoteka je **glavni vstopni dokument**. Spodaj so povezave na specializirane
     → Service LoadBalancer (MetalLB, {{LB_IP}}:{{LB_PORT}})
       → sola-app Pod (k3s-1 ali k3s-2)
 
-Alternativna pot (interno omrežje):
-  → http://k3s-1:8080 → nginx na k3s-1 → proxy_pass 192.168.1.10:8002
-  → http://k3s-2:8080 → nginx na k3s-2 → proxy_pass 192.168.1.10:8002
   → http://192.168.1.10:8002 → direkt na LoadBalancer
 ```
 
-> **Cloudflare proxy** kaže direktno na **LoadBalancer (`{{LB_IP}}`, port 80)** — ne na nginx na k3s-2. Ker gre promet direkt na MetalLB, HA deluje samodejno — če en node crkne, MetalLB premakne IP na drugega.
+> **Cloudflare proxy** kaže direktno na **LoadBalancer (`{{LB_IP}}`, port 80)** — promet gre direkt na MetalLB, HA deluje samodejno — če en node crkne, MetalLB premakne IP na drugega.
 
 ### **Pregled komponent**
 
 | Komponenta | Lokacija | Namen |
 |---|---|---|
-| **k3s-1** | HP ProBook 455 G5 (192.168.1.1) | Control-plane, app pod, PG primary, nginx |
-| **k3s-2** | HP ProBook 450 G5 (192.168.1.2) | Control-plane, app pod, PG replica, nginx |
-| **Sola App (FastAPI)** | 2 poda (oba noda) | Rezervacije, ocenjevanje, prijava |
-| **Longhorn** | Oba noda | Distribuirano shranjevanje (PVC-ji) |
-| **MetalLB** | Oba noda | LoadBalancer IP (192.168.1.10) |
-| **nginx** | Oba noda (port 8080) | Reverse proxy → LoadBalancer 192.168.1.10:8002. Za interno omrežje (rezerva) |
-| **Cloudflare** | Zunanji | DNS, SSL, proxy |
+|| **k3s-1** | HP ProBook 455 G5 (192.168.1.1) | Control-plane, app pod, PG primary |
+|| **k3s-2** | HP ProBook 450 G5 (192.168.1.2) | Control-plane, app pod, PG replica |
+|| **Sola App (FastAPI)** | 2 poda (oba noda) | Rezervacije, ocenjevanje, prijava |
+|| **Longhorn** | Oba noda | Distribuirano shranjevanje (PVC-ji) |
+|| **MetalLB** | Oba noda | LoadBalancer IP (192.168.1.10) |
+|| **Cloudflare** | Zunanji | DNS, SSL, proxy |
 
 ---
 
@@ -158,9 +147,9 @@ Alternativna pot (interno omrežje):
 ### **Specifikacije**
 
 | Node | Model | CPU | RAM | Disk | Vloga |
-|---|---|---|---|---|---|
-| **k3s-1** | HP ProBook 455 G5 | AMD Ryzen 5 2500U | 16GB | 256GB SSD | Control-plane,etcd, app, PG primary, nginx |
-| **k3s-2** | HP ProBook 450 G5 | Intel Core i5-8250U | 8GB | 256GB SSD | Control-plane,etcd, app, PG replica, nginx |
+|---|---|---|---|---|---|---|
+| **k3s-1** | HP ProBook 455 G5 | AMD Ryzen 5 2500U | 16GB | 256GB SSD | Control-plane,etcd, app, PG primary |
+| **k3s-2** | HP ProBook 450 G5 | Intel Core i5-8250U | 8GB | 256GB SSD | Control-plane,etcd, app, PG replica |
 
 ### **Omrežne nastavitve**
 
@@ -232,7 +221,7 @@ curl -sfL https://get.k3s.io | sh -s - server \
 
 Token dobite z: `sudo cat /var/lib/rancher/k3s/server/node-token` (na k3s-1).
 
-> **Opomba:** `--disable=traefik` izklopi vgrajeni ingress, ker uporabljamo lastni nginx reverse proxy.
+> **Opomba:** `--disable=traefik` izklopi vgrajeni ingress, ker uporabljamo MetalLB LoadBalancer.
 
 ---
 
@@ -327,37 +316,6 @@ CNPG samodejno ustvari tri Kubernetes Services za dostop do baze:
 
 ---
 
-## 🌐 **Nginx Reverse Proxy**
-
-### **Arhitektura**
-
-Nginx teče na **obeh nodih** z identično konfiguracijo:
-
-| Node | Port | Vloga |
-|---|---|---|
-| **k3s-1** | 8080 | Reverse proxy → LoadBalancer (rezerva) |
-| **k3s-2** | 8080 | Reverse proxy → LoadBalancer (nginx backend) |
-
-### **Konfiguracija**
-
-Oba noda imata enako konfiguracijo v `/etc/nginx/sites-enabled/default`:
-
-```nginx
-server {
-    listen 8080;
-
-    location / {
-        proxy_pass http://192.168.1.10:8002;
-        proxy_set_header Host $host;
-        proxy_set_header X-Real-IP $remote_addr;
-        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-    }
-}
-```
-
- > **Cloudflare** uporablja **Flexible SSL** — HTTPS do uporabnika, HTTP do LoadBalancer IP (`{{LB_IP}}`, port 80).
- > **HA zagotavlja MetalLB** — layer2 failover: če node z LB IP-jem crkne, drug node avtomatsko prevzame IP v nekaj sekundah. Cloudflare še naprej pošilja na isti IP, ničesar ni treba spreminjati.
-
 ---
 
 ## ☁️ **Cloudflare DNS**
@@ -445,9 +403,6 @@ kubectl get volumes.longhorn.io -n longhorn-system
 
 # Preveri CloudNativePG
 kubectl get cluster -n sola-app
-
-# Preveri nginx
-sudo systemctl status nginx
 ```
 
 ### **Ob izpadu noda**
@@ -488,12 +443,6 @@ kubectl exec -it -n sola-app deploy/sola-app -- psql $SOLA_DATABASE_URL -c "SELE
 kubectl get volumes.longhorn.io -n longhorn-system
 kubectl get engineimages.longhorn.io -n longhorn-system
 kubectl get nodes.longhorn.io -n longhorn-system
-
-# === Nginx ===
-sudo systemctl status nginx
-sudo systemctl restart nginx
-sudo nginx -t
-sudo journalctl -u nginx --no-pager -n 30
 
 # === Git (na k3s-2) ===
 cd /home/admin/reservation_app
