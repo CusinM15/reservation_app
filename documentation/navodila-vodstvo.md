@@ -1,3 +1,7 @@
+🌐 **Jezik / Language:** [🇸🇮 Slovenščina](navodila-vodstvo.md) | [🇬🇧 English](en/navodila-vodstvo.md)
+
+---
+
 # 👑 Navodila za vodstvo in administratorja
 
 > Ta dokument pokriva upravljanje aplikacije prek brskalnika — namenjeno vodstvu (dodatne funkcije) in adminu.

@@ -1,16 +1,16 @@
-🌐 **Jezik / Language:** [🇸🇮 Slovenščina](k3s-setup.md) | [🇬🇧 English](en/k3s-setup.md)
+🌐 **Language / Jezik:** [🇸🇮 Slovenščina](../k3s-setup.md) | [🇬🇧 English](k3s-setup.md)
 
 ---
 
-# ☸️ K3s Setup — Šolski App
+# ☸️ K3s Setup — School App
 
-Navodila za postavitev k3s Kubernetes clusterja na **dveh nodih** (oba control-plane), z MetalLB, Longhorn, CloudNativePG (PostgreSQL) in FastAPI aplikacijo.
+Instructions for setting up a k3s Kubernetes cluster on **two nodes** (both control-plane), with MetalLB, Longhorn, CloudNativePG (PostgreSQL) and a FastAPI application.
 
-> ⚠️ **Trenutna konfiguracija uporablja 2 noda, oba kot control-plane,etcd.** To je lažja konfiguracija kot klasični 3-node setup (ni ločenih worker nodov).
+> ⚠️ **Current configuration uses 2 nodes, both as control-plane,etcd.** This is a lighter configuration than the classic 3-node setup (no separate worker nodes).
 
 ---
 
-## 📋 Arhitektura (trenutna)
+## 📋 Architecture (current)
 
 ```
 Internet → Cloudflare → ostc-app.org
@@ -35,13 +35,13 @@ Internet → Cloudflare → ostc-app.org
 
 ---
 
-## 📋 Predpogoji
+## 📋 Prerequisites
 
-- 2 fizični mašini z **Ubuntu 24.04 LTS**
-- Vsaka mašina: min **2 CPU**, **4GB RAM**, **20GB disk**
-- **sudo** dostop na obeh
-- Mašini v istem omrežju
-- Docker nameščen (za build slike):
+- 2 physical machines with **Ubuntu 24.04 LTS**
+- Each machine: min **2 CPU**, **4GB RAM**, **20GB disk**
+- **sudo** access on both
+- Machines on the same network
+- Docker installed (for building the image):
   ```bash
   curl -fsSL https://get.docker.com | sudo sh
   sudo usermod -aG docker $USER
@@ -49,9 +49,9 @@ Internet → Cloudflare → ostc-app.org
 
 ---
 
-## 1. Namestitev k3s (oba noda kot control-plane)
+## 1. Installing k3s (both nodes as control-plane)
 
-### 1.1 Namesti k3s na prvem nodu (k3s-1)
+### 1.1 Install k3s on the first node (k3s-1)
 
 ```bash
 curl -sfL https://get.k3s.io | sh -s - server \
@@ -63,13 +63,13 @@ curl -sfL https://get.k3s.io | sh -s - server \
   --node-ip=193.2.171.250
 ```
 
-### 1.2 Pridobi token
+### 1.2 Get the token
 
 ```bash
 sudo cat /var/lib/rancher/k3s/server/node-token
 ```
 
-### 1.3 Namesti k3s na drugem nodu (k3s-2)
+### 1.3 Install k3s on the second node (k3s-2)
 
 ```bash
 curl -sfL https://get.k3s.io | sh -s - server \
@@ -81,7 +81,7 @@ curl -sfL https://get.k3s.io | sh -s - server \
   --node-ip=193.2.171.249
 ```
 
-### 1.4 Preveri
+### 1.4 Verify
 
 ```bash
 kubectl get nodes
@@ -92,28 +92,28 @@ kubectl get nodes
 
 ---
 
-## 2. Namestitev MetalLB (LoadBalancer)
+## 2. Installing MetalLB (LoadBalancer)
 
 ```bash
 kubectl apply -f https://raw.githubusercontent.com/metallb/metallb/v0.14.9/config/manifests/metallb-native.yaml
 kubectl -n metallb-system wait --for=condition=ready pod --all --timeout=120s
 
-# Uporabi konfiguracijo iz repozitorija (predhodno prilagodi IP range)
+# Apply configuration from the repository (adjust IP range beforehand)
 kubectl apply -f k8s/cluster/metallb-config.yaml
 ```
 
 ---
 
-## 3. Namestitev Longhorn
+## 3. Installing Longhorn
 
-### 3.1 Predpogoji na vsakem nodu
+### 3.1 Prerequisites on each node
 
 ```bash
 sudo apt-get install -y open-iscsi nfs-common
 sudo systemctl enable --now iscsid
 ```
 
-### 3.2 Namesti Longhorn
+### 3.2 Install Longhorn
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3 | sudo bash
@@ -131,7 +131,7 @@ helm install longhorn longhorn/longhorn \
   --set persistence.defaultClass=true
 ```
 
-### 3.3 Omogoči replica-auto-balance
+### 3.3 Enable replica-auto-balance
 
 ```bash
 kubectl patch settings.longhorn -n longhorn-system replica-auto-balance \
@@ -142,7 +142,7 @@ kubectl patch settings.longhorn -n longhorn-system replica-auto-balance \
 
 ## 4. CloudNativePG
 
-### 4.1 Namesti CNPG operator
+### 4.1 Install CNPG operator
 
 ```bash
 helm repo add cnpg https://cloudnative-pg.github.io/charts
@@ -151,13 +151,13 @@ helm install cnpg cnpg/cloudnative-pg \
   --create-namespace
 ```
 
-### 4.2 Ustvari CNPG cluster
+### 4.2 Create CNPG cluster
 
 ```bash
 kubectl apply -f sola-cnpg-cluster.yaml
 ```
 
-Primer `sola-cnpg-cluster.yaml`:
+Example `sola-cnpg-cluster.yaml`:
 
 ```yaml
 apiVersion: postgresql.cnpg.io/v1
@@ -184,9 +184,9 @@ spec:
 
 ---
 
-## 5. Namestitev aplikacije
+## 5. Installing the application
 
-### 5.1 Build slike
+### 5.1 Build the image
 
 ```bash
 cd /home/admin_os/reservation_app
@@ -194,7 +194,7 @@ docker build -t mato12345/sola-app:latest .
 docker push mato12345/sola-app:latest
 ```
 
-### 5.2 Ustvari namespace in Secret
+### 5.2 Create namespace and Secret
 
 ```bash
 kubectl create namespace sola-app
@@ -210,7 +210,7 @@ kubectl create secret generic sola-secrets \
   --from-literal=DATABASE_URL=postgresql://sola:***@sola-db-rw.sola:5432/sola
 ```
 
-### 5.3 Deploy z overlay-i
+### 5.3 Deploy with overlays
 
 ```bash
 kubectl apply -k k8s/app/overlays/production-lb
@@ -220,13 +220,13 @@ kubectl apply -k k8s/app/overlays/production-lb
 
 ## 6. Nginx reverse proxy
 
-Na k3s-2:
+On k3s-2:
 
 ```bash
 sudo apt install -y nginx
 ```
 
-Ustvari `/etc/nginx/sites-available/default`:
+Create `/etc/nginx/sites-available/default`:
 
 ```nginx
 server {
@@ -246,9 +246,9 @@ sudo nginx -t && sudo systemctl restart nginx
 
 ---
 
-## 7. Vzdrževanje
+## 7. Maintenance
 
-### Posodobitev aplikacije
+### Updating the application
 
 ```bash
 cd /home/admin_os/reservation_app
@@ -259,31 +259,31 @@ kubectl rollout restart -n sola-app deployment/sola-app
 kubectl rollout status -n sola-app deployment/sola-app
 ```
 
-### Dodajanje novega noda
+### Adding a new node
 
 ```bash
-# Na masterju pridobi token
+# On the master, get the token
 sudo cat /var/lib/rancher/k3s/server/node-token
 
-# Na novem nodu:
+# On the new node:
 curl -sfL https://get.k3s.io | sh -s - server \
   --server https://<MASTER_IP>:6443 \
   --token <TOKEN> \
-  --node-ip <NOVI_IP> \
+  --node-ip <NEW_IP> \
   --disable traefik --disable=servicelb
 
-# Namesti Longhorn predpogoje
+# Install Longhorn prerequisites
 sudo apt-get install -y open-iscsi nfs-common
 sudo systemctl enable --now iscsid
 ```
 
 ---
 
-## 8. Pogoste težave
+## 8. Common issues
 
-| Težava | Rešitev |
+| Issue | Solution |
 |---|---|
-| Pod se ne zažene | `kubectl logs -n sola-app <pod>` |
-| DB se ne poveže | Preveri `sola-db-rw` endpoint: `kubectl get endpoints -n sola sola-db-rw` |
-| MetalLB ne dodeli IP | `kubectl -n metallb-system get ipaddresspool` |
-| Longhorn volume stuck | Preveri v Longhorn UI: `kubectl port-forward -n longhorn-system svc/longhorn-frontend 8080:80` |
+| Pod won't start | `kubectl logs -n sola-app <pod>` |
+| DB won't connect | Check `sola-db-rw` endpoint: `kubectl get endpoints -n sola sola-db-rw` |
+| MetalLB won't assign IP | `kubectl -n metallb-system get ipaddresspool` |
+| Longhorn volume stuck | Check in Longhorn UI: `kubectl port-forward -n longhorn-system svc/longhorn-frontend 8080:80` |

@@ -1,3 +1,7 @@
+🌐 **Jezik / Language:** [🇸🇮 Slovenščina](aplikacija-rezervacije.md) | [🇬🇧 English](en/aplikacija-rezervacije.md)
+
+---
+
 # 📱 Aplikacija za rezervacije in napovedi ocenjevanja
 
 ## Namen

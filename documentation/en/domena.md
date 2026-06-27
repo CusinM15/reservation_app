@@ -1,104 +1,93 @@
-[🇸🇮 Slovenščina](../domena.md) | [🇬🇧 English](domena.md)
+🌐 **Language / Jezik:** [🇸🇮 Slovenščina](../domena.md) | [🇬🇧 English](domena.md)
 
 ---
 
-# 🏗️ **Domain & Network — ostc-app**
+# Domain – change from `.local` to `ostc.si`
 
-## DNS & Cloudflare
+Current domain: **`ostc-app.org`** (Cloudflare proxied)
 
-**Domain:** `ostc-app.org`  
-**Provider:** Cloudflare (proxied)
+---
 
-### DNS Records
+## 📋 Current DNS settings
 
-| Type | Name | Value | Proxy |
-|---|---|---|---|
-| A | `ostc-app.org` | `193.2.171.200` | ✅ Proxied (orange cloud) |
+| Type | Name | Value | Proxy | Purpose |
+|---|---|---|---|---|
+| A | `ostc-app.org` | `193.2.171.200` | ✅ Proxied (orange cloud) | Application |
 
-### SSL/TLS
+Cloudflare proxy means:
+- Public DNS resolves to Cloudflare IPs (`104.21.81.50`, `172.67.156.249`)
+- Cloudflare forwards traffic to `193.2.171.200:8080` (nginx on k3s-2)
+- Cloudflare handles SSL (Auto SSL/TLS — Full)
+- `server: cloudflare` in HTTP headers
 
-- **Mode:** Full (strict)
-- **Origin certificate:** self-signed on k3s-1 nginx
-- Cloudflare terminates SSL at edge, then re-encrypts to origin
+---
 
-### Cloudflare Settings
+## 🔄 Traffic flow
 
-- **Always Use HTTPS:** ON
-- **Automatic HTTPS Rewrites:** ON
-- **Minimum TLS Version:** 1.2
-- **Browser Cache TTL:** 4 hours
+```
+🌐 User → https://ostc-app.org
+  → Cloudflare DNS → 104.21.81.50 (Cloudflare edge)
+    → Cloudflare proxy → 193.2.171.200:8080
+      → nginx (k3s-2, port 8080)
+        → proxy_pass http://193.2.171.200:8002
+          → Service LoadBalancer (MetalLB)
+            → sola-app pod (k3s-1 or k3s-2)
+```
 
-## Nginx
+---
 
-Nginx runs on **both nodes** as a reverse proxy.
+## 📜 Domain change history
 
-### Config location
+| Period | Domain | Description |
+|---|---|---|
+| May 2026 | `ostonecufar.local` | Initial local domain (mDNS) |
+| May 2026 | `ostc.si` | Planned change (not implemented) |
+| June 2026 | `sola-app.ostc.si` | Temporary test URL |
+| **June 2026** | **`ostc-app.org`** | **Current production domain** |
+
+---
+
+## ⚙️ Application configuration
+
+`BASE_URL` in ConfigMap (`sola-config`, namespace `sola-app`):
+
+```yaml
+BASE_URL: "https://ostc-app.org"
+```
+
+---
+
+## 🛠️ Changing the domain
+
+If the domain needs to be changed in the future:
+
+### 1. Cloudflare
+
+1. Open Cloudflare dashboard
+2. Add A record: `@` → `193.2.171.200` (Proxied)
+3. Wait for DNS propagation
+
+### 2. Update BASE_URL
 
 ```bash
-/etc/nginx/sites-available/default   # k3s-1 + k3s-2
+kubectl -n sola-app patch configmap sola-config --type merge \
+  -p '{"data":{"BASE_URL":"https://nova-domena.si"}}'
+kubectl -n sola-app rollout restart deployment/sola-app
 ```
 
-### Configuration
+### 3. Update nginx (if needed)
 
-```nginx
-server {
-    listen 80;
-    server_name ostc-app.org;
-    return 301 https://$server_name$request_uri;
-}
-
-server {
-    listen 443 ssl http2;
-    server_name ostc-app.org;
-
-    ssl_certificate     /etc/nginx/ssl/ostc-app.org.pem;
-    ssl_certificate_key /etc/nginx/ssl/ostc-app.org.key;
-
-    location / {
-        proxy_pass http://193.2.171.200:8002;
-        proxy_set_header Host $host;
-        proxy_set_header X-Real-IP $remote_addr;
-        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-        proxy_set_header X-Forwarded-Proto $scheme;
-    }
-}
-```
-
-### Testing & reload
-
+On k3s-2:
 ```bash
-sudo nginx -t && sudo systemctl reload nginx
+sudo sed -i 's/ostc-app.org/nova-domena.si/' /etc/nginx/sites-available/default
+sudo systemctl restart nginx
 ```
 
-## MetalLB (LoadBalancer)
+---
 
-**IP Pool:** `193.2.171.200`  
-**Mode:** L2 Advertisement (layer2)
+## 📌 Notes
 
-```bash
-# Check MetalLB status
-kubectl get pods -n metallb-system
-kubectl get svc -n sola-app sola-app
-```
-
-## Network Topology
-
-```
-Internet
-    │
-    ▼ Cloudflare
-    │
-    ├── k3s-1:443 (nginx SSL)
-    │       │
-    │       ▼ LB 193.2.171.200:8002
-    │       │
-    │       ├── pod:k3s-1
-    │       └── pod:k3s-2
-    │
-    └── k3s-2:8080 (nginx)
-            │
-            ▼ LB 193.2.171.200:8002
-            │
-            ├── pod:k3s-1
-            └── pod:k3s-2
-```
+- **LoadBalancer IP** `193.2.171.200` is fixed — it does not change on restart
+- **Nginx** on k3s-2 forwards to the MetalLB IP, not directly to pods
+- **Cloudflare SSL** is "Full" — traffic between Cloudflare and nginx is HTTP (not encrypted), but only within the school network
+- If you wanted **end-to-end HTTPS**, you would need certbot/letsencrypt on k3s-2

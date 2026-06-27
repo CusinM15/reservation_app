@@ -1,3 +1,7 @@
+🌐 **Jezik / Language:** [🇸🇮 Slovenščina](navodila-uporabnika.md) | [🇬🇧 English](en/navodila-uporabnika.md)
+
+---
+
 # 📖 Navodila za uporabo
 
 ## Prijava

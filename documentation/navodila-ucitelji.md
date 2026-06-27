@@ -1,3 +1,7 @@
+🌐 **Jezik / Language:** [🇸🇮 Slovenščina](navodila-ucitelji.md) | [🇬🇧 English](en/navodila-ucitelji.md)
+
+---
+
 # 👩‍🏫 Navodila za učitelje
 
 ## Kako vstopiti v aplikacijo?

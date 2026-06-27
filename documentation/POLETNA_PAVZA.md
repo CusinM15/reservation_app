@@ -1,3 +1,7 @@
+🌐 **Jezik / Language:** [🇸🇮 Slovenščina](POLETNA_PAVZA.md) | [🇬🇧 English](en/POLETNA_PAVZA.md)
+
+---
+
 # 🌞 Poletna pavza — k3s cluster
 
 Ta dokument vsebuje navodila za varen izklop aplikacije in k3s clustra čez poletje (julij/avgust), ko aplikacija ni potrebna. Cilj je zmanjšati obrabo starih računalnikov in ohraniti podatke.

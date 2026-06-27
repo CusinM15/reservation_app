@@ -1,3 +1,7 @@
+🌐 **Jezik / Language:** [🇸🇮 Slovenščina](admin-devops-navodila.md) | [🇬🇧 English](en/admin-devops-navodila.md)
+
+---
+
 # ⚙️ Admin & DevOps navodila
 
 Celovita navodila za namestitev, vzdrževanje in odpravljanje težav.

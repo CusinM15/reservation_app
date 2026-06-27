@@ -1,200 +1,824 @@
-[🇸🇮 Slovenščina](../main.md) | [🇬🇧 English](main.md)
+🌐 **Language / Jezik:** [🇸🇮 Slovenščina](../main.md) | [🇬🇧 English](main.md)
+
+---
+
+## 📚 Documentation Index
+
+| Document | Description |
+|---|---|
+| [🏗️ **HA Architecture**](HA.md) | CloudNativePG, automatic failover, node failure procedure |
+| [🌞 **Summer Shutdown**](POLETNA_PAVZA.md) | Safe k3s cluster shutdown for summer and restart in fall |
+| [☁️ **Domain & DNS**](domena.md) | Domain setup, Cloudflare, DNS records |
+| [🐍 **Local App Setup**](postavi-lokalni-app.md) | Single-machine installation (no Kubernetes) |
+| [☸️ **K3s Setup**](k3s-setup.md) | k3s cluster installation from scratch |
+| [⚙️ **Admin/DevOps Guide**](admin-devops-navodila.md) | Maintenance, updates, troubleshooting |
+| [👩‍🏫 **Teachers Guide**](navodila-ucitelji.md) | Using the app — reservations and assessments |
+| [👑 **Management Guide**](navodila-vodstvo.md) | Browser-based administration (series, blocked dates) |
+| [📱 **App Description**](aplikacija-rezervacije.md) | What the app does, purpose, features |
+| [📖 **User Manual**](navodila-uporabnika.md) | Login, passwords, daily use |
 
 ---
 
 # 🚀 **ostc-app — Reservation System**
-## **OŠ Toneta Čufarja — Documentation**
+## OŠ Toneta Čufarja — Documentation
 
 ---
 
-> **This is the main document of the entire documentation.**  
-> From here you can navigate to all areas — architecture, HA, admin instructions, teacher guides, maintenance, and more.
 
----
-
-## 📑 **Documentation Index**
-
-### ⚙️ Architecture & Setup
-
-| Document | Description |
-|---|---|
-| [**HA Architecture**](ha.md) | High availability — CloudNativePG, MetalLB, failover |
-| [**K3S Cluster Setup**](k3s_setup.md) | Installing and configuring k3s on both nodes |
-| [**Domain & Network**](domena.md) | DNS, Cloudflare, nginx, SSL |
-| [**Local Setup**](lokalni_zagon.md) | Running the app locally (uvicorn) or via mDNS |
-| [**Admin/DevOps Guide**](admin_devops.md) | Complete admin instructions for maintenance |
-
-### 🧑‍🏫 User Instructions
-
-| Document | Description |
-|---|---|
-| [**Teacher Guide**](ucitelji_report.md) | Login, reservations, exam scheduling |
-| [**Management/Admin Guide**](vodstvo_report.md) | UI-based management — series, blocked dates, admin panel |
-
-### 🔧 Maintenance
-
-| Document | Description |
-|---|---|
-| [**Summer Shutdown**](poletna_pavza.md) | Shutting down and restarting during summer break |
-| [**Admin Instructions**](navodila.md) | General admin instructions (troubleshooting, recovery) |
+## 📑 **Table of Contents** (this document)
+1. [System Architecture](#system-architecture)
+2. [Hardware and Network](#hardware-and-network)
+3. [Kubernetes (k3s) Cluster](#kubernetes-k3s-cluster)
+4. [Sola App Application](#sola-app-application)
+5. [PostgreSQL HA — CloudNativePG](#postgresql-ha--cloudnativepg)
+6. [MetalLB LoadBalancer](#metallb-loadbalancer)
+7. [Nginx Reverse Proxy](#nginx-reverse-proxy)
+8. [Cloudflare DNS](#cloudflare-dns)
+9. [Longhorn Storage](#longhorn-storage)
+10. [Daily Backup and Reports](#daily-backup-and-reports)
+11. [Maintenance and Failures](#maintenance-and-failures)
+12. [Complete Command Reference](#complete-command-reference)
 
 ---
 
 ## 🏗️ **System Architecture**
 
+### **Hardware and Network Diagram**
+
 ```
-┌─────────────────────────────────────────────────────────────────────┐
-│                        K3S KUBERNETES CLUSTER                       │
-│                                                                     │
-│  ┌─────────────────────────┐    ┌──────────────────────────┐        │
-│  │   k3s-1 (250)           │    │   k3s-2 (249)            │        │
-│  │   HP ProBook 455 G5     │◄──►│   HP ProBook 450 G5      │        │
-│  │   Ubuntu 24.04, 16GB    │    │   Ubuntu 24.04, 16GB     │        │
-│  │                         │    │                          │        │
-│  │   ┌─ sola-app pod      │    │   ┌─ sola-app pod       │        │
-│  │   └─ sola-db-1 (prim)  │    │   └─ sola-db-2 (repl)   │        │
-│  └───────────▲─────────────┘    └───────────▲──────────────┘        │
-│              │                              │                        │
-│              └──────────────┬───────────────┘                        │
-│                             │                                        │
-│                    LoadBalancer IP                                   │
-│                    193.2.171.200                                     │
-│                             │    MetalLB (layer2)                    │
-│                             ▼                                        │
-│                    ┌──────────────┐                                  │
-│                    │  Cloudflare  │                                  │
-│                    │ ostc-app.org │                                  │
-│                    └──────────────┘                                  │
-└─────────────────────────────────────────────────────────────────────┘
+┌──────────────────────────────────────────────────────────────────────────┐
+│                         K3S KUBERNETES CLUSTER (2 nodes)                  │
+├──────────────────────────────────────────────────────────────────────────┤
+│                                                                          │
+│  ┌──────────────────────────┐    ┌──────────────────────────┐            │
+│  │    k3s-1                  │    │    k3s-2                  │            │
+│  │    HP ProBook 455 G5     │    │    HP ProBook 450 G5     │            │
+│  │    IP: 193.2.171.250     │    │    IP: 193.2.171.249     │            │
+│  │    control-plane,etcd    │    │    control-plane,etcd    │            │
+│  │                          │    │                          │            │
+│  │  ┌───────────────────┐   │    │  ┌───────────────────┐   │            │
+│  │  │ sola-app Pod 1    │   │    │  │ sola-app Pod 2    │   │            │
+│  │  │ (app.ostc-app.org)│   │    │  │ (app.ostc-app.org)│   │            │
+│  │  └───────────────────┘   │    │  └───────────────────┘   │            │
+│  │  ┌───────────────────┐   │    │  ┌───────────────────┐   │            │
+│  │  │ sola-db-1         │   │    │  │ sola-db-2         │   │            │
+│  │  │ (PG PRIMARY)      │◄──┼────┼──┤ (PG REPLICA)      │   │            │
+│  │  │ CNPG Instance     │   │    │  │ CNPG Instance     │   │            │
+│  │  └───────────────────┘   │    │  └───────────────────┘   │            │
+│  │                          │    │                          │            │
+│  │  ┌───────────────────┐   │    │  ┌───────────────────┐   │            │
+│  │  │ Longhorn          │   │    │  │ Longhorn          │   │            │
+│  │  │ Instance Manager  │   │    │  │ Instance Manager  │   │            │
+│  │  └───────────────────┘   │    │  └───────────────────┘   │            │
+│  │                          │    │                          │            │
+│  │  ┌───────────────────┐   │    │  ┌───────────────────┐   │            │
+│  │  │ MetalLB Speaker   │   │    │  │ MetalLB Speaker   │   │            │
+│  │  └───────────────────┘   │    │  └───────────────────┘   │            │
+│  └──────────────────────────┘    └───────────┬───────────────┘            │
+│                                               │                           │
+│              ┌────────────────────────────────┘                           │
+│              │                                                           │
+│  ┌───────────▼───────────────────────────────────────────────┐           │
+│  │        nginx Reverse Proxy (k3s-2, port 8080)              │           │
+│  │        proxy_pass http://193.2.171.200:8002                │           │
+│  └───────────────────────────────────────────────────────────┘           │
+└──────────────────────────────────────────────────────────────────────────┘
+                              │
+                              │
+                    ┌─────────▼─────────┐
+                    │  Cloudflare DNS    │
+                    │  ostc-app.org      │
+                    │  → 104.21.81.50    │  📡 Cloudflare proxy IPs
+                    │  → 172.67.156.249  │
+                    └───────────────────┘
+                              │
+                              │  Internet
+                              ▼
+                    🌐 Users (teachers, management)
 ```
+
+> **Note:** Both nodes are `control-plane,etcd` — there are no separate worker nodes. k3s supports running user pods on control-plane nodes as well.
+
+### **Traffic Flow**
+
+```
+🌐 User
+  → Cloudflare (SSL, proxy, ostc-app.org)
+    → Cloudflare IP 104.21.81.50 / 172.67.156.249
+      → Cloudflare tunnel/forward to 193.2.171.249:8080 (k3s-2)
+        → nginx proxy_pass 193.2.171.200:8002
+          → Service LoadBalancer (MetalLB)
+            → sola-app Pod (k3s-1 or k3s-2)
+```
+
+Cloudflare proxy provides:
+- **SSL termination** — HTTPS from user to Cloudflare
+- **DDoS protection**
+- **Caching** — for static content
+- **Hidden public IP** — real servers are not directly exposed
 
 ### **Component Overview**
 
 | Component | Location | Purpose |
 |---|---|---|
-| **k3s-1** (193.2.171.250) | physical HP ProBook 455 G5 | Control plane, primary DB, app pod |
-| **k3s-2** (193.2.171.249) | physical HP ProBook 450 G5 | Control plane, read replica, app pod |
-| **sola-app** | Both nodes (2 pods) | FastAPI + Jinja2 template app |
-| **PostgreSQL** | CloudNativePG (2 instances) | Database (78 users, 294 reservations) |
-| **MetalLB** | Both nodes | LoadBalancer IP 193.2.171.200 |
-| **Nginx** | Both nodes | Reverse proxy + SSL |
-| **Cloudflare** | External | DNS, proxy, SSL (ostc-app.org) |
-| **Longhorn** | Both nodes | Replicated distributed storage |
+| **k3s-1** | HP ProBook 455 G5 (193.2.171.250) | Control-plane, app pod, PG primary |
+| **k3s-2** | HP ProBook 450 G5 (193.2.171.249) | Control-plane, app pod, PG replica, nginx |
+| **Sola App (FastAPI)** | 2 pods (both nodes) | Reservations, assessments, login |
+| **CloudNativePG** | 2 instances (both nodes) | PostgreSQL database with automatic failover |
+| **Longhorn** | Both nodes | Distributed storage (PVCs) |
+| **MetalLB** | Both nodes | LoadBalancer IP (193.2.171.200) |
+| **nginx** | k3s-2 | Reverse proxy (port 8080 → LoadBalancer) |
+| **Cloudflare** | External | DNS, SSL, proxy |
 
 ---
 
-## ☸️ **Kubernetes cluster (k3s)**
+## 💻 **Hardware and Network**
 
-Two symmetric nodes (both control-plane + etcd).
+### **Specifications**
+
+| Node | Model | CPU | RAM | Disk | Role |
+|---|---|---|---|---|---|
+| **k3s-1** | HP ProBook 455 G5 | AMD Ryzen 5 2500U | 16GB | 256GB SSD | Control-plane,etcd, app, PG primary |
+| **k3s-2** | HP ProBook 450 G5 | Intel Core i5-8250U | 8GB | 256GB SSD | Control-plane,etcd, app, PG replica, nginx |
+
+### **Network Settings**
 
 ```bash
+# Local network (Arnes)
+k3s-1: 193.2.171.250/24
+k3s-2: 193.2.171.249/24
+Gateway: 193.2.171.1
+DNS: 193.2.171.10
+
+# Kubernetes Pod CIDR
+10.42.0.0/16
+
+# Kubernetes Service CIDR
+10.43.0.0/16
+
+# LoadBalancer IP pool (MetalLB)
+193.2.171.200 - 193.2.171.210
+```
+
+### **Access**
+
+```bash
+# SSH to both nodes
+ssh admin_os@193.2.171.250    # k3s-1
+ssh admin_os@193.2.171.249    # k3s-2
+
+# sudo password is the same on both nodes
+```
+
+---
+
+## ☸️ **Kubernetes (k3s) Cluster**
+
+### **k3s Installation (single command)**
+
+```bash
+# On k3s-1 (first control-plane)
+curl -sfL https://get.k3s.io | sh -s - --disable=servicelb
+
+# On k3s-2 (second control-plane)
+curl -sfL https://get.k3s.io | K3S_URL=https://193.2.171.250:6443 \
+  K3S_TOKEN=$(sudo cat /var/lib/rancher/k3s/server/node-token) sh -
+```
+
+> ⚠️ `--disable=servicelb` disables the built-in k3s load balancer because we use MetalLB.
+
+### **Current Status**
+
+```bash
+kubectl get nodes
+# NAME    STATUS   ROLES                AGE   VERSION
+# k3s-1   Ready    control-plane,etcd   19d   v1.35.5+k3s1
+# k3s-2   Ready    control-plane,etcd   22d   v1.35.5+k3s1
+
+kubectl get pods -A
+kubectl get svc -A
+```
+
+### **Namespaces on the Cluster**
+
+| Namespace | Purpose |
+|---|---|
+| `sola-app` | Application (deployment, configmap, secret, cronjob) |
+| `sola` | PostgreSQL cluster (CNPG instance, services) |
+| `cnpg-system` | CloudNativePG operator |
+| `longhorn-system` | Longhorn distributed storage |
+| `metallb-system` | MetalLB load balancer |
+| `kube-system` | Kubernetes system pods |
+
+---
+
+## 🐍 **Sola App Application**
+
+### **Description**
+
+Sola App is a **FastAPI** web application for:
+- **Reservations** — tablets, computer room, ship, home economics classroom
+- **Assessments** — scheduling written assessments
+- **Blocked dates** — closing time slots for individual rooms
+- **Login** — authentication, roles: admin, management, teacher
+
+### **Code Structure**
+
+```
+reservation_app/
+├── app/
+│   ├── main.py              # FastAPI app, middleware, startup
+│   ├── config.py            # Settings (from env/ConfigMap)
+│   ├── database.py          # SQLAlchemy engine, session
+│   ├── models.py            # DB models (User, Reservation, Assessment, BlockedDate)
+│   ├── schemas.py           # Pydantic schemas
+│   ├── race.py              # Helper for time slots
+│   ├── routers/
+│   │   ├── auth.py          # Login, passwords, admin panel
+│   │   ├── rezervacije.py   # CRUD for reservations
+│   │   ├── ocenjevanja.py   # CRUD for assessments
+│   │   └── blocked_dates.py # Blocked dates
+│   └── templates/           # Jinja2 HTML templates
+├── k8s/                     # Kubernetes deploy configuration
+│   ├── app/base/            # Base kustomize
+│   ├── app/overlays/        # Overlays (ingress, production-lb, frp)
+│   └── cluster/             # MetalLB configuration
+├── deploy/                  # FRP tunnel configuration
+├── Dockerfile               # Container build
+├── documentation/           # 📚 Documentation (this folder)
+└── requirements.txt         # Python dependencies
+```
+
+### **FastAPI Endpoints**
+
+| Endpoint | Method | Description |
+|---|---|---|
+| `/health` | GET | Health check (200 = OK) |
+| `/auth/login` | GET, POST | User login |
+| `/auth/logout` | GET | Logout |
+| `/auth/forgot-password` | GET, POST | Forgot password |
+| `/auth/reset-password` | GET, POST | Reset password |
+| `/rezervacije` | GET, POST | List / new reservation |
+| `/rezervacije/{id}` | DELETE | Cancel reservation |
+| `/api/razredi` | GET | List of classes |
+| `/api/prostori` | GET | List of rooms |
+| `/api/schedule` | GET | Time slots schedule |
+| `/ocenjevanja` | GET, POST | List / new assessment |
+| `/blocked-dates` | GET, POST, DELETE | Blocked dates |
+
+### **DB Models**
+
+```python
+class User(Base):
+    # id, username, email, first_name, last_name,
+    # password_hash, role (admin/vodstvo/teacher),
+    # is_active, reset_token
+
+class Reservation(Base):
+    # id, teacher_id, room (tablice/racunalnica/ladja/
+    #   gospodinjska-ucilnica),
+    # date, time_slot, purpose, notes
+
+class Assessment(Base):
+    # id, teacher_id, class_name, subject, type (oral/written),
+    # date, description
+
+class BlockedDate(Base):
+    # id, room, date, reason
+```
+
+### **Kubernetes Deployment**
+
+```yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: sola-app
+  namespace: sola-app
+spec:
+  replicas: 2
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 0    # Zero-downtime deploy
+  selector:
+    matchLabels:
+      app: sola-app
+  template:
+    spec:
+      affinity:
+        podAntiAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+          - weight: 100
+            podAffinityTerm:
+              matchExpressions:
+              - key: app
+                operator: In
+                values: [sola-app]
+              topologyKey: kubernetes.io/hostname
+      containers:
+      - name: app
+        image: mato12345/sola-app:latest
+        imagePullPolicy: Always
+        ports:
+        - containerPort: 8002
+        envFrom:
+        - configMapRef:
+            name: sola-config
+        - secretRef:
+            name: sola-secrets
+        resources:
+          requests:
+            memory: "256Mi"
+            cpu: "100m"
+          limits:
+            memory: "512Mi"
+            cpu: "500m"
+        readinessProbe:
+          httpGet:
+            path: /health
+            port: 8002
+          initialDelaySeconds: 8
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 8002
+          failureThreshold: 5
+```
+
+### **ConfigMap (sola-config) — actual values**
+
+```yaml
+BASE_URL: "https://ostc-app.org"
+APP_HOST: "0.0.0.0"
+APP_PORT: "8002"
+TABLICE_MAX: "28"
+PROSTORI: "tablice,racunalnica,ladja,gospodinjska-ucilnica"
+SCHEDULE: '{"0":"07:30-08:15","1":"08:20-09:05","2":"09:15-10:00","3":"10:20-11:05","4":"11:10-12:55","5":"12:00-12:45","6":"12:50-13:35","7":"14:00-14:45"}'
+RAZREDI: "IP/NIP/ID,1.a,1.b,1.c,1.č,2.a,2.b,2.c,2.č,3.a,3.b,3.c,3.č,4.a,4.b,4.c,4.č,5.a,5.b,5.c,5.č,6.a,6.b,6.c,6.č,7.a,7.b,7.c,8.a,8.b,8.c,8.č,8.1,8.2,8.3,8.4,8.5,8.6,9.a,9.b,9.c,9.1,9.2,9.3,9.4,9.5"
+```
+
+> ⚠️ **Note:** `SCHEDULE` index 4 (`"11:10-12:55"`) is an extended period (the second-to-last period lasts 1h45m). Verify if this matches the actual schedule.
+
+### **Secret (sola-secrets)**
+
+Data in the Secret (base64 encoded):
+- `DATABASE_URL` — `postgresql://sola:***@sola-db-rw.sola:5432/sola`
+- `MAIL_USERNAME` — `oscuf`
+- `MAIL_PASSWORD` — (password for SMTP)
+- `MAIL_SERVER` — `mail.arnes.si`
+- `MAIL_PORT` — `587`
+- `MAIL_FROM` — `os-toneta.cufarja-jesenice@guest.arnes.si`
+- `BACKUP_EMAIL` — `matej.cusin2@guest.arnes.si`
+
+> ⚠️ `DATABASE_URL` uses the **CNPG service** `sola-db-rw.sola:5432` — it always points to the current primary, even after failover.
+
+---
+
+## 🗄️ **PostgreSQL HA — CloudNativePG**
+
+> **Details:** [HA.md](HA.md) — full architecture description, failover procedure, testing.
+
+### **Why CloudNativePG?**
+
+| Feature | Bitnami Helm (before) | CloudNativePG (now) |
+|---|---|---|
+| Automatic failover | ❌ | ✅ ~30-60s |
+| Node anti-affinity | Manual | ✅ Built-in |
+| Storage management | Manual | ✅ Built-in |
+| Built-in backup | ❌ | ✅ Barman/WAL |
+| Kubernetes native | ❌ (classic Helm) | ✅ CRD operator |
+
+### **Short Configuration**
+
+```yaml
+apiVersion: postgresql.cnpg.io/v1
+kind: Cluster
+metadata:
+  name: sola-db
+  namespace: sola
+spec:
+  instances: 2
+  storage:
+    size: 1Gi
+    storageClass: longhorn
+  bootstrap:
+    initdb:
+      database: sola
+      owner: sola
+      secret:
+        name: sola-db-creds
+  affinity:
+    enablePodAntiAffinity: true
+    podAntiAffinityType: preferred
+    topologyKey: kubernetes.io/hostname
+  enablePDB: true
+  failoverDelay: 30
+```
+
+### **Current Status**
+
+```bash
+kubectl get cluster -n sola sola-db
+# NAME      AGE   INSTANCES   READY   STATUS                     PRIMARY
+# sola-db   2h    2           2       Cluster in healthy state   sola-db-1
+
+kubectl get pods -n sola -o wide
+# NAME        READY   STATUS    IP            NODE
+# sola-db-1   1/1     Running   10.42.0.85    k3s-1   ← PRIMARY
+# sola-db-2   1/1     Running   10.42.1.106   k3s-2   ← REPLICA
+```
+
+### **Connection Services**
+
+| Service | Role |
+|---|---|
+| `sola-db-rw.sola:5432` | **Read-Write** — always on primary (used by app) |
+| `sola-db-ro.sola:5432` | Read-Only — replica only |
+| `sola-db-r.sola:5432` | Read — any instance |
+
+### **Automatic Failover Procedure**
+
+```ascii
+┌─ K3s-1 goes down ────────────────────────────────────┐
+│                                                       │
+│  1. sola-db-1 (primary) becomes unreachable           │
+│  2. CNPG operator detects the failure                 │
+│  3. Waits 30s (failoverDelay)                         │
+│  4. Promotes sola-db-2 (k3s-2) to new primary         │
+│  5. Service sola-db-rw redirects to sola-db-2         │
+│  6. App on k3s-2 connects to new primary              │
+│                                                       │
+│  Total downtime: ~1-2 minutes                         │
+└───────────────────────────────────────────────────────┘
+
+┌─ K3s-1 comes back ───────────────────────────────────┐
+│                                                       │
+│  1. CNPG detects the new node                         │
+│  2. sola-db-1 automatically joins as REPLICA          │
+│  3. No manual intervention needed                     │
+└───────────────────────────────────────────────────────┘
+```
+
+### **Key Points**
+
+- **No manual intervention** during failover
+- **Database password** is in `sola-db-creds` (namespace `sola`) — CNPG creates it automatically
+- **App uses** `sola-db-rw` — always on the current primary
+- **Old Bitnami PostgreSQL** was removed after migration
+
+---
+
+## 🌐 **MetalLB LoadBalancer**
+
+### **Configuration**
+
+```yaml
+apiVersion: metallb.io/v1beta1
+kind: IPAddressPool
+metadata:
+  name: default-pool
+  namespace: metallb-system
+spec:
+  addresses:
+  - 193.2.171.200-193.2.171.210
+---
+apiVersion: metallb.io/v1beta1
+kind: L2Advertisement
+metadata:
+  name: default-advertisement
+  namespace: metallb-system
+```
+
+### **LoadBalancer Service**
+
+```yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: sola-app
+  namespace: sola-app
+spec:
+  type: LoadBalancer
+  selector:
+    app: sola-app
+  ports:
+  - port: 8002
+    targetPort: 8002
+    name: http
+```
+
+```bash
+kubectl get svc -n sola-app sola-app
+# NAME      TYPE           CLUSTER-IP      EXTERNAL-IP      PORT(S)
+# sola-app  LoadBalancer   10.43.122.112   193.2.171.200   8002:32364/TCP
+```
+
+---
+
+## 🔄 **Nginx Reverse Proxy**
+
+### **Location**
+
+Nginx runs **only on k3s-2** (not on k3s-1).
+
+```bash
+ssh k3s-2
+sudo cat /etc/nginx/sites-available/default
+```
+
+### **Configuration (actual)**
+
+```nginx
+server {
+    listen 8080;
+
+    location / {
+        proxy_pass http://193.2.171.200:8002;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+    }
+}
+```
+
+> **Note:** Cloudflare handles SSL (HTTPS). Nginx listens on port 8080 (not 80/443) and forwards to the MetalLB IP.
+
+---
+
+## ☁️ **Cloudflare DNS**
+
+### **DNS Settings**
+
+| Type | Name | Value | Proxy |
+|---|---|---|---|
+| A | `ostc-app.org` | `193.2.171.200` | ✅ Proxied (orange cloud) |
+
+Cloudflare proxy means:
+- `ostc-app.org` resolves to Cloudflare IPs (`104.21.81.50`, `172.67.156.249`)
+- Cloudflare forwards traffic to `193.2.171.200:8080` (nginx on k3s-2)
+- SSL certificate is managed by Cloudflare (Auto SSL)
+
+> **Details:** [domena.md](domena.md) — complete domain change history.
+
+---
+
+## 💾 **Longhorn Storage**
+
+### **Installation**
+
+```bash
+kubectl create namespace longhorn-system
+helm repo add longhorn https://charts.longhorn.io
+helm install longhorn longhorn/longhorn --namespace longhorn-system \
+  --set defaultSettings.defaultReplicaCount=2 \
+  --set persistence.defaultClassReplicaCount=2
+```
+
+### **StorageClass**
+
+```bash
+kubectl get sc
+# NAME             PROVISIONER            RECLAIMPOLICY   VOLUMEBINDINGMODE
+# longhorn (default) driver.longhorn.io   Delete          Immediate
+# local-path       rancher.io/local-path  Delete          WaitForFirstConsumer
+```
+
+### **PVCs in Use**
+
+| PVC | Namespace | Size | Usage | Node |
+|---|---|---|---|---|
+| `sola-db-1` | sola | 1Gi | CNPG primary (k3s-1) |
+| `sola-db-2` | sola | 1Gi | CNPG replica (k3s-2) |
+
+### **Longhorn UI**
+
+```bash
+# Access Longhorn dashboard
+kubectl port-forward -n longhorn-system svc/longhorn-frontend 8080:80
+# Open: http://localhost:8080
+```
+
+### **Checking Disks**
+
+```bash
+kubectl get lhn -n longhorn-system -o json | \
+  python3 -c "
+import json, sys
+data = json.load(sys.stdin)
+for n in data['items']:
+    name = n['metadata']['name']
+    for disk_id, disk in n['status']['diskStatus'].items():
+        avail = int(disk.get('storageAvailable',0)) / 1024**3
+        max_s = int(disk.get('storageMaximum',0)) / 1024**3
+        print(f'{name}: {avail:.0f} GiB free / {max_s:.0f} GiB total')
+"
+```
+
+---
+
+## 📊 **Daily Backup and Reports**
+
+### **Backup CronJob** (`sola-db-backup`)
+
+- **Schedule:** `0 4 * * *` (every day at 4:00)
+- **Time zone:** Europe/Ljubljana
+- **Active:** ✅ (last executed 10h ago)
+
+Backs up the entire database (pg_dump) and sends to `BACKUP_EMAIL`.
+
+### **Daily Report CronJob** (`sola-daily-report`)
+
+- **Schedule:** `0 4 * * *` (every day at 4:00)
+- **Time zone:** Europe/Ljubljana
+- **Active:** ✅ (last executed 10h ago)
+
+Sends a daily status overview of the k3s cluster (nodes, Longhorn, replicas) via Hermes agent.
+
+---
+
+## 🛠️ **Maintenance and Failures**
+
+### **Common Diagnostic Commands**
+
+```bash
+# Check node status
 kubectl get nodes -o wide
 
-# NAME    STATUS   ROLES                INTERNAL-IP     OS-IMAGE
-# k3s-1   Ready    control-plane,etcd   193.2.171.250   Ubuntu 24.04
-# k3s-2   Ready    control-plane,etcd   193.2.171.249   Ubuntu 24.04
-```
-
-### **Namespaces**
-
-| Namespace | Contents |
-|---|---|
-| `sola-app` | Deployment (2 pods), Service (LoadBalancer), Secret, ConfigMap, CronJobs |
-| `sola` | CloudNativePG cluster, Longhorn PVC, services |
-| `longhorn-system` | Longhorn distributed storage |
-
----
-
-## 🐍 **Application (sola-app)**
-
-FastAPI application for:
-- **Room reservations:** tablets, computer lab, boat, home economics classroom
-- **Exam scheduling:** written exams with limits (max 3/week)
-- **Blocked dates:** marking busy days for specific classes
-- **Authentication:** email + password, password reset via email
-
-```bash
+# Check all important pods
 kubectl get pods -n sola-app -o wide
-
-# NAME                        READY   STATUS    IP            NODE
-# sola-app-xxxxx-xxxxx        1/1     Running   10.42.0.x     k3s-1
-# sola-app-xxxxx-xxxxx        1/1     Running   10.42.1.x     k3s-2
-```
-
----
-
-## 🗄️ **PostgreSQL Database (CloudNativePG)**
-
-```bash
 kubectl get pods -n sola -o wide
+kubectl get pods -n longhorn-system | grep -E "instance-manager|longhorn-manager"
 
-# NAME                    READY   STATUS    IP            NODE
-# sola-db-1 (primary)     1/1     Running   10.42.0.x     k3s-1
-# sola-db-2 (replica)     1/1     Running   10.42.1.x     k3s-2
-```
-
-**Services:** `sola-db-rw` (always on primary), `sola-db-ro` (read-only)  
-**Auto-failover:** 30 seconds (built into CNP)  
-**Storage:** Longhorn (replicated)
-
-[→ Details in HA document](ha.md)
-
----
-
-## 🌐 **Access**
-
-| URL | Description |
-|---|---|
-| `https://ostc-app.org` | Production (Cloudflare → nginx → LB) |
-| `http://193.2.171.200:8002` | LoadBalancer IP (direct) |
-| SSH k3s-1: `ssh admin_os@193.2.171.250` | Direct node access |
-
----
-
-## 📚 **Documentation Structure**
-
-```
-documentation/
-├── main.md                ← YOU ARE HERE (main menu)
-├── ha.md                  # HA architecture
-├── admin_devops.md        # Admin/devops guide
-├── navodila.md            # General admin instructions
-├── domena.md              # Domain, Cloudflare, nginx
-├── k3s_setup.md           # K3S installation
-├── lokalni_zagon.md       # Local setup (uvicorn)
-├── poletna_pavza.md       # Summer shutdown
-├── ucitelji_report.md     # Teacher guide
-├── vodstvo_report.md      # Management UI guide
-└── en/                    # English version
-    └── main.md            ← ENGLISH INDEX
-```
-
----
-
-## 🔧 **Quick Commands**
-
-```bash
-# App status
-kubectl get pods -n sola-app -o wide
-kubectl logs -n sola-app deployment/sola-app --tail=50
-
-# Database status
-kubectl get pods -n sola -o wide
+# Check CNPG cluster status
 kubectl get cluster -n sola sola-db
+kubectl describe cluster -n sola sola-db
 
-# Restart app after config change
+# Check app logs
+kubectl logs -n sola-app -l app=sola-app --tail=50
+
+# Test health endpoint
+curl -s http://193.2.171.200:8002/health
+curl -sI https://ostc-app.org
+```
+
+### **Failure Simulation — Node Failure**
+
+```bash
+# Power off k3s-1
+ssh k3s-1 "sudo poweroff"
+
+# Wait 2 minutes, then verify
+kubectl get pods -n sola -o wide
+# sola-db-2 should be primary
+
+kubectl get pods -n sola-app -o wide
+# Both sola-app pods should be on k3s-2
+# (k3s reschedules them to the surviving node)
+
+curl -I https://ostc-app.org
+# Still accessible!
+
+# When k3s-1 comes back:
+# CNPG automatically adds sola-db-1 as a replica
+kubectl get cluster -n sola sola-db
+# 2 ready instances
+```
+
+### **Failure Simulation — Pod Failure**
+
+```bash
+# Delete one app pod — Deployment recreates it immediately
+kubectl delete pod -n sola-app -l app=sola-app
+kubectl rollout status -n sola-app deployment/sola-app
+```
+
+### **Fixing nginx**
+
+```bash
+# If LoadBalancer IP changes
+ssh k3s-2
+sudo sed -i 's/193.2.171.200/NEW_IP/' /etc/nginx/sites-available/default
+sudo systemctl restart nginx
+sudo nginx -t
+```
+
+---
+
+## 📝 **Complete Command Reference**
+
+### **App Management**
+
+```bash
+# Deploy production
+kubectl apply -k k8s/app/overlays/production-lb/
+
+# Restart
 kubectl rollout restart -n sola-app deployment/sola-app
 
-# Build & deploy
-cd /home/admin_os/reservation_app
-docker build -t mato12345/sola-app:latest -f k8s/Dockerfile .
-docker push mato12345/sola-app:latest
-kubectl rollout restart -n sola-app deployment/sola-app
+# Logs (real-time)
+kubectl logs -n sola-app -f deployment/sola-app
 
-# Git
-cd /home/admin_os/reservation_app
-git add -A && git commit -m "change" && git push origin main
+# Scale
+kubectl scale deployment -n sola-app sola-app --replicas=3
+```
+
+### **Database**
+
+```bash
+# Connect to primary database
+kubectl exec -n sola -it sola-db-1 -- psql -U postgres -d sola
+
+# Count records
+kubectl exec -n sola sola-db-1 -- psql -U postgres -d sola -c \
+  "SELECT count(*) FROM users; SELECT count(*) FROM reservations;"
+
+# CNPG cluster status
+kubectl get cluster -n sola sola-db -o yaml
+
+# Check replication
+kubectl exec -n sola sola-db-1 -- psql -U postgres -c \
+  "SELECT application_name, state, sync_state FROM pg_stat_replication;"
+```
+
+### **Storage**
+
+```bash
+# PVCs
+kubectl get pvc -n sola
+kubectl get pv | grep sola
+
+# Longhorn volume
+kubectl get volumes -n longhorn-system
+```
+
+### **Networking**
+
+```bash
+# Services
+kubectl get svc -n sola-app
+kubectl get svc -n sola
+
+# Endpoints (who is the current primary)
+kubectl get endpoints -n sola sola-db-rw
+```
+
+### **Logs**
+
+```bash
+# App
+kubectl logs -n sola-app -l app=sola-app --tail=100
+
+# CNPG
+kubectl logs -n sola sola-db-1 --tail=50
 
 # Nginx
-sudo nginx -t && sudo systemctl reload nginx
+ssh k3s-2 "sudo tail -f /var/log/nginx/access.log"
+
+# MetalLB
+kubectl logs -n metallb-system -l app=metallb --tail=50
 ```
+
+### **Application Update**
+
+```bash
+cd /home/admin_os/reservation_app
+git pull
+docker build -t mato12345/sola-app:latest .
+docker push mato12345/sola-app:latest
+kubectl rollout restart -n sola-app deployment/sola-app
+kubectl rollout status -n sola-app deployment/sola-app
+```
+
+---
+
+## ✅ **Checklist — Current System Status**
+
+- [x] k3s-1 Ready (control-plane,etcd)
+- [x] k3s-2 Ready (control-plane,etcd)
+- [x] sola-app Pod 1 Running (k3s-1)
+- [x] sola-app Pod 2 Running (k3s-2)
+- [x] sola-db-1 Primary (k3s-1)
+- [x] sola-db-2 Replica (k3s-2)
+- [x] CNPG cluster healthy (2/2 ready)
+- [x] MetalLB LoadBalancer (193.2.171.200)
+- [x] nginx proxy (k3s-2:8080 → 193.2.171.200:8002)
+- [x] Cloudflare DNS (ostc-app.org, proxied)
+- [x] Longhorn storage (both nodes)
+- [x] Daily backup (4:00) ✅
+- [x] Daily report (4:00) ✅
+- [x] Health check (200 OK)
+
+---
+
+## 📌 **Important Notes**
+
+- **Failover is completely automatic** — no manual intervention needed
+- **Both nodes are control-plane** — no separate worker nodes
+- **Cloudflare points to LoadBalancer IP** `193.2.171.200` — forwards via proxy
+- **Nginx only on k3s-2** — proxy_pass to LoadBalancer IP (not ClusterIP)
+- **App uses** `sola-db-rw.sola:5432` — always on the current primary
+- **Old Bitnami PostgreSQL was removed** — we use CNPG
+- **Longhorn replication** — 2 replicas, data safe even with one node loss
+- **If LoadBalancer IP changes** — update: Cloudflare, nginx, and this document

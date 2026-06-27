@@ -1,4 +1,4 @@
-[🇸🇮 Slovenščina](lokalni_zagon.md) | [🇬🇧 English](en/lokalni_zagon.md)
+🌐 **Jezik / Language:** [🇸🇮 Slovenščina](postavi-lokalni-app.md) | [🇬🇧 English](en/postavi-lokalni-app.md)
 
 ---
 
