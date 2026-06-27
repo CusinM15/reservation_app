@@ -126,7 +126,7 @@
 ```
 🌐 User
   → Cloudflare (SSL, proxy, ostc-app.org)
-    → Service LoadBalancer (MetalLB, 192.168.1.10:8002)
+    → Service LoadBalancer (MetalLB, {{LB_IP}}:{{LB_PORT}})
       → sola-app Pod (k3s-1 or k3s-2)
 
 Alternative path (internal network):
@@ -581,11 +581,11 @@ server {
 
 | Type | Name | Value | Proxy |
 |---|---|---|---|
-| A | `ostc-app.org` | `192.168.1.10` | ✅ Proxied (orange cloud) |
+| A | `ostc-app.org` | `{{LB_IP}}` | ✅ Proxied (orange cloud) |
 
 Cloudflare proxy means:
 - `ostc-app.org` resolves to Cloudflare IPs
-- Cloudflare forwards traffic to `192.168.1.10` (LoadBalancer, port 80, Flexible SSL)
+- Cloudflare forwards traffic to `{{LB_IP}}` (LoadBalancer, port 80, Flexible SSL)
 - SSL certificate is managed by Cloudflare (Flexible — HTTPS to user, HTTP to origin)
 
 > **Details:** [domena.md](domena.md) — complete domain change history.
@@ -857,8 +857,8 @@ kubectl rollout status -n sola-app deployment/sola-app
 
 - **Failover is completely automatic** — no manual intervention needed
 - **Both nodes are control-plane** — no separate worker nodes
-- **Cloudflare origin** → LoadBalancer IP (`192.168.1.10`, port 80)
-- **Nginx on both nodes** (port 8080) — proxy_pass to LoadBalancer IP `192.168.1.10:8002`
+- **Cloudflare origin** → LoadBalancer IP (`{{LB_IP}}`, port 80)
+- **Nginx on both nodes** (port 8080) — proxy_pass to LoadBalancer IP `{{LB_IP}}:{{LB_PORT}}`
 - **App uses** `sola-db-rw.sola:5432` — always on the current primary
 - **Old Bitnami PostgreSQL was removed** — we use CNPG
 - **Longhorn replication** — 2 replicas, data safe even with one node loss

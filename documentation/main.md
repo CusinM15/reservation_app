@@ -113,7 +113,7 @@ Ta datoteka je **glavni vstopni dokument**. Spodaj so povezave na specializirane
                     ┌─────────▼─────────────────────┐
                     │  Cloudflare DNS               │
                     │  ostc-app.org                   │   
-                    │  → 192.168.1.10:8002  │  📡 Cloudflare proxy
+                    │  → {{LB_IP}}:{{LB_PORT}}  │  📡 Cloudflare proxy
                     │    (LoadBalancer)          │
                     └───────────────────────────────┘
                               │
@@ -128,7 +128,7 @@ Ta datoteka je **glavni vstopni dokument**. Spodaj so povezave na specializirane
 ```
 🌐 Uporabnik
   → Cloudflare (SSL, proxy, ostc-app.org)
-    → Service LoadBalancer (MetalLB, 192.168.1.10:8002)
+    → Service LoadBalancer (MetalLB, {{LB_IP}}:{{LB_PORT}})
       → sola-app Pod (k3s-1 ali k3s-2)
 
 Alternativna pot (interno omrežje):
@@ -137,7 +137,7 @@ Alternativna pot (interno omrežje):
   → http://192.168.1.10:8002 → direkt na LoadBalancer
 ```
 
-> **Cloudflare proxy** kaže direktno na **LoadBalancer (`192.168.1.10`, port 80)** — ne na nginx na k3s-2. Če LoadBalancer IP ni dosegljiv, je treba v Cloudflare dashboardu spremeniti origin IP na drug IP (npr. k3s-1 ali k3s-2) ali popraviti MetalLB konfiguracijo.
+> **Cloudflare proxy** kaže direktno na **LoadBalancer (`{{LB_IP}}`, port 80)** — ne na nginx na k3s-2. Ker gre promet direkt na MetalLB, HA deluje samodejno — če en node crkne, MetalLB premakne IP na drugega.
 
 ### **Pregled komponent**
 
@@ -366,14 +366,14 @@ server {
 
 | Tip | Ime | Vrednost | Proxy |
 |---|---|---|---|
-| A | `@` (ostc-app.org) | 192.168.1.10 | ✅ Cloudflare proxy (LoadBalancer) |
-| A | `www` | 192.168.1.10 | ✅ Cloudflare proxy |
+| A | `@` (ostc-app.org) | {{LB_IP}} | ✅ Cloudflare proxy (LoadBalancer) |
+| A | `www` | {{LB_IP}} | ✅ Cloudflare proxy |
 
 ### **SSL/TLS**
 
 Cloudflare skrbi za:
 - **Edge certifikat** — med uporabnikom in Cloudflare (HTTPS)
-- **Flexible SSL** — Cloudflare → 192.168.1.10 (port 80) prek HTTP (brez certifikata na originu)
+- **Flexible SSL** — Cloudflare → {{LB_IP}} (port 80) prek HTTP (brez certifikata na originu)
 
 Nastavitve v Cloudflare dashboard:
 - **SSL/TLS encryption mode:** `Flexible`
