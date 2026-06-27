@@ -22,8 +22,9 @@ Current domain: **`ostc-app.org`** (Cloudflare proxied)
 
 Cloudflare proxy means:
 - Public DNS resolves to Cloudflare IPs
-- Cloudflare forwards traffic to `192.168.1.10` (LoadBalancer, port 80, Flexible SSL)
-- Cloudflare handles SSL (Flexible — HTTPS to user, HTTP to 192.168.1.10)
+- Cloudflare forwards traffic to `192.168.1.2` (k3s-2, port 80, Flexible SSL)
+- Cloudflare handles SSL (Flexible — HTTPS to user, HTTP to k3s-2 on port 80)
+- Nginx on k3s-2 receives traffic and proxies to `192.168.1.10:8002` (LoadBalancer)
 - `server: cloudflare` in HTTP headers
 
 ---
@@ -33,9 +34,9 @@ Cloudflare proxy means:
 ```
 🌐 User → https://ostc-app.org
   → Cloudflare DNS → Cloudflare edge
-    → Cloudflare proxy → 192.168.1.10 (LoadBalancer, port 80)
-      → nginx proxy_pass http://192.168.1.10:8002
-        → Service LoadBalancer (MetalLB)
+    → Cloudflare proxy → 192.168.1.2:80 (k3s-2)
+      → nginx on k3s-2 (proxy_pass http://192.168.1.10:8002)
+        → Service LoadBalancer (MetalLB, 192.168.1.10:8002)
           → sola-app pod (k3s-1 or k3s-2)
 
 Alternative path (internal network):
@@ -74,7 +75,7 @@ If the domain needs to be changed in the future:
 ### 1. Cloudflare
 
 1. Open Cloudflare dashboard
-2. Add A record: `@` → `192.168.1.10` (Proxied)
+2. Add A record: `@` → `192.168.1.2` (Proxied, k3s-2)
 3. Wait for DNS propagation
 
 ### 2. Update BASE_URL
@@ -99,5 +100,5 @@ sudo systemctl restart nginx
 
 - **LoadBalancer IP** `192.168.1.10` is fixed — it does not change on restart
 - **Nginx** on k3s-2 forwards to the MetalLB IP, not directly to pods
-- **Cloudflare SSL** is "Full" — traffic between Cloudflare and nginx is HTTP (not encrypted), but only within the school network
+- **Cloudflare SSL** is "Flexible" — HTTPS between user and Cloudflare, HTTP between Cloudflare and nginx on k3s-2 (within school network only)
 - If you wanted **end-to-end HTTPS**, you would need certbot/letsencrypt on k3s-2
