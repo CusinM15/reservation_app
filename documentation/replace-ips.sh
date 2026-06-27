@@ -41,10 +41,6 @@ REPLACEMENTS=(
     "{{K8S_CLUSTER_DB}}:$K8S_CLUSTER_DB"
     "{{K8S_SERVICE_DB}}:$K8S_SERVICE_DB"
     "{{K8S_DB_PORT}}:$K8S_DB_PORT"
-    "{{CLUSTER_CIDR}}:$CLUSTER_CIDR"
-    "{{SERVICE_CIDR}}:$SERVICE_CIDR"
-    "{{K3S_API_PORT}}:$K3S_API_PORT"
-    "{{LOCAL_DEV_PORT}}:$LOCAL_DEV_PORT"
 )
 
 COUNT=0
@@ -68,4 +64,4 @@ done
 echo ""
 echo "=== Končano! $COUNT datotek posodobljenih ==="
 echo ""
-echo "💡 .env.ip je v .gitignore — tvoji IP-ji so varni."
+echo "💡 Uredi .env.ip, poženi skripto in dokumentacija bo prilagojena tvojim IP-jem."
