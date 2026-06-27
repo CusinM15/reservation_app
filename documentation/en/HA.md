@@ -87,7 +87,7 @@ Key distinction: `sola-db-rw` is the **only** one that accepts writes. `sola-db-
 
 #### Auto-failover (built-in)
 
-- **`failoverDelay: 30`** — if the primary pod goes down, CNPG waits 30s then promotes a replica to primary
+- **`failoverDelay: 30`** — if the primary pod goes down, CNPG waits 30s then promotes a replica to primary (actual detection takes ~1 minute due to Kubernetes health checks)
 - **`enablePDB: true`** — PodDisruptionBudget prevents both pods from going down simultaneously
 - **Replication** — streaming replication, asynchronous (OK for this application)
 - **Storage** — Longhorn, each instance has its own PVC
@@ -96,13 +96,13 @@ Key distinction: `sola-db-rw` is the **only** one that accepts writes. `sola-db-
 #### Failover process
 
 1. K3s-1 crashes → primary pod `sola-db-1` becomes unreachable
-2. CNPG operator detects the outage (30s `failoverDelay`)
-3. CNPG promotes `sola-db-2` (on k3s-2) to primary
+2. CNPG operator detects the outage (~1 minute)
+3. CNPG promotes `sola-db-2` (on k3s-2) to primary (~2 minutes)
 4. Service `sola-db-rw` automatically redirects to `sola-db-2`
 5. App on k3s-1: pod is dead → k3s reschedules it onto k3s-2
 6. App on k3s-2: connects to `sola-db-rw` (which points to `sola-db-2`) → continues working
 
-**Total downtime:** ~1–2 minutes (30s failover delay + ~30s for promotion + time for k3s to detect the dead node)
+**Total downtime:** ~3 minutes (~1 min detection + ~2 min promotion + time for k3s to detect the dead node and reschedule the app pod)
 
 #### Recovery after node repair
 

@@ -87,7 +87,7 @@ Primarna razlika: `sola-db-rw` je **edini**, ki sprejema zapisovanje. `sola-db-r
 
 #### Auto-failover (vgrajen)
 
-- **`failoverDelay: 30`** — če primarni pod pade, CNPG počaka 30s in nato promovira repliko v primary
+- **`failoverDelay: 30`** — če primarni pod pade, CNPG počaka 30s in nato promovira repliko v primary (realno detekcija izpada skupaj traja ~1 minuto zaradi Kubernetes health checkov)
 - **`enablePDB: true`** — PodDisruptionBudget preprečuje hkratni izpad obeh podov
 - **Replikacija** — streaming replication, asinhrona (OK za to aplikacijo)
 - **Storage** — Longhorn, vsaka instanca ima svoj PVC
@@ -96,13 +96,13 @@ Primarna razlika: `sola-db-rw` je **edini**, ki sprejema zapisovanje. `sola-db-r
 #### Potek failoverja
 
 1. K3s-1 crkne → primarni pod `sola-db-1` postane nedosegljiv
-2. CNPG operator zazna izpad (30s `failoverDelay`)
-3. CNPG promovira `sola-db-2` (na k3s-2) v primary
+2. CNPG operator zazna izpad (~1 minuta)
+3. CNPG promovira `sola-db-2` (na k3s-2) v primary (~2 minuti)
 4. Service `sola-db-rw` se avtomatsko preusmeri na `sola-db-2`
 5. App na k3s-1: pod je mrtev → k3s ga reschedule-a na k3s-2
 6. App na k3s-2: poveže se na `sola-db-rw` (ki kaže na `sola-db-2`) → deluje naprej
 
-**Skupni čas izpada:** ~1–2 minuti (30s failover delay + ~30s za promocijo + čas, da k3s zazna mrtvi node)
+**Skupni čas izpada:** ~3 minute (~1 min detekcija + ~2 min promocija + čas, da k3s zazna mrtvi node in reschedule-a app pod)
 
 #### Recovery po popravilu noda
 
