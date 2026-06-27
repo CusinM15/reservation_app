@@ -113,8 +113,8 @@ Ta datoteka je **glavni vstopni dokument**. Spodaj so povezave na specializirane
                     ┌─────────▼─────────────────────┐
                     │  Cloudflare DNS               │
                     │  {{DOMAIN}}                   │   
-                    │  → {{K3S_2_IP}}:{{NGINX_PORT}}│  📡 Cloudflare proxy
-                    │    (k3s-2 nginx)              │
+                    │  → {{LB_IP}}:{{LB_PORT}}  │  📡 Cloudflare proxy
+                    │    (LoadBalancer)          │
                     └───────────────────────────────┘
                               │
                               │  Internet
@@ -128,11 +128,8 @@ Ta datoteka je **glavni vstopni dokument**. Spodaj so povezave na specializirane
 ```
 🌐 Uporabnik
   → Cloudflare (SSL, proxy, {{DOMAIN}})
-    → Cloudflare proxy → k3s-2:8080
-      → nginx na k3s-2
-        → proxy_pass http://{{LB_IP}}:{{LB_PORT}}
-          → Service LoadBalancer (MetalLB)
-            → sola-app Pod (k3s-1 ali k3s-2)
+    → Service LoadBalancer (MetalLB, {{LB_IP}}:{{LB_PORT}})
+      → sola-app Pod (k3s-1 ali k3s-2)
 
 Alternativna pot (interno omrežje):
   → http://k3s-1:8080 → nginx na k3s-1 → proxy_pass {{LB_IP}}:{{LB_PORT}}
@@ -140,7 +137,7 @@ Alternativna pot (interno omrežje):
   → http://{{LB_IP}}:{{LB_PORT}} → direkt na LoadBalancer
 ```
 
-> **Cloudflare proxy** kaže na **k3s-2 (port {{NGINX_PORT}})**. Oba noda imata identičen nginx — port {{NGINX_PORT}} proxy-passa na LoadBalancer. Če k3s-2 ni dosegljiv, je treba v Cloudflare dashboardu spremeniti origin IP na k3s-1.
+> **Cloudflare proxy** kaže direktno na **LoadBalancer ({{LB_IP}}:{{LB_PORT}})** — ne na nginx na k3s-2. Če LoadBalancer IP ni dosegljiv, je treba v Cloudflare dashboardu spremeniti origin IP na drug IP (npr. k3s-1 ali k3s-2) ali popraviti MetalLB konfiguracijo.
 
 ### **Pregled komponent**
 
@@ -151,7 +148,7 @@ Alternativna pot (interno omrežje):
 | **Sola App (FastAPI)** | 2 poda (oba noda) | Rezervacije, ocenjevanje, prijava |
 | **Longhorn** | Oba noda | Distribuirano shranjevanje (PVC-ji) |
 | **MetalLB** | Oba noda | LoadBalancer IP ({{LB_IP}}) |
-| **nginx** | Oba noda (port {{NGINX_PORT}}) | Reverse proxy → LoadBalancer {{LB_IP}}:{{LB_PORT}}. Cloudflare origin: k3s-2:8080 |
+| **nginx** | Oba noda (port {{NGINX_PORT}}) | Reverse proxy → LoadBalancer {{LB_IP}}:{{LB_PORT}}. Cloudflare origin: {{LB_IP}}:{{LB_PORT}} |
 | **Cloudflare** | Zunanji | DNS, SSL, proxy |
 
 ---
@@ -196,7 +193,7 @@ kubectl get nodes -o wide
 kubectl get pods -A -o wide
 
 # Aplikacija v brskalniku
-https://{{DOMAIN}}          # prek Cloudflare + nginx
+https://{{DOMAIN}}          # prek Cloudflare + LoadBalancer
 http://{{LB_IP}}:{{LB_PORT}}     # direkt (samo interno omrežje)
 ```
 
@@ -323,7 +320,7 @@ Nginx teče na **obeh nodih** z identično konfiguracijo:
 | Node | Port | Vloga |
 |---|---|---|
 | **k3s-1** | 8080 | Reverse proxy → LoadBalancer (rezerva) |
-| **k3s-2** | 8080 | Reverse proxy → LoadBalancer (aktiven — Cloudflare origin) |
+| **k3s-2** | {{NGINX_PORT}} | Reverse proxy → LoadBalancer (nginx backend) |
 
 ### **Konfiguracija**
 
@@ -342,8 +339,8 @@ server {
 }
 ```
 
-> **Cloudflare** uporablja **Flexible SSL** — HTTPS do uporabnika, HTTP do k3s-2:8080.
-> Če k3s-2 odpove, je treba v Cloudflare dashboardu spremeniti origin IP na `{{K3S_1_IP}}:{{NGINX_PORT}}` (k3s-1).
+> **Cloudflare** uporablja **Flexible SSL** — HTTPS do uporabnika, HTTP do {{LB_IP}}:{{LB_PORT}}.
+> Če k3s-2 odpove, lahko v Cloudflare dashboardu spremenimo origin IP (npr. na k3s-1 IP).
 
 ---
 
@@ -353,14 +350,14 @@ server {
 
 | Tip | Ime | Vrednost | Proxy |
 |---|---|---|---|
-| A | `@` ({{DOMAIN}}) | {{K3S_2_IP}} | ✅ Cloudflare proxy (origin: k3s-2:8080) |
-| A | `www` | {{K3S_2_IP}} | ✅ Cloudflare proxy |
+| A | `@` ({{DOMAIN}}) | {{LB_IP}} | ✅ Cloudflare proxy (LoadBalancer) |
+| A | `www` | {{LB_IP}} | ✅ Cloudflare proxy |
 
 ### **SSL/TLS**
 
 Cloudflare skrbi za:
 - **Edge certifikat** — med uporabnikom in Cloudflare (HTTPS)
-- **Flexible SSL** — Cloudflare → k3s-2:8080 prek HTTP (brez certifikata na originu)
+- **Flexible SSL** — Cloudflare → {{LB_IP}}:{{LB_PORT}} prek HTTP (brez certifikata na originu)
 
 Nastavitve v Cloudflare dashboard:
 - **SSL/TLS encryption mode:** `Flexible`

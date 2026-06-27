@@ -22,8 +22,8 @@ Current domain: **`{{DOMAIN}}`** (Cloudflare proxied)
 
 Cloudflare proxy means:
 - Public DNS resolves to Cloudflare IPs
-- Cloudflare forwards traffic to `{{K3S_2_IP}}:{{NGINX_PORT}}` (nginx on k3s-2, Flexible SSL)
-- Cloudflare handles SSL (Flexible — HTTPS to user, HTTP to k3s-2)
+- Cloudflare forwards traffic to `{{LB_IP}}:{{LB_PORT}}` (LoadBalancer, Flexible SSL)
+- Cloudflare handles SSL (Flexible — HTTPS to user, HTTP to {{LB_IP}})
 - `server: cloudflare` in HTTP headers
 
 ---
@@ -33,7 +33,7 @@ Cloudflare proxy means:
 ```
 🌐 User → https://{{DOMAIN}}
   → Cloudflare DNS → Cloudflare edge
-    → Cloudflare proxy → {{K3S_2_IP}}:{{NGINX_PORT}} (k3s-2 nginx)
+    → Cloudflare proxy → {{LB_IP}}:{{LB_PORT}} (LoadBalancer)
       → nginx proxy_pass http://{{LB_IP}}:{{LB_PORT}}
         → Service LoadBalancer (MetalLB)
           → sola-app pod (k3s-1 or k3s-2)

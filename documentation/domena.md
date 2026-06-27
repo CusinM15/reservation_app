@@ -22,8 +22,8 @@ Trenutna domena: **`{{DOMAIN}}`** (Cloudflare proxied)
 
 Cloudflare proxy pomeni:
 - Javni DNS resolve-a na Cloudflare IP-je
-- Cloudflare posreduje promet na `{{K3S_2_IP}}:{{NGINX_PORT}}` (nginx na k3s-2, Flexible SSL)
-- Cloudflare skrbi za SSL (Flexible — HTTPS do uporabnika, HTTP do k3s-2)
+- Cloudflare posreduje promet na `{{LB_IP}}:{{LB_PORT}}` (LoadBalancer, Flexible SSL)
+- Cloudflare skrbi za SSL (Flexible — HTTPS do uporabnika, HTTP do {{LB_IP}})
 - `server: cloudflare` v HTTP headerjih
 
 ---
@@ -33,7 +33,7 @@ Cloudflare proxy pomeni:
 ```
 🌐 Uporabnik → https://{{DOMAIN}}
   → Cloudflare DNS → Cloudflare edge
-    → Cloudflare proxy → {{K3S_2_IP}}:{{NGINX_PORT}} (k3s-2 nginx)
+    → Cloudflare proxy → {{LB_IP}}:{{LB_PORT}} (LoadBalancer)
       → nginx proxy_pass http://{{LB_IP}}:{{LB_PORT}}
         → Service LoadBalancer (MetalLB)
           → sola-app pod (k3s-1 ali k3s-2)

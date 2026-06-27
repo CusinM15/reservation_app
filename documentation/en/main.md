@@ -126,10 +126,8 @@
 ```
 🌐 User
   → Cloudflare (SSL, proxy, {{DOMAIN}})
-    → Cloudflare proxy → {{K3S_2_IP}}:{{NGINX_PORT}} (k3s-2 nginx)
-      → nginx proxy_pass http://{{LB_IP}}:{{LB_PORT}}
-        → Service LoadBalancer (MetalLB)
-          → sola-app Pod (k3s-1 or k3s-2)
+    → Service LoadBalancer (MetalLB, {{LB_IP}}:{{LB_PORT}})
+      → sola-app Pod (k3s-1 or k3s-2)
 
 Alternative path (internal network):
   → http://{{K3S_1_IP}}:{{NGINX_PORT}} → nginx on k3s-1 → proxy_pass {{LB_IP}}:{{LB_PORT}}
@@ -153,7 +151,7 @@ Cloudflare proxy provides:
 | **CloudNativePG** | 2 instances (both nodes) | PostgreSQL database with automatic failover |
 | **Longhorn** | Both nodes | Distributed storage (PVCs) |
 | **MetalLB** | Both nodes | LoadBalancer IP ({{LB_IP}}) |
-| **nginx** | Both nodes (port {{NGINX_PORT}}) | Reverse proxy → LoadBalancer. Cloudflare origin: k3s-2:8080 |
+| **nginx** | Both nodes (port {{NGINX_PORT}}) | Reverse proxy → LoadBalancer. Cloudflare origin: {{LB_IP}}:{{LB_PORT}} |
 | **Cloudflare** | External | DNS, SSL, proxy |
 
 ---
@@ -551,7 +549,7 @@ Nginx runs on **both nodes** with an identical configuration (only port {{NGINX_
 | Node | Port | Role |
 |---|---|---|
 | **k3s-1** | 8080 | Reverse proxy → LoadBalancer (backup) |
-| **k3s-2** | 8080 | Reverse proxy → LoadBalancer (active — Cloudflare origin) |
+| **k3s-2** | {{NGINX_PORT}} | Reverse proxy → LoadBalancer (nginx backend) |
 
 ### **Configuration (both nodes identical)**
 
@@ -570,8 +568,8 @@ server {
 }
 ```
 
-> **Cloudflare** uses **Flexible SSL** — HTTPS to the user, HTTP to k3s-2:8080.  
-> If k3s-2 fails, change the Cloudflare origin IP to `{{K3S_1_IP}}:{{NGINX_PORT}}` (k3s-1) in the dashboard.
+> **Cloudflare** uses **Flexible SSL** — HTTPS to the user, HTTP to {{LB_IP}}:{{LB_PORT}}.  
+> If k3s-2 fails, change the Cloudflare origin in the dashboard (e.g. to k3s-1 IP).
 
 > **Note:** Cloudflare handles SSL (HTTPS). Nginx listens on port {{NGINX_PORT}} (not 80/443) and forwards to the MetalLB IP.
 
@@ -583,11 +581,11 @@ server {
 
 | Type | Name | Value | Proxy |
 |---|---|---|---|
-| A | `{{DOMAIN}}` | `{{K3S_2_IP}}` | ✅ Proxied (orange cloud) |
+| A | `{{DOMAIN}}` | `{{LB_IP}}` | ✅ Proxied (orange cloud) |
 
 Cloudflare proxy means:
 - `{{DOMAIN}}` resolves to Cloudflare IPs
-- Cloudflare forwards traffic to `{{K3S_2_IP}}:{{NGINX_PORT}}` (nginx on k3s-2, Flexible SSL)
+- Cloudflare forwards traffic to `{{LB_IP}}:{{LB_PORT}}` (LoadBalancer, Flexible SSL)
 - SSL certificate is managed by Cloudflare (Flexible — HTTPS to user, HTTP to origin)
 
 > **Details:** [domena.md](domena.md) — complete domain change history.
@@ -846,7 +844,7 @@ kubectl rollout status -n sola-app deployment/sola-app
 
 - **Failover is completely automatic** — no manual intervention needed
 - **Both nodes are control-plane** — no separate worker nodes
-- **Cloudflare origin** → k3s-2:8080 (nginx reverse proxy)
+- **Cloudflare origin** → {{LB_IP}}:{{LB_PORT}} (LoadBalancer)
 - **Nginx on both nodes** (port {{NGINX_PORT}}) — proxy_pass to LoadBalancer IP `{{LB_IP}}:{{LB_PORT}}`
 - **App uses** `sola-db-rw.sola:{{K8S_DB_PORT}}` — always on the current primary
 - **Old Bitnami PostgreSQL was removed** — we use CNPG

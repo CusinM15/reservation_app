@@ -229,7 +229,7 @@ kubectl exec -n sola sola-db-1 -- psql -U postgres -d sola -c \
 
 3. **Ne izklopiti kar z stikala** — vedno graceful shutdown: scale down app → scale down baza → stop k3s → poweroff.
 
-4. **Domena bo med pavzo nedosegljiva** — Cloudflare proxy kaže na k3s-2, ki bo ugasnjen.
+4. **Domena bo med pavzo nedosegljiva** — Cloudflare proxy kaže na LoadBalancer ({{LB_IP}}), ki bo ugasnjen.
 
 5. **Po vklopu preveri cronjob-e** — backup in report se zaženeta sama po shedule-u.
 
