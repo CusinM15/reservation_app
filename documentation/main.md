@@ -309,6 +309,18 @@ kubectl exec -it -n sola-app deploy/sola-app -- psql $SOLA_DATABASE_URL
 kubectl exec -it -n sola-app deploy/sola-app -- psql $SOLA_DATABASE_URL_RO
 ```
 
+### **Servisni endpointi (CNPG)**
+
+CNPG samodejno ustvari tri Kubernetes Services za dostop do baze:
+
+| Service | Vloga |
+|---|---|
+| `sola-db-rw.sola:5432` | **Read-Write** — vedno na primary (uporablja ga app) |
+| `sola-db-ro.sola:5432` | Read-Only — samo replica (za poročila, analitiko) |
+| `sola-db-r.sola:5432` | Read — katerakoli instance (primary ali replica) |
+
+`DATABASE_URL` v aplikaciji kaže na `sola-db-rw` — ob failoverju se avtomatsko preusmeri na nov primary, app ne izve za spremembo.
+
 ---
 
 ## 🌐 **Nginx Reverse Proxy**
