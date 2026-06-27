@@ -74,14 +74,14 @@ Ta datoteka je **glavni vstopni dokument**. Spodaj so povezave na specializirane
 ├──────────────────────────────────────────────────────────────────────────┤
 │                                                                          │
 │  ┌──────────────────────────┐    ┌──────────────────────────┐            │
-│  │    k3s-1                  │    │    k3s-2                  │            │
+│  │    k3s-1                 │    │    k3s-2                 │            │
 │  │    HP ProBook 455 G5     │    │    HP ProBook 450 G5     │            │
 │  │    IP: {{K3S_1_IP}}      │    │    IP: {{K3S_2_IP}}      │            │
 │  │    control-plane,etcd    │    │    control-plane,etcd    │            │
 │  │                          │    │                          │            │
 │  │  ┌───────────────────┐   │    │  ┌───────────────────┐   │            │
 │  │  │ sola-app Pod 1    │   │    │  │ sola-app Pod 2    │   │            │
-│  │  │ (app.{{DOMAIN}})│   │    │  │ (app.{{DOMAIN}})│   │            │
+│  │  │ (app.{{DOMAIN}})  │   │    │  | (app.{{DOMAIN}})  │   │            │
 │  │  └───────────────────┘   │    │  └───────────────────┘   │            │
 │  │  ┌───────────────────┐   │    │  ┌───────────────────┐   │            │
 │  │  │ sola-db-1         │   │    │  │ sola-db-2         │   │            │
@@ -95,33 +95,33 @@ Ta datoteka je **glavni vstopni dokument**. Spodaj so povezave na specializirane
 │  │  └───────────────────┘   │    │  └───────────────────┘   │            │
 │  │                          │    │                          │            │
 │  │  ┌───────────────────┐   │    │  ┌───────────────────┐   │            │
-│  │  │ nginx              │   │    │  │ nginx              │   │            │
-│  │  │ (port {{NGINX_PORT}})        │   │    │  │ (port {{NGINX_PORT}})        │   │            │
+│  │  │ nginx             │   │    │  │ nginx             │   │            │
+│  │  │(port {{NGINX_PORT}})  │    │  │ (port {{NGINX_PORT}}) │            │
 │  │  └───────────────────┘   │    │  └───────────┬───────┘   │            │
-│  └──────────────────────────┘    └───────────────┼───────────┘            │
-│                                                  │                          │
-│                                        proxy_pass│{{LB_IP}}:{{LB_PORT}}        │
-│                                                  │                          │
-│                    ┌─────────────────────────────┘                          │
-│                    │                                                       │
-│  ┌─────────────────▼──────────────────────────────────────────┐           │
-│  │        Service LoadBalancer (MetalLB, {{LB_IP}}:{{LB_PORT}})    │           │
-│  │        → sola-app Pod 1 ali Pod 2                            │           │
-│  └─────────────────────────────────────────────────────────────┘           │
+│  └──────────────────────────┘    └───────────────┼──────────┘            │
+│                                                  │                       │
+│                                  proxy_pass│{{LB_IP}}:{{LB_PORT}}        │
+│                                                  │                       │
+│                    ┌─────────────────────────────┘                       │
+│                    │                                                     │
+│  ┌─────────────────▼────────────────────────────────────────────┐        │
+│  │        Service LoadBalancer (MetalLB, {{LB_IP}}:{{LB_PORT}}) │        │
+│  │        → sola-app Pod 1 ali Pod 2                            │        │
+│  └──────────────────────────────────────────────────────────────┘        │
 └──────────────────────────────────────────────────────────────────────────┘
                               │
-                    ┌─────────▼─────────┐
-                    │  Cloudflare DNS    │
-                    │  {{DOMAIN}}      │
+                    ┌─────────▼─────────────────────┐
+                    │  Cloudflare DNS               │
+                    │  {{DOMAIN}}                   │   
                     │  → {{K3S_2_IP}}:{{NGINX_PORT}}│  📡 Cloudflare proxy
-                    │    (k3s-2 nginx)   │
-                    └───────────────────┘
+                    │    (k3s-2 nginx)              │
+                    └───────────────────────────────┘
                               │
                               │  Internet
                               ▼
 ```
 
-> **Opomba:** Oba noda sta `control-plane,etcd` — ni ločenih worker nodov. k3s podpava poganjanje uporabniških podov tudi na control-plane nodih.
+> **Opomba:** Oba noda sta `control-plane, etd` — ni ločenih worker nodov. k3s poganjanje uporabniških podov tudi na control-plane nodih.
 
 ### **Prometni tok**
 
