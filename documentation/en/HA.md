@@ -73,6 +73,7 @@ Services:
 ├── sola-db-rw → always on primary (write + read)
 ├── sola-db-ro → on all ready instances (read only)
 └── sola-db-r  → on all instances
+```
 
 **How they work:**
 
@@ -83,7 +84,6 @@ Services:
 | `sola-db-r` | **All instances** (including those not yet ready) | **Read only** — similar to `ro`, but includes instances not yet marked as ready. Less relevant for daily use. | — |
 
 Key distinction: `sola-db-rw` is the **only** one that accepts writes. `sola-db-ro` and `sola-db-r` are read-only — they can offload read queries from the primary. In practice, the app uses exclusively `sola-db-rw` via `DATABASE_URL`.
-```
 
 #### Auto-failover (built-in)
 
