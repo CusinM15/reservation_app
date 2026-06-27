@@ -15,7 +15,6 @@ k8s/
 │   │   ├── sola-service.yaml
 │   │   └── sola-backup-cronjob.yaml
 │   └── overlays/
-│       ├── frp/
 │       ├── ingress/
 │       └── production-lb/
 ├── cluster/
@@ -97,16 +96,9 @@ Deploy z Ingressom:
 kubectl apply -k k8s/app/overlays/ingress
 ```
 
-Deploy za FRP/tunel varianto:
-
-```bash
-kubectl apply -k k8s/app/overlays/frp
-```
-
 Za pregled generiranih manifestov brez spreminjanja klasterja:
 
 ```bash
 kubectl kustomize k8s/app/overlays/production-lb
 kubectl kustomize k8s/app/overlays/ingress
-kubectl kustomize k8s/app/overlays/frp
 ```

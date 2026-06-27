@@ -247,9 +247,8 @@ reservation_app/
 │   └── templates/           # Jinja2 HTML templates
 ├── k8s/                     # Kubernetes deploy configuration
 │   ├── app/base/            # Base kustomize
-│   ├── app/overlays/        # Overlays (ingress, production-lb, frp)
+│   ├── app/overlays/        # Overlays (ingress, production-lb)
 │   └── cluster/             # MetalLB configuration
-├── deploy/                  # FRP tunnel configuration
 ├── Dockerfile               # Container build
 ├── documentation/           # 📚 Documentation (this folder)
 └── requirements.txt         # Python dependencies
