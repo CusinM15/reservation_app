@@ -1,7 +1,7 @@
-# Reverse proxy: ostc.si/solski-app → http://193.2.171.200:8002
+# Reverse proxy (zamaskirani IP-ji)
 
 Ta dokument pojasni, kako objaviti aplikacijo (LoadBalancer servis v k3s clustru,
-dostopen interno na `http://193.2.171.200:8002`) pod javnim URL-jem
+dostopen interno na `http://192.168.1.10:8002`) pod javnim URL-jem
 `https://ostc.si/solski-app`, brez sudo pravic na gostitelju, ki gosti domeno.
 
 Glavna ovira: master in worker nimata javnega IP-ja, do njih z interneta ni
@@ -41,12 +41,12 @@ Cloudflare-a ne moreš/ne smeš uporabiti.
 
 ```bash
 # Aplikacija mora biti dosegljiva lokalno:
-curl -sS http://193.2.171.200:8002/health
+curl -sS http://192.168.1.10:8002/health
 # Pričakovano: {"status":"ok","version":"0.1.0"}
 
 # Cluster IP servisa:
 kubectl get svc -n sola-app
-# sola-app  LoadBalancer  10.43.x.x  193.2.171.200  8002:30329/TCP
+# sola-app  LoadBalancer  10.43.x.x  192.168.1.10  8002:30329/TCP
 ```
 
 Če `/health` ne odgovori, najprej popravi to (glej app/main.py, kubectl logs).
@@ -134,7 +134,7 @@ credentials-file: /home/<TVOJ_USER>/.cloudflared/<UUID>.json
 
 ingress:
   - hostname: solski.ostc.si
-    service: http://193.2.171.200:8002
+    service: http://192.168.1.10:8002
     originRequest:
       # podaljšaj timeout-e za počasne strani / poročila
       connectTimeout: 30s
@@ -317,7 +317,7 @@ curl -sL https://github.com/openziti/zrok/releases/latest/download/zrok_linux_am
 # Registracija na https://api.zrok.io, dobiš token
 ./zrok invite               # ali enable z gostujočim accountom
 ./zrok enable <token>
-./zrok reserve public --backend-mode proxy http://193.2.171.200:8002
+./zrok reserve public --backend-mode proxy http://192.168.1.10:8002
 # dobiš stalno javno povezavo solski-xy.share.zrok.io
 ```
 
@@ -333,7 +333,7 @@ boljši.
 
 | Simptom | Najverjetnejši vzrok | Test/rešitev |
 |---|---|---|
-| `503 Service Unavailable` od cloudflared | App ne odgovarja na 193.2.171.200:8002 | `curl http://193.2.171.200:8002/health` na masterju |
+| `503 Service Unavailable` od cloudflared | App ne odgovarja na 192.168.1.10:8002 | `curl http://192.168.1.10:8002/health` na masterju |
 | `1033 Argo Tunnel error` | Tunel ne teče | `systemctl --user status cloudflared` |
 | DNS ne resolva | CNAME ni nastavljen | `cloudflared tunnel route dns solski-app solski.ostc.si` ponovi |
 | Statika (CSS/JS) 404 | App predloge generirajo absolutne poti, ki ne ustrezajo varianti B | Uporabi varianto A (subdomena) ali nastavi `--root-path` |

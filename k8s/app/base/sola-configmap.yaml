@@ -6,7 +6,7 @@ metadata:
 data:
   APP_HOST: "0.0.0.0"
   APP_PORT: "8002"
-  BASE_URL: "https://sola-app.ostc.si"
+  BASE_URL: "https://ostc-app.org"
   RESET_TOKEN_EXPIRATION_MINUTES: "30"
   TABLICE_MAX: "28"
   SCHEDULE: '{"0":"07:30-08:15","1":"08:20-09:05","2":"09:15-10:00","3":"10:20-11:05","4":"11:10-12:55","5":"12:00-12:45","6":"12:50-13:35","7":"14:00-14:45"}'

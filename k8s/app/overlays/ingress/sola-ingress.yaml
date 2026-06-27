@@ -7,7 +7,7 @@ metadata:
     nginx.ingress.kubernetes.io/ssl-redirect: "true"
 spec:
   rules:
-  - host: sola-app.ostc.si
+  - host: ostc-app.org
     http:
       paths:
       - path: /

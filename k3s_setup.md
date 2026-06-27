@@ -566,14 +566,14 @@ kubectl -n longhorn-system port-forward svc/longhorn-frontend 8080:80
 Ker želiš, da aplikacija deluje na poti `/solski-app`, moramo nginx konfigurirati tako, da:
 
 - Sprejema zahteve na `ostc.si/solski-app`
-- Jih posreduje na `http://193.2.171.200:8002` **brez** poti `/solski-app` (če app pričakuje koren) ali **s potjo** (odvisno od app-a).
+- Jih posreduje na `http://192.168.1.10:8002` **brez** poti `/solski-app` (če app pričakuje koren) ali **s potjo** (odvisno od app-a).
 
 Tvoja aplikacija je verjetno napisana za koren (`/`), zato bomo v nginx-u odstranili prefiks `/solski-app` s pravilom `rewrite` ali `proxy_pass` z `location /solski-app/`.
 
 ### Predpogoji
 
 - `ostc.si` DNS naj kaže na javni IP tvojega master vozlišča (kjer bo tekel nginx).
-- MetalLB naslov `193.2.171.200` je dosegljiv iz masterja (ker sta v istem omrežju).
+- MetalLB naslov `192.168.1.10` je dosegljiv iz masterja (ker sta v istem omrežju).
 
 ### Namestitev nginx na master (OS)
 
@@ -601,7 +601,7 @@ server {
 
     # Glavna lokacija za aplikacijo pod /solski-app
     location /solski-app/ {
-        proxy_pass http://193.2.171.200:8002/;   # končna poševnica odstrani /solski-app
+        proxy_pass http://192.168.1.10:8002/;   # končna poševnica odstrani /solski-app
         proxy_set_header Host $host;
         proxy_set_header X-Real-IP $remote_addr;
         proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
@@ -616,7 +616,7 @@ server {
 }
 ```
 
-> **Pomembno**: `proxy_pass http://193.2.171.200:8002/;` s končno poševnico **odstrani** prefiks `/solski-app` iz zahteve. Tako app dobi zahtevo na `/` (koren). Če pa tvoj app pričakuje, da bo gostoval pod `/solski-app` (ima npr. `root_path="/solski-app"`), potem pusti `proxy_pass http://193.2.171.200:8002;` (brez končne poševnice) in dodaš `proxy_set_header X-Forwarded-Prefix /solski-app;` (že zgoraj).
+> **Pomembno**: `proxy_pass http://192.168.1.10:8002/;` s končno poševnico **odstrani** prefiks `/solski-app` iz zahteve. Tako app dobi zahtevo na `/` (koren). Če pa tvoj app pričakuje, da bo gostoval pod `/solski-app` (ima npr. `root_path="/solski-app"`), potem pusti `proxy_pass http://192.168.1.10:8002;` (brez končne poševnice) in dodaš `proxy_set_header X-Forwarded-Prefix /solski-app;` (že zgoraj).
 
 ### Omogoči in pridobi SSL
 
@@ -650,7 +650,7 @@ Ko je nginx nastavljen in app podi stabilni, odpri brskalnik na `https://ostc.si
 Če še vedno dobivaš `502 Bad Gateway`, preveri, da nginx dosega MetalLB naslov:
 
 ```bash
-curl -I http://193.2.171.200:8002/health
+curl -I http://192.168.1.10:8002/health
 ```
 
 Če to deluje, potem je težava v nginx konfiguraciji.

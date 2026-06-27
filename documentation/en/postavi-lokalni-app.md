@@ -63,7 +63,7 @@ docker run -d --name sola-app -p 8001:8001 \
 
 The application is at **http://localhost:8001**.
 
-Default access: `admin` / `admin123` (change password immediately).
+Default access: `admin` / `your_password` (change password immediately).
 
 Stop:
 ```bash
@@ -107,7 +107,7 @@ uvicorn app.main:app --host 0.0.0.0 --port 8001 --reload
 `--reload` means automatic restart on code changes (useful for development).
 
 Application: **http://localhost:8001**
-Admin: `admin` / `admin123`
+Admin: `admin` / `your_password`
 
 ### 3c) Stop
 
@@ -119,7 +119,7 @@ Admin: `admin` / `admin123`
 
 On first run, the application:
 1. Creates a SQLite database (`data/sola.db`)
-2. Adds the initial admin user (`admin` / `admin123`)
+2. Adds the initial admin user (`admin` / `your_password`)
 3. Everything is ready for use
 
 **The database is empty** — no reservations, no assessments, no teachers.

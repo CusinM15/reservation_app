@@ -63,7 +63,7 @@ docker run -d --name sola-app -p 8001:8001 \
 
 Aplikacija je na **http://localhost:8001**.
 
-Privzet dostop: `admin` / `admin123` (geslo takoj spremeni).
+Privzet dostop: `admin` / `your_password` (geslo takoj spremeni).
 
 Ustavi:
 ```bash
@@ -107,7 +107,7 @@ uvicorn app.main:app --host 0.0.0.0 --port 8001 --reload
 `--reload` pomeni samodejni restart ob spremembi kode (uporabno za razvoj).
 
 Aplikacija: **http://localhost:8001**
-Admin: `admin` / `admin123`
+Admin: `admin` / `your_password`
 
 ### 3c) Ustavi
 
@@ -119,7 +119,7 @@ Admin: `admin` / `admin123`
 
 Ob prvem zagonu aplikacija:
 1. Ustvari SQLite bazo (`data/sola.db`)
-2. Doda začetnega admin uporabnika (`admin` / `admin123`)
+2. Doda začetnega admin uporabnika (`admin` / `your_password`)
 3. Vse je pripravljeno za uporabo
 
 **Baza je prazna** — ni rezervacij, ni ocenjevanj, ni učiteljev.

@@ -301,8 +301,8 @@ def list_users(session: requests.Session, base_url: str, verify: bool = True) ->
 
 def main(argv: Iterable[str] | None = None) -> int:
     p = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    p.add_argument("--base-url", default="http://193.2.171.200:8002",
-                   help="Base URL aplikacije (privzeto: http://193.2.171.200:8002)")
+    p.add_argument("--base-url", default="https://ostc-app.org",
+                   help="Base URL aplikacije (privzeto: https://ostc-app.org)")
     p.add_argument("--admin-user", default="admin")
     p.add_argument("--admin-pass", default="admin123")
     p.add_argument("--source", default=SCRAPE_URL, help="URL za scrape (privzeto tonecufar.si)")

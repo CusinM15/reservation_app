@@ -1,24 +1,21 @@
-# FRP konfiguracija za sola-app.ostc.si na k3s
+# FRP konfiguracija (ZASTARELO — uporabljamo Cloudflare)
 
-## Arhitektura
+> ⚠️ **Ta način dostopa je zamenjan s Cloudflare proxy-jem.**  
+> FRP ni več aktiven. Dokumentacija je ohranjena samo za referenco.
+
+## Arhitektura (takratna)
 
 ```
-Internet ──► DNS: sola-app.ostc.si → 185.69.149.101 (javni strežnik)
+Internet ──► DNS: ostc-app.org → Cloudflare
                   │
-      ┌───────────┴────────────┐
-      │  Javni strežnik        │
-      │  185.69.149.101        │
-      │                        │
-      │  frps:                 │
-      │    bindPort = 7000     │─────► k3s master (frpc)
-      │    vhostHTTPPort = 8080│           │
-      │                        │           └──► 10.43.122.112:8002
-      │  Caddy:                │                (K8s ClusterIP Service)
-      │    :80 → redirect 443  │                    │
-      │    :443 → rev_proxy    │              ┌─────┴──────┐
-      │           localhost:8080│              │ Pod sola-app │
-      └────────────────────────┘              │ port 8002    │
-                                              └──────────────┘
+                  ▼
+          Cloudflare proxy → k3s-1:443
+                  │
+                  ▼
+          nginx → Service LoadBalancer (MetalLB)
+                  │
+                  ▼
+          Pod sola-app (port 8002)
 ```
 
 ---
@@ -35,7 +32,7 @@ Pričakovan rezultat: `app=sola-app`
 
 ## 2. Kubernetes Service
 
-Service že obstaja kot LoadBalancer s ClusterIP `10.43.122.112`.
+Service že obstaja kot LoadBalancer s ClusterIP `<CLUSTER_IP>`.
 Preveri:
 
 ```bash
@@ -67,16 +64,16 @@ cp deploy/frp/frpc.toml ~/frp_0.69.0_linux_amd64/frpc.toml
 Vsebina (lokalni IP = ClusterIP servisa):
 
 ```toml
-serverAddr = "185.69.149.101"
+serverAddr = "SERVER.EXAMPLE.COM"
 serverPort = 7000
-auth.token = "SolaApp2025!MojeSuperGeslo123"
+auth.token = "<AUTH_TOKEN>"
 
 [[proxies]]
 name = "sola-app"
 type = "http"
-localIP = "10.43.122.112"
+localIP = "<CLUSTER_IP>"
 localPort = 8002
-customDomains = ["sola-app.ostc.si"]
+customDomains = ["ostc-app.org"]
 ```
 
 Če se ClusterIP kdaj spremeni, ga najdeš z:
@@ -107,9 +104,9 @@ sudo journalctl -u frpc -n 50 -f --no-pager
 
 ---
 
-## 5. HTTPS — Caddy na javnem strežniku (185.69.149.101)
+## 5. HTTPS — Caddy na javnem strežniku (SERVER.EXAMPLE.COM)
 
-**Predpogoj:** SSH dostop do 185.69.149.101.
+**Predpogoj:** SSH dostop do SERVER.EXAMPLE.COM.
 
 ### 5.1 Spremeni frps.toml
 
@@ -156,14 +153,14 @@ sudo apt update && sudo apt install caddy
 # Ali pa ročno ustvari /etc/caddy/Caddyfile:
 
 sudo tee /etc/caddy/Caddyfile <<'EOF'
-sola-app.ostc.si {
+ostc-app.org {
     reverse_proxy localhost:8080 {
-        header_up Host sola-app.ostc.si
+        header_up Host ostc-app.org
     }
 }
 
-sola-app.ostc.si:80 {
-    redir https://sola-app.ostc.si{uri} permanent
+ostc-app.org:80 {
+    redir https://ostc-app.org{uri} permanent
 }
 EOF
 
@@ -189,10 +186,10 @@ sudo systemctl status frpc
 sudo journalctl -u frpc -n 20 --no-pager
 
 # Preveri HTTP (preusmeri na HTTPS):
-curl -I http://sola-app.ostc.si
+curl -I http://ostc-app.org
 
 # Preveri HTTPS:
-curl -I https://sola-app.ostc.si
+curl -I https://ostc-app.org
 ```
 
 ---

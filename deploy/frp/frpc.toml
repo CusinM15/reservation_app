@@ -1,10 +1,10 @@
-serverAddr = "185.69.149.101"
+serverAddr = "SERVER.EXAMPLE.COM"
 serverPort = 7000
-auth.token = "FIpnSKNjoNbWZTsPpi3Nb4etUD9ClD6myChIxbpxYPriTHkU3O"
+auth.token = "<AUTH_TOKEN>"
 
 [[proxies]]
 name = "sola-app"
 type = "http"
-localIP = "10.43.122.112"
+localIP = "<CLUSTER_IP>"
 localPort = 8002
-customDomains = ["sola-app.ostc.si"]
+customDomains = ["ostc-app.org"]

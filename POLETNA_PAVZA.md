@@ -18,8 +18,8 @@ Ta dokument zbere trenutni report k3s/Longhorn stanja in navodila za varno polet
 
 | Node | IP | Vloga | Stanje | Ocena |
 |---|---:|---|---|---:|
-| k3s-1 | 193.2.171.250 | control-plane, etcd | Ready | 97/100 |
-| k3s-2 | 193.2.171.249 | control-plane, etcd | Ready | 82/100 |
+| k3s-1 | 192.168.1.1 | control-plane, etcd | Ready | 97/100 |
+| k3s-2 | 192.168.1.2 | control-plane, etcd | Ready | 82/100 |
 
 Skupna ocena stanja: **85/100 — trenutno zeleno, z opozorilom pri k3s-2**.
 
