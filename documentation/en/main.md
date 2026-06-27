@@ -179,8 +179,8 @@ DNS: 192.168.1.253
 
 ```bash
 # SSH to both nodes
-ssh admin@192.168.1.1    # k3s-1
-ssh admin@192.168.1.2    # k3s-2
+ssh {{SSH_USER}}@{{K3S_1_IP}}    # k3s-1
+ssh {{SSH_USER}}@{{K3S_2_IP}}    # k3s-2
 
 # sudo password is the same on both nodes
 ```

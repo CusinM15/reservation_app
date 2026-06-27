@@ -174,8 +174,8 @@ DNS: 192.168.1.253
 
 ```bash
 # SSH v oba noda
-ssh admin@192.168.1.1    # k3s-1
-ssh admin@192.168.1.2    # k3s-2
+ssh {{SSH_USER}}@{{K3S_1_IP}}    # k3s-1
+ssh {{SSH_USER}}@{{K3S_2_IP}}    # k3s-2
 
 # Kubernetes (k3s) — kubeconfig je na obeh nodih
 kubectl get nodes -o wide
