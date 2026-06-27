@@ -44,12 +44,9 @@ http://{{LB_IP}}:{{LB_PORT}} → direkt na LoadBalancer → sola-app pod
 
 ## 📜 Zgodovina sprememb domene
 
-| Obdobje | Domena | Opis |
-|---|---|---|
-| Maj 2026 | `sola-app.local` | Začetna lokalna domena (mDNS) |
-| Maj 2026 | `ostc.si` | Stara produkcijska domena |
-| Junij 2026 | `sola-app.ostc.si` | Začasni testni URL |
-| **Junij 2026** | **`ostc-app.org`** | **Trenutna produkcijska domena** |
+Obdobje       Domena           Opis
+Maj 2026      sola-app.local   Začetna lokalna domena (mDNS)
+Junij 2026    ostc-app.org     Trenutna produkcijska domena
 
 ---
 
