@@ -319,7 +319,7 @@ Nginx teče na **obeh nodih** z identično konfiguracijo:
 
 | Node | Port | Vloga |
 |---|---|---|
-| **k3s-1** | 8080 | Reverse proxy → LoadBalancer (rezerva) |
+| **k3s-1** | {{NGINX_PORT}} | Reverse proxy → LoadBalancer (rezerva) |
 | **k3s-2** | {{NGINX_PORT}} | Reverse proxy → LoadBalancer (nginx backend) |
 
 ### **Konfiguracija**

@@ -548,7 +548,7 @@ Nginx runs on **both nodes** with an identical configuration (only port {{NGINX_
 
 | Node | Port | Role |
 |---|---|---|
-| **k3s-1** | 8080 | Reverse proxy → LoadBalancer (backup) |
+| **k3s-1** | {{NGINX_PORT}} | Reverse proxy → LoadBalancer (backup) |
 | **k3s-2** | {{NGINX_PORT}} | Reverse proxy → LoadBalancer (nginx backend) |
 
 ### **Configuration (both nodes identical)**
