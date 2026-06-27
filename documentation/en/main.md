@@ -110,11 +110,15 @@
 ```
 🌐 User
   → Cloudflare (SSL, proxy, ostc-app.org)
-    → Cloudflare IP 203.0.113.1 / 203.0.113.2
-      → Cloudflare tunnel/forward to 192.168.1.11:8080 (k3s-2)
-        → nginx proxy_pass 192.168.1.50:8002
-          → Service LoadBalancer (MetalLB)
-            → sola-app Pod (k3s-1 or k3s-2)
+    → Cloudflare proxy → 192.168.1.2:8080 (k3s-2 nginx)
+      → nginx proxy_pass http://192.168.1.10:8002
+        → Service LoadBalancer (MetalLB)
+          → sola-app Pod (k3s-1 or k3s-2)
+
+Alternative path (internal network):
+  → http://192.168.1.1:8080 → nginx on k3s-1 → proxy_pass 192.168.1.10:8002
+  → http://192.168.1.2:8080 → nginx on k3s-2 → proxy_pass 192.168.1.10:8002
+  → http://192.168.1.10:8002 → direct to LoadBalancer
 ```
 
 Cloudflare proxy provides:
@@ -127,13 +131,13 @@ Cloudflare proxy provides:
 
 | Component | Location | Purpose |
 |---|---|---|
-| **k3s-1** | HP ProBook 455 G5 (192.168.1.10) | Control-plane, app pod, PG primary, nginx |
-| **k3s-2** | HP ProBook 450 G5 (192.168.1.11) | Control-plane, app pod, PG replica, nginx |
+| **k3s-1** | HP ProBook 455 G5 (192.168.1.1) | Control-plane, app pod, PG primary, nginx |
+| **k3s-2** | HP ProBook 450 G5 (192.168.1.2) | Control-plane, app pod, PG replica, nginx |
 | **Sola App (FastAPI)** | 2 pods (both nodes) | Reservations, assessments, login |
 | **CloudNativePG** | 2 instances (both nodes) | PostgreSQL database with automatic failover |
 | **Longhorn** | Both nodes | Distributed storage (PVCs) |
-| **MetalLB** | Both nodes | LoadBalancer IP (192.168.1.50) |
-| **nginx** | Both nodes (k3s-2 primary) | Reverse proxy (port 8080 → LoadBalancer) |
+| **MetalLB** | Both nodes | LoadBalancer IP (192.168.1.10) |
+| **nginx** | Both nodes (port 8080) | Reverse proxy → LoadBalancer. Cloudflare origin: k3s-2:8080 |
 | **Cloudflare** | External | DNS, SSL, proxy |
 
 ---
@@ -151,10 +155,10 @@ Cloudflare proxy provides:
 
 ```bash
 # Local network (Arnes)
-k3s-1: 192.168.1.10/24
-k3s-2: 192.168.1.11/24
-Gateway: 192.168.1.1
-DNS: 192.168.1.10
+k3s-1: 192.168.1.1/24
+k3s-2: 192.168.1.2/24
+Gateway: 192.168.1.254
+DNS: 192.168.1.253
 
 # Kubernetes Pod CIDR
 10.42.0.0/16
@@ -170,8 +174,8 @@ DNS: 192.168.1.10
 
 ```bash
 # SSH to both nodes
-ssh admin@192.168.1.10    # k3s-1
-ssh admin@192.168.1.11    # k3s-2
+ssh admin_os@192.168.1.1    # k3s-1
+ssh admin_os@192.168.1.2    # k3s-2
 
 # sudo password is the same on both nodes
 ```
@@ -187,7 +191,7 @@ ssh admin@192.168.1.11    # k3s-2
 curl -sfL https://get.k3s.io | sh -s - --disable=servicelb
 
 # On k3s-2 (second control-plane)
-curl -sfL https://get.k3s.io | K3S_URL=https://192.168.1.10:6443 \
+curl -sfL https://get.k3s.io | K3S_URL=https://192.168.1.1:6443 \\
   K3S_TOKEN=$(sudo cat /var/lib/rancher/k3s/server/node-token) sh -
 ```
 
@@ -526,27 +530,32 @@ kubectl get svc -n sola-app sola-app
 
 ### **Location**
 
-Nginx runs on **both nodes**, but Cloudflare points to k3s-2 (port 8080). On k3s-1, nginx has leftover configuration from an old setup that is not actively used.
+Nginx runs on **both nodes** with an identical configuration (only port 8080):
 
-```bash
-ssh k3s-2
-sudo cat /etc/nginx/sites-available/default
-```
+| Node | Port | Role |
+|---|---|---|
+| **k3s-1** | 8080 | Reverse proxy → LoadBalancer (backup) |
+| **k3s-2** | 8080 | Reverse proxy → LoadBalancer (active — Cloudflare origin) |
 
-### **Configuration (actual)**
+### **Configuration (both nodes identical)**
+
+File: `/etc/nginx/sites-enabled/default`
 
 ```nginx
 server {
     listen 8080;
 
     location / {
-        proxy_pass http://192.168.1.50:8002;
+        proxy_pass http://192.168.1.10:8002;
         proxy_set_header Host $host;
         proxy_set_header X-Real-IP $remote_addr;
         proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
     }
 }
 ```
+
+> **Cloudflare** uses **Flexible SSL** — HTTPS to the user, HTTP to k3s-2:8080.  
+> If k3s-2 fails, change the Cloudflare origin IP to `192.168.1.1:8080` (k3s-1) in the dashboard.
 
 > **Note:** Cloudflare handles SSL (HTTPS). Nginx listens on port 8080 (not 80/443) and forwards to the MetalLB IP.
 
@@ -558,12 +567,12 @@ server {
 
 | Type | Name | Value | Proxy |
 |---|---|---|---|
-| A | `ostc-app.org` | `192.168.1.50` | ✅ Proxied (orange cloud) |
+| A | `ostc-app.org` | `192.168.1.2` | ✅ Proxied (orange cloud) |
 
 Cloudflare proxy means:
-- `ostc-app.org` resolves to Cloudflare IPs (`203.0.113.1`, `203.0.113.2`)
-- Cloudflare forwards traffic to `192.168.1.50:8080` (nginx on k3s-2)
-- SSL certificate is managed by Cloudflare (Auto SSL)
+- `ostc-app.org` resolves to Cloudflare IPs
+- Cloudflare forwards traffic to `192.168.1.2:8080` (nginx on k3s-2, Flexible SSL)
+- SSL certificate is managed by Cloudflare (Flexible — HTTPS to user, HTTP to origin)
 
 > **Details:** [domena.md](domena.md) — complete domain change history.
 
@@ -821,8 +830,8 @@ kubectl rollout status -n sola-app deployment/sola-app
 
 - **Failover is completely automatic** — no manual intervention needed
 - **Both nodes are control-plane** — no separate worker nodes
-- **Cloudflare points to LoadBalancer IP** `192.168.1.50` — forwards via proxy
-- **Nginx only on k3s-2** — proxy_pass to LoadBalancer IP (not ClusterIP)
+- **Cloudflare origin** → k3s-2:8080 (nginx reverse proxy)
+- **Nginx on both nodes** (port 8080) — proxy_pass to LoadBalancer IP `192.168.1.10:8002`
 - **App uses** `sola-db-rw.sola:5432` — always on the current primary
 - **Old Bitnami PostgreSQL was removed** — we use CNPG
 - **Longhorn replication** — 2 replicas, data safe even with one node loss

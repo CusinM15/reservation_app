@@ -18,12 +18,12 @@ Trenutna domena: **`ostc-app.org`** (Cloudflare proxied)
 
 | Tip | Ime | Vrednost | Proxy | Namen |
 |---|---|---|---|---|
-| A | `ostc-app.org` | `192.168.1.50` | ✅ Proxied (oranžni oblak) | Aplikacija |
+| A | `ostc-app.org` | `192.168.1.2` | ✅ Proxied (oranžni oblak) | Aplikacija |
 
 Cloudflare proxy pomeni:
-- Javni DNS resolve-a na Cloudflare IP-je (`203.0.113.1`, `203.0.113.2`)
-- Cloudflare posreduje promet na `192.168.1.50:8080` (nginx na k3s-2)
-- Cloudflare skrbi za SSL (Auto SSL/TLS — Full)
+- Javni DNS resolve-a na Cloudflare IP-je
+- Cloudflare posreduje promet na `192.168.1.2:8080` (nginx na k3s-2, Flexible SSL)
+- Cloudflare skrbi za SSL (Flexible — HTTPS do uporabnika, HTTP do k3s-2)
 - `server: cloudflare` v HTTP headerjih
 
 ---
@@ -32,12 +32,16 @@ Cloudflare proxy pomeni:
 
 ```
 🌐 Uporabnik → https://ostc-app.org
-  → Cloudflare DNS → 203.0.113.1 (Cloudflare edge)
-    → Cloudflare proxy → 192.168.1.50:8080
-      → nginx (k3s-2, port 8080)
-        → proxy_pass http://192.168.1.50:8002
-          → Service LoadBalancer (MetalLB)
-            → sola-app pod (k3s-1 ali k3s-2)
+  → Cloudflare DNS → Cloudflare edge
+    → Cloudflare proxy → 192.168.1.2:8080 (k3s-2 nginx)
+      → nginx proxy_pass http://192.168.1.10:8002
+        → Service LoadBalancer (MetalLB)
+          → sola-app pod (k3s-1 ali k3s-2)
+
+Alternativna pot (notranje omrežje):
+http://192.168.1.1:8080 → nginx na k3s-1 → proxy_pass 192.168.1.10:8002
+http://192.168.1.2:8080 → nginx na k3s-2 → proxy_pass 192.168.1.10:8002
+http://192.168.1.10:8002 → direkt na LoadBalancer
 ```
 
 ---

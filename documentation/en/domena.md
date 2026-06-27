@@ -18,12 +18,12 @@ Current domain: **`ostc-app.org`** (Cloudflare proxied)
 
 | Type | Name | Value | Proxy | Purpose |
 |---|---|---|---|---|
-| A | `ostc-app.org` | `192.168.1.50` | ✅ Proxied (orange cloud) | Application |
+| A | `ostc-app.org` | `192.168.1.2` | ✅ Proxied (orange cloud) | Application |
 
 Cloudflare proxy means:
-- Public DNS resolves to Cloudflare IPs (`203.0.113.1`, `203.0.113.2`)
-- Cloudflare forwards traffic to `192.168.1.50:8080` (nginx on k3s-2)
-- Cloudflare handles SSL (Auto SSL/TLS — Full)
+- Public DNS resolves to Cloudflare IPs
+- Cloudflare forwards traffic to `192.168.1.2:8080` (nginx on k3s-2, Flexible SSL)
+- Cloudflare handles SSL (Flexible — HTTPS to user, HTTP to k3s-2)
 - `server: cloudflare` in HTTP headers
 
 ---
@@ -32,12 +32,16 @@ Cloudflare proxy means:
 
 ```
 🌐 User → https://ostc-app.org
-  → Cloudflare DNS → 203.0.113.1 (Cloudflare edge)
-    → Cloudflare proxy → 192.168.1.50:8080
-      → nginx (k3s-2, port 8080)
-        → proxy_pass http://192.168.1.50:8002
-          → Service LoadBalancer (MetalLB)
-            → sola-app pod (k3s-1 or k3s-2)
+  → Cloudflare DNS → Cloudflare edge
+    → Cloudflare proxy → 192.168.1.2:8080 (k3s-2 nginx)
+      → nginx proxy_pass http://192.168.1.10:8002
+        → Service LoadBalancer (MetalLB)
+          → sola-app pod (k3s-1 or k3s-2)
+
+Alternative path (internal network):
+http://192.168.1.1:8080 → nginx on k3s-1 → proxy_pass 192.168.1.10:8002
+http://192.168.1.2:8080 → nginx on k3s-2 → proxy_pass 192.168.1.10:8002
+http://192.168.1.10:8002 → direct to LoadBalancer
 ```
 
 ---
