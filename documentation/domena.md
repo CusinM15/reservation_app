@@ -18,7 +18,7 @@ Trenutna domena: **`ostc-app.org`** (Cloudflare proxied)
 
 | Tip | Ime | Vrednost | Proxy | Namen |
 |---|---|---|---|---|
-| A | `{{DOMAIN}}` | `{{K3S_2_IP}}` | ✅ Proxied (oranžni oblak) | Aplikacija |
+| A | `{{DOMAIN}}` | `{{LB_IP}}` | ✅ Proxied (oranžni oblak) | Aplikacija |
 
 Cloudflare proxy pomeni:
 - Javni DNS resolve-a na Cloudflare IP-je
@@ -33,11 +33,11 @@ Cloudflare proxy pomeni:
 ```
 🌐 Uporabnik → https://ostc-app.org
   → Cloudflare DNS → Cloudflare edge
-    → Cloudflare proxy → `{{LB_IP}}:80` (LoadBalancer)
+    → Cloudflare proxy → `{{LB_IP}}:80` (MetalLB LoadBalancer)
       → sola-app pod (k3s-1 ali k3s-2)
 
 Alternativna pot (notranje omrežje):
-http://{{LB_IP}}:{{LB_PORT}} → direkt na LoadBalancer
+http://{{LB_IP}}:{{LB_PORT}} → direkt na LoadBalancer → sola-app pod
 ```
 
 ---
@@ -87,4 +87,4 @@ kubectl -n sola-app rollout restart deployment/sola-app
 
 - **LoadBalancer IP** `{{LB_IP}}` je fiksen — ne spreminja se ob restartu
 - **Cloudflare SSL** je "Flexible" — HTTPS med uporabnikom in Cloudflarom, HTTP med Cloudflarom in `{{LB_IP}}` (znotraj šolskega omrežja)
-- Če bi želeli **end-to-end HTTPS**, bi potrebovali certbot/letsencrypt za aplikacijo
+- Če bi želeli **end-to-end HTTPS**, bi potrebovali certifikat na aplikaciji (trenutno ni potrebe)
