@@ -585,7 +585,7 @@ server {
 
 Cloudflare proxy means:
 - `{{DOMAIN}}` resolves to Cloudflare IPs
-- Cloudflare forwards traffic to `{{LB_IP}}:{{LB_PORT}}` (LoadBalancer, Flexible SSL)
+- Cloudflare forwards traffic to `{{LB_IP}}` (LoadBalancer, port 80, Flexible SSL)
 - SSL certificate is managed by Cloudflare (Flexible — HTTPS to user, HTTP to origin)
 
 > **Details:** [domena.md](domena.md) — complete domain change history.

@@ -22,7 +22,7 @@ Current domain: **`{{DOMAIN}}`** (Cloudflare proxied)
 
 Cloudflare proxy means:
 - Public DNS resolves to Cloudflare IPs
-- Cloudflare forwards traffic to `{{LB_IP}}:{{LB_PORT}}` (LoadBalancer, Flexible SSL)
+- Cloudflare forwards traffic to `{{LB_IP}}` (LoadBalancer, port 80, Flexible SSL)
 - Cloudflare handles SSL (Flexible — HTTPS to user, HTTP to {{LB_IP}})
 - `server: cloudflare` in HTTP headers
 

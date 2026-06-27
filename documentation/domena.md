@@ -22,7 +22,7 @@ Trenutna domena: **`{{DOMAIN}}`** (Cloudflare proxied)
 
 Cloudflare proxy pomeni:
 - Javni DNS resolve-a na Cloudflare IP-je
-- Cloudflare posreduje promet na `{{LB_IP}}:{{LB_PORT}}` (LoadBalancer, Flexible SSL)
+- Cloudflare posreduje promet na `{{LB_IP}}` (LoadBalancer, port 80, Flexible SSL)
 - Cloudflare skrbi za SSL (Flexible — HTTPS do uporabnika, HTTP do {{LB_IP}})
 - `server: cloudflare` v HTTP headerjih
 

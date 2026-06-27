@@ -148,7 +148,7 @@ Alternativna pot (interno omrežje):
 | **Sola App (FastAPI)** | 2 poda (oba noda) | Rezervacije, ocenjevanje, prijava |
 | **Longhorn** | Oba noda | Distribuirano shranjevanje (PVC-ji) |
 | **MetalLB** | Oba noda | LoadBalancer IP ({{LB_IP}}) |
-| **nginx** | Oba noda (port {{NGINX_PORT}}) | Reverse proxy → LoadBalancer {{LB_IP}}:{{LB_PORT}}. Cloudflare origin: {{LB_IP}}:{{LB_PORT}} |
+| **nginx** | Oba noda (port {{NGINX_PORT}}) | Reverse proxy → LoadBalancer {{LB_IP}}:{{LB_PORT}}. Za interno omrežje (rezerva) |
 | **Cloudflare** | Zunanji | DNS, SSL, proxy |
 
 ---
@@ -357,7 +357,7 @@ server {
 
 Cloudflare skrbi za:
 - **Edge certifikat** — med uporabnikom in Cloudflare (HTTPS)
-- **Flexible SSL** — Cloudflare → {{LB_IP}}:{{LB_PORT}} prek HTTP (brez certifikata na originu)
+- **Flexible SSL** — Cloudflare → {{LB_IP}} (port 80) prek HTTP (brez certifikata na originu)
 
 Nastavitve v Cloudflare dashboard:
 - **SSL/TLS encryption mode:** `Flexible`
