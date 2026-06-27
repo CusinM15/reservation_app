@@ -382,6 +382,14 @@ kubectl get volumes.longhorn.io -n longhorn-system
 | `sola-postgresql` | 5Gi | RWO | PG data |
 | `sola-postgresql-wal` | 2Gi | RWO | WAL logi |
 
+**Zakaj dva PVC-ja?** PostgreSQL uporablja **WAL (Write-Ahead Log)** — vsaka sprememba se najprej zapiše v WAL, šele nato v glavne podatkovne datoteke. To omogoča:
+
+- **Obnovitev po zrušitvi** — če DB pade, se ob zagonu predvaja WAL in povrne konsistentno stanje
+- **Point-in-time recovery** — WAL arhiv omogoča obnovitev na poljuben trenutek (ne samo zadnji snapshot)
+- **Streaming replikacija** — replica node streama WAL iz primaryja, da ostane v sinhronizaciji
+
+Ločena PVC-ja omogočata različne I/O profile: WAL je zaporedno pisanje (hitro), podatki so naključni bralno-pisalni dostopi. Prav tako omogoča ločeni backup strategiji — WAL se arhivira sproti, podatki se periodično snapshottajo.
+
 Longhorn replikacija (2 kopiji) zagotavlja, da tudi ob izgubi enega noda podatki ostanejo.
 
 ---
