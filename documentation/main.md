@@ -80,7 +80,7 @@ Ta datoteka je **glavni vstopni dokument**. Spodaj so povezave na specializirane
 │  │                          │    │                          │            │
 │  │  ┌───────────────────┐   │    │  ┌───────────────────┐   │            │
 │  │  │ sola-app Pod 1    │   │    │  │ sola-app Pod 2    │   │            │
-│  │  │ (app.{{DOMAIN}})  │   │    │  | (app.{{DOMAIN}})  │   │            │
+│  │  │ (app.{{DOMAIN}})  │   │    │  │ (app.{{DOMAIN}})  │   │            │
 │  │  └───────────────────┘   │    │  └───────────────────┘   │            │
 │  │  ┌───────────────────┐   │    │  ┌───────────────────┐   │            │
 │  │  │ sola-db-1         │   │    │  │ sola-db-2         │   │            │
@@ -93,10 +93,9 @@ Ta datoteka je **glavni vstopni dokument**. Spodaj so povezave na specializirane
 │  │  │ Instance Manager  │   │    │  │ Instance Manager  │   │            │
 │  │  └───────────────────┘   │    │  └───────────────────┘   │            │
 │  │                          │    │                          │            │
-│  │  └───────────────────┘   │    │  └───────────────────┘   │            │
 │  └──────────────────────────┘    └──────────────────────────┘            │
-│                    ┌─────────────┘                                       │
-│                    │                                                     │
+│                               │                                          │
+│                               │                                          │
 │  ┌─────────────────▼────────────────────────────────────────────┐        │
 │  │        Service LoadBalancer (MetalLB, {{LB_IP}}:{{LB_PORT}}) │        │
 │  │        → sola-app Pod 1 ali Pod 2                            │        │
