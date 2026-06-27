@@ -22,8 +22,8 @@ Trenutna domena: **`ostc-app.org`** (Cloudflare proxied)
 
 Cloudflare proxy pomeni:
 - Javni DNS resolve-a na Cloudflare IP-je
-- Cloudflare posreduje promet na `192.168.1.2` (k3s-2, port 80, Flexible SSL)
-- Cloudflare skrbi za SSL (Flexible — HTTPS do uporabnika, HTTP do k3s-2 na port 80)
+- Cloudflare posreduje promet na `{{LB_IP}}` (LoadBalancer, port 80, Flexible SSL)
+- Cloudflare skrbi za SSL (Flexible — HTTPS do uporabnika, HTTP do `{{LB_IP}}` na port 80)
 - `server: cloudflare` v HTTP headerjih
 
 ---
@@ -33,12 +33,11 @@ Cloudflare proxy pomeni:
 ```
 🌐 Uporabnik → https://ostc-app.org
   → Cloudflare DNS → Cloudflare edge
-    → Cloudflare proxy → 192.168.1.2:80 (k3s-2)
-      → Service LoadBalancer (MetalLB, 192.168.1.10:8002)
-        → sola-app pod (k3s-1 ali k3s-2)
+    → Cloudflare proxy → `{{LB_IP}}:80` (LoadBalancer)
+      → sola-app pod (k3s-1 ali k3s-2)
 
 Alternativna pot (notranje omrežje):
-http://192.168.1.10 → direkt na LoadBalancer
+http://{{LB_IP}}:{{LB_PORT}} → direkt na LoadBalancer
 ```
 
 ---
@@ -71,7 +70,7 @@ BASE_URL: "https://ostc-app.org"
 ### 1. Cloudflare
 
 1. Odpri Cloudflare dashboard
-2. Dodaj A zapis: `@` → `192.168.1.2` (Proxied, k3s-2)
+2. Dodaj A zapis: `@` → `{{LB_IP}}` (Proxied, LoadBalancer)
 3. Počakaj, da se DNS propagira
 
 ### 2. Posodobi BASE_URL
@@ -86,6 +85,6 @@ kubectl -n sola-app rollout restart deployment/sola-app
 
 ## 📌 Opombe
 
-- **LoadBalancer IP** `192.168.1.10` je fiksen — ne spreminja se ob restartu
-- **Cloudflare SSL** je "Flexible" — HTTPS med uporabnikom in Cloudflarom, HTTP med Cloudflarom in k3s-2 (znotraj šolskega omrežja)
-- Če bi želeli **end-to-end HTTPS**, bi potrebovali certbot/letsencrypt na k3s-2
+- **LoadBalancer IP** `{{LB_IP}}` je fiksen — ne spreminja se ob restartu
+- **Cloudflare SSL** je "Flexible" — HTTPS med uporabnikom in Cloudflarom, HTTP med Cloudflarom in `{{LB_IP}}` (znotraj šolskega omrežja)
+- Če bi želeli **end-to-end HTTPS**, bi potrebovali certbot/letsencrypt za aplikacijo
