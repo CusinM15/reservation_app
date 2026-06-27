@@ -18,7 +18,7 @@ Current domain: **`ostc-app.org`** (Cloudflare proxied)
 
 | Type | Name | Value | Proxy | Purpose |
 |---|---|---|---|---|
-| A | `ostc-app.org` | `192.168.1.2` | ✅ Proxied (orange cloud) | Application |
+| A | `{{DOMAIN}}` | `{{LB_IP}}` | ✅ Proxied (orange cloud) | Application |
 
 Cloudflare proxy means:
 - Public DNS resolves to Cloudflare IPs
