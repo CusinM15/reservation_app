@@ -33,7 +33,7 @@ Cloudflare proxy pomeni:
 ```
 🌐 Uporabnik → https://{{DOMAIN}}
   → Cloudflare DNS → Cloudflare edge
-    → Cloudflare proxy → {{LB_IP}}:{{LB_PORT}} (LoadBalancer)
+    → Cloudflare proxy → {{LB_IP}} (LoadBalancer, port 80)
       → nginx proxy_pass http://{{LB_IP}}:{{LB_PORT}}
         → Service LoadBalancer (MetalLB)
           → sola-app pod (k3s-1 ali k3s-2)
@@ -41,7 +41,7 @@ Cloudflare proxy pomeni:
 Alternativna pot (notranje omrežje):
 http://{{K3S_1_IP}}:{{NGINX_PORT}} → nginx na k3s-1 → proxy_pass {{LB_IP}}:{{LB_PORT}}
 http://{{K3S_2_IP}}:{{NGINX_PORT}} → nginx na k3s-2 → proxy_pass {{LB_IP}}:{{LB_PORT}}
-http://{{LB_IP}}:{{LB_PORT}} → direkt na LoadBalancer
+http://{{LB_IP}} → direkt na LoadBalancer
 ```
 
 ---
