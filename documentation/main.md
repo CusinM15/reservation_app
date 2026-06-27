@@ -339,8 +339,8 @@ server {
 }
 ```
 
-> **Cloudflare** uporablja **Flexible SSL** — HTTPS do uporabnika, HTTP do {{LB_IP}}:{{LB_PORT}}.
-> Če k3s-2 odpove, lahko v Cloudflare dashboardu spremenimo origin IP (npr. na k3s-1 IP).
+> **Cloudflare** uporablja **Flexible SSL** — HTTPS do uporabnika, HTTP do LoadBalancer IP (`{{LB_IP}}`, port 80).
+> Če LoadBalancer IP ni dosegljiv, lahko v Cloudflare dashboardu spremenimo origin IP (npr. na k3s-1 IP).
 
 ---
 

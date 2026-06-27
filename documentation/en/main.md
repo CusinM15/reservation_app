@@ -151,7 +151,7 @@ Cloudflare proxy provides:
 | **CloudNativePG** | 2 instances (both nodes) | PostgreSQL database with automatic failover |
 | **Longhorn** | Both nodes | Distributed storage (PVCs) |
 | **MetalLB** | Both nodes | LoadBalancer IP ({{LB_IP}}) |
-| **nginx** | Both nodes (port {{NGINX_PORT}}) | Reverse proxy → LoadBalancer. Cloudflare origin: {{LB_IP}}:{{LB_PORT}} |
+| **nginx** | Both nodes (port {{NGINX_PORT}}) | Reverse proxy → LoadBalancer. For internal network (backup if Cloudflare/LB is unavailable) |
 | **Cloudflare** | External | DNS, SSL, proxy |
 
 ---
@@ -568,8 +568,8 @@ server {
 }
 ```
 
-> **Cloudflare** uses **Flexible SSL** — HTTPS to the user, HTTP to {{LB_IP}}:{{LB_PORT}}.  
-> If k3s-2 fails, change the Cloudflare origin in the dashboard (e.g. to k3s-1 IP).
+> **Cloudflare** uses **Flexible SSL** — HTTPS to the user, HTTP to LoadBalancer IP (`{{LB_IP}}`, port 80).  
+> If the LoadBalancer IP is unavailable, change the Cloudflare origin in the dashboard (e.g. to k3s-1 IP).
 
 > **Note:** Cloudflare handles SSL (HTTPS). Nginx listens on port {{NGINX_PORT}} (not 80/443) and forwards to the MetalLB IP.
 
@@ -844,7 +844,7 @@ kubectl rollout status -n sola-app deployment/sola-app
 
 - **Failover is completely automatic** — no manual intervention needed
 - **Both nodes are control-plane** — no separate worker nodes
-- **Cloudflare origin** → {{LB_IP}}:{{LB_PORT}} (LoadBalancer)
+- **Cloudflare origin** → LoadBalancer IP (`{{LB_IP}}`, port 80)
 - **Nginx on both nodes** (port {{NGINX_PORT}}) — proxy_pass to LoadBalancer IP `{{LB_IP}}:{{LB_PORT}}`
 - **App uses** `sola-db-rw.sola:{{K8S_DB_PORT}}` — always on the current primary
 - **Old Bitnami PostgreSQL was removed** — we use CNPG
