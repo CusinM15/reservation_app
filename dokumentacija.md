@@ -1,121 +1,251 @@
-# 🚀 **ostc-app — Rezervacijski sistem**
-## **OŠ Toneta Čufarja — Testna produkcija (2026)**
+# 🚀 **Sola App — Rezervacijski Sistem OŠ Toneta Čufarja**
+## **Celovit vodič za postavitev, upravljanje in visoko razpoložljivost**
 
 ---
 
-## 📑 **Kazalo**
+## 📑 **Kazalo vsebine**
 1. [Arhitektura sistema](#arhitektura-sistema)
-2. [Kubernetes cluster (k3s)](#kubernetes-cluster-k3s)
-3. [Aplikacija (sola-app)](#aplikacija-sola-app)
-4. [PostgreSQL baza (CloudNativePG)](#postgresql-baza-cloudnativepg)
-5. [Visoka razpoložljivost (HA)](#visoka-razpoložljivost-ha)
-6. [Konfiguracija in secreti](#konfiguracija-in-secreti)
-7. [Dostop do aplikacije](#dostop-do-aplikacije)
-8. [Redna opravila](#redna-opravila)
-9. [Docker build in deploy](#docker-build-in-deploy)
-10. [Pogosti ukazi](#pogosti-ukazi)
-11. [Checklista stanja](#checklista-stanja)
+2. [Strojna oprema in omrežje](#strojna-oprema-in-omrežje)
+3. [Kubernetes (k3s) Cluster](#kubernetes-k3s-cluster)
+4. [Aplikacija Sola App](#aplikacija-sola-app)
+5. [PostgreSQL HA — CloudNativePG](#postgresql-ha--cloudnativepg)
+6. [MetalLB LoadBalancer](#metallb-loadbalancer)
+7. [Nginx Reverse Proxy](#nginx-reverse-proxy)
+8. [Cloudflare DNS](#cloudflare-dns)
+9. [Longhorn Storage](#longhorn-storage)
+10. [Dnevni backup in reporti](#dnevni-backup-in-reporti)
+11. [Vzdrževanje in okvare](#vzdrževanje-in-okvare)
+12. [Celoten sklic ukazov](#celoten-sklic-ukazov)
 
 ---
 
 ## 🏗️ **Arhitektura sistema**
 
-### **Strojna oprema**
+### **Strojna in omrežna shema**
 
 ```
-┌─────────────────────────────────────────────────────────────────────┐
-│                        K3S KUBERNETES CLUSTER                       │
-│                                                                     │
-│  ┌─────────────────────────┐    ┌──────────────────────────┐        │
-│  │   k3s-1 (MASTER+ETCD)   │    │   k3s-2 (MASTER+ETCD)   │        │
-│  │   193.2.171.250         │◄──►│   193.2.171.249          │        │
-│  │   HP ProBook 455 G5     │    │   HP ProBook 450 G5      │        │
-│  │   CPU: 8c/16t, 16GB     │    │   CPU: 8c/16t, 16GB     │        │
-│  │   SSD: 512GB            │    │   SSD: 512GB            │        │
-│  │                         │    │                          │        │
-│  │   ┌── sola-app pod     │    │   ┌── sola-app pod      │        │
-│  │   └── sola-db-1 (prim) │    │   └── sola-db-2 (repl)  │        │
-│  └───────────▲─────────────┘    └───────────▲──────────────┘        │
-│              │                              │                        │
-│              └──────────────┬───────────────┘                        │
-│                             │                                        │
-│                    LoadBalancer IP                                   │
-│                    193.2.171.200                                     │
-│                             │                                        │
-│                             │    MetalLB (layer2)                    │
-│                             ▼                                        │
-│                    ┌──────────────┐                                  │
-│                    │  Cloudflare  │                                  │
-│                    │ ostc-app.org │                                  │
-│                    └──────────────┘                                  │
-│                                                                     │
-└─────────────────────────────────────────────────────────────────────┘
+┌─────────────────────────────────────────────────────────────────────────┐
+│                         K3S KUBERNETES CLUSTER                          │
+├─────────────────────────────────────────────────────────────────────────┤
+│                                                                         │
+│  ┌─────────────────────────┐    ┌─────────────────────────┐            │
+│  │    k3s-1 (MASTER)       │    │    k3s-2 (WORKER)       │            │
+│  │    HP ProBook 455 G5    │    │    HP ProBook 450 G5    │            │
+│  │    IP: 193.2.171.250    │    │    IP: 193.2.171.249    │            │
+│  │                         │    │                         │            │
+│  │  ┌──────────────────┐   │    │  ┌──────────────────┐   │            │
+│  │  │ sola-app Pod 1   │   │    │  │ sola-app Pod 2   │   │            │
+│  │  │ (app.ostc.org)   │   │    │  │ (app.ostc.org)   │   │            │
+│  │  └──────────────────┘   │    │  └──────────────────┘   │            │
+│  │  ┌──────────────────┐   │    │  ┌──────────────────┐   │            │
+│  │  │ sola-db-1        │   │    │  │ sola-db-2        │   │            │
+│  │  │ (PG PRIMARY)     │◄──┼────┼──┤ (PG REPLICA)     │   │            │
+│  │  │ CNPG Instance    │   │    │  │ CNPG Instance    │   │            │
+│  │  └──────────────────┘   │    │  └──────────────────┘   │            │
+│  │                         │    │                         │            │
+│  │  ┌──────────────────┐   │    │  ┌──────────────────┐   │            │
+│  │  │ Longhorn         │   │    │  │ Longhorn         │   │            │
+│  │  │ Instance Manager │   │    │  │ Instance Manager │   │            │
+│  │  └──────────────────┘   │    │  └──────────────────┘   │            │
+│  │                         │    │                         │            │
+│  │  ┌──────────────────┐   │    │  ┌──────────────────┐   │            │
+│  │  │ MetalLB Speaker  │   │    │  │ MetalLB Speaker  │   │            │
+│  │  └──────────────────┘   │    │  └──────────────────┘   │            │
+│  └─────────────────────────┘    └───────────┬─────────────┘            │
+│                                              │                          │
+│              ┌───────────────────────────────┘                          │
+│              │                                                          │
+│  ┌───────────▼──────────────────────────────────────────────┐           │
+│  │        nginx Reverse Proxy (k3s-2, port 8080)            │           │
+│  │        proxy_pass http://193.2.171.200:8002              │           │
+│  └──────────────────────────────────────────────────────────┘           │
+└─────────────────────────────────────────────────────────────────────────┘
+                              │
+                              │
+                    ┌─────────▼─────────┐
+                    │  Cloudflare DNS    │
+                    │  ostc-app.org      │
+                    │  → 193.2.171.200   │
+                    └───────────────────┘
+                              │
+                              │  Internet
+                              ▼
+                    🌐 Uporabniki (učitelji, vodstvo)
 ```
 
 ### **Pregled komponent**
 
 | Komponenta | Lokacija | Namen |
 |---|---|---|
-| **k3s-1** | k3s-1 (250) | Control plane, primarna DB, app pod |
-| **k3s-2** | k3s-2 (249) | Control plane, read replica, app pod |
-| **sola-app** | Oba noda (2 poda) | FastAPI + Jinja2 template app |
-| **PostgreSQL** | CloudNativePG (2 instance) | Baza podatkov (78 users, 294 rezervacij) |
-| **MetalLB** | Oba noda | LoadBalancer IP 193.2.171.200 |
-| **Nginx** | Oba noda | Reverse proxy + SSL (port 443/8080) |
-| **Cloudflare** | Zunanji | DNS, proxy (ostc-app.org) |
-| **Longhorn** | Oba noda | Repliciran distributed storage |
+| **k3s-1** | HP ProBook 455 G5 (193.2.171.250) | Control-plane, app pod, PG primary |
+| **k3s-2** | HP ProBook 450 G5 (193.2.171.249) | Worker, app pod, PG replica, nginx |
+| **Sola App (FastAPI)** | 2 poda (oba noda) | Rezervacije, ocenjevanje, prijava |
+| **CloudNativePG** | 2 instanci (oba noda) | PostgreSQL baza z avtomatskim failoverjem |
+| **Longhorn** | Oba noda | Distribuirano shranjevanje (PVC-ji) |
+| **MetalLB** | Oba noda | LoadBalancer IP (193.2.171.200) |
+| **nginx** | k3s-2 | Reverse proxy (port 8080 → LoadBalancer) |
+| **Cloudflare** | Zunanji | DNS, SSL, proxy |
 
 ---
 
-## ☸️ **Kubernetes cluster (k3s)**
+## 💻 **Strojna oprema in omrežje**
 
-### **Namestitev**
+### **Specifikacije**
 
-K3S je bil nameščen z `INSTALL_K3S_EXEC` nastavitvami za simetrično konfiguracijo:
+| Node | Model | CPU | RAM | Disk | Vloga |
+|---|---|---|---|---|---|
+| **k3s-1** | HP ProBook 455 G5 | AMD Ryzen 5 2500U | 16GB | 256GB SSD | Control-plane, app, PG primary |
+| **k3s-2** | HP ProBook 450 G5 | Intel Core i5-8250U | 8GB | 256GB SSD | Worker, app, PG replica, nginx |
 
-```bash
-# Na prvem nodu (k3s-1) — inicializacija
-curl -sfL https://get.k3s.io | INSTALL_K3S_EXEC="--disable=servicelb" sh -
-
-# Na drugem nodu (k3s-2) — join
-curl -sfL https://get.k3s.io | K3S_URL=https://193.2.171.250:6443 K3S_TOKEN=<token> sh -
-```
-
-### **Stanje nodov**
+### **Omrežne nastavitve**
 
 ```bash
-kubectl get nodes -o wide
+# Lokalno omrežje (Arnes)
+k3s-1: 193.2.171.250/24
+k3s-2: 193.2.171.249/24
+Gateway: 193.2.171.1
+DNS: 193.2.171.10
 
-# Izhod
-# NAME    STATUS   ROLES                INTERNAL-IP     OS-IMAGE
-# k3s-1   Ready    control-plane,etcd   193.2.171.250   Ubuntu 24.04
-# k3s-2   Ready    control-plane,etcd   193.2.171.249   Ubuntu 24.04
+# Kubernetes Pod CIDR
+10.42.0.0/16
+
+# Kubernetes Service CIDR
+10.43.0.0/16
+
+# LoadBalancer IP pool (MetalLB)
+193.2.171.200 - 193.2.171.210
 ```
 
-### **Namespaca**
+### **Namizni dostop**
 
-| Namespace | Vsebina |
+```bash
+# SSH v oba noda
+ssh admin_os@193.2.171.250    # k3s-1
+ssh admin_os@193.2.171.249    # k3s-2
+
+# Sudo geslo je enako na obeh
+sudo -i  # password: 7c6b1234?
+```
+
+---
+
+## ☸️ **Kubernetes (k3s) Cluster**
+
+### **Namestitev k3s (en ukaz)**
+
+```bash
+# Na k3s-1 (control-plane)
+curl -sfL https://get.k3s.io | sh -s - --disable=servicelb
+
+# Na k3s-2 (worker)
+curl -sfL https://get.k3s.io | K3S_URL=https://193.2.171.250:6443 \
+  K3S_TOKEN=$(sudo cat /var/lib/rancher/k3s/server/node-token) sh -
+```
+
+> ⚠️ `--disable=servicelb` onemogoči vgrajeni k3s load balancer, ker uporabljamo MetalLB.
+
+### **Preverjanje stanja**
+
+```bash
+kubectl get nodes
+# NAME    STATUS   ROLES                  AGE   VERSION
+# k3s-1   Ready    control-plane,etcd     19d   v1.35.5+k3s1
+# k3s-2   Ready    control-plane,etcd     22d   v1.35.5+k3s1
+
+kubectl get pods -A
+kubectl get svc -A
+```
+
+### **Namespaces na clusterju**
+
+| Namespace | Namen |
 |---|---|
-| `sola-app` | Deployment, Service, Secret, ConfigMap, CronJobs |
-| `sola` | CloudNativePG cluster, Longhorn PVC, service |
+| `sola-app` | Aplikacija (deployment, configmap, secret) |
+| `sola` | PostgreSQL cluster (CNPG instance, servisi) |
+| `cnpg-system` | CloudNativePG operator |
 | `longhorn-system` | Longhorn distributed storage |
+| `metallb-system` | MetalLB load balancer |
+| `kube-system` | Kubernetes sistemski podi |
 
 ---
 
-## 🐍 **Aplikacija (sola-app)**
+## 🐍 **Aplikacija Sola App**
 
 ### **Opis**
 
-FastAPI aplikacija za rezervacijo učilnic in opreme:
-- **Prostori:** tablice, računalnica, ladja, gospodinjska-ucilnica
-- **Razredi:** 1.a–9.5 (IP/NIP/ID)
-- **Urnik:** 8 terminov (07:30–14:45)
-- **Avtentikacija:** email geslo + reset
+Sola App je **FastAPI** spletna aplikacija za:
+- **Rezervacije** — tablice, računalnica, ladja (pomivalni čoln), gospodinjska učilnica
+- **Ocenjevanje** — beleženje ocen, ustnih in pisnih preizkusov
+- **Blokirani datumi** — zaprtje terminov za posamezne prostore
+- **Prijava** — avtentikacija preko šolskega Nextcloud računa, vloge: admin, vodstvo, teacher
 
-### **Deployment**
+### **Struktura kode**
+
+```
+reservation_app/
+├── app/
+│   ├── main.py              # FastAPI app, middleware, startup
+│   ├── config.py            # Nastavitve (iz env/ConfigMap)
+│   ├── database.py          # SQLAlchemy engine, session
+│   ├── models.py            # DB modeli (User, Reservation, Assessment, BlockedDate)
+│   ├── schemas.py           # Pydantic sheme
+│   ├── race.py              # Helper za časovne termine
+│   ├── routers/
+│   │   ├── auth.py          # Prijava, gesla
+│   │   ├── rezervacije.py   # CRUD rezervacij
+│   │   ├── ocenjevanja.py   # CRUD ocenjevanj
+│   │   └── blocked_dates.py # Blokirani datumi
+│   └── templates/           # Jinja2 HTML predloge
+├── k8s/                     # Kubernetes deploy konfiguracija
+│   ├── app/base/            # Base kustomize
+│   ├── app/overlays/        # Overlayi (ingress, production-lb, frp)
+│   └── cluster/             # MetalLB konfiguracija
+├── deploy/                  # FRP tunel konfiguracija
+├── Dockerfile               # Container build
+└── requirements.txt         # Python odvisnosti
+```
+
+### **FastAPI endpointi**
+
+| Endpoint | Metoda | Opis |
+|---|---|---|
+| `/health` | GET | Health check (200 = OK) |
+| `/auth/login` | GET, POST | Prijava uporabnika |
+| `/auth/logout` | GET | Odjava |
+| `/auth/forgot-password` | GET, POST | Pozabljeno geslo |
+| `/auth/reset-password` | GET, POST | Ponastavitev gesla |
+| `/rezervacije` | GET, POST | Seznam / nova rezervacija |
+| `/rezervacije/{id}` | DELETE | Preklic rezervacije |
+| `/api/razredi` | GET | Seznam razredov |
+| `/api/prostori` | GET | Seznam prostorov |
+| `/api/schedule` | GET | Urnik terminov |
+| `/ocenjevanja` | GET, POST | Seznam / novo ocenjevanje |
+| `/blocked-dates` | GET, POST, DELETE | Blokirani datumi |
+
+### **DB modeli**
+
+```python
+class User(Base):
+    # id, username, email, first_name, last_name,
+    # password_hash, role (admin/vodstvo/teacher),
+    # is_active, reset_token
+
+class Reservation(Base):
+    # id, teacher_id, room (tablice/racunalnica/ladja/
+    #   gospodinjska-ucilnica),
+    # date, time_slot, purpose, notes
+
+class Assessment(Base):
+    # id, teacher_id, class_name, subject, type (oral/written),
+    # date, description
+
+class BlockedDate(Base):
+    # id, room, date, reason
+```
+
+### **Kubernetes Deployment**
 
 ```yaml
-# Deployment sola-app
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -123,34 +253,111 @@ metadata:
   namespace: sola-app
 spec:
   replicas: 2
+  strategy:
+    type: RollingUpdate
+    maxSurge: 1
+    maxUnavailable: 0    # Zero-downtime deploy
   selector:
     matchLabels:
       app: sola-app
+  template:
+    spec:
+      affinity:
+        podAntiAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+          - weight: 100
+            podAffinityTerm:
+              topologyKey: kubernetes.io/hostname
+      containers:
+      - name: app
+        image: mato12345/sola-app:latest
+        ports:
+        - containerPort: 8002
+        envFrom:
+        - configMapRef:
+            name: sola-config
+        - secretRef:
+            name: sola-secrets
+        readinessProbe:
+          httpGet:
+            path: /health
+            port: 8002
+          initialDelaySeconds: 8
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 8002
+          failureThreshold: 5
 ```
 
-### **Stanje podov**
+### **Dockerfile (multi-stage)**
 
-App podi so porazdeljeni na oba noda:
+```dockerfile
+FROM python:3.11-slim AS builder
+WORKDIR /app
+RUN apt-get update && apt-get install -y gcc libpq-dev
+COPY requirements.txt .
+RUN pip install --user --no-cache-dir -r requirements.txt
 
-```bash
-kubectl get pods -n sola-app -o wide
+FROM python:3.11-slim
+WORKDIR /app
+RUN apt-get update && apt-get install -y libpq5 postgresql-client-18 curl
+COPY --from=builder /root/.local /home/appuser/.local
+COPY . .
+USER appuser
 
-# NAME                        READY   STATUS    IP            NODE
-# sola-app-6d76cfcfb7-n2w8x   1/1     Running   10.42.0.93    k3s-1
-# sola-app-6d76cfcfb7-v8rmm   1/1     Running   10.42.1.109   k3s-2
+CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8002", "--workers", "2"]
 ```
 
-### **Health check**
+### **ConfigMap (sola-config)**
 
-Aplikacija ima `/health` endpoint (vrača 200 OK). Kubernetes ga uporablja za readiness probe.
+```yaml
+BASE_URL: "https://ostc-app.org"
+APP_HOST: "0.0.0.0"
+APP_PORT: "8002"
+TABLICE_MAX: "28"
+PROSTORI: "tablice,racunalnica,ladja,gospodinjska-ucilnica"
+SCHEDULE: '{"0":"07:30-08:15","1":"08:20-09:05","2":"09:15-10:00",...}'
+RAZREDI: "IP/NIP/ID,1.a,1.b,...,9.5"
+```
+
+### **Secret (sola-secrets)**
+
+```yaml
+DATABASE_URL: "postgresql://sola:***@sola-db-rw.sola:5432/sola"
+MAIL_SERVER: "mail.arnes.si"
+MAIL_PORT: "587"
+MAIL_USERNAME: "oscuf"
+MAIL_PASSWORD: "***"
+MAIL_FROM: "os-toneta-cufarja-jesenice@guest.arnes.si"
+BACKUP_EMAIL: "matej.cusin2@guest.arnes.si"
+```
 
 ---
 
-## 🗄️ **PostgreSQL baza (CloudNativePG)**
+## 🗄️ **PostgreSQL HA — CloudNativePG**
 
-### **Cluster konfiguracija**
+### **Zakaj CloudNativePG?**
 
-Namesto klasičnega Bitnami Helm charta uporabljamo **CloudNativePG** operator za visoko razpoložljivost.
+| Lastnost | Bitnami Helm | CloudNativePG |
+|---|---|---|
+| Avtomatski failover | ❌ | ✅ ~30-60s |
+| Node anti-affinity | Ročno | ✅ Vgrajeno |
+| Storage management | Ročno | ✅ Vgrajeno |
+| Velikost | 1GB+ | ~50MB operator |
+| Built-in backup | ❌ | ✅ Barman/WAL |
+| Kubernetes native | ❌ (klasičen Helm) | ✅ CRD operator |
+
+### **Namestitev CNPG operatorja**
+
+```bash
+helm repo add cnpg https://cloudnative-pg.github.io/charts
+helm install cnpg cnpg/cloudnative-pg \
+  --namespace cnpg-system \
+  --create-namespace
+```
+
+### **CNPG Cluster konfiguracija**
 
 ```yaml
 apiVersion: postgresql.cnpg.io/v1
@@ -160,348 +367,465 @@ metadata:
   namespace: sola
 spec:
   instances: 2
-  failoverDelay: 30          # Auto-failover po 30s
-  enablePDB: true
   storage:
     size: 1Gi
-    storageClass: longhorn   # Repliciran storage
+    storageClass: longhorn
   bootstrap:
     initdb:
       database: sola
       owner: sola
-      secret:
-        name: sola-db-creds
   affinity:
     enablePodAntiAffinity: true
     podAntiAffinityType: preferred
     topologyKey: kubernetes.io/hostname
+  enablePDB: true
+  failoverDelay: 30
 ```
 
-### **Stanje clusterja**
+### **Stanje clustra**
 
 ```bash
+kubectl get cluster -n sola sola-db
+# NAME      AGE   INSTANCES   READY   STATUS                     PRIMARY
+# sola-db   30m   2           2       Cluster in healthy state   sola-db-1
+
 kubectl get pods -n sola -o wide
-
-# NAME                    READY   STATUS    IP            NODE
-# sola-db-1 (primary)     1/1     Running   10.42.0.85    k3s-1
-# sola-db-2 (replica)     1/1     Running   10.42.1.106   k3s-2
+# NAME        READY   STATUS    IP            NODE
+# sola-db-1   1/1     Running   10.42.0.85    k3s-1   ← PRIMARY
+# sola-db-2   1/1     Running   10.42.1.106   k3s-2   ← REPLICA
 ```
 
-### **Service-i**
+### **Servisi za povezavo**
 
-CNP avtomatsko ustvari servise za dostop:
-
-| Service | Namen | Endpoint |
+| Service | Namespace | Vloga |
 |---|---|---|
-| `sola-db-rw` | Read-write (vedno na primary) | `sola-db-rw.sola:5432` |
-| `sola-db-ro` | Read-only (vse ready instance) | `sola-db-ro.sola:5432` |
-| `sola-db-r` | Vse instance | `sola-db-r.sola:5432` |
+| `sola-db-rw.sola:5432` | sola | Read-Write — **vedno na primary** (uporablja app) |
+| `sola-db-ro.sola:5432` | sola | Read-Only — load-balanced čez vse instance |
+| `sola-db-r.sola:5432` | sola | Read — katerakoli instance |
 
-### **Kako deluje failover**
+### **Potek avtomatskega failoverja**
 
+```ascii
+┌─ K3s-1 crkne ─────────────────────────────────────┐
+│                                                    │
+│  1. sola-db-1 (primary) postane nedosegljiv        │
+│  2. CNPG operator zazna izpad                      │
+│  3. Počaka 30s (failoverDelay)                     │
+│  4. Promovira sola-db-2 (k3s-2) v novo primary     │
+│  5. Service sola-db-rw preusmeri na sola-db-2      │
+│  6. App na k3s-2 se poveže na nova primary         │
+│                                                    │
+│  Skupni izpad: ~1-2 minuti                         │
+└────────────────────────────────────────────────────┘
+
+┌─ K3s-1 nazaj ─────────────────────────────────────┐
+│                                                    │
+│  1. CNPG opazi nov node                            │
+│  2. sola-db-1 se samodejno pridruži kot REPLICA    │
+│  3. Brez ročnega posega                            │
+└────────────────────────────────────────────────────┘
 ```
-Normalno stanje:
-  sola-db-1 (primary, k3s-1)  ← streaming replication →  sola-db-2 (replica, k3s-2)
-         └── ha/active=true
-    
-Ob izpadu k3s-1:
-  1. CNP zazna, da primary ni odziven (30s failoverDelay)
-  2. CNP promovira sola-db-2 v primary (SELECT pg_promote())
-  3. Service sola-db-rw se preusmeri na sola-db-2
-  4. App na k3s-2 deluje naprej (povezava na sola-db-rw)
-  
-  ⏱ Skupni čas izpada: ~1–2 minuti
+
+### **Migracija iz Bitnami PostgreSQL**
+
+```bash
+# 1. Backup obstoječe baze
+kubectl exec -n sola sola-postgresql-primary-0 -- \
+  pg_dump -U sola sola > /tmp/backup.sql
+
+# 2. Ustvari CNPG cluster
+kubectl apply -f sola-cnpg-cluster.yaml
+
+# 3. Restore v novo bazo
+sed '/^\\\\restrict /d' /tmp/backup.sql | \
+  kubectl exec -n sola -i sola-db-1 -- psql -U postgres -d sola
+
+# 4. Posodobi DATABASE_URL v secretu
+# (geslo mora ostati enako)
+
+# 5. Poženi app
+kubectl scale deployment -n sola-app sola-app --replicas=2
+
+# 6. Počisti staro Bitnami bazo
+kubectl delete sts -n sola sola-postgresql-primary sola-postgresql-read
+kubectl delete svc -n sola sola-postgresql-primary sola-postgresql-read
+kubectl delete pod -n sola sola-postgresql-primary-0 sola-postgresql-read-0
 ```
 
 ---
 
-## 🔄 **Visoka razpoložljivost (HA)**
+## 🌐 **MetalLB LoadBalancer**
 
-### **Kako je postavljeno**
-
-```
-Cloudflare → ostc-app.org
-  │
-  ▼
-  ├── k3s-1:443 (nginx SSL)    ─┐
-  │                              ├── Service LoadBalancer 193.2.171.200:8002
-  └── k3s-2:8080 (nginx)       ─┘          │
-                                            ▼
-                                     ┌──────────────┐
-                                     │  MetalLB     │  (layer2 failover)
-                                     └──────┬───────┘
-                                            │
-                            ┌───────────────┴───────────────┐
-                            ▼                                ▼
-                     Pod k3s-1 (app)                   Pod k3s-2 (app)
-                            │                                │
-                            └──────────┬────────────────────┘
-                                       ▼
-                                sola-db-rw.sola:5432
-                                       │
-                                       ├── Primary (k3s-1) — če je živ
-                                       └── Replica promovirana (k3s-2) — če primary pade
-```
-
-### **Sloji odpornosti**
-
-| Sloj | Mehanizem | Čas okvare |
-|---|---|---|
-| **Aplikacija** | 2 poda na različnih nodih | ~5 min (k3s reschedule) |
-| **Omrežje** | MetalLB layer2 failover | ~10–30s |
-| **Baza** | CNP auto-failover (30s delay) | ~1–2 min |
-| **Storage** | Longhorn replikacija | Podatki varni tudi ob izgubi noda |
-| **DNS** | Cloudflare proxy | Takoj (če je IP živ) |
-
----
-
-## 🔐 **Konfiguracija in secreti**
-
-### **ConfigMap (`sola-config`)**
-
-Vsebuje nastavitve aplikacije:
+### **Konfiguracija**
 
 ```yaml
-APP_HOST: "0.0.0.0"
-APP_PORT: "8002"
-BASE_URL: "https://ostc-app.org"
-PROSTORI: "tablice,racunalnica,ladja,gospodinjska-ucilnica"
-RAZREDI: "IP/NIP/ID,1.a,...,9.5"
-SCHEDULE: '{"0":"07:30-08:15",...,"7":"12:50-13:35"}'
-TABLICE_MAX: "28"
+apiVersion: metallb.io/v1beta1
+kind: IPAddressPool
+metadata:
+  name: default-pool
+  namespace: metallb-system
+spec:
+  addresses:
+  - 193.2.171.200-193.2.171.210
+---
+apiVersion: metallb.io/v1beta1
+kind: L2Advertisement
+metadata:
+  name: default-advertisement
+  namespace: metallb-system
 ```
 
-### **Secret (`sola-secrets`)**
+### **Service tipa LoadBalancer**
 
-Vsebuje občutljive podatke:
-
+```yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: sola-app
+  namespace: sola-app
+spec:
+  type: LoadBalancer
+  selector:
+    app: sola-app
+  ports:
+  - port: 8002
+    targetPort: 8002
 ```
-DATABASE_URL=postgresql://sola:***@sola-db-rw.sola:5432/sola
-MAIL_FROM=os-toneta.cufarja-jesenice@guest.arnes.si
-MAIL_SERVER=mail.arnes.si
-MAIL_PORT=587
-MAIL_USERNAME=oscuf
-MAIL_PASSWORD=***
-BACKUP_EMAIL=matej.cusin2@guest.arnes.si
-```
 
-### **CNP Secret (`sola-db-creds`)**
-
-Geslo za bazo:
-
-```
-username: sola
-password: ***
+```bash
+kubectl get svc -n sola-app sola-app
+# NAME      TYPE           CLUSTER-IP     EXTERNAL-IP      PORT(S)
+# sola-app  LoadBalancer   10.43.216.34   193.2.171.200   8002:31927/TCP
 ```
 
 ---
 
-## 🌐 **Dostop do aplikacije**
+## 🔄 **Nginx Reverse Proxy**
 
-### **URL-ji**
+### **Lokacija**
 
-| URL | Opis |
-|---|---|
-| `https://ostc-app.org` | Produkcija (Cloudflare → nginx) |
-| `http://193.2.171.200:8002` | LoadBalancer IP (direct) |
-| `http://k3s-1:443` | Prek nginx SSL na k3s-1 |
-| `http://k3s-2:8080` | Prek nginx na k3s-2 |
+Nginx teče **samo na k3s-2** (ni ga na k3s-1).
 
-### **Nginx konfiguracija**
+```bash
+ssh k3s-2
+cat /etc/nginx/sites-available/default
+```
 
-Na obeh nodih nginx proxy-pass-a na `193.2.171.200:8002`:
+### **Konfiguracija**
 
 ```nginx
-location / {
-    proxy_pass http://193.2.171.200:8002;
-    proxy_set_header Host $host;
-    proxy_set_header X-Real-IP $remote_addr;
-    proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+server {
+    listen 8080 default_server;
+    listen [::]:8080 default_server;
+    
+    server_name ostc-app.org;
+    
+    location / {
+        proxy_pass http://193.2.171.200:8002;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+    }
 }
 ```
 
-### **Cloudflare**
+### **Prometni tok**
 
-- **DNS:** `ostc-app.org` → A record na `193.2.171.200`
-- **Proxy:** Enabled (Cloudflare ščiti origin IP)
-- **SSL:** Full (strict) — Cloudflare → nginx na k3s-1
-
----
-
-## ⏰ **Redna opravila**
-
-### **Dnevno poročilo**
-
-CronJob v Kubernetes, ki vsak dan ob **04:00 Europe/Ljubljana** pošlje email s povzetkom rezervacij.
-
-```bash
-# Preveri zadnje poročilo
-kubectl logs -n sola-app -l job-name=sola-daily-report --tail=20
 ```
-
-### **Backup baze**
-
-CronJob za dnevni dump PostgreSQL baze.
-
-```bash
-# Preveri backup
-kubectl logs -n sola-app -l job-name=sola-db-backup --tail=20
+Uporabnik → Cloudflare (SSL, ostc-app.org)
+    → nginx:8080 na k3s-2
+        → proxy_pass 193.2.171.200:8002
+            → Service LoadBalancer
+                → sola-app Pod (k3s-1 ali k3s-2)
 ```
 
 ---
 
-## 🐳 **Docker build in deploy**
+## ☁️ **Cloudflare DNS**
 
-### **Build slike**
+### **DNS nastavitve**
 
-```bash
-cd /home/admin_os/reservation_app
-docker build -t mato12345/sola-app:latest -f k8s/Dockerfile .
-docker push mato12345/sola-app:latest
-```
+| Tip | Ime | Vrednost | Proxy |
+|---|---|---|---|
+| A | `ostc-app.org` | `193.2.171.200` | ✅ Proxied (SSL) |
 
-### **Deploy na k3s**
+### **Zakaj LoadBalancer IP in ne ClusterIP?**
 
-Po build-u in push-u:
-
-```bash
-kubectl rollout restart -n sola-app deployment/sola-app
-kubectl rollout status -n sola-app deployment/sola-app
-```
-
-### **Dodajanje novega prostora**
-
-1. Dodaj v `ConfigMap sola-config` (ključ `PROSTORI`)
-2. Dodaj labelo v frontend `app/templates/index.html` (funkcija `prostorLabel`)
-3. Dodaj akuzativ v backend `app/routers/rezervacije.py` (če je potrebno)
-4. Restartaj app: `kubectl rollout restart -n sola-app deployment/sola-app`
+- **ClusterIP** (10.43.x.x) je dostopen samo znotraj Kubernetes omrežja
+- **LoadBalancer IP** (193.2.171.200) je fiksen IP v lokalnem omrežju, dosegljiv nginxu in FRP tunelu
+- Cloudflare proxy omogoča SSL termination, DDoS zaščito in caching
 
 ---
 
-## 📝 **Pogosti ukazi**
+## 💾 **Longhorn Storage**
 
-### **Splošno**
+### **Namestitev**
+
 ```bash
-# Stanje clusterja
-kubectl get nodes
-kubectl get pods -A
-kubectl get svc -A
-
-# App
-kubectl get pods -n sola-app -o wide
-kubectl logs -n sola-app deployment/sola-app --tail=50
-kubectl logs -n sola-app -l job-name=sola-daily-report --tail=20
-
-# Baza
-kubectl get pods -n sola -o wide
-kubectl get cluster -n sola sola-db
-kubectl exec -n sola sola-db-1 -- bash -c "PGPASSWORD=*** psql -h localhost -U sola -d sola -Atc 'SELECT count(*) FROM users'"
-
-# Storage
-kubectl get pvc -n sola
-kubectl get storageclass
-
-# Failover test
-ssh k3s-1 "sudo poweroff"
-# Počakaj 2 min, preveri
-kubectl get pods -n sola -o wide  # sola-db-2 naj bo primary
-curl -I https://ostc-app.org      # app naj dela
+kubectl create namespace longhorn-system
+helm repo add longhorn https://charts.longhorn.io
+helm install longhorn longhorn/longhorn --namespace longhorn-system
 ```
 
-### **Docker & Git**
-```bash
-# Build in push
-cd /home/admin_os/reservation_app
-docker build -t mato12345/sola-app:latest -f k8s/Dockerfile .
-docker push mato12345/sola-app:latest
-kubectl rollout restart -n sola-app deployment/sola-app
+### **StorageClass**
 
-# Git
-cd /home/admin_os/reservation_app
-git add -A
-git commit -m "sprememba"
-git push origin main
+```bash
+kubectl get sc
+# NAME             PROVISIONER          RECLAIMPOLICY   VOLUMEBINDINGMODE
+# longhorn         driver.longhorn.io   Delete          Immediate
+# local-path       rancher.io/local-path Delete          WaitForFirstConsumer
 ```
 
-### **Nginx**
-```bash
-# Konfiguracija
-cat /etc/nginx/sites-available/default
+### **PVC-ji v uporabi**
 
-# Test in reload
-sudo nginx -t && sudo systemctl reload nginx
-```
+| PVC | Namespace | Velikost | Uporaba |
+|---|---|---|---|
+| `sola-db-1` | sola | 1Gi | CNPG primary (k3s-1) |
+| `sola-db-2` | sola | 1Gi | CNPG replica (k3s-2) |
 
-### **Longhorn**
+### **Longhorn UI**
+
 ```bash
-# Dashboard (port-forward)
+# Dostop do Longhorn dashboarda
 kubectl port-forward -n longhorn-system svc/longhorn-frontend 8080:80
 # Odpri: http://localhost:8080
 ```
 
 ---
 
-## ✅ **Checklista stanja**
+## 📊 **Dnevni backup in reporti**
 
-- [x] K3S cluster (2 noda, oba Ready)
-- [x] sola-app deployment (2 poda, oba Running)
-- [x] CloudNativePG cluster (2 instance, primary + replica)
-- [x] Podatki v bazi (78 users, 294 rezervacij)
-- [x] LoadBalancer (193.2.171.200, MetalLB)
-- [x] Nginx na obeh nodih (proxy_pass na LB IP)
-- [x] Cloudflare DNS (ostc-app.org → 193.2.171.200)
-- [x] Auto-failover (CNP, 30s delay)
-- [x] Dnevno poročilo (CronJob, 04:00)
-- [x] Backup baze (CronJob)
-- [x] Repo na obeh nodih (git@github.com:os-tc-jesenice/reservation_app.git)
-- [x] HA.md dokumentacija pushana
+### **Backup CronJob**
+
+Backupira celotno bazo in pošlje na email.
+
+```yaml
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: sola-db-backup
+  namespace: sola-app
+spec:
+  schedule: "0 3 * * *"    # Vsak dan ob 3:00
+  jobTemplate:
+    spec:
+      template:
+        spec:
+          containers:
+          - name: backup
+            image: postgres:18-alpine
+            command:
+            - sh
+            - -c
+            - |
+              PGPASSWORD=$DB_PASSWORD pg_dump -h $DB_HOST -U $DB_USER $DB_NAME | gzip > /tmp/backup.sql.gz
+              echo "Backup: $(date)" | mail -s "DB Backup" -a /tmp/backup.sql.gz $BACKUP_EMAIL
+```
+
+### **Daily Report CronJob**
+
+Pošlje dnevni pregled rezervacij in ocenjevanj.
+
+```yaml
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: sola-daily-report
+  namespace: sola-app
+spec:
+  schedule: "0 6 * * *"    # Vsak dan ob 6:00
+```
 
 ---
 
-## 🔧 **Odpravljanje težav**
+## 🛠️ **Vzdrževanje in okvare**
 
-### **App se ne zažene (CrashLoopBackOff)**
+### **Pogosti ukazi za diagnostiko**
 
 ```bash
-# Preveri loge
-kubectl logs -n sola-app deployment/sola-app --tail=50
+# Preveri stanje nodov
+kubectl get nodes -o wide
 
-# Pogosti vzroki:
-# - Napačno geslo v DATABASE_URL (secret sola-secrets)
-# - Baza ni dosegljiva (sola-db-rw service)
-# - Manjkajoče tabele (restart bi jih moral ustvariti)
+# Preveri vse pomebne pod-e
+kubectl get pods -n sola-app -o wide
+kubectl get pods -n sola -o wide
+kubectl get pods -n longhorn-system | grep -E "instance-manager|longhorn-manager"
 
-# Popravi geslo če je potrebno
-kubectl delete secret -n sola-app sola-secrets
-kubectl create secret generic sola-secrets -n sola-app \
-  --from-literal=DATABASE_URL="postgresql://sola:***@sola-db-rw.sola:5432/sola"
+# Preveri stanje CNPG clustra
+kubectl get cluster -n sola sola-db
+kubectl describe cluster -n sola sola-db
+
+# Preveri log-e app-a
+kubectl logs -n sola-app -l app=sola-app --tail=50
+
+# Testiraj health endpoint
+curl -s http://193.2.171.200:8002/health
+curl -sI https://ostc-app.org
 ```
 
-### **Nginx vrne 502**
+### **Simulacija okvare — padec k3s-1**
 
 ```bash
-# Preveri če LoadBalancer IP odgovarja
-curl -I http://193.2.171.200:8002
+# Ugasni k3s-1
+ssh k3s-1 "sudo poweroff"
 
-# Preveri nginx config
+# Počakaj 2 minuti, nato preveri
+kubectl get pods -n sola -o wide
+# sola-db-2 naj bo primarna
+
+kubectl get pods -n sola-app -o wide
+# Oba sola-app poda naj bosta na k3s-2
+# (k3s jih reschedule-a na preživeli node)
+
+curl -I https://ostc-app.org
+# Še vedno dostopno!
+
+# Ko k3s-1 nazaj
+# CNPG samodejno doda sola-db-1 kot repliko
+kubectl get cluster -n sola sola-db
+# 2 ready instance
+```
+
+### **Simulacija okvare — padec aplikacijskega poda**
+
+```bash
+# Izbriši en app pod
+kubectl delete pod -n sola-app -l app=sola-app --field-selector status.phase=Running
+# Deployment ga takoj recreira
+```
+
+### **Obnova gesla za bazo**
+
+```bash
+# Preveri geslo v secretu
+kubectl get secret -n sola sola-db-creds -o jsonpath='{.data.password}' | base64 -d
+
+# Popravi DATABASE_URL v app secretu
+NEW_URL="postgresql://sola:PASSWORD@sola-db-rw.sola:5432/sola"
+kubectl patch secret -n sola-app sola-secrets \
+  --type='json' \
+  -p="[{\"op\":\"replace\",\"path\":\"/data/DATABASE_URL\",\"value\":\"$(echo -n $NEW_URL | base64)\"}]"
+
+# Restartaj app
+kubectl rollout restart -n sola-app deployment/sola-app
+```
+
+### **Poprava nginx-a**
+
+```bash
+# Če se LoadBalancer IP spremeni
+ssh k3s-2
+sudo sed -i 's/193.2.171.200/NEW_IP/' /etc/nginx/sites-available/default
+sudo systemctl restart nginx
+
+# Preveri konfiguracijo
 sudo nginx -t
-
-# Preveri če app podi tečejo
-kubectl get pods -n sola-app
-```
-
-### **Baza pade v neskladje po failoverju**
-
-Ko se k3s-1 vrne po izpadu:
-1. CNP poskusi obnoviti replikacijo
-2. Če ne gre, izbriši stari PVC na k3s-1
-3. CNP bo recreiral pod kot replico
-
-```bash
-# Počisti staro primary instanco (samo če CNP ne zmore sam)
-kubectl delete pvc -n sola data-sola-db-1
-# CNP bo recreiral
 ```
 
 ---
 
+## 📝 **Celoten sklic ukazov**
+
+### **App management**
+
+```bash
+# Deploy
+kubectl apply -k k8s/app/overlays/production-lb/
+
+# Restart
+kubectl rollout restart -n sola-app deployment/sola-app
+
+# Logs
+kubectl logs -n sola-app -f deployment/sola-app
+
+# Scale
+kubectl scale deployment -n sola-app sola-app --replicas=3
+```
+
+### **Database**
+
+```bash
+# Poveži se na primary bazo
+kubectl exec -n sola -it sola-db-1 -- psql -U postgres -d sola
+
+# Preštej uporabnike
+kubectl exec -n sola sola-db-1 -- psql -U postgres -d sola -c \
+  "SELECT count(*) FROM users; SELECT count(*) FROM reservations;"
+
+# Status clustra
+kubectl get cluster -n sola sola-db -o yaml
+
+# Preveri replikacijo
+kubectl exec -n sola sola-db-1 -- psql -U postgres -c \
+  "SELECT application_name, state, sync_state FROM pg_stat_replication;"
+```
+
+### **Storage**
+
+```bash
+# PVC-ji
+kubectl get pvc -n sola
+kubectl get pv | grep sola
+
+# Longhorn
+kubectl get volumes -n longhorn-system
+```
+
+### **Networking**
+
+```bash
+# Servisi
+kubectl get svc -n sola-app
+kubectl get svc -n sola
+
+# Endpointi
+kubectl get endpoints -n sola-app sola-app
+```
+
+### **Dnevniki**
+
+```bash
+# App
+kubectl logs -n sola-app -l app=sola-app --tail=100
+
+# CNPG
+kubectl logs -n sola sola-db-1 --tail=50
+
+# Nginx
+ssh k3s-2 "sudo tail -f /var/log/nginx/access.log"
+
+# MetalLB
+kubectl logs -n metallb-system -l app=metallb --tail=50
+```
+
+---
+
+## ✅ **Kontrolni seznam — stanje sistema**
+
+- [x] k3s-1 Running (control-plane)
+- [x] k3s-2 Running (worker)
+- [x] sola-app Pod 1 Running (k3s-1)
+- [x] sola-app Pod 2 Running (k3s-2)
+- [x] sola-db-1 Primary (k3s-1)
+- [x] sola-db-2 Replica (k3s-2)
+- [x] CNPG cluster healthy
+- [x] MetalLB LoadBalancer (193.2.171.200)
+- [x] nginx proxy (k3s-2:8080)
+- [x] Cloudflare DNS (ostc-app.org)
+- [x] Longhorn storage (oba noda)
+- [x] Dnevni backup (3:00)
+- [x] Dnevni report (6:00)
+- [x] Health check (200 OK)
+
+---
+
+## 📌 **Pomembne opombe**
+
+- **Failover je popolnoma avtomatski** — ni potrebno ročno posredovanje
+- **Geslo za sudo na nodih:** `7c6b1234?` (isto na obeh)
+- **Cloudflare kaže na LoadBalancer IP** `193.2.171.200` — ne na ClusterIP
+- **Nginx samo na k3s-2** — proxy_pass na LoadBalancer IP (ne na ClusterIP)
+- **Stara Bitnami PostgreSQL je odstranjena** po migraciji na CNPG
+- **Longhorn replikacija** — podatki so varni tudi ob izgubi enega noda
+- **Če se LoadBalancer IP spremeni**, posodobi: Cloudflare, nginx in ta dokument
