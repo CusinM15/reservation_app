@@ -159,10 +159,10 @@ Gateway: {{K3S_2_IP}}54
 DNS: {{K3S_2_IP}}53
 
 # Kubernetes Pod CIDR
-10.42.0.0/16
+{{CLUSTER_CIDR}}
 
 # Kubernetes Service CIDR
-10.43.0.0/16
+{{SERVICE_CIDR}}
 
 # LoadBalancer IP pool (MetalLB)
 {{METALLB_RANGE_START}} - {{METALLB_RANGE_END}}
@@ -210,7 +210,7 @@ curl -sfL https://get.k3s.io | sh -s - server \
 
 # Na k3s-2 (drugi node)
 curl -sfL https://get.k3s.io | sh -s - server \
-  --server https://{{K3S_1_IP}}:6443 \
+  --server https://{{K3S_1_IP}}:{{K3S_API_PORT}} \
   --disable=traefik \
   --node-ip={{K3S_2_IP}} \
   --flannel-iface=eth0 \

@@ -161,10 +161,10 @@ Gateway: {{K3S_2_IP}}54
 DNS: {{K3S_2_IP}}53
 
 # Kubernetes Pod CIDR
-10.42.0.0/16
+{{CLUSTER_CIDR}}
 
 # Kubernetes Service CIDR
-10.43.0.0/16
+{{SERVICE_CIDR}}
 
 # LoadBalancer IP pool (MetalLB)
 {{LB_IP}} - {{K3S_1_IP}}5
@@ -191,7 +191,7 @@ ssh admin@{{K3S_2_IP}}    # k3s-2
 curl -sfL https://get.k3s.io | sh -s - --disable=servicelb
 
 # On k3s-2 (second control-plane)
-curl -sfL https://get.k3s.io | K3S_URL=https://{{K3S_1_IP}}:6443 \\
+curl -sfL https://get.k3s.io | K3S_URL=https://{{K3S_1_IP}}:{{K3S_API_PORT}} \\
   K3S_TOKEN=$(sudo cat /var/lib/rancher/k3s/server/node-token) sh -
 ```
 

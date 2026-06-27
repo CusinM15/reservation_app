@@ -64,8 +64,8 @@ curl -sfL https://get.k3s.io | sh -s - server \
   --disable=traefik \
   --disable=servicelb \
   --write-kubeconfig-mode=644 \
-  --cluster-cidr=10.42.0.0/16 \
-  --service-cidr=10.43.0.0/16 \
+  --cluster-cidr={{CLUSTER_CIDR}} \
+  --service-cidr={{SERVICE_CIDR}} \
   --node-ip={{K3S_1_IP}}
 ```
 
@@ -79,7 +79,7 @@ sudo cat /var/lib/rancher/k3s/server/node-token
 
 ```bash
 curl -sfL https://get.k3s.io | sh -s - server \
-  --server https://{{K3S_1_IP}}:6443 \
+  --server https://{{K3S_1_IP}}:{{K3S_API_PORT}} \
   --token <TOKEN> \
   --disable=traefik \
   --disable=servicelb \
@@ -273,7 +273,7 @@ sudo cat /var/lib/rancher/k3s/server/node-token
 
 # Na novem nodu:
 curl -sfL https://get.k3s.io | sh -s - server \
-  --server https://<MASTER_IP>:6443 \
+  --server https://<MASTER_IP>:{{K3S_API_PORT}} \
   --token <TOKEN> \
   --node-ip <NOVI_IP> \
   --disable traefik --disable=servicelb

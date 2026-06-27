@@ -180,7 +180,7 @@ sudo cat /var/lib/rancher/k3s/server/token   # na kateremkoli masterju
 
 ```bash
 curl -sfL https://get.k3s.io | sh -s - server \
-  --server https://<IP_MASTERJA>:6443 \
+  --server https://<IP_MASTERJA>:{{K3S_API_PORT}} \
   --token <TOKEN> \
   --node-ip <NOVI_IP> \
   --disable traefik --disable=servicelb
