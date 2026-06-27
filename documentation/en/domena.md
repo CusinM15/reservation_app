@@ -8,6 +8,7 @@
 
 ---
 
+# Domain
 
 Current domain: **`ostc-app.org`** (Cloudflare proxied)
 
