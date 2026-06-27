@@ -34,5 +34,3 @@ certs/key.pem
 certs/cert.pem
 certs/
 
-# Documentation local IP config (user-specific)
-documentation/.env.ip
