@@ -111,14 +111,14 @@
 🌐 User
   → Cloudflare (SSL, proxy, ostc-app.org)
     → Cloudflare proxy → 192.168.1.2:8080 (k3s-2 nginx)
-      → nginx proxy_pass http://192.168.1.10:8002
+      → nginx proxy_pass http://192.168.1.50:8002
         → Service LoadBalancer (MetalLB)
           → sola-app Pod (k3s-1 or k3s-2)
 
 Alternative path (internal network):
-  → http://192.168.1.1:8080 → nginx on k3s-1 → proxy_pass 192.168.1.10:8002
-  → http://192.168.1.2:8080 → nginx on k3s-2 → proxy_pass 192.168.1.10:8002
-  → http://192.168.1.10:8002 → direct to LoadBalancer
+  → http://192.168.1.1:8080 → nginx on k3s-1 → proxy_pass 192.168.1.50:8002
+  → http://192.168.1.2:8080 → nginx on k3s-2 → proxy_pass 192.168.1.50:8002
+  → http://192.168.1.50:8002 → direct to LoadBalancer
 ```
 
 Cloudflare proxy provides:
@@ -136,7 +136,7 @@ Cloudflare proxy provides:
 | **Sola App (FastAPI)** | 2 pods (both nodes) | Reservations, assessments, login |
 | **CloudNativePG** | 2 instances (both nodes) | PostgreSQL database with automatic failover |
 | **Longhorn** | Both nodes | Distributed storage (PVCs) |
-| **MetalLB** | Both nodes | LoadBalancer IP (192.168.1.10) |
+| **MetalLB** | Both nodes | LoadBalancer IP (192.168.1.50) |
 | **nginx** | Both nodes (port 8080) | Reverse proxy → LoadBalancer. Cloudflare origin: k3s-2:8080 |
 | **Cloudflare** | External | DNS, SSL, proxy |
 
@@ -546,7 +546,7 @@ server {
     listen 8080;
 
     location / {
-        proxy_pass http://192.168.1.10:8002;
+        proxy_pass http://192.168.1.50:8002;
         proxy_set_header Host $host;
         proxy_set_header X-Real-IP $remote_addr;
         proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
@@ -831,7 +831,7 @@ kubectl rollout status -n sola-app deployment/sola-app
 - **Failover is completely automatic** — no manual intervention needed
 - **Both nodes are control-plane** — no separate worker nodes
 - **Cloudflare origin** → k3s-2:8080 (nginx reverse proxy)
-- **Nginx on both nodes** (port 8080) — proxy_pass to LoadBalancer IP `192.168.1.10:8002`
+- **Nginx on both nodes** (port 8080) — proxy_pass to LoadBalancer IP `192.168.1.50:8002`
 - **App uses** `sola-db-rw.sola:5432` — always on the current primary
 - **Old Bitnami PostgreSQL was removed** — we use CNPG
 - **Longhorn replication** — 2 replicas, data safe even with one node loss
