@@ -74,7 +74,7 @@ BASE_URL: "https://ostc-app.org"
 ### 1. Cloudflare
 
 1. Odpri Cloudflare dashboard
-2. Dodaj A zapis: `@` → `192.168.1.50` (Proxied)
+2. Dodaj A zapis: `@` → `192.168.1.10` (Proxied)
 3. Počakaj, da se DNS propagira
 
 ### 2. Posodobi BASE_URL
@@ -97,7 +97,7 @@ sudo systemctl restart nginx
 
 ## 📌 Opombe
 
-- **LoadBalancer IP** `192.168.1.50` je fiksen — ne spreminja se ob restartu
+- **LoadBalancer IP** `192.168.1.10` je fiksen — ne spreminja se ob restartu
 - **Nginx** na k3s-2 posreduje na MetalLB IP, ne direktno na pod-e
 - **Cloudflare SSL** je "Full" — promet med Cloudflare in nginxom je HTTP (ne šifriran), vendar samo znotraj šolskega omrežja
 - Če bi želeli **end-to-end HTTPS**, bi potrebovali certbot/letsencrypt na k3s-2

@@ -39,8 +39,8 @@ This document contains instructions for safely shutting down the application and
 
 | Node | IP | Role | Status |
 |---|---|---|---|
-| k3s-1 | 192.168.1.10 | control-plane,etcd | Ready |
-| k3s-2 | 192.168.1.11 | control-plane,etcd | Ready |
+| k3s-1 | 192.168.1.1 | control-plane,etcd | Ready |
+| k3s-2 | 192.168.1.2 | control-plane,etcd | Ready |
 
 Current pods:
 
@@ -207,7 +207,7 @@ kubectl -n sola-app rollout status deployment/sola-app
 
 ```bash
 # Health check
-curl -s http://192.168.1.50:8002/health
+curl -s http://192.168.1.10:8002/health
 # {"status":"ok","version":"0.1.0"}
 
 # Website

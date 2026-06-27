@@ -74,7 +74,7 @@ If the domain needs to be changed in the future:
 ### 1. Cloudflare
 
 1. Open Cloudflare dashboard
-2. Add A record: `@` → `192.168.1.50` (Proxied)
+2. Add A record: `@` → `192.168.1.10` (Proxied)
 3. Wait for DNS propagation
 
 ### 2. Update BASE_URL
@@ -97,7 +97,7 @@ sudo systemctl restart nginx
 
 ## 📌 Notes
 
-- **LoadBalancer IP** `192.168.1.50` is fixed — it does not change on restart
+- **LoadBalancer IP** `192.168.1.10` is fixed — it does not change on restart
 - **Nginx** on k3s-2 forwards to the MetalLB IP, not directly to pods
 - **Cloudflare SSL** is "Full" — traffic between Cloudflare and nginx is HTTP (not encrypted), but only within the school network
 - If you wanted **end-to-end HTTPS**, you would need certbot/letsencrypt on k3s-2

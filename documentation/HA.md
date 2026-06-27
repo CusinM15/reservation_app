@@ -45,15 +45,15 @@ Internet → ostc-app.org (Cloudflare)
           │           │
           └─────┬─────┘
                 ▼
-   Service LoadBalancer 192.168.1.50:8002 (MetalLB)
+   Service LoadBalancer 192.168.1.10:8002 (MetalLB)
                 │
         ┌───────┴───────┐
         ▼               ▼
    app pod (k3s-1)  app pod (k3s-2)
 ```
 
-- **Cloudflare** proxy-a na LoadBalancer IP `192.168.1.50` (MetalLB, port 80) ali alternativno na katerikoli node prek nginx (port 8080)
-- **Nginx** na **k3s-1** in **k3s-2** (oba identična) proxy-pass-a na `192.168.1.50:8002`
+- **Cloudflare** proxy-a na LoadBalancer IP `192.168.1.10` (MetalLB, port 80) ali alternativno na katerikoli node prek nginx (port 8080)
+- **Nginx** na **k3s-1** in **k3s-2** (oba identična) proxy-pass-a na `192.168.1.10:8002`
 - **Service tip LoadBalancer** (MetalLB) — fiksen IP, layer2 failover
 - Ob izpadu enega noda MetalLB prevzame promet na drugem nodu
 - Nginx na obeh nodih zagotavlja redundanco — če eden pade, Cloudflare preprosto preusmerimo na drugega
@@ -146,7 +146,7 @@ kubectl get cluster -n sola sola-db    # CNPG naj ima 2 ready instance
 
 ### 6. Pomembne opombe
 
-- **Cloudflare** kaže na LoadBalancer IP `192.168.1.50` — če se ta IP spremeni, je treba posodobiti Cloudflare DNS
+- **Cloudflare** kaže na LoadBalancer IP `192.168.1.10` — če se ta IP spremeni, je treba posodobiti Cloudflare DNS
 - **Nginx** na **k3s-1** in **k3s-2** proxy-pass-a na LoadBalancer IP — če se IP spremeni, posodobi `/etc/nginx/sites-available/default` na obeh nodih
 - **Longhorn** poskrbi za PVC-je — podatki so varni tudi ob izgubi enega noda
 - **Ni custom failover skript** — vse upravlja CNPG operator

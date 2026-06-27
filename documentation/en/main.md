@@ -86,7 +86,7 @@
 │              │                                                           │
 │  ┌───────────▼───────────────────────────────────────────────┐           │
 │  │        nginx Reverse Proxy (k3s-2, port 8080)              │           │
-│  │        proxy_pass http://192.168.1.50:8002                │           │
+│  │        proxy_pass http://192.168.1.10:8002                │           │
 │  └───────────────────────────────────────────────────────────┘           │
 └──────────────────────────────────────────────────────────────────────────┘
                               │
@@ -167,7 +167,7 @@ DNS: 192.168.1.253
 10.43.0.0/16
 
 # LoadBalancer IP pool (MetalLB)
-192.168.1.50 - 192.168.1.55
+192.168.1.10 - 192.168.1.15
 ```
 
 ### **Access**
@@ -491,7 +491,7 @@ metadata:
   namespace: metallb-system
 spec:
   addresses:
-  - 192.168.1.50-192.168.1.55
+  - 192.168.1.10-192.168.1.15
 ---
 apiVersion: metallb.io/v1beta1
 kind: L2Advertisement
@@ -521,7 +521,7 @@ spec:
 ```bash
 kubectl get svc -n sola-app sola-app
 # NAME      TYPE           CLUSTER-IP      EXTERNAL-IP      PORT(S)
-# sola-app  LoadBalancer   10.43.0.10   192.168.1.50   8002:32364/TCP
+# sola-app  LoadBalancer   10.43.0.10   192.168.1.10   8002:32364/TCP
 ```
 
 ---
@@ -673,7 +673,7 @@ kubectl describe cluster -n sola sola-db
 kubectl logs -n sola-app -l app=sola-app --tail=50
 
 # Test health endpoint
-curl -s http://192.168.1.50:8002/health
+curl -s http://192.168.1.10:8002/health
 curl -sI https://ostc-app.org
 ```
 
@@ -713,7 +713,7 @@ kubectl rollout status -n sola-app deployment/sola-app
 ```bash
 # If LoadBalancer IP changes
 ssh k3s-2
-sudo sed -i 's/192.168.1.50/NEW_IP/' /etc/nginx/sites-available/default
+sudo sed -i 's/192.168.1.10/NEW_IP/' /etc/nginx/sites-available/default
 sudo systemctl restart nginx
 sudo nginx -t
 ```
@@ -816,8 +816,8 @@ kubectl rollout status -n sola-app deployment/sola-app
 - [x] sola-db-1 Primary (k3s-1)
 - [x] sola-db-2 Replica (k3s-2)
 - [x] CNPG cluster healthy (2/2 ready)
-- [x] MetalLB LoadBalancer (192.168.1.50)
-- [x] nginx proxy (k3s-2:8080 → 192.168.1.50:8002)
+- [x] MetalLB LoadBalancer (192.168.1.10)
+- [x] nginx proxy (k3s-2:8080 → 192.168.1.10:8002)
 - [x] Cloudflare DNS (ostc-app.org, proxied)
 - [x] Longhorn storage (both nodes)
 - [x] Daily backup (4:00) ✅

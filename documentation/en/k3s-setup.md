@@ -23,7 +23,7 @@ Internet → Cloudflare → ostc-app.org
                             │
                             ▼
                     k3s-2:8080 (nginx)
-                    proxy_pass 192.168.1.50:8002
+                    proxy_pass 192.168.1.10:8002
                             │
                     MetalLB LoadBalancer
                             │
@@ -66,7 +66,7 @@ curl -sfL https://get.k3s.io | sh -s - server \
   --write-kubeconfig-mode=644 \
   --cluster-cidr=10.42.0.0/16 \
   --service-cidr=10.43.0.0/16 \
-  --node-ip=192.168.1.10
+  --node-ip=192.168.1.1
 ```
 
 ### 1.2 Get the token
@@ -79,12 +79,12 @@ sudo cat /var/lib/rancher/k3s/server/node-token
 
 ```bash
 curl -sfL https://get.k3s.io | sh -s - server \
-  --server https://192.168.1.10:6443 \
+  --server https://192.168.1.1:6443 \
   --token <TOKEN> \
   --disable=traefik \
   --disable=servicelb \
   --write-kubeconfig-mode=644 \
-  --node-ip=192.168.1.11
+  --node-ip=192.168.1.2
 ```
 
 ### 1.4 Verify
@@ -238,7 +238,7 @@ Create `/etc/nginx/sites-available/default`:
 server {
     listen 8080;
     location / {
-        proxy_pass http://192.168.1.50:8002;
+        proxy_pass http://192.168.1.10:8002;
         proxy_set_header Host $host;
         proxy_set_header X-Real-IP $remote_addr;
         proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;

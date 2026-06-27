@@ -181,7 +181,7 @@ kubectl get pods -A -o wide
 
 # Aplikacija v brskalniku
 https://ostc-app.org          # prek Cloudflare + nginx
-http://192.168.1.50:8002     # direkt (samo interno omrežje)
+http://192.168.1.10:8002     # direkt (samo interno omrežje)
 ```
 
 ---
@@ -194,8 +194,8 @@ http://192.168.1.50:8002     # direkt (samo interno omrežje)
 kubectl get nodes -o wide
 
 # NAME    STATUS   ROLES                       AGE   VERSION        INTERNAL-IP      EXTERNAL-IP
-# k3s-1   Ready    control-plane,etcd,master   3d    v1.32.3+k3s1   192.168.1.10    <none>
-# k3s-2   Ready    control-plane,etcd,master   3d    v1.32.3+k3s1   192.168.1.11    <none>
+# k3s-1   Ready    control-plane,etcd,master   3d    v1.32.3+k3s1   192.168.1.1    <none>
+# k3s-2   Ready    control-plane,etcd,master   3d    v1.32.3+k3s1   192.168.1.2    <none>
 ```
 
 ### **Namestitev k3s**
@@ -205,14 +205,14 @@ kubectl get nodes -o wide
 curl -sfL https://get.k3s.io | sh -s - server \
   --cluster-init \
   --disable=traefik \
-  --node-ip=192.168.1.10 \
+  --node-ip=192.168.1.1 \
   --flannel-iface=eth0
 
 # Na k3s-2 (drugi node)
 curl -sfL https://get.k3s.io | sh -s - server \
-  --server https://192.168.1.10:6443 \
+  --server https://192.168.1.1:6443 \
   --disable=traefik \
-  --node-ip=192.168.1.11 \
+  --node-ip=192.168.1.2 \
   --flannel-iface=eth0 \
   --token <NODE_TOKEN>
 ```
