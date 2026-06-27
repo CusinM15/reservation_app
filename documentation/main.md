@@ -294,10 +294,14 @@ Zgrajena z **CloudNativePG** operatorjem. Primary vedno na k3s-1, replica na k3s
 ### **Failover**
 
 Ob izpadu k3s-1:
-1. CloudNativePG zazna izpad v ~1 minuti
-2. Replica na k3s-2 se promovira v primary (~2 minuti)
-3. Service `sola-db-rw` se preusmeri na nov primary
-4. Aplikacija izve za novo lokacijo prek Kubernetes DNS → brez izpada
+1. Primarni pod `sola-db-1` postane nedosegljiv
+2. CNPG operator zazna izpad (30s `failoverDelay`)
+3. CNPG promovira `sola-db-2` (na k3s-2) v primary
+4. Service `sola-db-rw` se avtomatsko preusmeri na `sola-db-2`
+5. App pod na k3s-1 je mrtev → k3s ga reschedule-a na k3s-2
+6. App na k3s-2 se poveže na `sola-db-rw` (ki kaže na `sola-db-2`) → deluje naprej
+
+**Skupni čas izpada:** ~1–2 minuti (30s failover delay + ~30s za promocijo + čas, da k3s zazna mrtvi node)
 
 ### **Dostop**
 
