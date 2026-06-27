@@ -1,7 +1,10 @@
-# POSTAVI LOKALEN APP — Šolski App
+# 🖥️ Postavi lokalni app
 
 Navodila za zagon aplikacije **na enem računalniku** (brez Kubernetes, brez PostgreSQL).
 Primerno za druge šole, testiranje ali demonstracijo.
+
+> **Avtor:** Matej Čušin  
+> **Šola:** OŠ Toneta Čufarja, Jesenice
 
 ---
 
@@ -35,7 +38,7 @@ BASE_URL=http://localhost:8001
 DATABASE_URL=sqlite:///./data/sola.db
 TABLICE_MAX=28
 SCHEDULE={"0":"07:30-08:15","1":"08:20-09:05","2":"09:15-10:00","3":"10:20-11:05","4":"11:10-11:55","5":"12:00-12:45","6":"12:50-13:35","7":"14:00-14:45"}
-RAZREDI=1.a,1.b,1.c,2.a,2.b,2.c,3.a,3.b,3.c,4.a,4.b,4.c,5.a,5.b,5.c,6.a,6.b,6.c,7.a,7.b,7.c,8.a,8.b,8.c,8.1,8.2,8.3,8.4,8.5,9.a,9.b,9.c,9.1,9.2,9.3,9.4,9.5
+RAZREDI=1.a,1.b,2.a,2.b,3.a,3.b,4.a,4.b,5.a,5.b,6.a,6.b,7.a,7.b,8.a,8.b,9.a
 PROSTORI=tablice,racunalnica,ladja
 ```
 
@@ -50,7 +53,7 @@ docker run -d --name sola-app -p 8001:8001 \
 
 Aplikacija je na **http://localhost:8001**.
 
-Private dostop: `admin` / `admin123` (geslo takoj spremeni).
+Privzet dostop: `admin` / `admin123` (geslo takoj spremeni).
 
 Ustavi:
 ```bash
@@ -91,7 +94,7 @@ mkdir -p data
 uvicorn app.main:app --host 0.0.0.0 --port 8001 --reload
 ```
 
-`--reload` pomeni, da se ob spremembi kode samodejno restart-a (uporabno za razvoj).
+`--reload` pomeni samodejni restart ob spremembi kode (uporabno za razvoj).
 
 Aplikacija: **http://localhost:8001**
 Admin: `admin` / `admin123`
@@ -105,18 +108,17 @@ Admin: `admin` / `admin123`
 ## 4) Prvi zagon — kaj se zgodi?
 
 Ob prvem zagonu aplikacija:
-1. ustvari SQLite bazo (`data/sola.db`)
-2. doda začetnega admin uporabnika (`admin` / `admin123`)
-3. vse je pripravljeno za uporabo
+1. Ustvari SQLite bazo (`data/sola.db`)
+2. Doda začetnega admin uporabnika (`admin` / `admin123`)
+3. Vse je pripravljeno za uporabo
 
 **Baza je prazna** — ni rezervacij, ni ocenjevanj, ni učiteljev.
 
 ---
 
-## 5) Uvoz učiteljev s šolske spletne strani
+## 5) Uvoz učiteljev
 
-Če imaš javno objavljen seznam zaposlenih (podobno kot OŠ Toneta Čufarja),
-lahko učitelje uvoziš samodejno.
+Če imaš javno objavljen seznam zaposlenih, lahko učitelje uvoziš samodejno.
 
 ### 5a) Namesti orodja
 
@@ -130,56 +132,35 @@ pip install requests beautifulsoup4 lxml
 # Če app teče na localhost:8001:
 python3 scripts/import_teachers.py --base-url http://localhost:8001
 
-# Če app teče na drugem strežniku:
-python3 scripts/import_teachers.py --base-url https://moja-sola.si
-
 # Samo poglej, kdo bi se uvozil (brez spreminjanja):
 python3 scripts/import_teachers.py --base-url http://localhost:8001 --dry-run
 ```
 
 ### 5c) Prilagodi za svojo šolo
 
-Če imaš drugačno spletno stran, uredi `scripts/import_teachers.py`:
-
+Uredi `scripts/import_teachers.py`:
 1. Spremeni `SCRAPE_URL` na URL svojega seznama zaposlenih
 2. Po potrebi popravi `ROLE_MAP` in `NON_TEACHING_TABS`
-3. Po želji prilagodi `scrape_employees()` za strukturo tvoje strani
 
 ### 5d) Kako učitelji dostopajo?
 
-- Gredo na **http://localhost:8001** (ali tvoj URL)
-- Kliknejo **"Pozabljeno geslo"**
-- Vnesejo svoj email
-- Dobijo email z linkom za nastavitev gesla
-- Nastavijo geslo in se prijavijo
+1. Gredo na **http://localhost:8001** (ali tvoj URL)
+2. Kliknejo **"Pozabljeno geslo"**
+3. Vnesejo svoj email
+4. Dobijo email z linkom za nastavitev gesla
 
-Če nimaš email strežnika, lahko gesla nastaviš ročno prek admin panela:
-`http://localhost:8001/auth/admin/users`
-
-### 5e) Urejanje najetih prostorov
-
-V `.env` nastavi:
-```env
-PROSTORI=tablice,racunalnica,ladja,zbornica,telovadnica
-RAZREDI=1.a,1.b,2.a,2.b,3.a,3.b,4.a,4.b,5.a,5.b,6.a,6.b,7.a,7.b,8.a,8.b,9.a,9.b
-```
+Če nimaš email strežnika, lahko gesla nastaviš ročno prek admin panela.
 
 ---
 
 ## 6) Pomembne opombe
 
-| Značilnost | Lokalno (SQLite) | Produkcija (PostgreSQL) |
+| Značilnost | Lokalno (SQLite) | Produkcija (PostgreSQL/k3s) |
 |---|---|---|
 | Baza | `data/sola.db` | PostgreSQL v k3s |
 | Email | Ne deluje brez SMTP | Arnes mail |
-| Vzdržljivost | Samo 1 uporabnik naenkrat | Več uporabnikov |
-| Varnost | Samo za lokalni dostop | HTTPS prek reverse proxyja |
-
-Če želiš PostgreSQL namesto SQLite, spremeni `DATABASE_URL` v `.env`:
-```env
-DATABASE_URL=postgresql://uporabnik:geslo@localhost:5432/sola
-```
-in namesti PostgreSQL (`sudo apt install postgresql`).
+| Vzdržljivost | Manj uporabnikov | Več uporabnikov, HA |
+| Varnost | Samo za lokalni dostop | HTTPS prek Cloudflare proxyja |
 
 ---
 
@@ -189,5 +170,5 @@ in namesti PostgreSQL (`sudo apt install postgresql`).
 |---|---|
 | `Port already in use` | Spremeni `APP_PORT=8002` v `.env` |
 | SQLite `database is locked` | Ustavi app, zbriši `data/sola.db`, zaženi znova |
-| Učitelji niso uvoženi | Preveri `--dry-run` najprej; poglej če so emaili pravilni |
-| Ne vidim prostorov | Preveri `PROSTORI` v `.env` — `"".split(",")` vrne `[""]` |
+| Učitelji niso uvoženi | Preveri `--dry-run` najprej |
+| Ne vidim prostorov | Preveri `PROSTORI` v `.env` |

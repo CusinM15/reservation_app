@@ -2,6 +2,11 @@
 
 Spletna aplikacija za OŠ Toneta Čufarja Jesenice za rezervacije prostorov (tablice, računalnica, ladja) in napovedovanje ocenjevanj.
 
+> 📚 **Celotna dokumentacija:** [documentation/main.md](documentation/main.md)
+>
+> Dokumentacija vsebuje: arhitekturo, HA setup, k3s namestitev, poletno pavzo,
+> navodila za učitelje, vodstvo, admin navodila in več.
+
 ---
 
 ## 📦 Tehnologije
