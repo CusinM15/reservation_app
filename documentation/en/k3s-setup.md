@@ -19,11 +19,11 @@ Instructions for setting up a k3s Kubernetes cluster on **two nodes** (both cont
 ## 📋 Architecture (current)
 
 ```
-Internet → Cloudflare → ostc-app.org
+Internet → Cloudflare → {{DOMAIN}}
                             │
                             ▼
                     k3s-2:8080 (nginx)
-                    proxy_pass 192.168.1.10:8002
+                    proxy_pass {{LB_IP}}:{{LB_PORT}}
                             │
                     MetalLB LoadBalancer
                             │
@@ -66,7 +66,7 @@ curl -sfL https://get.k3s.io | sh -s - server \
   --write-kubeconfig-mode=644 \
   --cluster-cidr=10.42.0.0/16 \
   --service-cidr=10.43.0.0/16 \
-  --node-ip=192.168.1.1
+  --node-ip={{K3S_1_IP}}
 ```
 
 ### 1.2 Get the token
@@ -79,12 +79,12 @@ sudo cat /var/lib/rancher/k3s/server/node-token
 
 ```bash
 curl -sfL https://get.k3s.io | sh -s - server \
-  --server https://192.168.1.1:6443 \
+  --server https://{{K3S_1_IP}}:6443 \
   --token <TOKEN> \
   --disable=traefik \
   --disable=servicelb \
   --write-kubeconfig-mode=644 \
-  --node-ip=192.168.1.2
+  --node-ip={{K3S_2_IP}}
 ```
 
 ### 1.4 Verify
@@ -213,7 +213,7 @@ kubectl create secret generic sola-secrets \
   --from-literal=MAIL_PORT=587 \
   --from-literal=MAIL_FROM=sola@example.com \
   --from-literal=BACKUP_EMAIL=admin@sola.si \
-  --from-literal=DATABASE_URL=postgresql://sola:***@sola-db-rw.sola:5432/sola
+  --from-literal=DATABASE_URL=postgresql://sola:***@sola-db-rw.sola:{{K8S_DB_PORT}}/sola
 ```
 
 ### 5.3 Deploy with overlays
@@ -236,9 +236,9 @@ Create `/etc/nginx/sites-available/default`:
 
 ```nginx
 server {
-    listen 8080;
+    listen {{NGINX_PORT}};
     location / {
-        proxy_pass http://192.168.1.10:8002;
+        proxy_pass http://{{LB_IP}}:{{LB_PORT}};
         proxy_set_header Host $host;
         proxy_set_header X-Real-IP $remote_addr;
         proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;

@@ -39,8 +39,8 @@ Ta dokument vsebuje navodila za varen izklop aplikacije in k3s clustra čez pole
 
 | Node | IP | Vloga | Stanje |
 |---|---|---|---|
-| k3s-1 | 192.168.1.1 | control-plane,etcd | Ready |
-| k3s-2 | 192.168.1.2 | control-plane,etcd | Ready |
+| k3s-1 | {{K3S_1_IP}} | control-plane,etcd | Ready |
+| k3s-2 | {{K3S_2_IP}} | control-plane,etcd | Ready |
 
 Trenutni podi:
 
@@ -207,11 +207,11 @@ kubectl -n sola-app rollout status deployment/sola-app
 
 ```bash
 # Health check
-curl -s http://192.168.1.10:8002/health
+curl -s http://{{LB_IP}}:{{LB_PORT}}/health
 # {"status":"ok","version":"0.1.0"}
 
 # Spletna stran
-curl -sI https://ostc-app.org
+curl -sI https://{{DOMAIN}}
 # HTTP/2 307 → redirect na /auth/login
 
 # Preveri podatke v bazi
@@ -229,7 +229,7 @@ kubectl exec -n sola sola-db-1 -- psql -U postgres -d sola -c \
 
 3. **Ne izklopiti kar z stikala** — vedno graceful shutdown: scale down app → scale down baza → stop k3s → poweroff.
 
-4. **Domena bo med pavzo nedosegljiva** — Cloudflare proxy kaže na LoadBalancer (192.168.1.10), ki bo ugasnjen.
+4. **Domena bo med pavzo nedosegljiva** — Cloudflare proxy kaže na LoadBalancer ({{LB_IP}}), ki bo ugasnjen.
 
 5. **Po vklopu preveri cronjob-e** — backup in report se zaženeta sama po shedule-u.
 

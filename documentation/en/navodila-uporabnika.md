@@ -12,7 +12,7 @@
 
 ## Login
 
-1. Open the application website: [https://ostc-app.org](https://ostc-app.org)
+1. Open the application website: [https://{{DOMAIN}}](https://{{DOMAIN}})
 2. Enter your **AAI username** (or email) and **password**
 3. After login, your name and role are displayed in the top right corner
 4. Click **Logout** to sign out

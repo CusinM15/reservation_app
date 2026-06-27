@@ -12,7 +12,7 @@
 
 ## Prijava
 
-1. Odprete spletno stran aplikacije: [https://ostc-app.org](https://ostc-app.org)
+1. Odprete spletno stran aplikacije: [https://{{DOMAIN}}](https://{{DOMAIN}})
 2. Vnesete **AAI uporabniško ime** (oz. email) in **geslo**
 3. Po prijavi se v zgornjem desnem kotu izpiše vaše ime in vloga
 4. Ob kliku na **Odjava** se izpišete
