@@ -2,6 +2,12 @@
 
 ---
 
+> ⚠️ **Note:** IP addresses, passwords, email addresses, and other sensitive data
+> in this documentation are replaced with examples. For actual values, check
+> Kubernetes Secrets or contact the administrator.
+
+---
+
 # ⚙️ Admin & DevOps Guide
 
 Comprehensive instructions for installation, maintenance, and troubleshooting.
@@ -62,13 +68,13 @@ network:
   ethernets:
     eth0:
       addresses:
-        - 193.2.171.250/24
+        - 192.168.1.10/24
       routes:
         - to: default
-          via: 193.2.171.1
+          via: 192.168.1.1
       nameservers:
         addresses:
-          - 193.2.171.10
+          - 192.168.1.10
           - 8.8.8.8
   version: 2
 ```

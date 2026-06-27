@@ -2,13 +2,19 @@
 
 ---
 
+> ⚠️ **Opomba:** IP naslovi, gesla, email naslovi in drugi občutljivi podatki v tej
+> dokumentaciji so zamenjani z zgledi. Za dejanske vrednosti preverite Kubernetes
+> Secrets ali kontaktirajte administratorja.
+
+---
+
 # HA arhitektura — ostc-app (sola-app)
 
 ## Pregled
 
 Aplikacija ostc-app teče v **k3s** Kubernetes clusterju na dveh nodih:
-- **k3s-1** (193.2.171.250) — HP ProBook 455 G5
-- **k3s-2** (193.2.171.249) — HP ProBook 450 G5
+- **k3s-1** (192.168.1.10) — HP ProBook 455 G5
+- **k3s-2** (192.168.1.11) — HP ProBook 450 G5
 
 Cilj: ob izpadu kateregakoli noda aplikacija ostane dostopna v nekaj minutah brez ročnega posredovanja.
 
@@ -37,15 +43,15 @@ Internet → ostc-app.org (Cloudflare)
           k3s-2:8080 (nginx)
                 │
                 ▼
-   Service LoadBalancer 193.2.171.200:8002 (MetalLB)
+   Service LoadBalancer 192.168.1.50:8002 (MetalLB)
                 │
         ┌───────┴───────┐
         ▼               ▼
    app pod (k3s-1)  app pod (k3s-2)
 ```
 
-- **Cloudflare** kaže na LoadBalancer IP `193.2.171.200` (MetalLB)
-- **Nginx** na k3s-2 proxy-pass-a na `193.2.171.200:8002`
+- **Cloudflare** kaže na LoadBalancer IP `192.168.1.50` (MetalLB)
+- **Nginx** na k3s-2 proxy-pass-a na `192.168.1.50:8002`
 - **Service tip LoadBalancer** (MetalLB) — fiksen IP, layer2 failover
 - Ob izpadu enega noda MetalLB prevzame promet na drugem nodu
 
@@ -137,7 +143,7 @@ kubectl get cluster -n sola sola-db    # CNPG naj ima 2 ready instance
 
 ### 6. Pomembne opombe
 
-- **Cloudflare** kaže na LoadBalancer IP `193.2.171.200` — če se ta IP spremeni, je treba posodobiti Cloudflare DNS
+- **Cloudflare** kaže na LoadBalancer IP `192.168.1.50` — če se ta IP spremeni, je treba posodobiti Cloudflare DNS
 - **Nginx** na k3s-2 proxy-pass-a na LoadBalancer IP — če se IP spremeni, posodobi `/etc/nginx/sites-available/default`
 - **Longhorn** poskrbi za PVC-je — podatki so varni tudi ob izgubi enega noda
 - **Ni custom failover skript** — vse upravlja CNPG operator

@@ -2,6 +2,12 @@
 
 ---
 
+> ⚠️ **Opomba:** IP naslovi, gesla, email naslovi in drugi občutljivi podatki v tej
+> dokumentaciji so zamenjani z zgledi. Za dejanske vrednosti preverite Kubernetes
+> Secrets ali kontaktirajte administratorja.
+
+---
+
 # Domena – zamenjava iz `.local` na `ostc.si`
 
 Trenutna domena: **`ostc-app.org`** (Cloudflare proxied)
@@ -12,11 +18,11 @@ Trenutna domena: **`ostc-app.org`** (Cloudflare proxied)
 
 | Tip | Ime | Vrednost | Proxy | Namen |
 |---|---|---|---|---|
-| A | `ostc-app.org` | `193.2.171.200` | ✅ Proxied (oranžni oblak) | Aplikacija |
+| A | `ostc-app.org` | `192.168.1.50` | ✅ Proxied (oranžni oblak) | Aplikacija |
 
 Cloudflare proxy pomeni:
-- Javni DNS resolve-a na Cloudflare IP-je (`104.21.81.50`, `172.67.156.249`)
-- Cloudflare posreduje promet na `193.2.171.200:8080` (nginx na k3s-2)
+- Javni DNS resolve-a na Cloudflare IP-je (`203.0.113.1`, `203.0.113.2`)
+- Cloudflare posreduje promet na `192.168.1.50:8080` (nginx na k3s-2)
 - Cloudflare skrbi za SSL (Auto SSL/TLS — Full)
 - `server: cloudflare` v HTTP headerjih
 
@@ -26,10 +32,10 @@ Cloudflare proxy pomeni:
 
 ```
 🌐 Uporabnik → https://ostc-app.org
-  → Cloudflare DNS → 104.21.81.50 (Cloudflare edge)
-    → Cloudflare proxy → 193.2.171.200:8080
+  → Cloudflare DNS → 203.0.113.1 (Cloudflare edge)
+    → Cloudflare proxy → 192.168.1.50:8080
       → nginx (k3s-2, port 8080)
-        → proxy_pass http://193.2.171.200:8002
+        → proxy_pass http://192.168.1.50:8002
           → Service LoadBalancer (MetalLB)
             → sola-app pod (k3s-1 ali k3s-2)
 ```
@@ -40,7 +46,7 @@ Cloudflare proxy pomeni:
 
 | Obdobje | Domena | Opis |
 |---|---|---|
-| Maj 2026 | `ostonecufar.local` | Začetna lokalna domena (mDNS) |
+| Maj 2026 | `sola-app.local` | Začetna lokalna domena (mDNS) |
 | Maj 2026 | `ostc.si` | Planirana zamenjava (ni bila implementirana) |
 | Junij 2026 | `sola-app.ostc.si` | Začasni testni URL |
 | **Junij 2026** | **`ostc-app.org`** | **Trenutna produkcijska domena** |
@@ -64,7 +70,7 @@ BASE_URL: "https://ostc-app.org"
 ### 1. Cloudflare
 
 1. Odpri Cloudflare dashboard
-2. Dodaj A zapis: `@` → `193.2.171.200` (Proxied)
+2. Dodaj A zapis: `@` → `192.168.1.50` (Proxied)
 3. Počakaj, da se DNS propagira
 
 ### 2. Posodobi BASE_URL
@@ -87,7 +93,7 @@ sudo systemctl restart nginx
 
 ## 📌 Opombe
 
-- **LoadBalancer IP** `193.2.171.200` je fiksen — ne spreminja se ob restartu
+- **LoadBalancer IP** `192.168.1.50` je fiksen — ne spreminja se ob restartu
 - **Nginx** na k3s-2 posreduje na MetalLB IP, ne direktno na pod-e
 - **Cloudflare SSL** je "Full" — promet med Cloudflare in nginxom je HTTP (ne šifriran), vendar samo znotraj šolskega omrežja
 - Če bi želeli **end-to-end HTTPS**, bi potrebovali certbot/letsencrypt na k3s-2

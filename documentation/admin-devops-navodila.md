@@ -2,6 +2,12 @@
 
 ---
 
+> ⚠️ **Opomba:** IP naslovi, gesla, email naslovi in drugi občutljivi podatki v tej
+> dokumentaciji so zamenjani z zgledi. Za dejanske vrednosti preverite Kubernetes
+> Secrets ali kontaktirajte administratorja.
+
+---
+
 # ⚙️ Admin & DevOps navodila
 
 Celovita navodila za namestitev, vzdrževanje in odpravljanje težav.
@@ -62,13 +68,13 @@ network:
   ethernets:
     eth0:
       addresses:
-        - 193.2.171.250/24
+        - 192.168.1.10/24
       routes:
         - to: default
-          via: 193.2.171.1
+          via: 192.168.1.1
       nameservers:
         addresses:
-          - 193.2.171.10
+          - 192.168.1.10
           - 8.8.8.8
   version: 2
 ```

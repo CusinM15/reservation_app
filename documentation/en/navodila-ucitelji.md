@@ -2,11 +2,17 @@
 
 ---
 
+> ⚠️ **Note:** IP addresses, passwords, email addresses, and other sensitive data
+> in this documentation are replaced with examples. For actual values, check
+> Kubernetes Secrets or contact the administrator.
+
+---
+
 # 👩‍🏫 Teacher Instructions
 
 ## How to Access the Application?
 
-Visit the [application](https://ostc-app.org). To get a password, press the **"Forgot password?"** button and enter your school email address. You will shortly receive an email from `os-toneta.cufarja-jesenice@guest.arnes.si`.
+Visit the [application](https://ostc-app.org). To get a password, press the **"Forgot password?"** button and enter your school email address. You will shortly receive an email from `sola@example.com`.
 
 If you do not receive the message, report it to the administrator to check whether your email address is correctly entered in the database.
 

@@ -2,6 +2,12 @@
 
 ---
 
+> ⚠️ **Opomba:** IP naslovi, gesla, email naslovi in drugi občutljivi podatki v tej
+> dokumentaciji so zamenjani z zgledi. Za dejanske vrednosti preverite Kubernetes
+> Secrets ali kontaktirajte administratorja.
+
+---
+
 # 🌞 Poletna pavza — k3s cluster
 
 Ta dokument vsebuje navodila za varen izklop aplikacije in k3s clustra čez poletje (julij/avgust), ko aplikacija ni potrebna. Cilj je zmanjšati obrabo starih računalnikov in ohraniti podatke.
@@ -33,8 +39,8 @@ Ta dokument vsebuje navodila za varen izklop aplikacije in k3s clustra čez pole
 
 | Node | IP | Vloga | Stanje |
 |---|---|---|---|
-| k3s-1 | 193.2.171.250 | control-plane,etcd | Ready |
-| k3s-2 | 193.2.171.249 | control-plane,etcd | Ready |
+| k3s-1 | 192.168.1.10 | control-plane,etcd | Ready |
+| k3s-2 | 192.168.1.11 | control-plane,etcd | Ready |
 
 Trenutni podi:
 
@@ -201,7 +207,7 @@ kubectl -n sola-app rollout status deployment/sola-app
 
 ```bash
 # Health check
-curl -s http://193.2.171.200:8002/health
+curl -s http://192.168.1.50:8002/health
 # {"status":"ok","version":"0.1.0"}
 
 # Spletna stran

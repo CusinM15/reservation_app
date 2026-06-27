@@ -2,6 +2,12 @@
 
 ---
 
+> ⚠️ **Opomba:** IP naslovi, gesla, email naslovi in drugi občutljivi podatki v tej
+> dokumentaciji so zamenjani z zgledi. Za dejanske vrednosti preverite Kubernetes
+> Secrets ali kontaktirajte administratorja.
+
+---
+
 # 👑 Navodila za vodstvo in administratorja
 
 > Ta dokument pokriva upravljanje aplikacije prek brskalnika — namenjeno vodstvu (dodatne funkcije) in adminu.
@@ -82,7 +88,7 @@ Na začetku šolskega leta priporočam:
 Skripta prebere seznam zaposlenih s šolske spletne strani.
 
 ```bash
-cd /home/admin_os/ostc-app_deli
+cd /home/admin/ostc-app_deli
 python3 scripts/import_teachers.py --base-url https://ostc-app.org
 
 # Dry-run (brez sprememb):

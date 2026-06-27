@@ -2,6 +2,12 @@
 
 ---
 
+> ⚠️ **Opomba:** IP naslovi, gesla, email naslovi in drugi občutljivi podatki v tej
+> dokumentaciji so zamenjani z zgledi. Za dejanske vrednosti preverite Kubernetes
+> Secrets ali kontaktirajte administratorja.
+
+---
+
 # POSTAVI LOKALEN APP — Šolski App
 
 Navodila za zagon aplikacije **na enem računalniku** (brez Kubernetes, brez PostgreSQL).
@@ -26,7 +32,7 @@ Primerno za druge šole, testiranje ali demonstracijo.
 
 ```bash
 # 1. Kloniraj repo
-git clone https://github.com/mato12345/sola-app.git
+git clone https://github.com/sola-app.git
 cd sola-app
 
 # 2. Uredi .env za lokalno uporabo (SQLite, brez emaila)
@@ -72,7 +78,7 @@ docker stop sola-app && docker rm sola-app
 
 ```bash
 # 1. Kloniraj repo
-git clone https://github.com/mato12345/sola-app.git
+git clone https://github.com/sola-app.git
 cd sola-app
 
 # 2. Ustvari virtualno okolje

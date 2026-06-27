@@ -2,6 +2,12 @@
 
 ---
 
+> ⚠️ **Opomba:** IP naslovi, gesla, email naslovi in drugi občutljivi podatki v tej
+> dokumentaciji so zamenjani z zgledi. Za dejanske vrednosti preverite Kubernetes
+> Secrets ali kontaktirajte administratorja.
+
+---
+
 # 🚀 **ostc-app — Rezervacijski sistem**
 ## **OŠ Toneta Čufarja — Dokumentacija**
 
@@ -54,7 +60,7 @@ Ta datoteka je **glavni vstopni dokument**. Spodaj so povezave na specializirane
 │  ┌──────────────────────────┐    ┌──────────────────────────┐            │
 │  │    k3s-1                  │    │    k3s-2                  │            │
 │  │    HP ProBook 455 G5     │    │    HP ProBook 450 G5     │            │
-│  │    IP: 193.2.171.250     │    │    IP: 193.2.171.249     │            │
+│  │    IP: 192.168.1.10      │    │    IP: 192.168.1.11      │            │
 │  │    control-plane,etcd    │    │    control-plane,etcd    │            │
 │  │                          │    │                          │            │
 │  │  ┌───────────────────┐   │    │  ┌───────────────────┐   │            │
@@ -73,33 +79,31 @@ Ta datoteka je **glavni vstopni dokument**. Spodaj so povezave na specializirane
 │  │  └───────────────────┘   │    │  └───────────────────┘   │            │
 │  │                          │    │                          │            │
 │  │  ┌───────────────────┐   │    │  ┌───────────────────┐   │            │
-│  │  │ MetalLB Speaker   │   │    │  │ MetalLB Speaker   │   │            │
-│  │  └───────────────────┘   │    │  └───────────────────┘   │            │
-│  │                          │    │                          │            │
-│  │  ┌───────────────────┐   │    │  ┌───────────────────┐   │            │
-│  │  │ nginx             │   │    │  │ nginx             │   │            │
-│  │  │ (80/443, SSL)     │   │    │  │ (port 8080)       │   │            │
+│  │  │ nginx (old conf)  │   │    │  │ nginx (ACTIVE)    │   │            │
+│  │  │ (80/443, stale)   │   │    │  │ (port 8080)       │   │            │
 │  │  └───────────────────┘   │    │  └───────────┬───────┘   │            │
 │  └──────────────────────────┘    └───────────────┼───────────┘            │
-│                                        proxy_pass│193.2.171.200:8002      │
-└──────────────────────────────────────────────────┼────────────────────────┘
-                           │                       │
-                    ┌──────▼───────────────────────▼──────┐
-                    │  Service LoadBalancer (MetalLB)     │
-                    │  IP: 193.2.171.200:8002             │
-                    │  → sola-app Pod 1 ali Pod 2          │
-                    └─────────────────────────────────────┘
-                              │
+│                                                  │                          │
+│                                        proxy_pass│192.168.1.50:8002        │
+│                                                  │                          │
+│                    ┌─────────────────────────────┘                          │
+│                    │                                                       │
+│  ┌─────────────────▼──────────────────────────────────────────┐           │
+│  │        Service LoadBalancer (MetalLB, 192.168.1.50:8002)    │           │
+│  │        → sola-app Pod 1 ali Pod 2                            │           │
+│  └─────────────────────────────────────────────────────────────┘           │
+└──────────────────────────────────────────────────────────────────────────┘
                               │
                     ┌─────────▼─────────┐
                     │  Cloudflare DNS    │
                     │  ostc-app.org      │
-                    │  → 193.2.171.250   │  📡 Cloudflare proxy
-                    │     (k3s-1:80/443) │
+                    │  → 192.168.1.11:8080│  📡 Cloudflare proxy
+                    │    (k3s-2 nginx)   │
                     └───────────────────┘
                               │
                               │  Internet
                               ▼
+                    🌐 Uporabniki (učitelji, vodstvo)```
                     🌐 Uporabniki (učitelji, vodstvo)
 ```
 
@@ -110,27 +114,27 @@ Ta datoteka je **glavni vstopni dokument**. Spodaj so povezave na specializirane
 ```
 🌐 Uporabnik
   → Cloudflare (SSL, proxy, ostc-app.org)
-    → Cloudflare IP → 193.2.171.250 (k3s-1, port 80/443)
-      → nginx na k3s-1 (SSL termination)
-        → proxy_pass http://193.2.171.200:8002
+    → Cloudflare proxy → k3s-2:8080
+      → nginx na k3s-2
+        → proxy_pass http://192.168.1.50:8002
           → Service LoadBalancer (MetalLB)
             → sola-app Pod (k3s-1 ali k3s-2)
 
 Alternativna pot (interno omrežje):
-  → http://193.2.171.200:8002 (direkten dostop do LB)
+  → http://192.168.1.50:8002 (direkten dostop do LB)
 ```
 
-> **Opomba:** Cloudflare proxy je nastavljen na **k3s-1 (193.2.171.250)** — nginx na k3s-1 skrbi za SSL termination. nginx na k3s-2 (port 8080) služi kot backup in za interni promet.
+> **Opomba:** Cloudflare proxy kaže na **k3s-2 (port 8080)** — nginx na k3s-2 posreduje promet na LoadBalancer IP. Na k3s-1 je nginx nameščen z ostanki stare konfiguracije (porta 80/443), ki ni aktivno v uporabi.
 
 ### **Pregled komponent**
 
 | Komponenta | Lokacija | Namen |
 |---|---|---|
-| **k3s-1** | HP ProBook 455 G5 (193.2.171.250) | Control-plane, app pod, PG primary, nginx |
-| **k3s-2** | HP ProBook 450 G5 (193.2.171.249) | Control-plane, app pod, PG replica, nginx |
+| **k3s-1** | HP ProBook 455 G5 (192.168.1.10) | Control-plane, app pod, PG primary, nginx |
+| **k3s-2** | HP ProBook 450 G5 (192.168.1.11) | Control-plane, app pod, PG replica, nginx |
 | **Sola App (FastAPI)** | 2 poda (oba noda) | Rezervacije, ocenjevanje, prijava |
 | **Longhorn** | Oba noda | Distribuirano shranjevanje (PVC-ji) |
-| **MetalLB** | Oba noda | LoadBalancer IP (193.2.171.200) |
+| **MetalLB** | Oba noda | LoadBalancer IP (192.168.1.50) |
 | **nginx** | k3s-1 (80/443), k3s-2 (8080) | Reverse proxy (k3s-1: SSL termination, k3s-2: port 8080 → LoadBalancer) |
 | **Cloudflare** | Zunanji | DNS, SSL, proxy |
 
@@ -149,10 +153,10 @@ Alternativna pot (interno omrežje):
 
 ```bash
 # Lokalno omrežje (Arnes)
-k3s-1: 193.2.171.250/24
-k3s-2: 193.2.171.249/24
-Gateway: 193.2.171.1
-DNS: 193.2.171.10
+k3s-1: 192.168.1.10/24
+k3s-2: 192.168.1.11/24
+Gateway: 192.168.1.1
+DNS: 192.168.1.10
 
 # Kubernetes Pod CIDR
 10.42.0.0/16
@@ -161,15 +165,15 @@ DNS: 193.2.171.10
 10.43.0.0/16
 
 # LoadBalancer IP pool (MetalLB)
-193.2.171.200 - 193.2.171.210
+192.168.1.50 - 192.168.1.55
 ```
 
 ### **Dostop**
 
 ```bash
 # SSH v oba noda
-ssh admin_os@193.2.171.250    # k3s-1
-ssh admin_os@193.2.171.249    # k3s-2
+ssh admin@192.168.1.10    # k3s-1
+ssh admin@192.168.1.11    # k3s-2
 
 # Kubernetes (k3s) — kubeconfig je na obeh nodih
 kubectl get nodes -o wide
@@ -177,7 +181,7 @@ kubectl get pods -A -o wide
 
 # Aplikacija v brskalniku
 https://ostc-app.org          # prek Cloudflare + nginx
-http://193.2.171.200:8002     # direkt (samo interno omrežje)
+http://192.168.1.50:8002     # direkt (samo interno omrežje)
 ```
 
 ---
@@ -190,8 +194,8 @@ http://193.2.171.200:8002     # direkt (samo interno omrežje)
 kubectl get nodes -o wide
 
 # NAME    STATUS   ROLES                       AGE   VERSION        INTERNAL-IP      EXTERNAL-IP
-# k3s-1   Ready    control-plane,etcd,master   3d    v1.32.3+k3s1   193.2.171.250    <none>
-# k3s-2   Ready    control-plane,etcd,master   3d    v1.32.3+k3s1   193.2.171.249    <none>
+# k3s-1   Ready    control-plane,etcd,master   3d    v1.32.3+k3s1   192.168.1.10    <none>
+# k3s-2   Ready    control-plane,etcd,master   3d    v1.32.3+k3s1   192.168.1.11    <none>
 ```
 
 ### **Namestitev k3s**
@@ -201,14 +205,14 @@ kubectl get nodes -o wide
 curl -sfL https://get.k3s.io | sh -s - server \
   --cluster-init \
   --disable=traefik \
-  --node-ip=193.2.171.250 \
+  --node-ip=192.168.1.10 \
   --flannel-iface=eth0
 
 # Na k3s-2 (drugi node)
 curl -sfL https://get.k3s.io | sh -s - server \
-  --server https://193.2.171.250:6443 \
+  --server https://192.168.1.10:6443 \
   --disable=traefik \
-  --node-ip=193.2.171.249 \
+  --node-ip=192.168.1.11 \
   --flannel-iface=eth0 \
   --token <NODE_TOKEN>
 ```
@@ -243,7 +247,7 @@ kubectl get pods -n sola-app -o wide
 
 ### **Docker Image**
 
-- **Image:** `mato12345/sola-app:latest`
+- **Image:** `sola-app:latest`
 - **Dockerfile:** `reservation_app/k8s/Dockerfile`
 - **Deployment YAML:** `reservation_app/k8s/sola-app.yaml`
 
@@ -323,7 +327,7 @@ server {
     ssl_certificate_key /etc/nginx/ssl/ostc-app.org.key;
 
     location / {
-        proxy_pass http://193.2.171.200:8002;
+        proxy_pass http://192.168.1.50:8002;
         proxy_set_header Host $host;
         proxy_set_header X-Real-IP $remote_addr;
     }
@@ -335,7 +339,7 @@ server {
     server_name ostc-app.org www.ostc-app.org;
 
     location / {
-        proxy_pass http://193.2.171.200:8002;
+        proxy_pass http://192.168.1.50:8002;
         proxy_set_header Host $host;
         proxy_set_header X-Real-IP $remote_addr;
     }
@@ -350,8 +354,8 @@ server {
 
 | Tip | Ime | Vrednost | Proxy |
 |---|---|---|---|
-| A | `@` (ostc-app.org) | 193.2.171.250 | ✅ Cloudflare proxy |
-| A | `www` | 193.2.171.250 | ✅ Cloudflare proxy |
+| A | `@` (ostc-app.org) | 192.168.1.10 | ✅ Cloudflare proxy |
+| A | `www` | 192.168.1.10 | ✅ Cloudflare proxy |
 
 ### **SSL/TLS**
 
@@ -471,7 +475,7 @@ sudo nginx -t
 sudo journalctl -u nginx --no-pager -n 30
 
 # === Git (na k3s-2) ===
-cd /home/admin_os/reservation_app
+cd /home/admin/reservation_app
 git pull
 ```
 

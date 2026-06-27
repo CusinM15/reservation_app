@@ -2,6 +2,12 @@
 
 ---
 
+> ⚠️ **Note:** IP addresses, passwords, email addresses, and other sensitive data
+> in this documentation are replaced with examples. For actual values, check
+> Kubernetes Secrets or contact the administrator.
+
+---
+
 # 🌞 Summer Shutdown — k3s Cluster
 
 This document contains instructions for safely shutting down the application and the k3s cluster over the summer (July/August) when the application is not needed. The goal is to reduce wear on old computers and preserve data.
@@ -33,8 +39,8 @@ This document contains instructions for safely shutting down the application and
 
 | Node | IP | Role | Status |
 |---|---|---|---|
-| k3s-1 | 193.2.171.250 | control-plane,etcd | Ready |
-| k3s-2 | 193.2.171.249 | control-plane,etcd | Ready |
+| k3s-1 | 192.168.1.10 | control-plane,etcd | Ready |
+| k3s-2 | 192.168.1.11 | control-plane,etcd | Ready |
 
 Current pods:
 
@@ -201,7 +207,7 @@ kubectl -n sola-app rollout status deployment/sola-app
 
 ```bash
 # Health check
-curl -s http://193.2.171.200:8002/health
+curl -s http://192.168.1.50:8002/health
 # {"status":"ok","version":"0.1.0"}
 
 # Website

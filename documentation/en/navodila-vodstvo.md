@@ -2,6 +2,12 @@
 
 ---
 
+> ⚠️ **Note:** IP addresses, passwords, email addresses, and other sensitive data
+> in this documentation are replaced with examples. For actual values, check
+> Kubernetes Secrets or contact the administrator.
+
+---
+
 # 👑 Instructions for Management and Administrators
 
 > This document covers managing the application via the browser — intended for management (additional functions) and admin.
@@ -82,7 +88,7 @@ At the beginning of the school year, I recommend:
 The script reads the employee list from the school website.
 
 ```bash
-cd /home/admin_os/ostc-app_deli
+cd /home/admin/ostc-app_deli
 python3 scripts/import_teachers.py --base-url https://ostc-app.org
 
 # Dry-run (no changes):

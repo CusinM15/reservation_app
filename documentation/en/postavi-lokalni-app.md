@@ -2,6 +2,12 @@
 
 ---
 
+> ⚠️ **Note:** IP addresses, passwords, email addresses, and other sensitive data
+> in this documentation are replaced with examples. For actual values, check
+> Kubernetes Secrets or contact the administrator.
+
+---
+
 # 🖥️ Set Up Local App
 
 Instructions for running the application **on a single computer** (without Kubernetes, without PostgreSQL).
@@ -26,7 +32,7 @@ Suitable for other schools, testing, or demonstration.
 
 ```bash
 # 1. Clone the repo
-git clone https://github.com/mato12345/sola-app.git
+git clone https://github.com/sola-app.git
 cd sola-app
 
 # 2. Edit .env for local use (SQLite, no email)
@@ -72,7 +78,7 @@ docker stop sola-app && docker rm sola-app
 
 ```bash
 # 1. Clone the repo
-git clone https://github.com/mato12345/sola-app.git
+git clone https://github.com/sola-app.git
 cd sola-app
 
 # 2. Create virtual environment

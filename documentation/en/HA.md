@@ -2,13 +2,19 @@
 
 ---
 
+> ⚠️ **Note:** IP addresses, passwords, email addresses, and other sensitive data
+> in this documentation are replaced with examples. For actual values, check
+> Kubernetes Secrets or contact the administrator.
+
+---
+
 # HA Architecture — ostc-app (sola-app)
 
 ## Overview
 
 The ostc-app runs in a **k3s** Kubernetes cluster on two nodes:
-- **k3s-1** (193.2.171.250) — HP ProBook 455 G5
-- **k3s-2** (193.2.171.249) — HP ProBook 450 G5
+- **k3s-1** (192.168.1.10) — HP ProBook 455 G5
+- **k3s-2** (192.168.1.11) — HP ProBook 450 G5
 
 Goal: if either node fails, the application remains accessible within a few minutes without manual intervention.
 
@@ -37,15 +43,15 @@ Internet → ostc-app.org (Cloudflare)
           k3s-2:8080 (nginx)
                 │
                 ▼
-   Service LoadBalancer 193.2.171.200:8002 (MetalLB)
+   Service LoadBalancer 192.168.1.50:8002 (MetalLB)
                 │
         ┌───────┴───────┐
         ▼               ▼
    app pod (k3s-1)  app pod (k3s-2)
 ```
 
-- **Cloudflare** points to LoadBalancer IP `193.2.171.200` (MetalLB)
-- **Nginx** on k3s-2 proxy-passes to `193.2.171.200:8002`
+- **Cloudflare** points to LoadBalancer IP `192.168.1.50` (MetalLB)
+- **Nginx** on k3s-2 proxy-passes to `192.168.1.50:8002`
 - **Service type LoadBalancer** (MetalLB) — fixed IP, layer2 failover
 - If one node fails, MetalLB takes over traffic on the other node
 
@@ -137,7 +143,7 @@ kubectl get cluster -n sola sola-db    # CNPG should have 2 ready instances
 
 ### 6. Important Notes
 
-- **Cloudflare** points to LoadBalancer IP `193.2.171.200` — if this IP changes, Cloudflare DNS must be updated
+- **Cloudflare** points to LoadBalancer IP `192.168.1.50` — if this IP changes, Cloudflare DNS must be updated
 - **Nginx** on k3s-2 proxy-passes to the LoadBalancer IP — if the IP changes, update `/etc/nginx/sites-available/default`
 - **Longhorn** takes care of PVCs — data is safe even if one node is lost
 - **No custom failover scripts** — everything is managed by the CNPG operator

@@ -2,6 +2,12 @@
 
 ---
 
+> ⚠️ **Opomba:** IP naslovi, gesla, email naslovi in drugi občutljivi podatki v tej
+> dokumentaciji so zamenjani z zgledi. Za dejanske vrednosti preverite Kubernetes
+> Secrets ali kontaktirajte administratorja.
+
+---
+
 # ☸️ K3s Setup — Šolski App
 
 Navodila za postavitev k3s Kubernetes clusterja na **dveh nodih** (oba control-plane), z MetalLB, Longhorn, CloudNativePG (PostgreSQL) in FastAPI aplikacijo.
@@ -17,7 +23,7 @@ Internet → Cloudflare → ostc-app.org
                             │
                             ▼
                     k3s-2:8080 (nginx)
-                    proxy_pass 193.2.171.200:8002
+                    proxy_pass 192.168.1.50:8002
                             │
                     MetalLB LoadBalancer
                             │
@@ -60,7 +66,7 @@ curl -sfL https://get.k3s.io | sh -s - server \
   --write-kubeconfig-mode=644 \
   --cluster-cidr=10.42.0.0/16 \
   --service-cidr=10.43.0.0/16 \
-  --node-ip=193.2.171.250
+  --node-ip=192.168.1.10
 ```
 
 ### 1.2 Pridobi token
@@ -73,12 +79,12 @@ sudo cat /var/lib/rancher/k3s/server/node-token
 
 ```bash
 curl -sfL https://get.k3s.io | sh -s - server \
-  --server https://193.2.171.250:6443 \
+  --server https://192.168.1.10:6443 \
   --token <TOKEN> \
   --disable=traefik \
   --disable=servicelb \
   --write-kubeconfig-mode=644 \
-  --node-ip=193.2.171.249
+  --node-ip=192.168.1.11
 ```
 
 ### 1.4 Preveri
@@ -189,9 +195,9 @@ spec:
 ### 5.1 Build slike
 
 ```bash
-cd /home/admin_os/reservation_app
-docker build -t mato12345/sola-app:latest .
-docker push mato12345/sola-app:latest
+cd /home/admin/reservation_app
+docker build -t sola-app:latest .
+docker push sola-app:latest
 ```
 
 ### 5.2 Ustvari namespace in Secret
@@ -205,7 +211,7 @@ kubectl create secret generic sola-secrets \
   --from-literal=MAIL_PASSWORD=*** \
   --from-literal=MAIL_SERVER=mail.arnes.si \
   --from-literal=MAIL_PORT=587 \
-  --from-literal=MAIL_FROM=os-toneta.cufarja-jesenice@guest.arnes.si \
+  --from-literal=MAIL_FROM=sola@example.com \
   --from-literal=BACKUP_EMAIL=admin@sola.si \
   --from-literal=DATABASE_URL=postgresql://sola:***@sola-db-rw.sola:5432/sola
 ```
@@ -232,7 +238,7 @@ Ustvari `/etc/nginx/sites-available/default`:
 server {
     listen 8080;
     location / {
-        proxy_pass http://193.2.171.200:8002;
+        proxy_pass http://192.168.1.50:8002;
         proxy_set_header Host $host;
         proxy_set_header X-Real-IP $remote_addr;
         proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
@@ -251,10 +257,10 @@ sudo nginx -t && sudo systemctl restart nginx
 ### Posodobitev aplikacije
 
 ```bash
-cd /home/admin_os/reservation_app
+cd /home/admin/reservation_app
 git pull
-docker build -t mato12345/sola-app:latest .
-docker push mato12345/sola-app:latest
+docker build -t sola-app:latest .
+docker push sola-app:latest
 kubectl rollout restart -n sola-app deployment/sola-app
 kubectl rollout status -n sola-app deployment/sola-app
 ```

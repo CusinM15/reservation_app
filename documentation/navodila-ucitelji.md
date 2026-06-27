@@ -2,11 +2,17 @@
 
 ---
 
+> ⚠️ **Opomba:** IP naslovi, gesla, email naslovi in drugi občutljivi podatki v tej
+> dokumentaciji so zamenjani z zgledi. Za dejanske vrednosti preverite Kubernetes
+> Secrets ali kontaktirajte administratorja.
+
+---
+
 # 👩‍🏫 Navodila za učitelje
 
 ## Kako vstopiti v aplikacijo?
 
-Obiščite [aplikacijo](https://ostc-app.org). Da dobite geslo, pritisnite gumb **"Pozabljeno geslo?"** in vnesite svoj šolski e-poštni naslov. V kratkem boste prejeli e-pošto od `os-toneta.cufarja-jesenice@guest.arnes.si`.
+Obiščite [aplikacijo](https://ostc-app.org). Da dobite geslo, pritisnite gumb **"Pozabljeno geslo?"** in vnesite svoj šolski e-poštni naslov. V kratkem boste prejeli e-pošto od `sola@example.com`.
 
 Če sporočila ne prejmete, javite administratorju, naj preveri, ali je vaš e-poštni naslov pravilno vnesen v bazo.
 

@@ -2,6 +2,12 @@
 
 ---
 
+> ⚠️ **Note:** IP addresses, passwords, email addresses, and other sensitive data
+> in this documentation are replaced with examples. For actual values, check
+> Kubernetes Secrets or contact the administrator.
+
+---
+
 # Domain – change from `.local` to `ostc.si`
 
 Current domain: **`ostc-app.org`** (Cloudflare proxied)
@@ -12,11 +18,11 @@ Current domain: **`ostc-app.org`** (Cloudflare proxied)
 
 | Type | Name | Value | Proxy | Purpose |
 |---|---|---|---|---|
-| A | `ostc-app.org` | `193.2.171.200` | ✅ Proxied (orange cloud) | Application |
+| A | `ostc-app.org` | `192.168.1.50` | ✅ Proxied (orange cloud) | Application |
 
 Cloudflare proxy means:
-- Public DNS resolves to Cloudflare IPs (`104.21.81.50`, `172.67.156.249`)
-- Cloudflare forwards traffic to `193.2.171.200:8080` (nginx on k3s-2)
+- Public DNS resolves to Cloudflare IPs (`203.0.113.1`, `203.0.113.2`)
+- Cloudflare forwards traffic to `192.168.1.50:8080` (nginx on k3s-2)
 - Cloudflare handles SSL (Auto SSL/TLS — Full)
 - `server: cloudflare` in HTTP headers
 
@@ -26,10 +32,10 @@ Cloudflare proxy means:
 
 ```
 🌐 User → https://ostc-app.org
-  → Cloudflare DNS → 104.21.81.50 (Cloudflare edge)
-    → Cloudflare proxy → 193.2.171.200:8080
+  → Cloudflare DNS → 203.0.113.1 (Cloudflare edge)
+    → Cloudflare proxy → 192.168.1.50:8080
       → nginx (k3s-2, port 8080)
-        → proxy_pass http://193.2.171.200:8002
+        → proxy_pass http://192.168.1.50:8002
           → Service LoadBalancer (MetalLB)
             → sola-app pod (k3s-1 or k3s-2)
 ```
@@ -40,7 +46,7 @@ Cloudflare proxy means:
 
 | Period | Domain | Description |
 |---|---|---|
-| May 2026 | `ostonecufar.local` | Initial local domain (mDNS) |
+| May 2026 | `sola-app.local` | Initial local domain (mDNS) |
 | May 2026 | `ostc.si` | Planned change (not implemented) |
 | June 2026 | `sola-app.ostc.si` | Temporary test URL |
 | **June 2026** | **`ostc-app.org`** | **Current production domain** |
@@ -64,7 +70,7 @@ If the domain needs to be changed in the future:
 ### 1. Cloudflare
 
 1. Open Cloudflare dashboard
-2. Add A record: `@` → `193.2.171.200` (Proxied)
+2. Add A record: `@` → `192.168.1.50` (Proxied)
 3. Wait for DNS propagation
 
 ### 2. Update BASE_URL
@@ -87,7 +93,7 @@ sudo systemctl restart nginx
 
 ## 📌 Notes
 
-- **LoadBalancer IP** `193.2.171.200` is fixed — it does not change on restart
+- **LoadBalancer IP** `192.168.1.50` is fixed — it does not change on restart
 - **Nginx** on k3s-2 forwards to the MetalLB IP, not directly to pods
 - **Cloudflare SSL** is "Full" — traffic between Cloudflare and nginx is HTTP (not encrypted), but only within the school network
 - If you wanted **end-to-end HTTPS**, you would need certbot/letsencrypt on k3s-2
