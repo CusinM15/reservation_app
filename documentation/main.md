@@ -147,7 +147,7 @@ Ta datoteka je **glavni vstopni dokument**. Spodaj so povezave na specializirane
 ### **Specifikacije**
 
 | Node | Model | CPU | RAM | Disk | Vloga |
-|---|---|---|---|---|---|---|
+|---|---|---|---|---|---|
 | **k3s-1** | HP ProBook 455 G5 | AMD Ryzen 5 2500U | 16GB | 256GB SSD | Control-plane, etcd, app, PG primary |
 | **k3s-2** | HP ProBook 450 G5 | Intel Core i5-8250U | 8GB | 256GB SSD | Control-plane, etcd, app, PG replica |
 
