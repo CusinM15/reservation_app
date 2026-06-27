@@ -84,12 +84,12 @@ Ta datoteka je **glavni vstopni dokument**. Spodaj so povezave na specializirane
 │  │  └───────────────────┘   │    │  └───────────┬───────┘   │            │
 │  └──────────────────────────┘    └───────────────┼───────────┘            │
 │                                                  │                          │
-│                                        proxy_pass│192.168.1.50:8002        │
+│                                        proxy_pass│192.168.1.10:8002        │
 │                                                  │                          │
 │                    ┌─────────────────────────────┘                          │
 │                    │                                                       │
 │  ┌─────────────────▼──────────────────────────────────────────┐           │
-│  │        Service LoadBalancer (MetalLB, 192.168.1.50:8002)    │           │
+│  │        Service LoadBalancer (MetalLB, 192.168.1.10:8002)    │           │
 │  │        → sola-app Pod 1 ali Pod 2                            │           │
 │  └─────────────────────────────────────────────────────────────┘           │
 └──────────────────────────────────────────────────────────────────────────┘
@@ -114,14 +114,14 @@ Ta datoteka je **glavni vstopni dokument**. Spodaj so povezave na specializirane
   → Cloudflare (SSL, proxy, ostc-app.org)
     → Cloudflare proxy → k3s-2:8080
       → nginx na k3s-2
-        → proxy_pass http://192.168.1.50:8002
+        → proxy_pass http://192.168.1.10:8002
           → Service LoadBalancer (MetalLB)
             → sola-app Pod (k3s-1 ali k3s-2)
 
 Alternativna pot (interno omrežje):
-  → http://k3s-1:8080 → nginx na k3s-1 → proxy_pass 192.168.1.50:8002
-  → http://k3s-2:8080 → nginx na k3s-2 → proxy_pass 192.168.1.50:8002
-  → http://192.168.1.50:8002 → direkt na LoadBalancer
+  → http://k3s-1:8080 → nginx na k3s-1 → proxy_pass 192.168.1.10:8002
+  → http://k3s-2:8080 → nginx na k3s-2 → proxy_pass 192.168.1.10:8002
+  → http://192.168.1.10:8002 → direkt na LoadBalancer
 ```
 
 > **Cloudflare proxy** kaže na **k3s-2 (port 8080)**. Oba noda imata identičen nginx — port 8080 proxy-passa na LoadBalancer. Če k3s-2 ni dosegljiv, je treba v Cloudflare dashboardu spremeniti origin IP na k3s-1.
@@ -134,8 +134,8 @@ Alternativna pot (interno omrežje):
 | **k3s-2** | HP ProBook 450 G5 (192.168.1.2) | Control-plane, app pod, PG replica, nginx |
 | **Sola App (FastAPI)** | 2 poda (oba noda) | Rezervacije, ocenjevanje, prijava |
 | **Longhorn** | Oba noda | Distribuirano shranjevanje (PVC-ji) |
-| **MetalLB** | Oba noda | LoadBalancer IP (192.168.1.50) |
-| **nginx** | Oba noda (port 8080) | Reverse proxy → LoadBalancer 192.168.1.50:8002. Cloudflare origin: k3s-2:8080 |
+| **MetalLB** | Oba noda | LoadBalancer IP (192.168.1.10) |
+| **nginx** | Oba noda (port 8080) | Reverse proxy → LoadBalancer 192.168.1.10:8002. Cloudflare origin: k3s-2:8080 |
 | **Cloudflare** | Zunanji | DNS, SSL, proxy |
 
 ---
@@ -318,7 +318,7 @@ server {
     listen 8080;
 
     location / {
-        proxy_pass http://192.168.1.50:8002;
+        proxy_pass http://192.168.1.10:8002;
         proxy_set_header Host $host;
         proxy_set_header X-Real-IP $remote_addr;
         proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;

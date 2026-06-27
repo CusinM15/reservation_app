@@ -34,14 +34,14 @@ Cloudflare proxy pomeni:
 🌐 Uporabnik → https://ostc-app.org
   → Cloudflare DNS → Cloudflare edge
     → Cloudflare proxy → 192.168.1.2:8080 (k3s-2 nginx)
-      → nginx proxy_pass http://192.168.1.50:8002
+      → nginx proxy_pass http://192.168.1.10:8002
         → Service LoadBalancer (MetalLB)
           → sola-app pod (k3s-1 ali k3s-2)
 
 Alternativna pot (notranje omrežje):
-http://192.168.1.1:8080 → nginx na k3s-1 → proxy_pass 192.168.1.50:8002
-http://192.168.1.2:8080 → nginx na k3s-2 → proxy_pass 192.168.1.50:8002
-http://192.168.1.50:8002 → direkt na LoadBalancer
+http://192.168.1.1:8080 → nginx na k3s-1 → proxy_pass 192.168.1.10:8002
+http://192.168.1.2:8080 → nginx na k3s-2 → proxy_pass 192.168.1.10:8002
+http://192.168.1.10:8002 → direkt na LoadBalancer
 ```
 
 ---
