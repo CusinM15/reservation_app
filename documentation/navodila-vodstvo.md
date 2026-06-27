@@ -89,13 +89,13 @@ Skripta prebere seznam zaposlenih s šolske spletne strani.
 
 ```bash
 cd /home/admin/ostc-app_deli
-python3 scripts/import_teachers.py --base-url https://ostc-app.org
+python3 scripts/import_teachers.py --base-url https://{{DOMAIN}}
 
 # Dry-run (brez sprememb):
 python3 scripts/import_teachers.py --dry-run
 
 # Z administracijo/tehničnim osebjem:
-python3 scripts/import_teachers.py --base-url https://ostc-app.org --include-all
+python3 scripts/import_teachers.py --base-url https://{{DOMAIN}} --include-all
 ```
 
 ### Upravljanje uporabnikov
