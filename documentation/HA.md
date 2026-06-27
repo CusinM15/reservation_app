@@ -1,3 +1,7 @@
+[🇸🇮 Slovenščina](ha.md) | [🇬🇧 English](en/ha.md)
+
+---
+
 # HA arhitektura — ostc-app (sola-app)
 
 ## Pregled

@@ -1,5 +1,14 @@
+<<<<<<< Updated upstream
 # 🚀 **Sola App — Rezervacijski Sistem OŠ Toneta Čufarja**
 ## **Celovit vodič za postavitev, upravljanje in visoko razpoložljivost**
+=======
+[🇸🇮 Slovenščina](main.md) | [🇬🇧 English](en/main.md)
+
+---
+
+# 🚀 **ostc-app — Rezervacijski sistem**
+## **OŠ Toneta Čufarja — Dokumentacija**
+>>>>>>> Stashed changes
 
 ---
 
