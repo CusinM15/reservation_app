@@ -76,12 +76,12 @@ Ta datoteka je **glavni vstopni dokument**. Spodaj so povezave na specializirane
 │  ┌──────────────────────────┐    ┌──────────────────────────┐            │
 │  │    k3s-1                 │    │    k3s-2                 │            │
 │  │    HP ProBook 455 G5     │    │    HP ProBook 450 G5     │            │
-│  │    IP: {{K3S_1_IP}}      │    │    IP: {{K3S_2_IP}}      │            │
+│  │    IP: 192.168.1.1      │    │    IP: 192.168.1.2      │            │
 │  │    control-plane,etcd    │    │    control-plane,etcd    │            │
 │  │                          │    │                          │            │
 │  │  ┌───────────────────┐   │    │  ┌───────────────────┐   │            │
 │  │  │ sola-app Pod 1    │   │    │  │ sola-app Pod 2    │   │            │
-│  │  │ (app.{{DOMAIN}})  │   │    │  | (app.{{DOMAIN}})  │   │            │
+│  │  │ (app.ostc-app.org)  │   │    │  | (app.ostc-app.org)  │   │            │
 │  │  └───────────────────┘   │    │  └───────────────────┘   │            │
 │  │  ┌───────────────────┐   │    │  ┌───────────────────┐   │            │
 │  │  │ sola-db-1         │   │    │  │ sola-db-2         │   │            │
@@ -96,24 +96,24 @@ Ta datoteka je **glavni vstopni dokument**. Spodaj so povezave na specializirane
 │  │                          │    │                          │            │
 │  │  ┌───────────────────┐   │    │  ┌───────────────────┐   │            │
 │  │  │ nginx             │   │    │  │ nginx             │   │            │
-│  │  │(port {{NGINX_PORT}})  │    │  │ (port {{NGINX_PORT}}) │            │
+│  │  │(port 8080)  │    │  │ (port 8080) │            │
 │  │  └───────────────────┘   │    │  └───────────┬───────┘   │            │
 │  └──────────────────────────┘    └───────────────┼──────────┘            │
 │                                                  │                       │
-│                                  proxy_pass│{{LB_IP}}:{{LB_PORT}}        │
+│                                  proxy_pass│192.168.1.10:8002        │
 │                                                  │                       │
 │                    ┌─────────────────────────────┘                       │
 │                    │                                                     │
 │  ┌─────────────────▼────────────────────────────────────────────┐        │
-│  │        Service LoadBalancer (MetalLB, {{LB_IP}}:{{LB_PORT}}) │        │
+│  │        Service LoadBalancer (MetalLB, 192.168.1.10:8002) │        │
 │  │        → sola-app Pod 1 ali Pod 2                            │        │
 │  └──────────────────────────────────────────────────────────────┘        │
 └──────────────────────────────────────────────────────────────────────────┘
                               │
                     ┌─────────▼─────────────────────┐
                     │  Cloudflare DNS               │
-                    │  {{DOMAIN}}                   │   
-                    │  → {{LB_IP}}:{{LB_PORT}}  │  📡 Cloudflare proxy
+                    │  ostc-app.org                   │   
+                    │  → 192.168.1.10:8002  │  📡 Cloudflare proxy
                     │    (LoadBalancer)          │
                     └───────────────────────────────┘
                               │
@@ -127,28 +127,28 @@ Ta datoteka je **glavni vstopni dokument**. Spodaj so povezave na specializirane
 
 ```
 🌐 Uporabnik
-  → Cloudflare (SSL, proxy, {{DOMAIN}})
-    → Service LoadBalancer (MetalLB, {{LB_IP}}:{{LB_PORT}})
+  → Cloudflare (SSL, proxy, ostc-app.org)
+    → Service LoadBalancer (MetalLB, 192.168.1.10:8002)
       → sola-app Pod (k3s-1 ali k3s-2)
 
 Alternativna pot (interno omrežje):
-  → http://k3s-1:8080 → nginx na k3s-1 → proxy_pass {{LB_IP}}:{{LB_PORT}}
-  → http://k3s-2:8080 → nginx na k3s-2 → proxy_pass {{LB_IP}}:{{LB_PORT}}
-  → http://{{LB_IP}}:{{LB_PORT}} → direkt na LoadBalancer
+  → http://k3s-1:8080 → nginx na k3s-1 → proxy_pass 192.168.1.10:8002
+  → http://k3s-2:8080 → nginx na k3s-2 → proxy_pass 192.168.1.10:8002
+  → http://192.168.1.10:8002 → direkt na LoadBalancer
 ```
 
-> **Cloudflare proxy** kaže direktno na **LoadBalancer (`{{LB_IP}}`, port 80)** — ne na nginx na k3s-2. Če LoadBalancer IP ni dosegljiv, je treba v Cloudflare dashboardu spremeniti origin IP na drug IP (npr. k3s-1 ali k3s-2) ali popraviti MetalLB konfiguracijo.
+> **Cloudflare proxy** kaže direktno na **LoadBalancer (`192.168.1.10`, port 80)** — ne na nginx na k3s-2. Če LoadBalancer IP ni dosegljiv, je treba v Cloudflare dashboardu spremeniti origin IP na drug IP (npr. k3s-1 ali k3s-2) ali popraviti MetalLB konfiguracijo.
 
 ### **Pregled komponent**
 
 | Komponenta | Lokacija | Namen |
 |---|---|---|
-| **k3s-1** | HP ProBook 455 G5 ({{K3S_1_IP}}) | Control-plane, app pod, PG primary, nginx |
-| **k3s-2** | HP ProBook 450 G5 ({{K3S_2_IP}}) | Control-plane, app pod, PG replica, nginx |
+| **k3s-1** | HP ProBook 455 G5 (192.168.1.1) | Control-plane, app pod, PG primary, nginx |
+| **k3s-2** | HP ProBook 450 G5 (192.168.1.2) | Control-plane, app pod, PG replica, nginx |
 | **Sola App (FastAPI)** | 2 poda (oba noda) | Rezervacije, ocenjevanje, prijava |
 | **Longhorn** | Oba noda | Distribuirano shranjevanje (PVC-ji) |
-| **MetalLB** | Oba noda | LoadBalancer IP ({{LB_IP}}) |
-| **nginx** | Oba noda (port {{NGINX_PORT}}) | Reverse proxy → LoadBalancer {{LB_IP}}:{{LB_PORT}}. Za interno omrežje (rezerva) |
+| **MetalLB** | Oba noda | LoadBalancer IP (192.168.1.10) |
+| **nginx** | Oba noda (port 8080) | Reverse proxy → LoadBalancer 192.168.1.10:8002. Za interno omrežje (rezerva) |
 | **Cloudflare** | Zunanji | DNS, SSL, proxy |
 
 ---
@@ -166,10 +166,10 @@ Alternativna pot (interno omrežje):
 
 ```bash
 # Lokalno omrežje (Arnes)
-k3s-1: {{K3S_1_IP}}/24
-k3s-2: {{K3S_2_IP}}/24
-Gateway: {{K3S_2_IP}}54
-DNS: {{K3S_2_IP}}53
+k3s-1: 192.168.1.1/24
+k3s-2: 192.168.1.2/24
+Gateway: 192.168.1.254
+DNS: 192.168.1.253
 
 # Kubernetes Pod CIDR
 10.42.0.0/16
@@ -178,23 +178,23 @@ DNS: {{K3S_2_IP}}53
 10.43.0.0/16
 
 # LoadBalancer IP pool (MetalLB)
-{{METALLB_RANGE_START}} - {{METALLB_RANGE_END}}
+192.168.1.10 - 192.168.1.20
 ```
 
 ### **Dostop**
 
 ```bash
 # SSH v oba noda
-ssh admin@{{K3S_1_IP}}    # k3s-1
-ssh admin@{{K3S_2_IP}}    # k3s-2
+ssh admin@192.168.1.1    # k3s-1
+ssh admin@192.168.1.2    # k3s-2
 
 # Kubernetes (k3s) — kubeconfig je na obeh nodih
 kubectl get nodes -o wide
 kubectl get pods -A -o wide
 
 # Aplikacija v brskalniku
-https://{{DOMAIN}}          # prek Cloudflare + LoadBalancer
-http://{{LB_IP}}:{{LB_PORT}}     # direkt (samo interno omrežje)
+https://ostc-app.org          # prek Cloudflare + LoadBalancer
+http://192.168.1.10:8002     # direkt (samo interno omrežje)
 ```
 
 ---
@@ -207,8 +207,8 @@ http://{{LB_IP}}:{{LB_PORT}}     # direkt (samo interno omrežje)
 kubectl get nodes -o wide
 
 # NAME    STATUS   ROLES                       AGE   VERSION        INTERNAL-IP      EXTERNAL-IP
-# k3s-1   Ready    control-plane,etcd,master   3d    v1.32.3+k3s1   {{K3S_1_IP}}    <none>
-# k3s-2   Ready    control-plane,etcd,master   3d    v1.32.3+k3s1   {{K3S_2_IP}}    <none>
+# k3s-1   Ready    control-plane,etcd,master   3d    v1.32.3+k3s1   192.168.1.1    <none>
+# k3s-2   Ready    control-plane,etcd,master   3d    v1.32.3+k3s1   192.168.1.2    <none>
 ```
 
 ### **Namestitev k3s**
@@ -218,14 +218,14 @@ kubectl get nodes -o wide
 curl -sfL https://get.k3s.io | sh -s - server \
   --cluster-init \
   --disable=traefik \
-  --node-ip={{K3S_1_IP}} \
+  --node-ip=192.168.1.1 \
   --flannel-iface=eth0
 
 # Na k3s-2 (drugi node)
 curl -sfL https://get.k3s.io | sh -s - server \
-  --server https://{{K3S_1_IP}}:6443 \
+  --server https://192.168.1.1:6443 \
   --disable=traefik \
-  --node-ip={{K3S_2_IP}} \
+  --node-ip=192.168.1.2 \
   --flannel-iface=eth0 \
   --token <NODE_TOKEN>
 ```
@@ -335,8 +335,8 @@ Nginx teče na **obeh nodih** z identično konfiguracijo:
 
 | Node | Port | Vloga |
 |---|---|---|
-| **k3s-1** | {{NGINX_PORT}} | Reverse proxy → LoadBalancer (rezerva) |
-| **k3s-2** | {{NGINX_PORT}} | Reverse proxy → LoadBalancer (nginx backend) |
+| **k3s-1** | 8080 | Reverse proxy → LoadBalancer (rezerva) |
+| **k3s-2** | 8080 | Reverse proxy → LoadBalancer (nginx backend) |
 
 ### **Konfiguracija**
 
@@ -344,10 +344,10 @@ Oba noda imata enako konfiguracijo v `/etc/nginx/sites-enabled/default`:
 
 ```nginx
 server {
-    listen {{NGINX_PORT}};
+    listen 8080;
 
     location / {
-        proxy_pass http://{{LB_IP}}:{{LB_PORT}};
+        proxy_pass http://192.168.1.10:8002;
         proxy_set_header Host $host;
         proxy_set_header X-Real-IP $remote_addr;
         proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
@@ -355,8 +355,8 @@ server {
 }
 ```
 
-> **Cloudflare** uporablja **Flexible SSL** — HTTPS do uporabnika, HTTP do LoadBalancer IP (`{{LB_IP}}`, port 80).
-> **HA zagotavlja MetalLB** — layer2 failover: če node z LB IP-jem crkne, drug node avtomatsko prevzame IP v nekaj sekundah. Cloudflare še naprej pošilja na isti IP, ničesar ni treba spreminjati.
+ > **Cloudflare** uporablja **Flexible SSL** — HTTPS do uporabnika, HTTP do LoadBalancer IP (`{{LB_IP}}`, port 80).
+ > **HA zagotavlja MetalLB** — layer2 failover: če node z LB IP-jem crkne, drug node avtomatsko prevzame IP v nekaj sekundah. Cloudflare še naprej pošilja na isti IP, ničesar ni treba spreminjati.
 
 ---
 
@@ -366,14 +366,14 @@ server {
 
 | Tip | Ime | Vrednost | Proxy |
 |---|---|---|---|
-| A | `@` ({{DOMAIN}}) | {{LB_IP}} | ✅ Cloudflare proxy (LoadBalancer) |
-| A | `www` | {{LB_IP}} | ✅ Cloudflare proxy |
+| A | `@` (ostc-app.org) | 192.168.1.10 | ✅ Cloudflare proxy (LoadBalancer) |
+| A | `www` | 192.168.1.10 | ✅ Cloudflare proxy |
 
 ### **SSL/TLS**
 
 Cloudflare skrbi za:
 - **Edge certifikat** — med uporabnikom in Cloudflare (HTTPS)
-- **Flexible SSL** — Cloudflare → {{LB_IP}} (port 80) prek HTTP (brez certifikata na originu)
+- **Flexible SSL** — Cloudflare → 192.168.1.10 (port 80) prek HTTP (brez certifikata na originu)
 
 Nastavitve v Cloudflare dashboard:
 - **SSL/TLS encryption mode:** `Flexible`

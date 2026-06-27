@@ -178,7 +178,7 @@ If you don't have an email server, you can set passwords manually via the admin 
 
 | Issue | Solution |
 |---|---|
-| `Port already in use` | Change `APP_PORT={{LB_PORT}}` in `.env` |
+| `Port already in use` | Change `APP_PORT=8002` in `.env` |
 | SQLite `database is locked` | Stop the app, delete `data/sola.db`, restart |
 | Teachers not imported | Check with `--dry-run` first |
 | Cannot see rooms | Check `PROSTORI` in `.env` |

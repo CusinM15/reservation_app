@@ -12,7 +12,7 @@
 
 ## How to Access the Application?
 
-Visit the [application](https://{{DOMAIN}}). To get a password, press the **"Forgot password?"** button and enter your school email address. You will shortly receive an email from `sola@example.com`.
+Visit the [application](https://ostc-app.org). To get a password, press the **"Forgot password?"** button and enter your school email address. You will shortly receive an email from `sola@example.com`.
 
 If you do not receive the message, report it to the administrator to check whether your email address is correctly entered in the database.
 

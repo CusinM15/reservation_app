@@ -17,15 +17,16 @@ Current domain: **`ostc-app.org`** (Cloudflare proxied)
 ## 📋 Current DNS settings
 
 | Type | Name | Value | Proxy | Purpose |
-|---|---|---|---|---|
-| A | `{{DOMAIN}}` | `{{K3S_2_IP}}` | ✅ Proxied (orange cloud) | Application |
+|---|---|---|---|---|---|
+| A | `{{DOMAIN}}` | `{{LB_IP}}` | ✅ Proxied (orange cloud) | Application (via LoadBalancer) |
+| A | `www` | `{{LB_IP}}` | ✅ Proxied (orange cloud) | WWW redirect |
 
-Cloudflare proxy means:
-- Public DNS resolves to Cloudflare IPs
-- Cloudflare forwards traffic to `192.168.1.2` (k3s-2, port 80, Flexible SSL)
-- Cloudflare handles SSL (Flexible — HTTPS to user, HTTP to k3s-2 on port 80)
-- Nginx on k3s-2 receives traffic and proxies to `192.168.1.10:8002` (LoadBalancer)
-- `server: cloudflare` in HTTP headers
+Cloudflare proxy (orange cloud) means:
+- Public DNS resolves to Cloudflare IPs (user sees Cloudflare edge)
+- Cloudflare forwards traffic to `{{LB_IP}}` (port 80, Flexible SSL)
+- Cloudflare handles SSL (Flexible — HTTPS to user, HTTP to LoadBalancer)
+- LoadBalancer (MetalLB) receives traffic on port 80 and forwards to sola-app pods on port 8002
+- If one node fails, MetalLB automatically moves `{{LB_IP}}` to the healthy node — **HA works without manual intervention**
 
 ---
 
@@ -34,15 +35,13 @@ Cloudflare proxy means:
 ```
 🌐 User → https://ostc-app.org
   → Cloudflare DNS → Cloudflare edge
-    → Cloudflare proxy → 192.168.1.2:80 (k3s-2)
-      → nginx on k3s-2 (proxy_pass http://192.168.1.10:8002)
-        → Service LoadBalancer (MetalLB, 192.168.1.10:8002)
-          → sola-app pod (k3s-1 or k3s-2)
+    → Cloudflare proxy → {{LB_IP}}:80 (LoadBalancer, MetalLB)
+      → sola-app Pod (k3s-1 or k3s-2) :8002
 
-Alternative path (internal network):
-http://192.168.1.1:8080 → nginx on k3s-1 → proxy_pass 192.168.1.10:8002
-http://192.168.1.2:8080 → nginx on k3s-2 → proxy_pass 192.168.1.10:8002
-http://192.168.1.10 → direct to LoadBalancer
+Alternative path (internal network — fallback if Cloudflare/LB is unreachable):
+http://{{K3S_1_IP}}:8080 → nginx on k3s-1 → proxy_pass {{LB_IP}}:{{LB_PORT}}
+http://{{K3S_2_IP}}:8080 → nginx on k3s-2 → proxy_pass {{LB_IP}}:{{LB_PORT}}
+http://{{LB_IP}}:{{LB_PORT}} → direct to LoadBalancer (internal only)
 ```
 
 ---
@@ -75,7 +74,7 @@ If the domain needs to be changed in the future:
 ### 1. Cloudflare
 
 1. Open Cloudflare dashboard
-2. Add A record: `@` → `192.168.1.2` (Proxied, k3s-2)
+2. Add A record: `@` → `{{LB_IP}}` (Proxied, LoadBalancer MetalLB IP)
 3. Wait for DNS propagation
 
 ### 2. Update BASE_URL
@@ -86,11 +85,12 @@ kubectl -n sola-app patch configmap sola-config --type merge \
 kubectl -n sola-app rollout restart deployment/sola-app
 ```
 
-### 3. Update nginx (if needed)
+### 3. Update nginx (internal network — if IP changes)
 
-On k3s-2:
+On both nodes (k3s-1 and k3s-2):
 ```bash
-sudo sed -i 's/ostc-app.org/nova-domena.si/' /etc/nginx/sites-available/default
+sudo sed -i 's/{{LB_IP}}/NEW_LB_IP/' /etc/nginx/sites-available/default
+sudo sed -i 's/{{DOMAIN}}/new-domain.si/' /etc/nginx/sites-available/default
 sudo systemctl restart nginx
 ```
 
@@ -98,7 +98,38 @@ sudo systemctl restart nginx
 
 ## 📌 Notes
 
-- **LoadBalancer IP** `192.168.1.10` is fixed — it does not change on restart
-- **Nginx** on k3s-2 forwards to the MetalLB IP, not directly to pods
-- **Cloudflare SSL** is "Flexible" — HTTPS between user and Cloudflare, HTTP between Cloudflare and nginx on k3s-2 (within school network only)
-- If you wanted **end-to-end HTTPS**, you would need certbot/letsencrypt on k3s-2
+- **Cloudflare → LB IP** (`{{LB_IP}}`) — traffic goes directly to MetalLB, not through nginx
+- **Nginx** on both nodes (`:8080`) is **internal fallback only** — for when Cloudflare or LoadBalancer is unreachable from the school network
+- **Cloudflare SSL** is "Flexible" — HTTPS between user and Cloudflare, HTTP between Cloudflare and LoadBalancer (`{{LB_IP}}:80`)
+- **LoadBalancer** (MetalLB) listens on port 80 and forwards to sola-app container port 8002
+- If you wanted **end-to-end HTTPS** (Cloudflare → origin), you would need certbot/letsencrypt and change SSL to "Full"
+
+---
+
+## 🏥 High Availability (HA)
+
+### Why Cloudflare → LB IP?
+
+| Scenario | Result |
+|---|---|
+| k3s-1 fails | MetalLB moves `{{LB_IP}}` to k3s-2, pod migrates → ✅ **HA works** |
+| k3s-2 fails | MetalLB moves `{{LB_IP}}` to k3s-1, pod migrates → ✅ **HA works** |
+| Both nodes fail | Application is unavailable → ❌ (no cross-cluster HA) |
+
+**Cloudflare doesn't know which node is alive** — it simply sends traffic to `{{LB_IP}}`. MetalLB ensures this IP is always on a healthy node.
+
+### What about nginx on both nodes?
+
+Nginx on k3s-1 and k3s-2 (port `{{NGINX_PORT}}`) is for **internal network only**:
+
+```
+http://{{K3S_1_IP}}:{{NGINX_PORT}}  →  nginx proxy_pass  →  {{LB_IP}}:{{LB_PORT}}
+http://{{K3S_2_IP}}:{{NGINX_PORT}}  →  nginx proxy_pass  →  {{LB_IP}}:{{LB_PORT}}
+```
+
+Useful when:
+- Cloudflare is unreachable (internet outage)
+- LoadBalancer IP is temporarily unavailable
+- You want to access directly through the school network
+
+**In normal operation, nginx is NOT in the Cloudflare → application traffic path.**
