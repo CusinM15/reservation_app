@@ -73,6 +73,16 @@ Services:
 ├── sola-db-rw → vedno na primary (pisanje + branje)
 ├── sola-db-ro → na vse ready instance (samo branje)
 └── sola-db-r  → na vse instance
+
+**Kako delujejo:**
+
+| Service | Cilj | Namen | Uporaba v appu |
+|---|---|---|---|
+| `sola-db-rw` | **Samo primary** (npr. `sola-db-1`) | Pisanje + branje — edini service, ki sprejema `INSERT`/`UPDATE`/`DELETE`. Vedno kaže na trenutni primary, tudi po failoverju. | `DATABASE_URL` — glavna povezava za vse operacije |
+| `sola-db-ro` | **Vse ready instance** (primary + replica) | **Samo branje** — Kubernetes Service porazdeljuje bralne zahtevke (`SELECT`) med primary in repliko. Uporabno za obremenitve z veliko branja. | `DATABASE_URL_RO` — redko rabljen, večinoma za poročila |
+| `sola-db-r` | **Vse instance** (tudi tiste, ki še niso ready) | **Samo branje** — podobno kot `ro`, a vključuje tudi instance, ki še niso označene kot ready. Manj relevanten za vsakodnevno uporabo. | — |
+
+Primarna razlika: `sola-db-rw` je **edini**, ki sprejema zapisovanje. `sola-db-ro` in `sola-db-r` sta samo za branje in se uporabljata, če želiš razbremeniti primary z bralnimi poizvedbami. V praksi app uporablja izključno `sola-db-rw` prek `DATABASE_URL`.
 ```
 
 #### Auto-failover (vgrajen)
