@@ -13,8 +13,8 @@
 ## Pregled
 
 Aplikacija ostc-app teče v **k3s** Kubernetes clusterju na dveh nodih:
-- **k3s-1** ({{LB_IP}}) — HP ProBook 455 G5
-- **k3s-2** ({{K3S_1_IP}}1) — HP ProBook 450 G5
+- **k3s-1** ({{K3S_1_IP}}) — HP ProBook 455 G5
+- **k3s-2** ({{K3S_2_IP}}) — HP ProBook 450 G5
 
 Cilj: ob izpadu kateregakoli noda aplikacija ostane dostopna v nekaj minutah brez ročnega posredovanja.
 
