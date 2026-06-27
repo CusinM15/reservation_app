@@ -1,12 +1,8 @@
-<<<<<<< Updated upstream:documentation/postavi-lokalni-app.md
-# 🖥️ Postavi lokalni app
-=======
 [🇸🇮 Slovenščina](lokalni_zagon.md) | [🇬🇧 English](en/lokalni_zagon.md)
 
 ---
 
 # POSTAVI LOKALEN APP — Šolski App
->>>>>>> Stashed changes:documentation/lokalni_zagon.md
 
 Navodila za zagon aplikacije **na enem računalniku** (brez Kubernetes, brez PostgreSQL).
 Primerno za druge šole, testiranje ali demonstracijo.

@@ -1,12 +1,8 @@
-<<<<<<< Updated upstream
-# ☁️ Domena — ostc-app.org
-=======
 [🇸🇮 Slovenščina](domena.md) | [🇬🇧 English](en/domena.md)
 
 ---
 
 # Domena – zamenjava iz `.local` na `ostc.si`
->>>>>>> Stashed changes
 
 Trenutna domena: **`ostc-app.org`** (Cloudflare proxied)
 
