@@ -74,12 +74,12 @@
 │  ┌──────────────────────────┐    ┌──────────────────────────┐            │
 │  │    k3s-1                  │    │    k3s-2                  │            │
 │  │    HP ProBook 455 G5     │    │    HP ProBook 450 G5     │            │
-│  │    IP: 192.168.1.10     │    │    IP: 192.168.1.11     │            │
+│  │    IP: {{LB_IP}}     │    │    IP: {{K3S_1_IP}}1     │            │
 │  │    control-plane,etcd    │    │    control-plane,etcd    │            │
 │  │                          │    │                          │            │
 │  │  ┌───────────────────┐   │    │  ┌───────────────────┐   │            │
 │  │  │ sola-app Pod 1    │   │    │  │ sola-app Pod 2    │   │            │
-│  │  │ (app.ostc-app.org)│   │    │  │ (app.ostc-app.org)│   │            │
+│  │  │ (app.{{DOMAIN}})│   │    │  │ (app.{{DOMAIN}})│   │            │
 │  │  └───────────────────┘   │    │  └───────────────────┘   │            │
 │  │  ┌───────────────────┐   │    │  ┌───────────────────┐   │            │
 │  │  │ sola-db-1         │   │    │  │ sola-db-2         │   │            │
@@ -95,21 +95,18 @@
 │  │  ┌───────────────────┐   │    │  ┌───────────────────┐   │            │
 │  │  │ MetalLB Speaker   │   │    │  │ MetalLB Speaker   │   │            │
 │  │  └───────────────────┘   │    │  └───────────────────┘   │            │
-│  └──────────────────────────┘    └───────────┬───────────────┘            │
-│                                               │                           │
-│              ┌────────────────────────────────┘                           │
-│              │                                                           │
-│              │                                                           │
-│              │                                                           │
-└──────────────────────────────────────────────────────────────────────────┘
-                              │
-                              │
-                    ┌─────────▼─────────┐
-                    │  Cloudflare DNS    │
-                    │  ostc-app.org      │
-                    │  → 203.0.113.1    │  📡 Cloudflare proxy IPs
-                    │  → 203.0.113.2  │
-                    └───────────────────┘
+│  └──────────────────────────┘    └──────────────────────────┘            │
+│                                                                          │
+│                          {{LB_IP}}:{{LB_PORT}}                         │
+└─────────────────────────────────┬────────────────────────────────────────┘
+                                  │
+                                  │
+                    ┌─────────────▼─────────────┐
+                    │  Cloudflare DNS           │
+                    │  {{DOMAIN}}               │
+                    │  → 203.0.113.1            │  📡 Cloudflare proxy IPs
+                    │  → 203.0.113.2           │
+                    └───────────────────────────┘
                               │
                               │  Internet
                               ▼
@@ -122,7 +119,7 @@
 
 ```
 🌐 User
-  → Cloudflare (SSL, proxy, ostc-app.org)
+  → Cloudflare (SSL, proxy, {{DOMAIN}})
     → Service LoadBalancer (MetalLB, {{LB_IP}}:{{LB_PORT}})
       → sola-app Pod (k3s-1 or k3s-2)
 ```
@@ -137,12 +134,12 @@ Cloudflare proxy provides:
 
 | Component | Location | Purpose |
 |---|---|---|
-| **k3s-1** | HP ProBook 455 G5 (192.168.1.1) | Control-plane, app pod, PG primary |
-| **k3s-2** | HP ProBook 450 G5 (192.168.1.2) | Control-plane, app pod, PG replica |
+| **k3s-1** | HP ProBook 455 G5 ({{K3S_1_IP}}) | Control-plane, app pod, PG primary |
+| **k3s-2** | HP ProBook 450 G5 ({{K3S_2_IP}}) | Control-plane, app pod, PG replica |
 | **Sola App (FastAPI)** | 2 pods (both nodes) | Reservations, assessments, login |
 | **CloudNativePG** | 2 instances (both nodes) | PostgreSQL database with automatic failover |
 | **Longhorn** | Both nodes | Distributed storage (PVCs) |
-| **MetalLB** | Both nodes | LoadBalancer IP (192.168.1.10) |
+| **MetalLB** | Both nodes | LoadBalancer IP ({{LB_IP}}) |
 | **Cloudflare** | External | DNS, SSL, proxy |
 
 ---
@@ -152,7 +149,7 @@ Cloudflare proxy provides:
 ### **Specifications**
 
 | Node | Model | CPU | RAM | Disk | Role |
-|---|---|---|---|---|---|
+|---|---|---|---|---|---|---|
 | **k3s-1** | HP ProBook 455 G5 | AMD Ryzen 5 2500U | 16GB | 256GB SSD | Control-plane,etcd, app, PG primary |
 | **k3s-2** | HP ProBook 450 G5 | Intel Core i5-8250U | 8GB | 256GB SSD | Control-plane,etcd, app, PG replica |
 
@@ -160,10 +157,10 @@ Cloudflare proxy provides:
 
 ```bash
 # Local network (Arnes)
-k3s-1: 192.168.1.1/24
-k3s-2: 192.168.1.2/24
-Gateway: 192.168.1.254
-DNS: 192.168.1.253
+k3s-1: {{K3S_1_IP}}/24
+k3s-2: {{K3S_2_IP}}/24
+Gateway: {{K3S_2_IP}}54
+DNS: {{K3S_2_IP}}53
 
 # Kubernetes Pod CIDR
 10.42.0.0/16
@@ -172,15 +169,15 @@ DNS: 192.168.1.253
 10.43.0.0/16
 
 # LoadBalancer IP pool (MetalLB)
-192.168.1.10 - 192.168.1.20
+{{METALLB_RANGE_START}} - {{METALLB_RANGE_END}}
 ```
 
 ### **Access**
 
 ```bash
 # SSH to both nodes
-ssh {{SSH_USER}}@{{K3S_1_IP}}    # k3s-1
-ssh {{SSH_USER}}@{{K3S_2_IP}}    # k3s-2
+ssh admin@{{K3S_1_IP}}    # k3s-1
+ssh admin@{{K3S_2_IP}}    # k3s-2
 
 # sudo password is the same on both nodes
 ```
@@ -196,7 +193,7 @@ ssh {{SSH_USER}}@{{K3S_2_IP}}    # k3s-2
 curl -sfL https://get.k3s.io | sh -s - --disable=servicelb
 
 # On k3s-2 (second control-plane)
-curl -sfL https://get.k3s.io | K3S_URL=https://192.168.1.1:6443 \\
+curl -sfL https://get.k3s.io | K3S_URL=https://{{K3S_1_IP}}:6443 \\
   K3S_TOKEN=$(sudo cat /var/lib/rancher/k3s/server/node-token) sh -
 ```
 
@@ -336,7 +333,7 @@ spec:
         image: sola-app:latest
         imagePullPolicy: Always
         ports:
-        - containerPort: 8002
+        - containerPort: {{LB_PORT}}
         envFrom:
         - configMapRef:
             name: sola-config
@@ -364,7 +361,7 @@ spec:
 ### **ConfigMap (sola-config) — actual values**
 
 ```yaml
-BASE_URL: "https://ostc-app.org"
+BASE_URL: "https://{{DOMAIN}}"
 APP_HOST: "0.0.0.0"
 APP_PORT: "8002"
 TABLICE_MAX: "28"
@@ -378,7 +375,7 @@ RAZREDI: "IP/NIP/ID,1.a,1.b,1.c,1.č,2.a,2.b,2.c,2.č,3.a,3.b,3.c,3.č,4.a,4.b,4
 ### **Secret (sola-secrets)**
 
 Data in the Secret (base64 encoded):
-- `DATABASE_URL` — `postgresql://sola:***@sola-db-rw.sola:5432/sola`
+- `DATABASE_URL` — `postgresql://sola:***@sola-db-rw.sola:{{K8S_DB_PORT}}/sola`
 - `MAIL_USERNAME` — `oscuf`
 - `MAIL_PASSWORD` — (password for SMTP)
 - `MAIL_SERVER` — `mail.arnes.si`
@@ -386,7 +383,7 @@ Data in the Secret (base64 encoded):
 - `MAIL_FROM` — `sola@example.com`
 - `BACKUP_EMAIL` — `admin@example.com`
 
-> ⚠️ `DATABASE_URL` uses the **CNPG service** `sola-db-rw.sola:5432` — it always points to the current primary, even after failover.
+> ⚠️ `DATABASE_URL` uses the **CNPG service** `sola-db-rw.sola:{{K8S_DB_PORT}}` — it always points to the current primary, even after failover.
 
 ---
 
@@ -448,9 +445,9 @@ kubectl get pods -n sola -o wide
 
 | Service | Role |
 |---|---|
-| `sola-db-rw.sola:5432` | **Read-Write** — always on primary (used by app) |
-| `sola-db-ro.sola:5432` | Read-Only — replica only |
-| `sola-db-r.sola:5432` | Read — any instance |
+| `sola-db-rw.sola:{{K8S_DB_PORT}}` | **Read-Write** — always on primary (used by app) |
+| `sola-db-ro.sola:{{K8S_DB_PORT}}` | Read-Only — replica only |
+| `sola-db-r.sola:{{K8S_DB_PORT}}` | Read — any instance |
 
 ### **Automatic Failover Procedure**
 
@@ -496,7 +493,7 @@ metadata:
   namespace: metallb-system
 spec:
   addresses:
-  - 192.168.1.10 - 192.168.1.20
+  - {{METALLB_RANGE_START}} - {{METALLB_RANGE_END}}
 ---
 apiVersion: metallb.io/v1beta1
 kind: L2Advertisement
@@ -519,14 +516,14 @@ spec:
     app: sola-app
   ports:
   - port: 8002
-    targetPort: 8002
+    targetPort: {{LB_PORT}}
     name: http
 ```
 
 ```bash
 kubectl get svc -n sola-app sola-app
 # NAME      TYPE           CLUSTER-IP      EXTERNAL-IP      PORT(S)
-# sola-app  LoadBalancer   10.43.0.10   192.168.1.10   8002:32364/TCP
+# sola-app  LoadBalancer   10.43.0.10   {{LB_IP}}   {{LB_PORT}}:32364/TCP
 ```
 
 ---
@@ -537,10 +534,10 @@ kubectl get svc -n sola-app sola-app
 
 | Type | Name | Value | Proxy |
 |---|---|---|---|
-| A | `ostc-app.org` | `{{LB_IP}}` | ✅ Proxied (orange cloud) |
+| A | `{{DOMAIN}}` | `{{LB_IP}}` | ✅ Proxied (orange cloud) |
 
 Cloudflare proxy means:
-- `ostc-app.org` resolves to Cloudflare IPs
+- `{{DOMAIN}}` resolves to Cloudflare IPs
 - Cloudflare forwards traffic to `{{LB_IP}}` (LoadBalancer, port 80, Flexible SSL)
 - SSL certificate is managed by Cloudflare (Flexible — HTTPS to user, HTTP to origin)
 
@@ -656,8 +653,8 @@ kubectl describe cluster -n sola sola-db
 kubectl logs -n sola-app -l app=sola-app --tail=50
 
 # Test health endpoint
-curl -s http://192.168.1.10:8002/health
-curl -sI https://ostc-app.org
+curl -s http://{{LB_IP}}:{{LB_PORT}}/health
+curl -sI https://{{DOMAIN}}
 ```
 
 ### **Failure Simulation — Node Failure**
@@ -674,7 +671,7 @@ kubectl get pods -n sola-app -o wide
 # Both sola-app pods should be on k3s-2
 # (k3s reschedules them to the surviving node)
 
-curl -I https://ostc-app.org
+curl -I https://{{DOMAIN}}
 # Still accessible!
 
 # When k3s-1 comes back:
@@ -691,9 +688,17 @@ kubectl delete pod -n sola-app -l app=sola-app
 kubectl rollout status -n sola-app deployment/sola-app
 ```
 
+### **Checking LoadBalancer**
+
+```bash
+# Check LoadBalancer service status
+kubectl get svc -n sola-app sola-app
+
+# Check LoadBalancer endpoints
+kubectl get endpoints -n sola-app sola-app
+```
+
 ---
-
-
 
 ## 📝 **Complete Command Reference**
 
@@ -788,8 +793,8 @@ kubectl rollout status -n sola-app deployment/sola-app
 - [x] sola-db-1 Primary (k3s-1)
 - [x] sola-db-2 Replica (k3s-2)
 - [x] CNPG cluster healthy (2/2 ready)
-- [x] MetalLB LoadBalancer (192.168.1.10)
-- [x] Cloudflare DNS (ostc-app.org, proxied)
+- [x] MetalLB LoadBalancer ({{LB_IP}})
+- [x] Cloudflare DNS ({{DOMAIN}}, proxied)
 - [x] Longhorn storage (both nodes)
 - [x] Daily backup (4:00) ✅
 - [x] Daily report (4:00) ✅
@@ -802,7 +807,7 @@ kubectl rollout status -n sola-app deployment/sola-app
 - **Failover is completely automatic** — no manual intervention needed
 - **Both nodes are control-plane** — no separate worker nodes
 - **Cloudflare origin** → LoadBalancer IP (`{{LB_IP}}`, port 80)
-- **App uses** `sola-db-rw.sola:5432` — always on the current primary
+- **App uses** `sola-db-rw.sola:{{K8S_DB_PORT}}` — always on the current primary
 - **Old Bitnami PostgreSQL was removed** — we use CNPG
 - **Longhorn replication** — 2 replicas, data safe even with one node loss
-- **If LoadBalancer IP changes** — update: Cloudflare DNS and this document
+- **If LoadBalancer IP changes** — update: Cloudflare and this document

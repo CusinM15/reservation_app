@@ -18,15 +18,13 @@ Trenutna domena: **`ostc-app.org`** (Cloudflare proxied)
 
 | Tip | Ime | Vrednost | Proxy | Namen |
 |---|---|---|---|---|
-| A | `{{DOMAIN}}` | `{{LB_IP}}` | ✅ Proxied (oranžni oblak) | Aplikacija (prek LoadBalancerja) |
-| A | `www` | `{{LB_IP}}` | ✅ Proxied (oranžni oblak) | WWW preusmeritev |
+| A | `{{DOMAIN}}` | `{{K3S_2_IP}}` | ✅ Proxied (oranžni oblak) | Aplikacija |
 
-Cloudflare proxy (oranžni oblak) pomeni:
-- Javni DNS resolve-a na Cloudflare IP-je (uporabnik vidi Cloudflare edge)
-- Cloudflare posreduje promet na `{{LB_IP}}` (port 80, Flexible SSL)
-- Cloudflare skrbi za SSL (Flexible — HTTPS do uporabnika, HTTP do LoadBalancerja)
-- LoadBalancer (MetalLB) prejme promet na port 80 in ga posreduje sola-app podom na port 8002
-- Če en node crkne, MetalLB samodejno premakne `{{LB_IP}}` na zdravi node — **HA deluje brez ročnega posega**
+Cloudflare proxy pomeni:
+- Javni DNS resolve-a na Cloudflare IP-je
+- Cloudflare posreduje promet na `192.168.1.2` (k3s-2, port 80, Flexible SSL)
+- Cloudflare skrbi za SSL (Flexible — HTTPS do uporabnika, HTTP do k3s-2 na port 80)
+- `server: cloudflare` v HTTP headerjih
 
 ---
 
@@ -35,10 +33,12 @@ Cloudflare proxy (oranžni oblak) pomeni:
 ```
 🌐 Uporabnik → https://ostc-app.org
   → Cloudflare DNS → Cloudflare edge
-    → Cloudflare proxy → {{LB_IP}}:80 (LoadBalancer, MetalLB)
-      → sola-app Pod (k3s-1 ali k3s-2) :8002
+    → Cloudflare proxy → 192.168.1.2:80 (k3s-2)
+      → Service LoadBalancer (MetalLB, 192.168.1.10:8002)
+        → sola-app pod (k3s-1 ali k3s-2)
 
-|http://{{LB_IP}}:{{LB_PORT}} → direkt na LoadBalancer (samo interno)
+Alternativna pot (notranje omrežje):
+http://192.168.1.10 → direkt na LoadBalancer
 ```
 
 ---
@@ -71,7 +71,7 @@ BASE_URL: "https://ostc-app.org"
 ### 1. Cloudflare
 
 1. Odpri Cloudflare dashboard
-2. Dodaj A zapis: `@` → `{{LB_IP}}` (Proxied, LoadBalancer MetalLB IP)
+2. Dodaj A zapis: `@` → `192.168.1.2` (Proxied, k3s-2)
 3. Počakaj, da se DNS propagira
 
 ### 2. Posodobi BASE_URL
@@ -82,29 +82,10 @@ kubectl -n sola-app patch configmap sola-config --type merge \
 kubectl -n sola-app rollout restart deployment/sola-app
 ```
 
-
-
 ---
 
 ## 📌 Opombe
 
-- **Cloudflare → LB IP** (`{{LB_IP}}`) — promet gre direkt na MetalLB. Vmesni reverse proxy ni več del arhitekture.
-- **Cloudflare SSL** je "Flexible" — HTTPS med uporabnikom in Cloudflarom, HTTP med Cloudflarom in LoadBalancerjem (`{{LB_IP}}:80`)
-- **LoadBalancer** (MetalLB) posluša na portu 80 in posreduje na sola-app container port 8002
-- Če bi želeli **end-to-end HTTPS** (Cloudflare → origin), bi potrebovali certbot/letsencrypt in spremenili SSL na "Full"
-
----
-
-## 🏥 High Availability (HA)
-
-### Zakaj Cloudflare → LB IP?
-
-| Scenarij | Rezultat |
-|---|---|
-| k3s-1 crkne | MetalLB premakne `{{LB_IP}}` na k3s-2, pod se preseli → ✅ **HA deluje** |
-| k3s-2 crkne | MetalLB premakne `{{LB_IP}}` na k3s-1, pod se preseli → ✅ **HA deluje** |
-| Oba noda crkneta | Aplikacija ni dosegljiva → ❌ (ni cross-cluster HA) |
-
-**Cloudflare ne ve, kateri node je živ** — preprosto pošilja promet na `{{LB_IP}}`. MetalLB skrbi, da je ta IP vedno na živem nodu.
-
-
+- **LoadBalancer IP** `192.168.1.10` je fiksen — ne spreminja se ob restartu
+- **Cloudflare SSL** je "Flexible" — HTTPS med uporabnikom in Cloudflarom, HTTP med Cloudflarom in k3s-2 (znotraj šolskega omrežja)
+- Če bi želeli **end-to-end HTTPS**, bi potrebovali certbot/letsencrypt na k3s-2

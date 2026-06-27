@@ -19,20 +19,22 @@ Instructions for setting up a k3s Kubernetes cluster on **two nodes** (both cont
 ## 📋 Architecture (current)
 
 ```
-Internet → Cloudflare → ostc-app.org
-                  │
-          MetalLB LoadBalancer
-                  │
-     ┌────────────┴────────────┐
-     │                         │
-k3s-1 (cp,etcd)          k3s-2 (cp,etcd)
-     ┌────────────┐          ┌────────────┐
-     │ sola-app   │          │ sola-app   │
-     │ sola-db-1  │◄────────►│ sola-db-2  │
-     │ (PRIMARY)  │  stream  │ (REPLICA)  │
-     │ Longhorn   │  repl.   │ Longhorn   │
-     │ MetalLB    │          │ MetalLB    │
-     └────────────┘          └────────────┘
+Internet → Cloudflare → {{DOMAIN}}
+                            │
+                            ▼
+                    MetalLB LoadBalancer
+                    ({{LB_IP}}:{{LB_PORT}})
+                            │
+               ┌────────────┴────────────┐
+               │                         │
+         k3s-1 (cp,etcd)          k3s-2 (cp,etcd)
+         ┌────────────┐          ┌────────────┐
+         │ sola-app   │          │ sola-app   │
+         │ sola-db-1  │◄────────►│ sola-db-2  │
+         │ (PRIMARY)  │  stream  │ (REPLICA)  │
+         │ Longhorn   │  repl.   │ Longhorn   │
+         │ MetalLB    │          │ MetalLB    │
+         └────────────┘          └────────────┘
 ```
 
 ---
@@ -57,12 +59,12 @@ k3s-1 (cp,etcd)          k3s-2 (cp,etcd)
 
 ```bash
 curl -sfL https://get.k3s.io | sh -s - server \
-  --disable=traefik \
+  --disable=traefik `# using MetalLB LoadBalancer instead of Traefik` \
   --disable=servicelb \
   --write-kubeconfig-mode=644 \
   --cluster-cidr=10.42.0.0/16 \
   --service-cidr=10.43.0.0/16 \
-  --node-ip=192.168.1.1
+  --node-ip={{K3S_1_IP}}
 ```
 
 ### 1.2 Get the token
@@ -75,12 +77,12 @@ sudo cat /var/lib/rancher/k3s/server/node-token
 
 ```bash
 curl -sfL https://get.k3s.io | sh -s - server \
-  --server https://192.168.1.1:6443 \
+  --server https://{{K3S_1_IP}}:6443 \
   --token <TOKEN> \
-  --disable=traefik \
+  --disable=traefik `# using MetalLB LoadBalancer instead of Traefik` \
   --disable=servicelb \
   --write-kubeconfig-mode=644 \
-  --node-ip=192.168.1.2
+  --node-ip={{K3S_2_IP}}
 ```
 
 ### 1.4 Verify
@@ -209,7 +211,7 @@ kubectl create secret generic sola-secrets \
   --from-literal=MAIL_PORT=587 \
   --from-literal=MAIL_FROM=sola@example.com \
   --from-literal=BACKUP_EMAIL=admin@sola.si \
-  --from-literal=DATABASE_URL=postgresql://sola:***@sola-db-rw.sola:5432/sola
+  --from-literal=DATABASE_URL=postgresql://sola:***@sola-db-rw.sola:{{K8S_DB_PORT}}/sola
 ```
 
 ### 5.3 Deploy with overlays

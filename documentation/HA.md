@@ -13,8 +13,8 @@
 ## Pregled
 
 Aplikacija ostc-app teče v **k3s** Kubernetes clusterju na dveh nodih:
-- **k3s-1** (192.168.1.1) — HP ProBook 455 G5
-- **k3s-2** (192.168.1.2) — HP ProBook 450 G5
+- **k3s-1** ({{K3S_1_IP}}) — HP ProBook 455 G5
+- **k3s-2** ({{K3S_2_IP}}) — HP ProBook 450 G5
 
 Cilj: ob izpadu kateregakoli noda aplikacija ostane dostopna v nekaj minutah brez ročnega posredovanja.
 
@@ -37,17 +37,17 @@ Kubernetes Deployment sola-app
 ### 2. Dostop (omrežje)
 
 ```
-Internet → ostc-app.org (Cloudflare)
+Internet → {{DOMAIN}} (Cloudflare)
                 │
                 ▼
-   Service LoadBalancer 192.168.1.10:8002 (MetalLB)
+   Service LoadBalancer {{LB_IP}}:{{LB_PORT}} (MetalLB)
                 │
         ┌───────┴───────┐
         ▼               ▼
    app pod (k3s-1)  app pod (k3s-2)
 ```
 
-- **Cloudflare** proxy-a na LoadBalancer IP `192.168.1.10` (MetalLB, port 80)
+- **Cloudflare** proxy-a na LoadBalancer IP `{{LB_IP}}` (MetalLB, port 80)
 - **Service tip LoadBalancer** (MetalLB) — fiksen IP, layer2 failover
 - Ob izpadu enega noda MetalLB prevzame promet na drugem nodu
 
@@ -108,7 +108,7 @@ Ko k3s-1 spet pride gor:
 
 **App povezava na bazo:**
 ```
-DATABASE_URL=postgresql://sola:PASSWORD@sola-db-rw.sola:5432/sola
+DATABASE_URL=postgresql://sola:PASSWORD@sola-db-rw.sola:{{K8S_DB_PORT}}/sola
 ```
 Uporablja Service `sola-db-rw`, ki vedno kaže na trenutni primary.
 
@@ -137,7 +137,7 @@ Za simulacijo izpada:
 ssh k3s-1 "sudo poweroff"
 
 # Preveri, da app ostane dostopen
-curl -I https://ostc-app.org
+curl -I https://{{DOMAIN}}
 
 # Po ~2 min preveri stanje
 kubectl get pods -n sola -o wide      # sola-db-2 naj bo primary
@@ -149,7 +149,7 @@ kubectl get cluster -n sola sola-db    # CNPG naj ima 2 ready instance
 
 ### 6. Pomembne opombe
 
-- **Cloudflare** kaže na LoadBalancer IP `192.168.1.10` — če se ta IP spremeni, je treba posodobiti Cloudflare DNS
+- **Cloudflare** kaže na LoadBalancer IP `{{LB_IP}}` — če se ta IP spremeni, je treba posodobiti Cloudflare DNS
 - **Longhorn** poskrbi za PVC-je — podatki so varni tudi ob izgubi enega noda
 - **Ni custom failover skript** — vse upravlja CNPG operator
 - **Failover je popolnoma avtomatski** — ni potrebno ročno posredovanje

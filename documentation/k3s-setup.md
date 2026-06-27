@@ -23,6 +23,7 @@ Internet → Cloudflare → ostc-app.org
                             │
                             ▼
                     MetalLB LoadBalancer
+                    ({{LB_IP}}:{{LB_PORT}})
                             │
                ┌────────────┴────────────┐
                │                         │
@@ -58,7 +59,7 @@ Internet → Cloudflare → ostc-app.org
 
 ```bash
 curl -sfL https://get.k3s.io | sh -s - server \
-  --disable=traefik \
+  --disable=traefik `# uporabljamo MetalLB LoadBalancer namesto Traefika` \
   --disable=servicelb \
   --write-kubeconfig-mode=644 \
   --cluster-cidr=10.42.0.0/16 \
@@ -78,7 +79,7 @@ sudo cat /var/lib/rancher/k3s/server/node-token
 curl -sfL https://get.k3s.io | sh -s - server \
   --server https://192.168.1.1:6443 \
   --token <TOKEN> \
-  --disable=traefik \
+  --disable=traefik `# uporabljamo MetalLB LoadBalancer namesto Traefika` \
   --disable=servicelb \
   --write-kubeconfig-mode=644 \
   --node-ip=192.168.1.2
