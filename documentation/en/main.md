@@ -615,10 +615,10 @@ kubectl get sc
 
 ### **PVCs in Use**
 
-| PVC | Namespace | Size | Usage | Node |
-|---|---|---|---|---|
-| `sola-db-1` | sola | 1Gi | CNPG primary (k3s-1) |
-| `sola-db-2` | sola | 1Gi | CNPG replica (k3s-2) |
+| PVC | Size | Usage | Node |
+|---|---|---|---|
+| `sola-db-1` | 1Gi | CNPG primary (k3s-1) |
+| `sola-db-2` | 1Gi | CNPG replica (k3s-2) |
 
 ### **Longhorn UI**
 

@@ -377,8 +377,8 @@ kubectl get volumes.longhorn.io -n longhorn-system
 
 ### **PVC-ji**
 
-| PVC | Name | Size | Access Mode | Uporaba |
-|---|---|---|---|---|
+| PVC | Size | Access Mode | Uporaba |
+|---|---|---|---|
 | `sola-postgresql` | 5Gi | RWO | PG data |
 | `sola-postgresql-wal` | 2Gi | RWO | WAL logi |
 
