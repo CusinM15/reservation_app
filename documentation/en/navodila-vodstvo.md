@@ -89,13 +89,13 @@ The script reads the employee list from the school website.
 
 ```bash
 cd /home/admin/ostc-app_deli
-python3 scripts/import_teachers.py --base-url https://ostc-app.org
+python3 scripts/import_teachers.py --base-url https://{{DOMAIN}}
 
 # Dry-run (no changes):
 python3 scripts/import_teachers.py --dry-run
 
 # Including administration/technical staff:
-python3 scripts/import_teachers.py --base-url https://ostc-app.org --include-all
+python3 scripts/import_teachers.py --base-url https://{{DOMAIN}} --include-all
 ```
 
 ### User Management
