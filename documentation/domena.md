@@ -8,7 +8,7 @@
 
 ---
 
-# Domena – zamenjava iz `.local` na `ostc.si`
+# Domena – zamenjava iz `.local` na `{{DOMAIN}}`
 
 Trenutna domena: **`{{DOMAIN}}`** (Cloudflare proxied)
 
@@ -51,7 +51,7 @@ http://{{LB_IP}} → direkt na LoadBalancer
 | Obdobje | Domena | Opis |
 |---|---|---|
 | Maj 2026 | `sola-app.local` | Začetna lokalna domena (mDNS) |
-| Maj 2026 | `ostc.si` | Planirana zamenjava (ni bila implementirana) |
+| Maj 2026 | `ostc.si` | Stara produkcijska domena |
 | Junij 2026 | `sola-app.ostc.si` | Začasni testni URL |
 | **Junij 2026** | **`{{DOMAIN}}`** | **Trenutna produkcijska domena** |
 

@@ -8,7 +8,7 @@
 
 ---
 
-# Domain – change from `.local` to `ostc.si`
+# Domain – change from `.local` to `{{DOMAIN}}`
 
 Current domain: **`{{DOMAIN}}`** (Cloudflare proxied)
 
@@ -51,7 +51,7 @@ http://{{LB_IP}} → direct to LoadBalancer
 | Period | Domain | Description |
 |---|---|---|
 | May 2026 | `sola-app.local` | Initial local domain (mDNS) |
-| May 2026 | `ostc.si` | Planned change (not implemented) |
+| May 2026 | `ostc.si` | Old production domain |
 | June 2026 | `sola-app.ostc.si` | Temporary test URL |
 | **June 2026** | **`{{DOMAIN}}`** | **Current production domain** |
 
