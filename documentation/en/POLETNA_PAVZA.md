@@ -39,8 +39,8 @@ This document contains instructions for safely shutting down the application and
 
 | Node | IP | Role | Status |
 |---|---|---|---|
-| k3s-1 | {{K3S_1_IP}} | control-plane,etcd | Ready |
-| k3s-2 | {{K3S_2_IP}} | control-plane,etcd | Ready |
+| k3s-1 | 192.168.1.1 | control-plane,etcd | Ready |
+| k3s-2 | 192.168.1.2 | control-plane,etcd | Ready |
 
 Current pods:
 
@@ -207,11 +207,11 @@ kubectl -n sola-app rollout status deployment/sola-app
 
 ```bash
 # Health check
-curl -s http://{{LB_IP}}:{{LB_PORT}}/health
+curl -s http://192.168.1.10:8002/health
 # {"status":"ok","version":"0.1.0"}
 
 # Website
-curl -sI https://{{DOMAIN}}
+curl -sI https://ostc-app.org
 # HTTP/2 307 → redirect to /auth/login
 
 # Check data in database
@@ -229,7 +229,7 @@ kubectl exec -n sola sola-db-1 -- psql -U postgres -d sola -c \
 
 3. **Do not just flip the power switch** — always graceful shutdown: scale down app → scale down database → stop k3s → poweroff.
 
-4. **The domain will be unreachable during the shutdown** — Cloudflare proxy points to LoadBalancer ({{LB_IP}}), which will be powered off.
+4. **The domain will be unreachable during the shutdown** — Cloudflare proxy points to LoadBalancer (192.168.1.10), which will be powered off.
 
 5. **Check cronjobs after powering on** — backup and report will start automatically per schedule.
 

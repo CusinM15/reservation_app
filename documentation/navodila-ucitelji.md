@@ -12,7 +12,7 @@
 
 ## Kako vstopiti v aplikacijo?
 
-Obiščite [aplikacijo](https://{{DOMAIN}}). Da dobite geslo, pritisnite gumb **"Pozabljeno geslo?"** in vnesite svoj šolski e-poštni naslov. V kratkem boste prejeli e-pošto od `sola@example.com`.
+Obiščite [aplikacijo](https://ostc-app.org). Da dobite geslo, pritisnite gumb **"Pozabljeno geslo?"** in vnesite svoj šolski e-poštni naslov. V kratkem boste prejeli e-pošto od `sola@example.com`.
 
 Če sporočila ne prejmete, javite administratorju, naj preveri, ali je vaš e-poštni naslov pravilno vnesen v bazo.
 
