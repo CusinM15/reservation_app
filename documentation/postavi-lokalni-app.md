@@ -178,7 +178,7 @@ Uredi `scripts/import_teachers.py`:
 
 | Težava | Rešitev |
 |---|---|
-| `Port already in use` | Spremeni `APP_PORT={{LB_PORT}}` v `.env` |
+| `Port already in use` | Spremeni `APP_PORT=8002` v `.env` |
 | SQLite `database is locked` | Ustavi app, zbriši `data/sola.db`, zaženi znova |
 | Učitelji niso uvoženi | Preveri `--dry-run` najprej |
 | Ne vidim prostorov | Preveri `PROSTORI` v `.env` |

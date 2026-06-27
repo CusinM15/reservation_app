@@ -13,8 +13,8 @@
 ## Overview
 
 The ostc-app runs in a **k3s** Kubernetes cluster on two nodes:
-- **k3s-1** ({{K3S_1_IP}}) — HP ProBook 455 G5
-- **k3s-2** ({{K3S_2_IP}}) — HP ProBook 450 G5
+- **k3s-1** (192.168.1.1) — HP ProBook 455 G5
+- **k3s-2** (192.168.1.2) — HP ProBook 450 G5
 
 Goal: if either node fails, the application remains accessible within a few minutes without manual intervention.
 
@@ -37,7 +37,7 @@ Kubernetes Deployment sola-app
 ### 2. Access (network)
 
 ```
-Internet → {{DOMAIN}} (Cloudflare)
+Internet → ostc-app.org (Cloudflare)
                 │
           ┌─────┴─────┐
           ▼           ▼
@@ -45,15 +45,15 @@ Internet → {{DOMAIN}} (Cloudflare)
           │           │
           └─────┬─────┘
                 ▼
-   Service LoadBalancer {{LB_IP}}:{{LB_PORT}} (MetalLB)
+   Service LoadBalancer 192.168.1.10:8002 (MetalLB)
                 │
         ┌───────┴───────┐
         ▼               ▼
    app pod (k3s-1)  app pod (k3s-2)
 ```
 
-- **Cloudflare** proxies to LoadBalancer IP `{{LB_IP}}` (MetalLB, port 80) or alternatively to any node via nginx (port {{NGINX_PORT}})
-- **Nginx** on **k3s-1** and **k3s-2** (both identical) proxy-passes to `{{LB_IP}}:{{LB_PORT}}`
+- **Cloudflare** proxies to LoadBalancer IP `192.168.1.10` (MetalLB, port 80) or alternatively to any node via nginx (port 8080)
+- **Nginx** on **k3s-1** and **k3s-2** (both identical) proxy-passes to `192.168.1.10:8002`
 - **Service type LoadBalancer** (MetalLB) — fixed IP, layer2 failover
 - If one node fails, MetalLB takes over traffic on the other node
 - Nginx on both nodes provides redundancy — if one fails, Cloudflare can be redirected to the other
@@ -115,7 +115,7 @@ When k3s-1 comes back up:
 
 **App connection to database:**
 ```
-DATABASE_URL=postgresql://sola:***@sola-db-rw.sola:{{K8S_DB_PORT}}/sola
+DATABASE_URL=postgresql://sola:***@sola-db-rw.sola:5432/sola
 ```
 Uses the `sola-db-rw` Service, which always points to the current primary.
 
@@ -144,7 +144,7 @@ To simulate an outage:
 ssh k3s-1 "sudo poweroff"
 
 # Check that the app remains accessible
-curl -I https://{{DOMAIN}}
+curl -I https://ostc-app.org
 
 # After ~2 min check the status
 kubectl get pods -n sola -o wide      # sola-db-2 should be primary
@@ -156,7 +156,7 @@ kubectl get cluster -n sola sola-db    # CNPG should have 2 ready instances
 
 ### 6. Important Notes
 
-- **Cloudflare** points to LoadBalancer IP `{{LB_IP}}` — if this IP changes, Cloudflare DNS must be updated
+- **Cloudflare** points to LoadBalancer IP `192.168.1.10` — if this IP changes, Cloudflare DNS must be updated
 - **Nginx** on **k3s-1** and **k3s-2** proxy-passes to the LoadBalancer IP — if the IP changes, update `/etc/nginx/sites-available/default` on both nodes
 - **Longhorn** takes care of PVCs — data is safe even if one node is lost
 - **No custom failover scripts** — everything is managed by the CNPG operator

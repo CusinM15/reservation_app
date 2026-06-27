@@ -68,13 +68,13 @@ network:
   ethernets:
     eth0:
       addresses:
-        - {{LB_IP}}/24
+        - 192.168.1.10/24
       routes:
         - to: default
-          via: {{K3S_1_IP}}
+          via: 192.168.1.1
       nameservers:
         addresses:
-          - {{LB_IP}}
+          - 192.168.1.10
           - 8.8.8.8
   version: 2
 ```

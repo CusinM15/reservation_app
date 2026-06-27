@@ -10,7 +10,7 @@
 
 # Domena – zamenjava iz `.local` na `ostc.si`
 
-Trenutna domena: **`{{DOMAIN}}`** (Cloudflare proxied)
+Trenutna domena: **`ostc-app.org`** (Cloudflare proxied)
 
 ---
 
@@ -18,12 +18,12 @@ Trenutna domena: **`{{DOMAIN}}`** (Cloudflare proxied)
 
 | Tip | Ime | Vrednost | Proxy | Namen |
 |---|---|---|---|---|
-| A | `{{DOMAIN}}` | `{{K3S_2_IP}}` | ✅ Proxied (oranžni oblak) | Aplikacija |
+| A | `ostc-app.org` | `192.168.1.2` | ✅ Proxied (oranžni oblak) | Aplikacija |
 
 Cloudflare proxy pomeni:
 - Javni DNS resolve-a na Cloudflare IP-je
-- Cloudflare posreduje promet na `{{LB_IP}}` (LoadBalancer, port 80, Flexible SSL)
-- Cloudflare skrbi za SSL (Flexible — HTTPS do uporabnika, HTTP do {{LB_IP}})
+- Cloudflare posreduje promet na `192.168.1.10` (LoadBalancer, port 80, Flexible SSL)
+- Cloudflare skrbi za SSL (Flexible — HTTPS do uporabnika, HTTP do 192.168.1.10)
 - `server: cloudflare` v HTTP headerjih
 
 ---
@@ -31,17 +31,17 @@ Cloudflare proxy pomeni:
 ## 🔄 Prometni tok
 
 ```
-🌐 Uporabnik → https://{{DOMAIN}}
+🌐 Uporabnik → https://ostc-app.org
   → Cloudflare DNS → Cloudflare edge
-    → Cloudflare proxy → {{LB_IP}} (LoadBalancer, port 80)
-      → nginx proxy_pass http://{{LB_IP}}:{{LB_PORT}}
+    → Cloudflare proxy → 192.168.1.10 (LoadBalancer, port 80)
+      → nginx proxy_pass http://192.168.1.10:8002
         → Service LoadBalancer (MetalLB)
           → sola-app pod (k3s-1 ali k3s-2)
 
 Alternativna pot (notranje omrežje):
-http://{{K3S_1_IP}}:{{NGINX_PORT}} → nginx na k3s-1 → proxy_pass {{LB_IP}}:{{LB_PORT}}
-http://{{K3S_2_IP}}:{{NGINX_PORT}} → nginx na k3s-2 → proxy_pass {{LB_IP}}:{{LB_PORT}}
-http://{{LB_IP}} → direkt na LoadBalancer
+http://192.168.1.1:8080 → nginx na k3s-1 → proxy_pass 192.168.1.10:8002
+http://192.168.1.2:8080 → nginx na k3s-2 → proxy_pass 192.168.1.10:8002
+http://192.168.1.10 → direkt na LoadBalancer
 ```
 
 ---
@@ -53,7 +53,7 @@ http://{{LB_IP}} → direkt na LoadBalancer
 | Maj 2026 | `sola-app.local` | Začetna lokalna domena (mDNS) |
 | Maj 2026 | `ostc.si` | Planirana zamenjava (ni bila implementirana) |
 | Junij 2026 | `sola-app.ostc.si` | Začasni testni URL |
-| **Junij 2026** | **`{{DOMAIN}}`** | **Trenutna produkcijska domena** |
+| **Junij 2026** | **`ostc-app.org`** | **Trenutna produkcijska domena** |
 
 ---
 
@@ -62,7 +62,7 @@ http://{{LB_IP}} → direkt na LoadBalancer
 `BASE_URL` v ConfigMap (`sola-config`, namespace `sola-app`):
 
 ```yaml
-BASE_URL: "https://{{DOMAIN}}"
+BASE_URL: "https://ostc-app.org"
 ```
 
 ---
@@ -74,7 +74,7 @@ BASE_URL: "https://{{DOMAIN}}"
 ### 1. Cloudflare
 
 1. Odpri Cloudflare dashboard
-2. Dodaj A zapis: `@` → `{{LB_IP}}` (Proxied)
+2. Dodaj A zapis: `@` → `192.168.1.10` (Proxied)
 3. Počakaj, da se DNS propagira
 
 ### 2. Posodobi BASE_URL
@@ -89,7 +89,7 @@ kubectl -n sola-app rollout restart deployment/sola-app
 
 Na k3s-2:
 ```bash
-sudo sed -i 's/{{DOMAIN}}/nova-domena.si/' /etc/nginx/sites-available/default
+sudo sed -i 's/ostc-app.org/nova-domena.si/' /etc/nginx/sites-available/default
 sudo systemctl restart nginx
 ```
 
@@ -97,7 +97,7 @@ sudo systemctl restart nginx
 
 ## 📌 Opombe
 
-- **LoadBalancer IP** `{{LB_IP}}` je fiksen — ne spreminja se ob restartu
+- **LoadBalancer IP** `192.168.1.10` je fiksen — ne spreminja se ob restartu
 - **Nginx** na k3s-2 posreduje na MetalLB IP, ne direktno na pod-e
 - **Cloudflare SSL** je "Full" — promet med Cloudflare in nginxom je HTTP (ne šifriran), vendar samo znotraj šolskega omrežja
 - Če bi želeli **end-to-end HTTPS**, bi potrebovali certbot/letsencrypt na k3s-2
