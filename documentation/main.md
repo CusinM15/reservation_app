@@ -122,13 +122,13 @@ Cloudflare proxy omogoča:
 
 | Komponenta | Lokacija | Namen |
 |---|---|---|
-| **k3s-1** | HP ProBook 455 G5 (193.2.171.250) | Control-plane, app pod, PG primary |
+| **k3s-1** | HP ProBook 455 G5 (193.2.171.250) | Control-plane, app pod, PG primary, nginx |
 | **k3s-2** | HP ProBook 450 G5 (193.2.171.249) | Control-plane, app pod, PG replica, nginx |
 | **Sola App (FastAPI)** | 2 poda (oba noda) | Rezervacije, ocenjevanje, prijava |
 | **CloudNativePG** | 2 instanci (oba noda) | PostgreSQL baza z avtomatskim failoverjem |
 | **Longhorn** | Oba noda | Distribuirano shranjevanje (PVC-ji) |
 | **MetalLB** | Oba noda | LoadBalancer IP (193.2.171.200) |
-| **nginx** | k3s-2 | Reverse proxy (port 8080 → LoadBalancer) |
+| **nginx** | Oba noda (k3s-2 primaren) | Reverse proxy (port 8080 → LoadBalancer) |
 | **Cloudflare** | Zunanji | DNS, SSL, proxy |
 
 ---
@@ -139,7 +139,7 @@ Cloudflare proxy omogoča:
 
 | Node | Model | CPU | RAM | Disk | Vloga |
 |---|---|---|---|---|---|
-| **k3s-1** | HP ProBook 455 G5 | AMD Ryzen 5 2500U | 16GB | 256GB SSD | Control-plane,etcd, app, PG primary |
+| **k3s-1** | HP ProBook 455 G5 | AMD Ryzen 5 2500U | 16GB | 256GB SSD | Control-plane,etcd, app, PG primary, nginx |
 | **k3s-2** | HP ProBook 450 G5 | Intel Core i5-8250U | 8GB | 256GB SSD | Control-plane,etcd, app, PG replica, nginx |
 
 ### **Omrežne nastavitve**
@@ -522,7 +522,7 @@ kubectl get svc -n sola-app sola-app
 
 ### **Lokacija**
 
-Nginx teče **samo na k3s-2** (ni ga na k3s-1).
+Nginx teče na **obeh nodih**, vendar Cloudflare kaže na k3s-2 (port 8080). Na k3s-1 je nginx nameščen z ostanki stare konfiguracije, ki ni aktivno v uporabi.
 
 ```bash
 ssh k3s-2
@@ -818,7 +818,7 @@ kubectl rollout status -n sola-app deployment/sola-app
 - **Failover je popolnoma avtomatski** — ni potrebno ročno posredovanje
 - **Oba noda sta control-plane** — ni ločenih worker nodov
 - **Cloudflare kaže na LoadBalancer IP** `193.2.171.200` — posreduje prek proxy-ja
-- **Nginx samo na k3s-2** — proxy_pass na LoadBalancer IP (ne na ClusterIP)
+- **Nginx na obeh nodih** — Cloudflare kaže na k3s-2:8080, na k3s-1 je nginx z ostanki stare konfiguracije
 - **App uporablja** `sola-db-rw.sola:5432` — vedno na trenutnem primary
 - **Stara Bitnami PostgreSQL je odstranjena** — uporabljamo CNPG
 - **Longhorn replikacija** — 2 repliki, podatki varni tudi ob izgubi enega noda

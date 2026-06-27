@@ -121,13 +121,13 @@ Cloudflare proxy provides:
 
 | Component | Location | Purpose |
 |---|---|---|
-| **k3s-1** | HP ProBook 455 G5 (193.2.171.250) | Control-plane, app pod, PG primary |
+| **k3s-1** | HP ProBook 455 G5 (193.2.171.250) | Control-plane, app pod, PG primary, nginx |
 | **k3s-2** | HP ProBook 450 G5 (193.2.171.249) | Control-plane, app pod, PG replica, nginx |
 | **Sola App (FastAPI)** | 2 pods (both nodes) | Reservations, assessments, login |
 | **CloudNativePG** | 2 instances (both nodes) | PostgreSQL database with automatic failover |
 | **Longhorn** | Both nodes | Distributed storage (PVCs) |
 | **MetalLB** | Both nodes | LoadBalancer IP (193.2.171.200) |
-| **nginx** | k3s-2 | Reverse proxy (port 8080 → LoadBalancer) |
+| **nginx** | Both nodes (k3s-2 primary) | Reverse proxy (port 8080 → LoadBalancer) |
 | **Cloudflare** | External | DNS, SSL, proxy |
 
 ---
@@ -138,7 +138,7 @@ Cloudflare proxy provides:
 
 | Node | Model | CPU | RAM | Disk | Role |
 |---|---|---|---|---|---|
-| **k3s-1** | HP ProBook 455 G5 | AMD Ryzen 5 2500U | 16GB | 256GB SSD | Control-plane,etcd, app, PG primary |
+| **k3s-1** | HP ProBook 455 G5 | AMD Ryzen 5 2500U | 16GB | 256GB SSD | Control-plane,etcd, app, PG primary, nginx |
 | **k3s-2** | HP ProBook 450 G5 | Intel Core i5-8250U | 8GB | 256GB SSD | Control-plane,etcd, app, PG replica, nginx |
 
 ### **Network Settings**
@@ -521,7 +521,7 @@ kubectl get svc -n sola-app sola-app
 
 ### **Location**
 
-Nginx runs **only on k3s-2** (not on k3s-1).
+Nginx runs on **both nodes**, but Cloudflare points to k3s-2 (port 8080). On k3s-1, nginx has leftover configuration from an old setup that is not actively used.
 
 ```bash
 ssh k3s-2
