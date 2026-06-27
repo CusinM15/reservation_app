@@ -137,7 +137,7 @@ Alternativna pot (interno omrežje):
   → http://{{LB_IP}}:{{LB_PORT}} → direkt na LoadBalancer
 ```
 
-> **Cloudflare proxy** kaže direktno na **LoadBalancer ({{LB_IP}}:{{LB_PORT}})** — ne na nginx na k3s-2. Če LoadBalancer IP ni dosegljiv, je treba v Cloudflare dashboardu spremeniti origin IP na drug IP (npr. k3s-1 ali k3s-2) ali popraviti MetalLB konfiguracijo.
+> **Cloudflare proxy** kaže direktno na **LoadBalancer (`{{LB_IP}}`, port 80)** — ne na nginx na k3s-2. Če LoadBalancer IP ni dosegljiv, je treba v Cloudflare dashboardu spremeniti origin IP na drug IP (npr. k3s-1 ali k3s-2) ali popraviti MetalLB konfiguracijo.
 
 ### **Pregled komponent**
 
