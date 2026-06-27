@@ -8,14 +8,19 @@
 
 ---
 
-> 💡 **Customize the documentation with your own IPs:**
-> 1. Edit [`documentation/.env.ip`](../.env.ip) — set your IPs and ports
-> 2. Run `./documentation/replace-ips.sh`
-> 3. All `{{VAR}}` placeholders in the documentation will be replaced automatically
+> 🛠️ **Customize the documentation to your IPs**
 >
-> **Example:** `{{K3S_1_IP}}` → `192.168.1.5` (your IP)
+> All documentation uses a central `.env.ip` file that defines every IP address,
+> port, and domain. Want documentation with your own values?
 >
-> *To revert back to `{{VAR}}`, run `git checkout -- documentation/`*
+> ```bash
+> cd documentation
+> nano .env.ip                          # enter your IPs
+> ./replace-ips.sh                      # docs are updated
+> ```
+>
+> The script replaces all IPs in `.md` files. After running it, you can
+> copy-paste commands directly into your terminal — they'll work as-is.
 
 ---
 

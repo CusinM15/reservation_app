@@ -8,14 +8,19 @@
 
 ---
 
-> 💡 **Prilagodi dokumentacijo svojim IP-jem:**
-> 1. Uredi [`documentation/.env.ip`](.env.ip) — vnesi svoje IP-je in porte
-> 2. Poženi `./documentation/replace-ips.sh`
-> 3. Vsi `{{VAR}}` place holderji v dokumentaciji bodo samodejno zamenjani
+> 🛠️ **Prilagodi dokumentacijo svojim IP-jem**
 >
-> **Primer:** `{{K3S_1_IP}}` → `192.168.1.5` (tvoj IP)
+> Vsa dokumentacija uporablja centralno datoteko `.env.ip`, kjer so definirani
+> vsi IP-naslovi, porti in domene. Želiš dokumentacijo s svojimi podatki?
 >
-> *Če želiš nazaj na {{VAR}}, ponastavi z `git checkout -- documentation/`*
+> ```bash
+> cd documentation
+> nano .env.ip                          # vnesi svoje IP-je
+> ./replace-ips.sh                      # dokumentacija se prilagodi
+> ```
+>
+> Skripta zamenja vse IP-je v `.md` datotekah. Po zagonu lahko komande
+> neposredno kopiraš in prilepiš v terminal — delujejo brez spreminjanja.
 
 ---
 
