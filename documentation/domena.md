@@ -18,7 +18,7 @@ Trenutna domena: **`ostc-app.org`** (Cloudflare proxied)
 
 | Tip | Ime | Vrednost | Proxy | Namen |
 |---|---|---|---|---|
-| A | `{{DOMAIN}}` | `{{LB_IP}}` | ✅ Proxied (oranžni oblak) | Aplikacija |
+| A | `{{DOMAIN}}` | `{{K3S_2_IP}}` | ✅ Proxied (oranžni oblak) | Aplikacija |
 
 Cloudflare proxy pomeni:
 - Javni DNS resolve-a na Cloudflare IP-je
