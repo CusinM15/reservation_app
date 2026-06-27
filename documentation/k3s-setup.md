@@ -64,7 +64,7 @@ curl -sfL https://get.k3s.io | sh -s - server \
   --write-kubeconfig-mode=644 \
   --cluster-cidr=10.42.0.0/16 \
   --service-cidr=10.43.0.0/16 \
-  --node-ip=192.168.1.1
+  --node-ip={{K3S_1_IP}}
 ```
 
 ### 1.2 Pridobi token
@@ -77,12 +77,12 @@ sudo cat /var/lib/rancher/k3s/server/node-token
 
 ```bash
 curl -sfL https://get.k3s.io | sh -s - server \
-  --server https://192.168.1.1:6443 \
+  --server https://{{K3S_1_IP}}:6443 \
   --token <TOKEN> \
   --disable=traefik `# uporabljamo MetalLB LoadBalancer namesto Traefika` \
   --disable=servicelb \
   --write-kubeconfig-mode=644 \
-  --node-ip=192.168.1.2
+  --node-ip={{K3S_2_IP}}
 ```
 
 ### 1.4 Preveri

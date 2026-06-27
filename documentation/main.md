@@ -75,12 +75,12 @@ Ta datoteka je **glavni vstopni dokument**. Spodaj so povezave na specializirane
 │  ┌──────────────────────────┐    ┌──────────────────────────┐            │
 │  │    k3s-1                 │    │    k3s-2                 │            │
 │  │    HP ProBook 455 G5     │    │    HP ProBook 450 G5     │            │
-│  │    IP: {{K3S_1_IP}}      │    │    IP: {{K3S_2_IP}}      │            │
+│  │    IP: {{K3S_1_IP}}   │    │    IP: {{K3S_2_IP}}   │            │
 │  │    control-plane,etcd    │    │    control-plane,etcd    │            │
 │  │                          │    │                          │            │
 │  │  ┌───────────────────┐   │    │  ┌───────────────────┐   │            │
 │  │  │ sola-app Pod 1    │   │    │  │ sola-app Pod 2    │   │            │
-│  │  │ (app.{{DOMAIN}})  │   │    │  │ (app.{{DOMAIN}})  │   │            │
+│  │  │ (app.ostc-app.org)  │   │    │  | (app.ostc-app.org)  │   │            │
 │  │  └───────────────────┘   │    │  └───────────────────┘   │            │
 │  │  ┌───────────────────┐   │    │  ┌───────────────────┐   │            │
 │  │  │ sola-db-1         │   │    │  │ sola-db-2         │   │            │
@@ -94,8 +94,9 @@ Ta datoteka je **glavni vstopni dokument**. Spodaj so povezave na specializirane
 │  │  └───────────────────┘   │    │  └───────────────────┘   │            │
 │  │                          │    │                          │            │
 │  └──────────────────────────┘    └──────────────────────────┘            │
-│                               │                                          │
-│                               │                                          │
+│                                                  │                       │
+│                    ┌─────────────────────────────┘                       │
+│                    │                                                     │
 │  ┌─────────────────▼────────────────────────────────────────────┐        │
 │  │        Service LoadBalancer (MetalLB, {{LB_IP}}:{{LB_PORT}}) │        │
 │  │        → sola-app Pod 1 ali Pod 2                            │        │
@@ -104,7 +105,7 @@ Ta datoteka je **glavni vstopni dokument**. Spodaj so povezave na specializirane
                               │
                     ┌─────────▼─────────────────────┐
                     │  Cloudflare DNS               │
-                    │  {{DOMAIN}}                   │   
+                    │  ostc-app.org                   │   
                     │  → {{LB_IP}}:{{LB_PORT}}  │  📡 Cloudflare proxy
                     │    (LoadBalancer)          │
                     └───────────────────────────────┘
@@ -119,27 +120,25 @@ Ta datoteka je **glavni vstopni dokument**. Spodaj so povezave na specializirane
 
 ```
 🌐 Uporabnik
-  → Cloudflare (SSL, proxy, {{DOMAIN}})
-    → Service LoadBalancer (MetalLB, {{LB_IP}})
+  → Cloudflare (SSL, proxy, ostc-app.org)
+    → Service LoadBalancer (MetalLB, {{LB_IP}}:{{LB_PORT}})
       → sola-app Pod (k3s-1 ali k3s-2)
 
-Alternativna pot (interno omrežje):
   → http://{{LB_IP}}:{{LB_PORT}} → direkt na LoadBalancer
 ```
 
-> **Cloudflare proxy** kaže direktno na **LoadBalancer (`{{LB_IP}}`, port 80)**.
-> **HA zagotavlja MetalLB** — layer2 failover: če node z LB IP-jem crkne, drug
-> node avtomatsko prevzame IP v nekaj sekundah.
+> **Cloudflare proxy** kaže direktno na **LoadBalancer (`{{LB_IP}}`, port 80)** — promet gre direkt na MetalLB, HA deluje samodejno — če en node crkne, MetalLB premakne IP na drugega.
+
 ### **Pregled komponent**
 
-| Komponenta | Lokacija | Namen |
-|---|---|---|
-| **k3s-1** | HP ProBook 455 G5 ({{K3S_1_IP}}) | Control-plane, app pod, PG primary |
-| **k3s-2** | HP ProBook 450 G5 ({{K3S_2_IP}}) | Control-plane, app pod, PG replica |
-| **Sola App (FastAPI)** | 2 poda (oba noda) | Rezervacije, ocenjevanje, prijava |
-| **Longhorn** | Oba noda | Distribuirano shranjevanje (PVC-ji) |
-| **MetalLB** | Oba noda | LoadBalancer IP ({{LB_IP}}) |
-| **Cloudflare** | Zunanji | DNS, SSL, proxy |
+|  | Komponenta | Lokacija | Namen |
+|---|---|---|---|
+|| **k3s-1** | HP ProBook 455 G5 ({{K3S_1_IP}}) | Control-plane, app pod, PG primary |
+|| **k3s-2** | HP ProBook 450 G5 ({{K3S_2_IP}}) | Control-plane, app pod, PG replica |
+|| **Sola App (FastAPI)** | 2 poda (oba noda) | Rezervacije, ocenjevanje, prijava |
+|| **Longhorn** | Oba noda | Distribuirano shranjevanje (PVC-ji) |
+|| **MetalLB** | Oba noda | LoadBalancer IP ({{LB_IP}}) |
+|| **Cloudflare** | Zunanji | DNS, SSL, proxy |
 
 ---
 
@@ -148,7 +147,7 @@ Alternativna pot (interno omrežje):
 ### **Specifikacije**
 
 | Node | Model | CPU | RAM | Disk | Vloga |
-|---|---|---|---|---|---|
+|---|---|---|---|---|---|---|
 | **k3s-1** | HP ProBook 455 G5 | AMD Ryzen 5 2500U | 16GB | 256GB SSD | Control-plane,etcd, app, PG primary |
 | **k3s-2** | HP ProBook 450 G5 | Intel Core i5-8250U | 8GB | 256GB SSD | Control-plane,etcd, app, PG replica |
 
@@ -158,8 +157,8 @@ Alternativna pot (interno omrežje):
 # Lokalno omrežje (Arnes)
 k3s-1: {{K3S_1_IP}}/24
 k3s-2: {{K3S_2_IP}}/24
-Gateway: {{K3S_2_IP}}54
-DNS: {{K3S_2_IP}}53
+Gateway: {{GATEWAY_IP}}
+DNS: {{DNS_IP}}
 
 # Kubernetes Pod CIDR
 10.42.0.0/16
@@ -175,15 +174,15 @@ DNS: {{K3S_2_IP}}53
 
 ```bash
 # SSH v oba noda
-ssh admin@{{K3S_1_IP}}    # k3s-1
-ssh admin@{{K3S_2_IP}}    # k3s-2
+ssh {{SSH_USER}}@{{K3S_1_IP}}    # k3s-1
+ssh {{SSH_USER}}@{{K3S_2_IP}}    # k3s-2
 
 # Kubernetes (k3s) — kubeconfig je na obeh nodih
 kubectl get nodes -o wide
 kubectl get pods -A -o wide
 
 # Aplikacija v brskalniku
-https://{{DOMAIN}}          # prek Cloudflare + LoadBalancer
+https://ostc-app.org          # prek Cloudflare + LoadBalancer
 http://{{LB_IP}}:{{LB_PORT}}     # direkt (samo interno omrežje)
 ```
 
@@ -317,13 +316,15 @@ CNPG samodejno ustvari tri Kubernetes Services za dostop do baze:
 
 ---
 
+---
+
 ## ☁️ **Cloudflare DNS**
 
 ### **DNS zapisi**
 
 | Tip | Ime | Vrednost | Proxy |
 |---|---|---|---|
-| A | `@` ({{DOMAIN}}) | {{LB_IP}} | ✅ Cloudflare proxy (LoadBalancer) |
+| A | `@` (ostc-app.org) | {{LB_IP}} | ✅ Cloudflare proxy (LoadBalancer) |
 | A | `www` | {{LB_IP}} | ✅ Cloudflare proxy |
 
 ### **SSL/TLS**
@@ -402,9 +403,6 @@ kubectl get volumes.longhorn.io -n longhorn-system
 
 # Preveri CloudNativePG
 kubectl get cluster -n sola-app
-
-# Preveri LoadBalancer
-kubectl get svc -n sola-app sola-app
 ```
 
 ### **Ob izpadu noda**
