@@ -615,10 +615,23 @@ kubectl get sc
 
 ### **PVCs in Use**
 
-| PVC | Size | Usage | Node |
+```bash
+kubectl get pvc -n sola-app
+```
+
+| PVC | Size | Access Mode | Usage |
 |---|---|---|---|
-| `sola-db-1` | 1Gi | CNPG primary (k3s-1) |
-| `sola-db-2` | 1Gi | CNPG replica (k3s-2) |
+| `sola-postgresql` | 5Gi | RWO | PG data |
+| `sola-postgresql-wal` | 2Gi | RWO | WAL logs |
+
+**PVC Explanation:**
+
+| PVC | What it stores | Why it matters |
+|---|---|---|
+| `sola-postgresql` (5Gi) | **PG database data** — all tables, indexes, users, reservations, grades. The "main" PVC. If this is lost, all data is gone. | The database itself. 5Gi is enough for a full school year (users, reservations, assessments). |
+| `sola-postgresql-wal` (2Gi) | **Write-Ahead Logs (WAL)** — a journal of every change made to the database, written before the data files themselves. Used for: crash recovery (if PG crashes mid-write), replica replication (the replica reads WAL and replays changes), point-in-time recovery (restore to an exact moment). | Smaller PVC (2Gi) because WALs are recycled. Without WALs the replica cannot keep up with the primary. |
+
+**Longhorn replication** (2 copies) ensures data survives the loss of one node. Both PVCs have two replicas — one on each k3s node.
 
 ### **Longhorn UI**
 
