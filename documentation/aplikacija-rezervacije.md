@@ -10,99 +10,161 @@
 
 # 📱 Aplikacija za rezervacije in napovedi ocenjevanja
 
-## Namen
+## Namen — čemu sploh služi ta aplikacija?
 
-Aplikacija je razvita za OŠ Toneta Čufarja Jesenice. Glavni namen je, ker šola potrebuje mrežni diagram za napoved ocenjevanja. Poleg tega omogoča tudi rezervacijo prostorov (računalnica, ladja, tablice, gospodinjska učilnica).
+Preden je nastala ta aplikacija, je na šoli potekalo vse po starem: učitelji so hodili po hodnikih, se ustavljali pred zbornico in drug drugega spraševali »Kdaj boš pisal test?«, »Si že zasedel računalnico?«, »A so tablice proste?«. Nastajali so lističi, koledarji na tablah in zmeda. Potem je nekdo pozabil vnesti ocenjevanje v redovalnico, pa so učenci v enem tednu pisali štiri teste — in pobesneli so starši, ravnatelj in zakon.
 
-Ker avtor ne planira ostati dolgo na šoli, je aplikacija narejena čim bolj enostavno — tudi za osebe, ki niso vešče računalnika.
+**Aplikacija rešuje dva ključna problema:**
 
-**Strežnik:** Ubuntu Server na starih računalnikih (preslabih za Windows 11), kar jim daje novo uporabno vrednost.
+1. **Mrežni diagram ocenjevanj** — učitelji vnesejo, kdaj bodo pisali test, aplikacija pa sama poskrbi, da ne pride do prekrivanj in kršitev pravilnik (največ 3 ocenjevanja na teden, največ 2 običajni, prepoved treh zaporednih dni ...). Namesto listkov na tabli — en klik.
+2. **Rezervacija prostorov** — tablice, računalnica, ladja (pomivalni čoln) in gospodinjska učilnica. Vsak učitelj vidi v realnem času, kaj je prosto in kaj zasedeno.
+
+Aplikacija je razvita za **OŠ Toneta Čufarja Jesenice**. Namenoma je narejena čim bolj preprosto — ker avtor ne bo večno na šoli. Ko bo nekega dne odšel, naj bi jo lahko vzdrževal in uporabljal vsak, ki mu ni tuje delo z računalnikom. Nič zapletenega, nič skrivnostnega.
+
+**Strežnik:** Aplikacija teče na **Ubuntu Server** na starih računalnikih, ki so preslabi za Windows 11, a še vedno povsem dovolj zmogljivi za to delo. Strojna oprema, ki bi sicer romala v smeti, dobi novo, uporabno življenje. Trajnostno in praktično.
 
 ---
 
-## Tehnologije
+## Tehnologije — kaj vse poganja to aplikacijo?
 
-| Sloj | Tehnologija |
-|---|---|
-| Backend | Python 3.12, FastAPI, Uvicorn |
-| Podatkovna baza | PostgreSQL (produkcija) / SQLite (development) |
-| Frontend | Jinja2 template, HTML/CSS/JS |
-| Avtentikacija | cookie-based session z bcrypt hashom |
-| Email | SMTP prek Arnesa (mail.arnes.si) |
-| Orkestracija | Kubernetes (k3s) |
-| Storage | Longhorn (distribuiran blokovni storage) |
-| LoadBalancer | MetalLB |
+Spodaj so tehnologije, ki jih aplikacija uporablja. Za računalničarja so to domače besede, za vse ostale pa sledi kratek opis — vsaka tehnologija ima svoj namen, kot ima na šoli vsak učitelj svoj predmet.
+
+### Kako si sledijo plasti (sloji)?
+
+Ko vi odprete aplikacijo v brskalniku, se zgodi tole:
+1. Brskalnik pošlje zahtevo po omrežju
+2. **MetalLB** poskrbi, da zahteva najde pravi strežnik na pravem naslovu
+3. **k3s (Kubernetes)** pove, kateri del aplikacije naj zahtevo obdela
+4. **FastAPI (Python)** obdela zahtevo — pogleda, kaj hočete, in pripravi odgovor
+5. Če so potrebni podatki (ocene, uporabniki, rezervacije), jih **PostgreSQL** ali **SQLite** priskrbi iz baze
+
+| Sloj | Tehnologija | Kaj to pomeni za laika |
+|------|------------|------------------------|
+| **Backend (ozadje)** | Python 3.12, FastAPI, Uvicorn | **Python** je programski jezik — niz navodil, ki jih računalnik izvaja. **FastAPI** je programsko ogrodje, ki pove aplikaciji, kako naj odgovarja na klike (kot recepcija, ki usmerja klice na prave ljudi). **Uvicorn** je stražar, ki čaka na dohodne zahteve in jih posreduje naprej. |
+| **Podatkovna baza** | PostgreSQL (produkcija) / SQLite (razvoj) | **PostgreSQL** je digitalni arhiv — tja se shranjujejo vsi podatki: kdo je kaj rezerviral, kdaj je ocenjevanje, katera gesla ... V produkciji (ko aplikacija res deluje v živo) uporabljamo PostgreSQL, ker je zanesljiv in zmogljiv. Med razvojem (ko avtor kaj popravlja in testira) pa zadošča **SQLite**, ki je lažji in ne potrebuje strežnika. |
+| **Frontend (vidni del)** | Jinja2 predloge, HTML/CSS/JS | Ko aplikacija pripravi odgovor, ga zavije v **HTML** (spletna stran), olepša z **CSS** (barve, pisave, postavitev) in poživi z **JavaScriptom** (gumbi, pojavna okna). **Jinja2** pa je predloga — kot šablona za dokument, kamor aplikacija samo vstavi podatke (ime učitelja, seznam rezervacij ...). |
+| **Avtentikacija (prijava)** | piškotki (cookies) z bcrypt | Ko se prijavite, aplikacija v vaš brskalnik shrani **piškotek** — majhen košček podatka, s katerim vas prepozna ob naslednjem kliku. Gesla so zakodirana z **bcrypt** (matematični mlinček, ki iz gesla naredi nepovratno kodo — tudi če nekdo ukrade bazo, ne more prebrati gesel). |
+| **Email** | SMTP prek Arnesa (mail.arnes.si) | Kadar aplikacija pošilja obvestila (npr. »Vaše ocenjevanje je bilo prestavljeno, ker je športni dan«), uporablja Arnesov poštni strežnik — enako, kot če bi poslali email iz šolskega računa. |
+| **Orkestracija (povezovanje)** | Kubernetes — natančneje **k3s** | Predstavljajte si, da imate zabojnik (container) z aplikacijo, ki živi v virtualnem svetu. **Kubernetes** (k3s) je dirigent, ki poskrbi, da ti zabojniki delujejo usklajeno: če eden crkne, ga zažene na novo; če prihaja preveč obiskovalcev, jih razporedi med več zabojnikov. **k3s** je lažja različica Kubernetes, narejena prav za take manjše sisteme. |
+| **Shramba (disk)** | **Longhorn** | **Longhorn** je distribuiran blokovni storage — oziroma po domače: pameten virtualni disk. Podatki so shranjeni na **obeh** računalnikih hkrati, tako da če eden crkne (se sesuje ali izklopi), drugi še vedno ima vse podatke. Brez izgube, brez panike. |
+| **Omrežni naslov** | **MetalLB** | **MetalLB** skrbi, da ima aplikacija **fiksni naslov v omrežju**. Tako kot ima šolska knjižnica vedno isti prostor v stavbi, ima aplikacija vedno isti IP-naslov — tudi če se strežniki zamenjajo ali prestavijo. Učitelji vedno odprejo isti naslov in aplikacija je tam. |
 
 ---
 
 ## Spremenljivke za celotno aplikacijo — .env
+
+V datoteki `.env` so shranjeni vsi pomembni nastavitveni podatki. To je kot **nadzorna plošča** aplikacije — če hočete kaj spremeniti (npr. dodati nov prostor, spremeniti uro pošiljanja pošte, povečati število tablic), to naredite tukaj. Nobene potrebe po brskanju po kodi.
 
 ```bash
 # App settings
 APP_HOST=0.0.0.0
 APP_PORT=port na katerem teče app
 
-DATABASE_URL=postgresql url
+DATABASE_URL=naslov podatkovne baze (postgresql)
 
 # Email settings
-MAIL_USERNAME=kratek ime maila
-MAIL_PASSWORD=*** maila
+MAIL_USERNAME=kratek naziv maila (uporabniško ime)
+MAIL_PASSWORD=*** geslo maila
 MAIL_SERVER=mail.arnes.si
 MAIL_PORT=587
-MAIL_FROM=mail iz katerega aplikacija pošilja sporočila
-BACKUP_EMAIL=mail ki dnevno dobi backup baze
-STANJE_MAIL=mail ki dnevno dobi poročilo o stanju klastra
+MAIL_FROM=naslov, s katerega aplikacija pošilja sporočila
+BACKUP_EMAIL=email, ki dnevno dobi varnostno kopijo baze
+STANJE_MAIL=email, ki dnevno dobi poročilo o stanju klastra
 
 # App config
-TABLICE_MAX=število vseh tablic
+TABLICE_MAX=največje število vseh tablic (trenutno 28)
 SCHEDULE={"številka ure":"časovni interval ure"}
-RAZREDI=seznam razredov
-PROSTORI=seznam prostorov
+RAZREDI=seznam vseh razredov na šoli
+PROSTORI=seznam vseh prostorov, ki jih je mogoče rezervirati
 
 # Session timeout (teacher)
-INACTIVITY_TIMEOUT_MINUTES=po koliko časa se učitelj izpiše ob nedejavnosti
+INACTIVITY_TIMEOUT_MINUTES=po koliko minutah nedejavnosti se učitelj samodejno odjavi
 # Session timeout (admin/vodstvo)
-INACTIVITY_TIMEOUT_ADMIN_MINUTES=po koliko časa se vodstvo/admin izpiše
+INACTIVITY_TIMEOUT_ADMIN_MINUTES=po koliko minutah nedejavnosti se vodstvo/admin samodejno odjavi
 ```
 
 ---
 
-## Funkcionalnosti
+## Funkcionalnosti — kaj vse aplikacija zmore?
 
-### Rezervacije prostorov
+### 📌 Rezervacije prostorov
 
-- **Tablice** — 28 kosov, lahko si jih deli več učiteljev v isti uri
-- **Računalnica** — ena rezervacija na termin
-- **Ladja** (pomivalni čoln) — ena rezervacija na termin
-- **Gospodinjska učilnica** — ena rezervacija na termin
+Aplikacija omogoča rezervacijo štirih vrst prostorov/stvari:
 
-### Ocenjevanja
+| Prostor | Opis | Pravilo |
+|---------|------|---------|
+| **Tablice** | 28 kosov prenosnih tablic | Več učiteljev si jih lahko deli v isti uri — vsak dobi svoj košček |
+| **Računalnica** | Učilnica z računalniki | **Ena** rezervacija na termin — kdor prvi pride, prvi melje |
+| **Ladja** (pomivalni čoln) | Poseben pripomoček za praktični pouk | **Ena** rezervacija na termin |
+| **Gospodinjska učilnica** | Učilnica za gospodinjstvo | **Ena** rezervacija na termin |
 
-Napovedovanje pisnih ocenjevanj z omejitvami:
-- Max 3 ocenjevanja na teden
-- Max 2 običajni (neponavljalni) na teden
-- Prepoved 3 zaporednih dni
-- Samodejno preverjanje pravil za 1.–7. razred
+Rezervacije so prikazane v preglednem koledarju. Vsak učitelj vidi, kaj je prosto, kaj zasedeno in kdo je zasedel. Brez listkov, brez spraševanja.
 
-### Zasedeni datumi
+### 📝 Napovedovanje ocenjevanj
 
-Vodstvo/admin označi dneve kot zasedene (športni dan, ekskurzija...). Sistem:
-- Samodejno izbriše obstoječa ocenjevanja v tem obdobju
-- Pošlje email obvestila prizadetim učiteljem
+Učitelji vnesejo datum in razred, aplikacija pa **samodejno preveri vsa pravila** — tako da do kršitev sploh ne more priti.
 
-### Admin panel
+**Pravila, ki jih sistem uveljavlja:**
 
-Upravljanje uporabnikov — dodajanje, urejanje, brisanje, deaktivacija.
+- **Največ 3 ocenjevanja na teden** — ne glede na vrsto
+- **Največ 2 običajni (neponavljalni) ocenjevanji na teden** — da učencev ne preobremenjujemo
+- **Prepoved treh zaporednih dni** — noben razred ne sme pisati testa tri dni zapored
+- **Samodejno preverjanje pravil za 1.–7. razred** — mlajši učenci so dodatno zaščiteni
+
+Če učitelj poskuša vnesti ocenjevanje, ki bi kršilo pravila, ga aplikacija **ne pusti**. Pokaže opozorilo in pojasni, zakaj termin ni mogoč. Ni več »nisem vedel, da že imate test«.
+
+### 🚫 Zasedeni datumi
+
+Vodstvo ali admin lahko označi poljubne dneve kot **zasedene** — to so dnevi, ko ocenjevanja **niso dovoljena** (športni dan, ekskurzija, kulturni dan, nastopi ...).
+
+Ko vodstvo označi zasedeno obdobje:
+
+1. **Sistem samodejno pobriše** vsa obstoječa ocenjevanja, ki so padla v to obdobje
+2. **Pošlje email obvestila** vsem prizadetim učiteljem — natančno pove, katero ocenjevanje je bilo preklicano in zakaj
+3. V koledarju se obdobje prikaže kot **rdeče** (zasedeno)
+
+Ni več potrebe, da ravnatelj pošilja okrožnice in prosi učitelje, naj ročno brišejo termine. Vse naredi aplikacija.
+
+### ⚙️ Admin panel
+
+**Samo za administratorja.** Tu se upravljajo uporabniki:
+
+- **Dodajanje** novih uporabnikov (novi učitelji, novo vodstvo)
+- **Urejanje** obstoječih (sprememba imena, vloge, emaila)
+- **Brisanje** uporabnikov (ko odidejo iz šole)
+- **Deaktivacija** (začasno onemogoči dostop, ne da bi izbrisali podatke)
+
+Admin panel je preprost in pregleden — nobenih skritih menijev ali zapletenih nastavitev.
 
 ---
 
-## Vloge uporabnikov
+## Vloge uporabnikov — kdo sme kaj početi?
+
+Šola ima tri vrste uporabnikov. Vsaka ima svoje pravice — podobno kot imajo učenci, učitelji in ravnatelj različne ključe od različnih omar.
 
 | Funkcija | Učitelj | Vodstvo | Admin |
-|---|---|---|---|
-| Rezervacija prostorov | ✅ | ✅ | ✅ |
-| Brisanje lastne rezervacije | ✅ | ✅ | ✅ |
-| Brisanje tuje rezervacije | ❌ | ✅ | ✅ |
-| Napoved ocenjevanja | ✅ | ✅ | ✅ |
-| Upravljanje zasedenih datumov | ❌ | ✅ | ✅ |
-| Admin panel (uporabniki) | ❌ | ❌ | ✅ |
+|----------|:-------:|:-------:|:-----:|
+| **Rezervacija prostorov** | ✅ Da | ✅ Da | ✅ Da |
+| **Brisanje lastne rezervacije** | ✅ Da | ✅ Da | ✅ Da |
+| **Brisanje tuje rezervacije** | ❌ Ne | ✅ Da | ✅ Da |
+| **Napoved ocenjevanja** | ✅ Da | ✅ Da | ✅ Da |
+| **Upravljanje zasedenih datumov** | ❌ Ne | ✅ Da | ✅ Da |
+| **Admin panel (uporabniki)** | ❌ Ne | ❌ Ne | ✅ Da |
+
+**Učitelj** — lahko rezervira prostore, napoveduje ocenjevanja in briše samo svoje vnose. Ne more posegati v delo drugih.
+
+**Vodstvo** (ravnatelj, pomočnik) — lahko počne vse, kar učitelj, **poleg tega** pa lahko briše tuje rezervacije (če je treba kaj nujno prestaviti) in označuje zasedene datume. Edino česar ne more: upravljati uporabnikov.
+
+**Admin** — najvišja raven dostopa. Lahko počne čisto vse, vključno z dodajanjem in brisanjem uporabnikov. Običajno je to ena do dve osebi na šoli (računalnikar, skrbnik informacijskega sistema).
+
+---
+
+## Zakaj je vse skupaj tako preprosto?
+
+Avtor aplikacije se zaveda, da ne bo večno na šoli. Zato je vsaka odločitev pri razvoju sledila trem načelom:
+
+1. **Enostavnost** — če lahko nekaj narediš na preprost način, ni razloga za zapletenega
+2. **Vzdržljivost** — aplikacija mora delovati tudi, ko avtorja ni več
+3. **Preglednost** — vsak, ki zna odpreti datoteko `.env` in brati dokumentacijo, mora razumeti, kako stvari delujejo
+
+Zato so tehnologije izbrane premišljeno in dokumentacija napisana v čim bolj razumljivem jeziku. Če vam je kaj nejasno, vprašajte administratorja — in če tudi on ne ve, imate vsaj točno vedenje, kje iskati.

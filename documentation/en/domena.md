@@ -48,7 +48,6 @@ http://192.168.1.10 → direct to LoadBalancer
 | Period | Domain | Description |
 |---|---|---|
 | May 2026 | `sola-app.local` | Initial local domain (mDNS) |
-| May 2026 | `ostc.si` | Old production domain |
 | June 2026 | `sola-app.ostc.si` | Temporary test URL |
 | **June 2026** | **`ostc-app.org`** | **Current production domain** |
 
