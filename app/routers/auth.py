@@ -7,6 +7,8 @@ import os, secrets
 from datetime import datetime, timedelta, timezone
 
 from app.database import get_db
+from app.config import settings
+from app.audit import log_audit
 from app.models import User, RoleEnum
 from app.config import settings, validate_password_strength
 from app.routers.blocked_dates import _send_email
@@ -237,6 +239,9 @@ def change_password(
     
     user.password_hash = get_password_hash(new_password)
     db.commit()
+    log_audit(db, user_id=user.id, username=user.username,
+              action="change_password",
+              details="user changed own password")
     return {"message": "Geslo uspešno spremenjeno"}
 
 
@@ -290,6 +295,9 @@ def create_user(
     )
     db.add(new_user)
     db.commit()
+    log_audit(db, user_id=current_user.id, username=current_user.username,
+              action="create_user",
+              details=f"username={username}, email={email}, role={role}")
     return RedirectResponse(url="/auth/admin/users", status_code=303)
 
 
@@ -304,6 +312,9 @@ def deactivate_user(id: int, request: Request, db: Session = Depends(get_db)):
     if user:
         user.is_active = False
         db.commit()
+        log_audit(db, user_id=current_user.id, username=current_user.username,
+                  action="deactivate_user",
+                  details=f"user_id={id}, username={user.username}")
     return RedirectResponse(url="/auth/admin/users", status_code=303)
 
 
@@ -318,6 +329,9 @@ def activate_user(id: int, request: Request, db: Session = Depends(get_db)):
     if user:
         user.is_active = True
         db.commit()
+        log_audit(db, user_id=current_user.id, username=current_user.username,
+                  action="activate_user",
+                  details=f"user_id={id}, username={user.username}")
     return RedirectResponse(url="/auth/admin/users", status_code=303)
 
 
@@ -340,6 +354,9 @@ def delete_user(id: int, request: Request, db: Session = Depends(get_db)):
     db.query(Assessment).filter(Assessment.teacher_id == id).delete()
     db.delete(user)
     db.commit()
+    log_audit(db, user_id=current_user.id, username=current_user.username,
+              action="delete_user",
+              details=f"user_id={id}, username={user.username}, role={user.role}")
     return RedirectResponse(url="/auth/admin/users", status_code=303)
 
 
@@ -376,4 +393,7 @@ def update_user(
     user.last_name = last_name
     user.role = role
     db.commit()
+    log_audit(db, user_id=current_user.id, username=current_user.username,
+              action="update_user",
+              details=f"user_id={id}, username={username}, email={email}, role={role}, password_changed={'yes' if new_password else 'no'}")
     return RedirectResponse(url="/auth/admin/users", status_code=303)

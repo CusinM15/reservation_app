@@ -47,6 +47,7 @@ Ta datoteka je **glavni vstopni dokument** — kot recepcija v šoli, ki ti pove
 | [👑 **Navodila za vodstvo**](navodila-vodstvo.md) | Upravljanje prek brskalnika (serije, zasedeni datumi) |
 | [📱 **Opis aplikacije**](aplikacija-rezervacije.md) | Kaj aplikacija omogoča, namen, funkcionalnosti |
 | [📖 **Navodila za uporabnika**](navodila-uporabnika.md) | Prijava, gesla, dnevna uporaba |
+| [📋 **Audit log**](main.md#audit-log) | Dnevnik sprememb — kdo je kaj naredil in kdaj |
 
 ---
 
@@ -57,7 +58,8 @@ Ta datoteka je **glavni vstopni dokument** — kot recepcija v šoli, ki ti pove
 3. [Domena in Cloudflare](#domena-in-cloudflare)
 4. [Longhorn Storage](#longhorn-storage)
 5. [Dnevni backup in reporti](#dnevni-backup-in-reporti)
-6. [Vzdrževanje in okvare](#vzdrževanje-in-okvare)
+6. [Audit log — dnevnik sprememb](#audit-log--dnevnik-sprememb)
+7. [Vzdrževanje in okvare](#vzdrževanje-in-okvare)
 7. [Poletna pavza](#poletna-pavza)
 8. [Celoten sklic ukazov](#celoten-sklic-ukazov)
 9. [Razlaga pojmov](#razlaga-pojmov)
@@ -291,6 +293,39 @@ Poročilo vključuje:
 > | **OOMKilled** | Out Of Memory — aplikaciji je **zmanjkalo RAM-a**, Kubernetes jo je ugasnil | Aplikacija porabi več pomnilnika, kot mu je dodeljenega (npr. 128 MB namesto 256 MB). Popraviš s povečanjem `memory` limita v Deployment YAML. |
 > | **CrashLoopBackOff** | Aplikacija se **nenehno sesipa in znova nalaga** — vsakič hitro crkne, Kubernetes jo poskuša znova zagnati | Kot da bi se računalnik sam od sebe ugasoval takoj po vklopu. Vzrok je skoraj vedno napaka v kodi ali napačna nastavitev. Pogledaš log: `kubectl logs -n sola-app <pod-name>` |
 > | **Neuspešni volume mounti** | Aplikacija ne more **priklopiti diska** — Longhorn diska ni našel ali je pokvarjen | Kot da bi hotel odpreti mapo na disku, pa je disk odklopljen. Preveriš z `kubectl get pv,pvc -n sola-app` in `kubectl get volumes.longhorn.io -n longhorn-system`. |
+
+---
+
+## 📋 **Audit log — dnevnik sprememb**
+
+> **V enem stavku:** Vsaka pomembna akcija (ustvarjanje/brisanje rezervacij, ocenjevanj, uporabnikov, blokiranje datumov) se samodejno zapiše v bazo skupaj s podatki o tem, **kdo** je to naredil in **kdaj**.
+
+> **ELI5:** Predstavljaj si, da imaš **knjigo prihodov in odhodov** v šoli. Vsakič, ko nekdo nekaj spremeni (doda rezervacijo, zbriše ocenjevanje, ustvari uporabnika), se to zapiše v knjigo — s časom in imenom. Lahko greš kadarkoli nazaj in preveriš, kaj se je dogajalo. Brez ugibanj, brez "kdo je to zbrisal".
+
+**Dostop:** Samo **admin in vodstvo** (prek menija v aplikaciji → "📋 Audit log" ali na `/api/audit-log/page`).
+
+**Kaj se beleži:**
+
+| Akcija | Opis |
+|--------|------|
+| `create_rezervacija` | Ustvarjena enkratna rezervacija |
+| `delete_rezervacija` | Izbrisana rezervacija |
+| `create_series` | Ustvarjena tedenska/celodnevna serija |
+| `delete_series` | Izbrisana celotna serija |
+| `create_ocenjevanje` | Napovedano ocenjevanje |
+| `delete_ocenjevanje` | Izbrisano ocenjevanje |
+| `create_blocked_dates` | Dodani zasedeni datumi |
+| `delete_blocked_date` | Odstranjen zaseden datum |
+| `create_user` | Ustvarjen nov uporabnik (admin) |
+| `update_user` | Posodobljen uporabnik (admin) |
+| `delete_user` | Izbrisan uporabnik (admin) |
+| `activate_user` | Aktiviran uporabnik (admin) |
+| `deactivate_user` | Deaktiviran uporabnik (admin) |
+| `change_password` | Uporabnik spremenil svoje geslo |
+
+**Ne beleži se:** branje podatkov (kdo si je kaj ogledal), neuspeli poskusi prijave — samo dejanske spremembe.
+
+> **Nasvet:** Audit log je **append-only** — vanj se samo dodaja, nikoli ne briše. Tudi če admin zbriše uporabnika, ostane zapis o tem v audit logu. To je namerno — revizijska sled mora biti nespremenljiva.
 
 ---
 

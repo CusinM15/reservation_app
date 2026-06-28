@@ -1,6 +1,6 @@
-from datetime import date
+from datetime import date, datetime
 
-from sqlalchemy import Boolean, Column, Integer, String, Date, ForeignKey, Enum as SAEnum
+from sqlalchemy import Boolean, Column, Integer, String, Date, DateTime, Text, ForeignKey, Enum as SAEnum, BigInteger
 from sqlalchemy.orm import relationship
 import enum
 
@@ -68,3 +68,16 @@ class BlockedDate(Base):
     date = Column(Date, nullable=False, index=True)
     created_by_id = Column(Integer, ForeignKey("users.id"), nullable=False)
     created_by = relationship("User")
+
+
+class AuditLog(Base):
+    __tablename__ = "audit_log"
+
+    id = Column(BigInteger, primary_key=True, index=True, autoincrement=True)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=True, index=True)
+    username = Column(String, nullable=True)
+    action = Column(String, nullable=False, index=True)
+    details = Column(Text, nullable=True)
+    timestamp = Column(DateTime, default=datetime.utcnow, nullable=False, index=True)
+
+    user = relationship("User")

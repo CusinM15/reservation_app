@@ -47,6 +47,7 @@ This file is **the main entry point** — like the reception desk at school that
 | [👑 **Management instructions**](../navodila-vodstvo.md) | Managing via browser (series, blocked dates) |
 | [📱 **App description**](../aplikacija-rezervacije.md) | What the app offers, purpose, features |
 | [📖 **User instructions**](../navodila-uporabnika.md) | Login, passwords, daily use |
+| [📋 **Audit log**](main.md#audit-log) | Change log — who did what and when |
 
 ---
 
@@ -57,7 +58,8 @@ This file is **the main entry point** — like the reception desk at school that
 3. [Domain and Cloudflare](#domain-and-cloudflare)
 4. [Longhorn Storage](#longhorn-storage)
 5. [Daily Backup and Reports](#daily-backup-and-reports)
-6. [Maintenance and Failures](#maintenance-and-failures)
+6. [Audit log — change log](#audit-log--change-log)
+7. [Maintenance and Failures](#maintenance-and-failures)
 7. [Summer Shutdown](#summer-shutdown)
 8. [Complete Command Reference](#complete-command-reference)
 9. [Glossary](#glossary)
@@ -291,6 +293,39 @@ The report includes:
 > | **OOMKilled** | Out Of Memory — the app **ran out of RAM**, Kubernetes killed it | The app is using more memory than allocated (e.g., 128 MB instead of 256 MB). Fix by increasing the `memory` limit in the Deployment YAML. |
 > | **CrashLoopBackOff** | The app **keeps crashing and restarting** — it fails quickly every time, Kubernetes keeps trying to restart it | Like a computer that shuts down right after you turn it on. The cause is almost always a code error or wrong config. Check logs: `kubectl logs -n sola-app <pod-name>` |
 > | **Failed volume mounts** | The app can't **attach its disk** — Longhorn didn't find the disk or it's broken | Like trying to open a folder on a drive that's unplugged. Check with `kubectl get pv,pvc -n sola-app` and `kubectl get volumes.longhorn.io -n longhorn-system`. |
+
+---
+
+## 📋 **Audit log — change log**
+
+> **In a nutshell:** Every important action (creating/deleting reservations, assessments, users, blocking dates) is automatically recorded in the database with information about **who** did it and **when**.
+
+> **ELI5:** Imagine you have a **sign-in book** at school. Every time someone changes something (adds a reservation, deletes an assessment, creates a user), it gets written in the book — with the time and name. You can go back anytime and check what happened. No guessing, no "who deleted this."
+
+**Access:** Only **admin and management** (via the app menu → "📋 Audit log" or at `/api/audit-log/page`).
+
+**What is logged:**
+
+| Action | Description |
+|--------|-------------|
+| `create_rezervacija` | Single reservation created |
+| `delete_rezervacija` | Reservation deleted |
+| `create_series` | Weekly/full-day series created |
+| `delete_series` | Entire series deleted |
+| `create_ocenjevanje` | Assessment created |
+| `delete_ocenjevanje` | Assessment deleted |
+| `create_blocked_dates` | Blocked dates added |
+| `delete_blocked_date` | Blocked date removed |
+| `create_user` | New user created (admin) |
+| `update_user` | User updated (admin) |
+| `delete_user` | User deleted (admin) |
+| `activate_user` | User activated (admin) |
+| `deactivate_user` | User deactivated (admin) |
+| `change_password` | User changed their own password |
+
+**Not logged:** data reads (who viewed what), failed login attempts — only actual changes.
+
+> **Tip:** The audit log is **append-only** — entries are only added, never deleted. Even if an admin deletes a user, the record of that deletion remains. This is intentional — an audit trail must be immutable.
 
 ---
 

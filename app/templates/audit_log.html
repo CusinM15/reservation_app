@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="sl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>📋 Audit log — Šolski App</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #f5f5f5; padding: 20px; color: #333; }
+        h1 { margin-bottom: 20px; font-size: 24px; }
+        .controls { margin-bottom: 15px; display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+        .controls select, .controls button { padding: 8px 16px; font-size: 14px; border: 1px solid #ccc; border-radius: 6px; background: #fff; cursor: pointer; }
+        .controls button { background: #1976D2; color: #fff; border-color: #1976D2; }
+        .controls button:hover { background: #1565C0; }
+        .stats { margin-bottom: 15px; font-size: 14px; color: #666; }
+        table { width: 100%; border-collapse: collapse; background: #fff; border-radius: 8px; overflow: hidden; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
+        th, td { padding: 10px 14px; text-align: left; border-bottom: 1px solid #eee; font-size: 14px; }
+        th { background: #fafafa; font-weight: 600; color: #555; white-space: nowrap; }
+        tr:hover { background: #f8f9ff; }
+        .badge { display: inline-block; padding: 2px 8px; border-radius: 4px; font-size: 12px; font-weight: 500; white-space: nowrap; }
+        .badge-create { background: #e8f5e9; color: #2e7d32; }
+        .badge-delete { background: #fce4ec; color: #c62828; }
+        .badge-edit { background: #e3f2fd; color: #1565c0; }
+        .badge-other { background: #f5f5f5; color: #616161; }
+        .timestamp { white-space: nowrap; color: #888; font-size: 13px; }
+        .details { font-size: 13px; color: #555; word-break: break-all; }
+        .empty { text-align: center; padding: 60px 20px; color: #999; }
+        .pagination { margin-top: 15px; display: flex; gap: 8px; align-items: center; }
+        .pagination button { padding: 6px 14px; border: 1px solid #ccc; border-radius: 6px; background: #fff; cursor: pointer; font-size: 14px; }
+        .pagination button:disabled { opacity: 0.4; cursor: default; }
+        .pagination span { font-size: 14px; color: #666; }
+        .back { display: inline-block; margin-bottom: 15px; color: #1976D2; text-decoration: none; font-size: 14px; }
+        .back:hover { text-decoration: underline; }
+        @media (max-width: 768px) {
+            table { font-size: 13px; }
+            th, td { padding: 8px 10px; }
+        }
+    </style>
+</head>
+<body>
+    <a href="/" class="back">← Nazaj na aplikacijo</a>
+    <h1>📋 Audit log — dnevnik sprememb</h1>
+
+    <div class="controls">
+        <select id="actionFilter">
+            <option value="">Vse akcije</option>
+            <option value="create_rezervacija">create_rezervacija</option>
+            <option value="delete_rezervacija">delete_rezervacija</option>
+            <option value="create_series">create_series</option>
+            <option value="delete_series">delete_series</option>
+            <option value="create_ocenjevanje">create_ocenjevanje</option>
+            <option value="delete_ocenjevanje">delete_ocenjevanje</option>
+            <option value="create_blocked_dates">create_blocked_dates</option>
+            <option value="delete_blocked_date">delete_blocked_date</option>
+            <option value="create_user">create_user</option>
+            <option value="update_user">update_user</option>
+            <option value="delete_user">delete_user</option>
+            <option value="activate_user">activate_user</option>
+            <option value="deactivate_user">deactivate_user</option>
+            <option value="change_password">change_password</option>
+        </select>
+        <button onclick="loadLog()">Osveži</button>
+    </div>
+
+    <div class="stats" id="stats"></div>
+
+    <div id="tableContainer">
+        <div class="empty">Nalagam...</div>
+    </div>
+
+    <div class="pagination" id="pagination"></div>
+
+    <script>
+        let currentOffset = 0;
+        let currentAction = '';
+        const LIMIT = 100;
+
+        function getActionClass(action) {
+            if (action.startsWith('create')) return 'badge-create';
+            if (action.startsWith('delete')) return 'badge-delete';
+            if (action.startsWith('update') || action.startsWith('change_') || action.startsWith('activate') || action.startsWith('deactivate')) return 'badge-edit';
+            return 'badge-other';
+        }
+
+        function formatAction(action) {
+            return action.replace(/_/g, ' ');
+        }
+
+        async function loadLog() {
+            currentAction = document.getElementById('actionFilter').value;
+            const url = `/api/audit-log?limit=${LIMIT}&offset=${currentOffset}${currentAction ? '&action=' + currentAction : ''}`;
+            
+            try {
+                const resp = await fetch(url);
+                const data = await resp.json();
+                render(data);
+            } catch (e) {
+                document.getElementById('tableContainer').innerHTML = '<div class="empty">❌ Napaka pri nalaganju</div>';
+            }
+        }
+
+        function render(data) {
+            const rows = data.rows || [];
+            document.getElementById('stats').textContent = `Skupaj: ${data.total} vnosov | Prikazanih: ${rows.length}`;
+
+            const container = document.getElementById('tableContainer');
+            if (rows.length === 0) {
+                container.innerHTML = '<div class="empty">📭 Ni vnosov za ta filter</div>';
+            } else {
+                let html = `<table>
+                    <thead><tr>
+                        <th>Čas</th>
+                        <th>Uporabnik</th>
+                        <th>Akcija</th>
+                        <th>Podrobnosti</th>
+                    </tr></thead><tbody>`;
+                for (const r of rows) {
+                    const ts = r.timestamp ? new Date(r.timestamp).toLocaleString('sl-SI') : '?';
+                    html += `<tr>
+                        <td class="timestamp">${ts}</td>
+                        <td>${esc(r.username || '?')}</td>
+                        <td><span class="badge ${getActionClass(r.action)}">${esc(formatAction(r.action))}</span></td>
+                        <td class="details">${esc(r.details || '')}</td>
+                    </tr>`;
+                }
+                html += '</tbody></table>';
+                container.innerHTML = html;
+            }
+
+            // Pagination
+            const total = data.total;
+            const pag = document.getElementById('pagination');
+            pag.innerHTML = `
+                <button onclick="goPage(-1)" ${currentOffset <= 0 ? 'disabled' : ''}>← Nazaj</button>
+                <span>${Math.floor(currentOffset / LIMIT) + 1} / ${Math.max(1, Math.ceil(total / LIMIT))}</span>
+                <button onclick="goPage(1)" ${currentOffset + LIMIT >= total ? 'disabled' : ''}>Naprej →</button>
+            `;
+        }
+
+        function goPage(dir) {
+            currentOffset = Math.max(0, currentOffset + dir * LIMIT);
+            loadLog();
+        }
+
+        function esc(s) {
+            const div = document.createElement('div');
+            div.textContent = s || '';
+            return div.innerHTML;
+        }
+
+        // Load on page load
+        loadLog();
+    </script>
+</body>
+</html>
