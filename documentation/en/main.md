@@ -404,6 +404,12 @@ Settings in Cloudflare dashboard:
 - **Minimum TLS Version:** 1.2
 
 > **Tip:** Flexible SSL is fine for a school environment, but if you ever add data that requires PCI-DSS or HIPAA compliance, you would need to use Full (strict) SSL with a Let's Encrypt certificate on the origin server. For scheduling reservations and grades at an elementary school, Flexible SSL is perfectly sufficient.
+>
+> **What are PCI-DSS and HIPAA?**
+> - **PCI-DSS** = Payment Card Industry Data Security Standard — a security standard for **credit card payments** (Visa, Mastercard). If the school ever collected payments through the app (e.g., meals, field trips), it would need to comply.
+> - **HIPAA** = Health Insurance Portability and Accountability Act — a US law about **medical data privacy**. Since the app is in Slovenia, not the US, it's not relevant here — it's only mentioned as an example of what requires higher SSL levels.
+>
+> For a school system with room reservations and grades, **neither applies** — sleep soundly. 😴
 
 > **Common mistake:** If you set SSL/TLS to "Full" without a certificate on the origin, Cloudflare won't be able to establish a connection and users will get a 502 error. Start with "Flexible" (easiest) and upgrade when you add a certificate to the origin.
 

@@ -406,6 +406,12 @@ Nastavitve v Cloudflare dashboard:
 - **Minimum TLS Version:** 1.2
 
 > **Nasvet:** Flexible SSL je v redu za šolsko okolje, ampak če bi kdaj dodal podatke, ki zahtevajo PCI-DSS ali HIPAA skladnost, bi moral uporabiti Full (strict) SSL z let's encrypt certifikatom na origin strežniku. Za rezervacije terminov in ocene na OŠ pa je Flexible SSL povsem dovolj.
+>
+> **Kaj sta PCI-DSS in HIPAA?**
+> - **PCI-DSS** = varnostni standard za **plačilne kartice** (Visa, Mastercard). Če bi šola pobirala plačila prek aplikacije (npr. prehrana, izleti), bi ga morala upoštevati.
+> - **HIPAA** = ameriški zakon o **zasebnosti zdravstvenih podatkov**. Ker je aplikacija v Sloveniji in ne v ZDA, ga ni treba upoštevati — omenjen je samo kot primer, kaj vse zahteva višjo raven SSL.
+>
+> Za šolski sistem s prostori in ocenami oboje **ni relevantno** — lahko mirno spiš. 😴
 
 > **Pogosta napaka:** Če nastaviš SSL/TLS na "Full" brez certifikata na originu, Cloudflare ne bo mogel vzpostaviti povezave in uporabniki bodo dobili 502 napako. Začni s "Flexible" (najlažje) in nadgradi, ko boš na origin dodal certifikat.
 
