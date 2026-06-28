@@ -238,7 +238,7 @@ kubectl get pods -n sola-app -o wide
 kubectl get services -n sola-app
 ```
 
-Aplikacija teče v **2-3 podih**, odvisno od obremenitve. **HorizontalPodAutoscaler (HPA)** samodejno prilagaja število:
+Aplikacija teče v **1-3 podih**, odvisno od obremenitve. **HorizontalPodAutoscaler (HPA)** samodejno prilagaja število:
 
 | Obremenitev | Replik | Kdaj |
 |-------------|--------|------|
