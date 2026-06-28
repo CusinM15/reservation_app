@@ -246,8 +246,8 @@ Aplikacija teče v **1-3 podih**, odvisno od obremenitve. **HorizontalPodAutosca
 | Obremenitev | Replik | Kdaj |
 |-------------|--------|------|
 | 🟢 Nizka (popoldne, vikend, počitnice) | **1** | en node dela, drugi počiva |
-| 🟡 Običajna (pouk, rezervacije) | **2** | ena kopija na vsakem nodu |
-| 🔴 Visoka (ocene, začetek leta) | **3** | 2 na enem, 1 na drugem — Kubernetes sam razporedi |
+| 🟡 Običajna (pouk, rezervacije) | **2** | vsak node po 1 kopija |
+| 🔴 Visoka (ocene, začetek leta) | **3** | en node 2 kopiji, drugi 1 |
 
 > **ELI5 — HPA:** Kot kavomat v šoli — ko je malo ljudi, dela en. Ko pride malica, se samodejno vključi še drugi in tretji. Ko gneče zmanjka, se odvečni izklopijo. HPA dela isto za aplikacijo.
 
