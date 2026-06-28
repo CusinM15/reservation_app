@@ -425,8 +425,6 @@ Nastavitve v Cloudflare dashboard:
 > - PV poveže (bind) s tvojim PVC-jem — kot da vzameš prenosni disk in ga priklopiš v računalnik
 >
 > PV lahko preveriš z ukazom `kubectl get pv` — vidiš vse diske v gruči, njihovo velikost in na kateri PVC so pripeti.
->
-> Veliko bolj priročno, en ukaz manj. (Na tečaju ste verjetno delali s **statičnim provisionanjem** — ročno PV, potem PVC. Tukaj je obratno: samo PVC, Longhorn poskrbi za PV.)
 
 ### **Stanje**
 
