@@ -417,7 +417,16 @@ Nastavitve v Cloudflare dashboard:
 
 > **ELI5 — Longhorn:** Predstavljaj si, da imaš pomemben šolski dnevnik. Longhorn je kot **fotokopirni stroj, ki vsako stran takoj po zapisu fotokopira na drugo mizo**. Če ena miza (računalnik) zagori, imaš fotokopijo na drugi mizi. Brez Longhorna bi bil tvoj dnevnik samo na enem mestu — če ta disk crkne, so podatki za vedno izgubljeni.
 >
-> **ELI5 — PVC (PersistentVolumeClaim):** PVC je **virtualni trdi disk** v Kubernetesu. Aplikacija reče "rabim 5GB prostora za shranjevanje" in Kubernetes + Longhorn to zagotovita — tudi če se aplikacija preseli na drug računalnik, podatki ostanejo. To je kot če bi imel prenosni disk, ki ga lahko priklopiš na katerikoli računalnik.
+> **ELI5 — PVC (PersistentVolumeClaim):** PVC je **virtualni trdi disk** v Kubernetesu. Aplikacija reče "rabim 5 GB prostora za shranjevanje" in Kubernetes + Longhorn to zagotovita — tudi če se aplikacija preseli na drug računalnik, podatki ostanejo. To je kot če bi imel prenosni disk, ki ga lahko priklopiš na katerikoli računalnik.
+>
+> **ELI5 — PV (PersistentVolume):** **Pravi disk na pravem računalniku.** Če je PVC **zahtevek** ("rabim 5 GB prostora!"), je PV **dejanski kos diska**, ki ta prostor zagotavlja. Longhorn ustvari PV **samodejno** — ti narediš samo PVC (zahtevek), Longhorn pa:
+> - Ustvari fizično kopijo na disku (na enem od nodov)
+> - Ustvari še drugo kopijo (repliko) na drugem nodu
+> - PV poveže (bind) s tvojim PVC-jem — kot da vzameš prenosni disk in ga priklopiš v računalnik
+>
+> PV lahko preveriš z ukazom `kubectl get pv` — vidiš vse diske v gruči, njihovo velikost in na kateri PVC so pripeti.
+>
+> Veliko bolj priročno, en ukaz manj. (Na tečaju ste verjetno delali s **statičnim provisionanjem** — ročno PV, potem PVC. Tukaj je obratno: samo PVC, Longhorn poskrbi za PV.)
 
 ### **Stanje**
 
