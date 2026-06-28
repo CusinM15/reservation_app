@@ -4,7 +4,7 @@ from typing import Optional
 from datetime import date as DateType, timedelta
 import uuid
 
-from app.database import get_db
+from app.database import get_db, log_audit
 from app.models import Reservation, User, RoleEnum
 from app.schemas import (
     ReservationCreate,
@@ -155,6 +155,13 @@ def delete_rezervacija(id: int, request: Request, db: Session = Depends(get_db))
     if reservation.teacher_id != current_user.id and current_user.role not in (RoleEnum.admin, RoleEnum.vodstvo):
         raise HTTPException(status_code=403, detail="Samo avtor, admin ali vodstvo lahko briše rezervacijo")
     
+    user_name = f"{current_user.first_name} {current_user.last_name}".strip() or current_user.username
+    prostor_label = {"tablice": "tablice", "racunalnica": "računalnico", "ladja": "ladjo"}.get(reservation.prostor, reservation.prostor)
+    log_audit(
+        db, current_user.id, user_name, "delete", "reservation", reservation.id,
+        f"Izbrisana rezervacija: {prostor_label}, {reservation.date}, {reservation.hour}. ura"
+    )
+    
     db.delete(reservation)
     db.commit()
     return {"message": "Rezervacija izbrisana"}
@@ -186,6 +193,7 @@ def _resolve_conflicts_and_notify(
     *,
     prostor: str,
     creator_name: str,
+    creator_id: int,
     qty: int | None,
 ) -> int:
     """Poišči konfliktne rezervacije, jih pobriši in pošlji email prvotnemu lastniku.
@@ -210,6 +218,10 @@ def _resolve_conflicts_and_notify(
                 hour_key = str(h)
                 hour_label = settings.SCHEDULE.get(hour_key, f"ura {h}")
                 db.delete(res)
+                log_audit(
+                    db, creator_id, creator_name, "delete", "reservation", res.id,
+                    f"Avtomatsko izbrisana rezervacija (serija): tablice, {d}, {h}. ura"
+                )
                 removed += 1
                 still_used = sum(r.qty or 0 for r in existing)
                 if teacher and teacher.email:
@@ -235,6 +247,10 @@ def _resolve_conflicts_and_notify(
                 hour_label = settings.SCHEDULE.get(hour_key, f"ura {h}")
                 prostor_label = {"tablice": "tablice", "racunalnica": "računalnico", "ladja": "ladjo"}.get(prostor, prostor)
                 db.delete(existing)
+                log_audit(
+                    db, creator_id, creator_name, "delete", "reservation", existing.id,
+                    f"Avtomatsko izbrisana rezervacija (serija): {prostor_label}, {d}, {h}. ura"
+                )
                 removed += 1
                 if teacher and teacher.email:
                     _send_email(
@@ -256,6 +272,7 @@ def _commit_series(
     prostor: str,
     teacher_id: int,
     creator_name: str,
+    creator_id: int,
     qty: Optional[int],
 ) -> SeriesResult:
     """Ustvari serijske rezervacije. Obstoječe konfliktne rezervacije se avtomatsko
@@ -267,7 +284,7 @@ def _commit_series(
         raise HTTPException(status_code=400, detail="Za tablice morate navesti število (qty)")
 
     # 1) Pobriši konfliktne rezervacije in pošlji obvestila
-    removed = _resolve_conflicts_and_notify(db, planned, prostor=prostor, creator_name=creator_name, qty=qty)
+    removed = _resolve_conflicts_and_notify(db, planned, prostor=prostor, creator_name=creator_name, creator_id=creator_id, qty=qty)
 
     # 2) Ustvari nove zapise
     series_id = str(uuid.uuid4())
@@ -322,6 +339,7 @@ def create_weekly_series(
         prostor=data.prostor,
         teacher_id=user.id,
         creator_name=creator_name,
+        creator_id=user.id,
         qty=data.qty,
     )
 
@@ -361,6 +379,7 @@ def create_full_day_series(
         prostor=data.prostor,
         teacher_id=user.id,
         creator_name=creator_name,
+        creator_id=user.id,
         qty=data.qty,
     )
 
@@ -399,6 +418,11 @@ def delete_series(series_id: str, request: Request, db: Session = Depends(get_db
         raise HTTPException(status_code=403, detail="Samo admin/vodstvo ali avtor serije lahko briše.")
 
     n = len(rows)
+    user_name = f"{current.first_name} {current.last_name}".strip() or current.username
+    log_audit(
+        db, current.id, user_name, "delete", "series", None,
+        f"Izbrisana serija ({n} terminov): {rows[0].prostor}, od {min(r.date for r in rows)} do {max(r.date for r in rows)}"
+    )
     for r in rows:
         db.delete(r)
     db.commit()

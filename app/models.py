@@ -1,6 +1,6 @@
-from datetime import date
+from datetime import date, datetime
 
-from sqlalchemy import Boolean, Column, Integer, String, Date, ForeignKey, Enum as SAEnum
+from sqlalchemy import Boolean, Column, Integer, String, Date, DateTime, ForeignKey, Enum as SAEnum
 from sqlalchemy.orm import relationship
 import enum
 
@@ -68,3 +68,18 @@ class BlockedDate(Base):
     date = Column(Date, nullable=False, index=True)
     created_by_id = Column(Integer, ForeignKey("users.id"), nullable=False)
     created_by = relationship("User")
+
+
+class AuditLog(Base):
+    __tablename__ = "audit_log"
+
+    id = Column(Integer, primary_key=True, index=True)
+    timestamp = Column(DateTime, default=datetime.utcnow, nullable=False, index=True)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
+    user_name = Column(String, nullable=False)
+    action = Column(String, nullable=False)       # "create", "delete", "update"
+    entity_type = Column(String, nullable=False)   # "reservation", "assessment", "series", "blocked_date", "user"
+    entity_id = Column(Integer, nullable=True)
+    details = Column(String, nullable=True)
+
+    user = relationship("User")

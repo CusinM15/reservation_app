@@ -61,9 +61,10 @@ Ta datoteka je **glavni vstopni dokument** — kot recepcija v šoli, ki ti pove
 7. [Cloudflare DNS](#cloudflare-dns)
 8. [Longhorn Storage](#longhorn-storage)
 9. [Dnevni backup in reporti](#dnevni-backup-in-reporti)
-10. [Vzdrževanje in okvare](#vzdrževanje-in-okvare)
-11. [Celoten sklic ukazov](#celoten-sklic-ukazov)
-12. [📖 Razlaga pojmov](#razlaga-pojmov)
+10. [📋 Dnevnik dogodkov (Audit Log)](#dnevnik-dogodkov-audit-log)
+11. [Vzdrževanje in okvare](#vzdrževanje-in-okvare)
+12. [Celoten sklic ukazov](#celoten-sklic-ukazov)
+13. [📖 Razlaga pojmov](#razlaga-pojmov)
 
 ---
 
@@ -522,6 +523,16 @@ Poročilo vključuje:
 
 ---
 
+## 📋 **Dnevnik dogodkov (Audit Log)**
+
+> **V enem stavku:** Vsako brisanje — rezervacije, ocenjevanja, uporabnikov, serij in zasedenih datumov — se samodejno zapiše v dnevnik. Samo vodstvo in admin ga lahko vidita.
+
+> **ELI5:** Kot **črna skrinjica v letalu** — če nekdo izbriše rezervacijo ali ocenjevanje, se zapiše kdo, kdaj in kaj je izbrisal. Tudi če sam izbrišeš svojo rezervacijo, se to zabeleži. Če vodstvo hoče preveriti "kdo je izbrisal rezervacijo za računalnico 15. aprila?", pogledajo v dnevnik.
+
+> Dnevnik je na voljo na `/auth/admin/audit-log` — dostopen samo uporabnikoma z vlogo **admin** ali **vodstvo**.
+
+---
+
 ## 🔧 **Vzdrževanje in okvare**
 
 > **V enem stavku:** Večino težav rešiš z enim ukazom `kubectl get ...` — poglej, kaj ne dela, in sistem sam poskrbi za ostalo.
@@ -603,6 +614,7 @@ git pull                                    # Potegni zadnjo kodo
 | Pojem | Razlaga |
 |---|---|
 | **Arnes** | **Akademsko raziskovalna omrežna infrastruktura Slovenije** — slovenski izobraževalni internet. Šola je prek Arnesa povezana v internet. |
+| **Audit log (dnevnik dogodkov)** | **Črna skrinjica aplikacije** — vsako brisanje (rezervacije, ocenjevanja, uporabniki, zasedeni datumi) se samodejno zapiše s podatkom kdo, kdaj in kaj. Dostopno samo vodstvu in adminu na `/auth/admin/audit-log`. |
 | **Cloudflare** | **Varnostnik pred tvojim strežnikom** — šifrira promet (SSL), skrije tvoj IP, blokira napade, pospešuje nalaganje. |
 | **CloudNativePG (CNPG)** | **Pametni pomočnik za PostgreSQL bazo** — avtomatsko upravlja replikacijo, failover, backup in obnovitev. |
 | **Cluster** | **Gruča računalnikov, ki delajo kot eno** — dva HP ProBooka, povezana v isto Kubernetes gručo. Kubernetes skrbi, da aplikacije tečejo na kateremkoli računalniku je na voljo. |

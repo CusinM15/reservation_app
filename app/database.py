@@ -1,5 +1,5 @@
 from sqlalchemy import create_engine
-from sqlalchemy.orm import sessionmaker, declarative_base
+from sqlalchemy.orm import sessionmaker, declarative_base, Session
 
 from app.config import settings
 
@@ -44,3 +44,19 @@ def init_db():
             # Če baza tega ne podpira (npr. zelo star SQLite), to ni fatalno —
             # nova kolona bo manjkala, ampak app še vedno teče za enkratne rez.
             print(f"[init_db] migracija series_id preskočena: {e}")
+
+
+def log_audit(db: Session, user_id: int, user_name: str, action: str,
+              entity_type: str, entity_id: int | None = None,
+              details: str | None = None) -> None:
+    """Zapiši dogodek v audit_log tabelo. Kličeš pred commitom."""
+    from app.models import AuditLog
+    log = AuditLog(
+        user_id=user_id,
+        user_name=user_name,
+        action=action,
+        entity_type=entity_type,
+        entity_id=entity_id,
+        details=details,
+    )
+    db.add(log)

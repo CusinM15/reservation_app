@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dnevnik dogodkov (Audit Log) - Šolski App</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; background: #f5f5f5; }
+        .container { max-width: 1400px; margin: auto; background: white; padding: 20px; border-radius: 10px; }
+        table { width: 100%; border-collapse: collapse; margin-top: 20px; font-size: 13px; }
+        td, th { padding: 6px 10px; text-align: left; border-bottom: 1px solid #ddd; }
+        th { background: #007bff; color: white; cursor: pointer; user-select: none; position: sticky; top: 0; }
+        th:hover { background: #0056b3; }
+        .nav { margin-bottom: 20px; }
+        .nav a { margin-right: 10px; }
+        .badge { display: inline-block; padding: 2px 8px; border-radius: 10px; font-size: 11px; font-weight: bold; }
+        .badge-delete { background: #f8d7da; color: #721c24; }
+        .badge-create { background: #d4edda; color: #155724; }
+        .badge-update { background: #fff3cd; color: #856404; }
+        .details { max-width: 400px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        .details:hover { white-space: normal; overflow: visible; }
+        .filter-bar { margin-bottom: 15px; }
+        .filter-bar input, .filter-bar select { padding: 6px 10px; margin-right: 8px; font-size: 13px; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="nav">
+            <a href="/">Domov</a>
+            <a href="/auth/admin/users">Uporabniki</a>
+            <a href="/auth/admin/audit-log">Dnevnik dogodkov</a>
+            <a href="/auth/logout">Odjava</a>
+        </div>
+        <h2>📋 Dnevnik dogodkov (Audit Log)</h2>
+        <p style="color: #666; font-size: 14px;">Zadnjih 500 dogodkov. Beležimo vsa brisanja (rezervacije, ocenjevanja, uporabnike, zasedene datume).</p>
+
+        <div class="filter-bar">
+            <input type="text" id="search" placeholder="🔍 Išči po opisu, uporabniku, tipu..." oninput="filterTable()" style="width:300px;">
+            <select id="action-filter" onchange="filterTable()">
+                <option value="">Vsa dejanja</option>
+                <option value="delete">Brisanja</option>
+                <option value="create">Ustvarjanja</option>
+                <option value="update">Spremembe</option>
+            </select>
+            <select id="type-filter" onchange="filterTable()">
+                <option value="">Vsi tipi</option>
+                <option value="reservation">Rezervacije</option>
+                <option value="assessment">Ocenjevanja</option>
+                <option value="series">Serije</option>
+                <option value="blocked_date">Zasedeni datumi</option>
+                <option value="user">Uporabniki</option>
+            </select>
+        </div>
+
+        <div style="max-height: 70vh; overflow-y: auto;">
+            <table id="log-table">
+                <thead>
+                    <tr>
+                        <th onclick="sortTable(0)">Čas ⬇️</th>
+                        <th onclick="sortTable(1)">Uporabnik</th>
+                        <th onclick="sortTable(2)">Dejanje</th>
+                        <th onclick="sortTable(3)">Tip</th>
+                        <th onclick="sortTable(4)">Opis</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for log in logs %}
+                    <tr class="log-row" data-action="{{ log.action }}" data-type="{{ log.entity_type }}">
+                        <td style="white-space:nowrap;">{{ log.timestamp.strftime('%d.%m.%Y %H:%M') if log.timestamp else '-' }}</td>
+                        <td>{{ log.user_name }}</td>
+                        <td>
+                            {% if log.action == 'delete' %}
+                            <span class="badge badge-delete">Izbrisano</span>
+                            {% elif log.action == 'create' %}
+                            <span class="badge badge-create">Ustvarjeno</span>
+                            {% elif log.action == 'update' %}
+                            <span class="badge badge-update">Spremenjeno</span>
+                            {% else %}
+                            {{ log.action }}
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if log.entity_type == 'reservation' %}Rezervacija
+                            {% elif log.entity_type == 'assessment' %}Ocenjevanje
+                            {% elif log.entity_type == 'series' %}Serija
+                            {% elif log.entity_type == 'blocked_date' %}Zaseden datum
+                            {% elif log.entity_type == 'user' %}Uporabnik
+                            {% else %}{{ log.entity_type }}
+                            {% endif %}
+                        </td>
+                        <td class="details">{{ log.details or '-' }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+    <script>
+        function filterTable() {
+            const query = document.getElementById('search').value.toLowerCase();
+            const action = document.getElementById('action-filter').value;
+            const type = document.getElementById('type-filter').value;
+            const rows = document.querySelectorAll('.log-row');
+            rows.forEach(r => {
+                const text = r.textContent.toLowerCase();
+                const matchAction = !action || r.dataset.action === action;
+                const matchType = !type || r.dataset.type === type;
+                const matchSearch = !query || text.includes(query);
+                r.style.display = (matchAction && matchType && matchSearch) ? '' : 'none';
+            });
+        }
+
+        let sortDir = {};
+        function sortTable(col) {
+            const tbody = document.querySelector('#log-table tbody');
+            const rows = Array.from(tbody.querySelectorAll('.log-row'));
+            sortDir[col] = !sortDir[col];
+            rows.sort((a, b) => {
+                const aVal = a.children[col].textContent.trim();
+                const bVal = b.children[col].textContent.trim();
+                const cmp = aVal.localeCompare(bVal, 'sl');
+                return sortDir[col] ? cmp : -cmp;
+            });
+            rows.forEach(r => r.remove());
+            rows.forEach(r => tbody.appendChild(r));
+        }
+    </script>
+</body>
+</html>

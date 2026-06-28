@@ -5,7 +5,7 @@ from datetime import date, datetime, timedelta
 from typing import Optional, List
 from calendar import monthrange
 
-from app.database import get_db
+from app.database import get_db, log_audit
 from app.models import Assessment, User, RoleEnum, BlockedDate
 from app.schemas import AssessmentCreate, AssessmentOut
 from app.config import settings
@@ -205,6 +205,12 @@ def delete_ocenjevanje(id: int, request: Request, db: Session = Depends(get_db))
     # Only the creator, admin or vodstvo can delete
     if assessment.teacher_id != current_user.id and current_user.role not in (RoleEnum.admin, RoleEnum.vodstvo):
         raise HTTPException(status_code=403, detail="Samo avtor, admin ali vodstvo lahko briše ocenjevanje")
+    
+    user_name = f"{current_user.first_name} {current_user.last_name}".strip() or current_user.username
+    log_audit(
+        db, current_user.id, user_name, "delete", "assessment", assessment.id,
+        f"Izbrisano ocenjevanje: {assessment.razred}, {assessment.date}"
+    )
     
     db.delete(assessment)
     db.commit()

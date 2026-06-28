@@ -6,8 +6,8 @@ from passlib.context import CryptContext
 import os, secrets
 from datetime import datetime, timedelta, timezone
 
-from app.database import get_db
-from app.models import User, RoleEnum
+from app.database import get_db, log_audit
+from app.models import User, RoleEnum, AuditLog
 from app.config import settings, validate_password_strength
 from app.routers.blocked_dates import _send_email
 
@@ -336,8 +336,14 @@ def delete_user(id: int, request: Request, db: Session = Depends(get_db)):
     
     # Delete user's reservations and assessments first
     from app.models import Reservation, Assessment
+    user_name = f"{current_user.first_name} {current_user.last_name}".strip() or current_user.username
+    target_name = f"{user.first_name} {user.last_name}".strip() or user.username
     db.query(Reservation).filter(Reservation.teacher_id == id).delete()
     db.query(Assessment).filter(Assessment.teacher_id == id).delete()
+    log_audit(
+        db, current_user.id, user_name, "delete", "user", id,
+        f"Izbrisan uporabnik: {target_name} ({user.username})"
+    )
     db.delete(user)
     db.commit()
     return RedirectResponse(url="/auth/admin/users", status_code=303)
@@ -377,3 +383,18 @@ def update_user(
     user.role = role
     db.commit()
     return RedirectResponse(url="/auth/admin/users", status_code=303)
+
+
+# ── Audit log ────────────────────────────────────────────────
+
+@router.get("/admin/audit-log", response_class=HTMLResponse)
+def view_audit_log(request: Request, db: Session = Depends(get_db)):
+    user_id = request.cookies.get("user_id")
+    if not user_id:
+        return RedirectResponse(url="/auth/login")
+    current_user = db.query(User).filter(User.id == int(user_id)).first()
+    if current_user.role not in (RoleEnum.admin, RoleEnum.vodstvo):
+        return HTMLResponse("Nimate pravic", status_code=403)
+    
+    logs = db.query(AuditLog).order_by(AuditLog.timestamp.desc()).limit(500).all()
+    return templates.TemplateResponse("audit_log.html", {"request": request, "logs": logs})

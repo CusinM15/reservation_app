@@ -7,7 +7,7 @@ import smtplib, ssl
 from email.mime.text import MIMEText
 from calendar import monthrange
 
-from app.database import get_db
+from app.database import get_db, log_audit
 from app.models import BlockedDate, User, Assessment, RoleEnum
 from app.config import settings
 
@@ -124,6 +124,10 @@ def create_blocked_dates(
             ).all()
             for a in assessments:
                 teacher = db.query(User).filter(User.id == a.teacher_id).first()
+                log_audit(
+                    db, uid, creator_name, "delete", "assessment", a.id,
+                    f"Avtomatsko izbrisano ocenjevanje (zaseden datum): {razred}, {current}"
+                )
                 db.delete(a)
                 deleted_assessments += 1
 
@@ -163,6 +167,11 @@ def delete_blocked_date(
     bd = db.query(BlockedDate).filter(BlockedDate.id == id).first()
     if not bd:
         raise HTTPException(status_code=404, detail="Zaseden datum ne obstaja")
+    user_name = f"{user.first_name} {user.last_name}".strip() or user.username
+    log_audit(
+        db, user.id, user_name, "delete", "blocked_date", bd.id,
+        f"Odstranjen zaseden datum: {bd.razred}, {bd.date}"
+    )
     db.delete(bd)
     db.commit()
     return {"message": "Zaseden datum odstranjen"}

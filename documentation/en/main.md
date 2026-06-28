@@ -61,9 +61,10 @@ This file is the **main entry point** — like a school reception desk that tell
 7. [Cloudflare DNS](#cloudflare-dns)
 8. [Longhorn Storage](#longhorn-storage)
 9. [Daily Backup and Reports](#daily-backup-and-reports)
-10. [Maintenance and Failures](#maintenance-and-failures)
-11. [Complete Command Reference](#complete-command-reference)
-12. [📖 Glossary](#glossary)
+10. [📋 Audit Log (Activity Log)](#audit-log-activity-log)
+11. [Maintenance and Failures](#maintenance-and-failures)
+12. [Complete Command Reference](#complete-command-reference)
+13. [📖 Glossary](#glossary)
 
 ---
 
@@ -517,6 +518,16 @@ The report includes:
 
 ---
 
+## 📋 **Audit Log (Activity Log)**
+
+> **In a nutshell:** Every deletion — reservations, assessments, users, series, and blocked dates — is automatically recorded in the activity log. Only management (vodstvo) and admin can view it.
+
+> **ELI5:** Like a **black box in an airplane** — if someone deletes a reservation or assessment, the system records who, when, and what was deleted. Even if you delete your own reservation, it's logged. If management wants to check "who deleted the computer lab reservation on April 15th?", they look in the log.
+
+> The log is available at `/auth/admin/audit-log` — accessible only to users with the **admin** or **vodstvo** role.
+
+---
+
 ## 🔧 **Maintenance and Failures**
 
 > **In a nutshell:** Most issues can be solved with a single `kubectl get ...` command — see what's not working, and the system handles the rest.
@@ -598,6 +609,7 @@ git pull                                    # Pull the latest code
 | Term | Explanation |
 |---|---|
 | **Arnes** | **Academic Research Network Infrastructure of Slovenia** — Slovenian educational internet. The school is connected to the internet via Arnes. |
+| **Audit log (activity log)** | **Application's black box** — every deletion (reservations, assessments, users, blocked dates) is automatically recorded with who, when, and what. Accessible only to management and admin at `/auth/admin/audit-log`. |
 | **Cloudflare** | **Security guard in front of your server** — encrypts traffic (SSL), hides your IP, blocks attacks, speeds up loading. |
 | **CloudNativePG (CNPG)** | **Smart assistant for PostgreSQL database** — automatically manages replication, failover, backup, and recovery. |
 | **Cluster** | **A group of computers working as one** — two HP ProBooks connected into the same Kubernetes cluster. Kubernetes ensures applications run on whichever computer is available. |
