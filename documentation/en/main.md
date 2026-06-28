@@ -448,7 +448,6 @@ kubectl get volumes.longhorn.io -n longhorn-system
 > - **PV** = **actual physical disk** — real storage space on one of the computers.
 > - **PVC** = **request** for that disk — the application says "I need 5GB".
 >
-> In a course you probably created PVs manually (`hostPath` or `nfs`) to have somewhere to store data.
 > Here, you **don't create PVs manually** — **Longhorn does it for you**.
 > When you create a PVC (e.g. `sola-postgresql`), Longhorn behind the scenes:
 > 1. Creates a PV on one node's disk
