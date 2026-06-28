@@ -471,26 +471,40 @@ kubectl get volumes.longhorn.io -n longhorn-system
 
 ## 📅 **Dnevni backup in reporti**
 
-> **V enem stavku:** Vsako noč ob 4:00 zjutraj sistem samodejno pošlje summary na Discord — število rezervacij, prijavljenih uporabnikov in morebitne napake.
+> **V enem stavku:** Vsako noč ob 4:00 zjutraj sistem samodejno pošlje varnostno kopijo baze in dnevno poročilo na **email** (naslov iz `BACKUP_EMAIL` v Kubernetes Secretu). Na Discord ne pošilja ničesar samodejno — tja gre samo, kar ti izrecno zahtevaš preko Hermes agenta.
 
-> **ELI5:** Predstavljaj si, da imaš **nočnega čuvaja**, ki vsako jutro ob 4:00 pregleda celotno šolo in napiše poročilo: "Danes je v šoli 150 učencev, 45 rezervacij, vse deluje." To poročilo pošlje na Discord (šolski chat). Tako veš, da sistem deluje, še preden prideš v službo.
+> **ELI5:** Predstavljaj si, da imaš **nočnega čuvaja**, ki vsako jutro ob 4:00:
+> 1. **Fotokopira celotno šolsko matično knjigo** in ti jo pošlje v nabiralnik (email).
+> 2. **Preveri ali vsi računalniki v šoli delujejo** in ti pošlje poročilo na email.
+>
+> Discord (šolski chat) pusti pri miru, razen če mu ti rečeš: "Hej, kaj se dogaja s strežnikom?" — takrat ti odgovori kar v chatu. Zamisli si ga kot **tihega pomočnika, ki ne moti, dokler ga ne pokličeš**.
 
-### **Dnevni app report**
+### **Dnevni backup baze (`sola-db-backup`)**
 
 ```bash
 # Cron: 04:00 vsak dan (Europe/Ljubljana)
-# Pošlje summary na Discord — število rezervacij, prijavljenih, itd.
-kubectl logs -n sola-app job/sola-report
+# Pošlje pg_dump celotne baze na BACKUP_EMAIL
+kubectl get cronjob -n sola-app sola-db-backup
 ```
 
-Posodobi se **samodejno** preko Hermes cron joba. Poročilo vključuje:
+Naredi popoln posnetek baze (vse tabele, uporabniki, rezervacije, ocene) in ga pošlje na email. Če podatki crknejo (disk odpove, kdo zbriše bazo), imaš v emailu varnostno kopijo iz prejšnje noči.
 
-- Število aktivnih rezervacij
-- Število prijavljenih uporabnikov
-- Stanje ocenjevanj
-- Morebitne napake
+### **Dnevni report stanja (`sola-daily-report`)**
 
-> **Nasvet:** Discord webhook je odličen za alerting v šolskem okolju — zastonj, preprost, vsi ga imajo na telefonu. Ampak ne zaupaj mu 100%. Enkrat na teden preveri tudi `kubectl get events -n sola-app --sort-by='.lastTimestamp'` — tam vidiš stvari, ki jih Discord report morda ne pokaže (OOMKilled, CrashLoopBackOff, neuspešni volume mounti).
+```bash
+# Cron: 04:00 vsak dan (Europe/Ljubljana)
+# Pošlje poročilo o stanju nodov, Longhorn replik in aplikacij na BACKUP_EMAIL
+kubectl get cronjob -n sola-app sola-daily-report
+```
+
+Poročilo vključuje:
+
+- 📊 **Stanje nodov** — ali oba strežnika dihata
+- 💾 **Stanje Longhorn replik** — ali so podatki pravilno podvojeni
+- 🟢 **Stanje aplikacije** — ali vse deluje
+- ⚠️ **Napake** — morebitne težave
+
+> **Nasvet:** Email backup je **zanesljiv in preprost** — ne potrebuješ dodatnih orodij, vsak zna odpreti email. Ampak email se lahko izgubi v spam mapi. Zato enkrat na teden preveri še `kubectl get events -n sola-app --sort-by='.lastTimestamp'` — tam vidiš stvari, ki jih email report morda ne pokaže (OOMKilled, CrashLoopBackOff, neuspešni volume mounti).
 
 ---
 

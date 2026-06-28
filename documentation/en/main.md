@@ -516,26 +516,40 @@ kubectl get volumes.longhorn.io -n longhorn-system
 
 ## 📅 **Daily Backup and Reports**
 
-> **In a nutshell:** Every night at 4:00 AM, the system automatically sends a summary to Discord — number of reservations, logged-in users, and any errors.
+> **In a nutshell:** Every night at 4:00 AM, the system automatically sends a database backup and a daily status report via **email** (to the address from `BACKUP_EMAIL` in the Kubernetes Secret). Nothing is sent to Discord automatically — Discord is only used when you explicitly ask Hermes Agent for something.
 
-> **ELI5:** Imagine you have a **night guard** who checks the entire school every morning at 4:00 and writes a report: "Today there are 150 students in school, 45 reservations, everything is working." He sends this report to Discord (school chat). That way you know the system is working before you even arrive at work.
+> **ELI5:** Imagine you have a **night guard** who every morning at 4:00:
+> 1. **Photocopies the entire school register** and puts it in your mailbox (email).
+> 2. **Checks if all computers are running** and sends a report to your email.
+>
+> He leaves the Discord (school chat) alone, unless you call him: "Hey, what's up with the server?" — then he answers right in the chat. Think of him as a **silent assistant who doesn't disturb until you call**.
 
-### **Daily App Report**
+### **Daily database backup (`sola-db-backup`)**
 
 ```bash
 # Cron: 04:00 every day (Europe/Ljubljana)
-# Sends a summary to Discord — number of reservations, logged-in users, etc.
-kubectl logs -n sola-app job/sola-report
+# Sends a full pg_dump of the database to BACKUP_EMAIL
+kubectl get cronjob -n sola-app sola-db-backup
 ```
 
-Updated **automatically** via a Hermes cron job. The report includes:
+Creates a complete snapshot of the database (all tables, users, reservations, assessments) and emails it. If data gets lost (disk failure, accidental deletion), you have the backup from last night in your email.
 
-- Number of active reservations
-- Number of logged-in users
-- Assessment status
-- Any errors
+### **Daily status report (`sola-daily-report`)**
 
-> **Tip:** Discord webhook is great for alerting in a school environment — free, simple, everyone has it on their phone. But don't trust it 100%. Once a week also check `kubectl get events -n sola-app --sort-by='.lastTimestamp'` — there you'll see things the Discord report might not show (OOMKilled, CrashLoopBackOff, failed volume mounts).
+```bash
+# Cron: 04:00 every day (Europe/Ljubljana)
+# Sends a report on node status, Longhorn replicas, and application health to BACKUP_EMAIL
+kubectl get cronjob -n sola-app sola-daily-report
+```
+
+The report includes:
+
+- 📊 **Node status** — whether both servers are alive
+- 💾 **Longhorn replica status** — whether data is properly replicated
+- 🟢 **Application health** — whether everything is running
+- ⚠️ **Errors** — any issues found
+
+> **Tip:** Email backup is **reliable and simple** — no extra tools needed, everyone knows how to open email. But email can end up in spam. So once a week also check `kubectl get events -n sola-app --sort-by='.lastTimestamp'` — there you'll see things the email report might not show (OOMKilled, CrashLoopBackOff, failed volume mounts).
 
 ---
 
