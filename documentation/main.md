@@ -31,7 +31,7 @@
 
 ## 📚 **Kazalo dokumentacije**
 
-Ta datoteka je **glavni vstopni dokument**. Spodaj so povezave na specializirane poddokumente:
+Ta datoteka je **glavni vstopni dokument** — kot recepcija v šoli, ki ti pove, kje kaj najdeš. Spodaj so povezave na specializirane poddokumente:
 
 | Dokument | Opis |
 |---|---|
@@ -49,6 +49,7 @@ Ta datoteka je **glavni vstopni dokument**. Spodaj so povezave na specializirane
 ---
 
 ## 📑 **Kazalo vsebine** (ta dokument)
+
 1. [Arhitektura sistema](#arhitektura-sistema)
 2. [Strojna oprema in omrežje](#strojna-oprema-in-omrežje)
 3. [Kubernetes (k3s) Cluster](#kubernetes-k3s-cluster)
@@ -60,98 +61,180 @@ Ta datoteka je **glavni vstopni dokument**. Spodaj so povezave na specializirane
 9. [Dnevni backup in reporti](#dnevni-backup-in-reporti)
 10. [Vzdrževanje in okvare](#vzdrževanje-in-okvare)
 11. [Celoten sklic ukazov](#celoten-sklic-ukazov)
+12. [📖 Razlaga pojmov](#razlaga-pojmov)
 
 ---
 
 ## 🏗️ **Arhitektura sistema**
 
+> **V enem stavku:** Dva prenosnika (HP ProBook) delata kot ekipa — če eden crkne, drugi brez prekinitve prevzame vse, kar je prvi počel.
+
+### **Kako si zamisliti celoten sistem? (za ne-tehnične bralce)**
+
+Predstavljaj si, da imaš v šoli dve **recepciji**. Na vsaki recepciji sedi uslužbenec (to je **Pod** — zabojnik z aplikacijo), ki sprejema obiskovalce (uporabnike, ki želijo rezervirati termin). Oba uslužbenca delata isto stvar — če je eden odsoten, drugi kar naprej dela. Za njima so **zabojniki s spisi učencev (baza podatkov)**, ki so v dveh izvodih — če en zgori, imaš rezervno kopijo. Celotno dogajanje vodi **orchestra conductor (Kubernetes)**, ki pazi, da vsi zabojniki delajo usklajeno.
+
+Spodaj je tehnična shema, ki jo bodo razumeli tisti, ki Kubernetes poznajo. Nad njo pa je razlaga v preprosti angleščini.
+
+> **Preprosta razlaga diagrama spodaj:**
+> - Dva računalnika (k3s-1 in k3s-2) sta povezana v gručo — kot dve mizi v isti pisarni.
+> - Na vsakem računalniku teče **ena kopija aplikacije (sola-app Pod)** in **ena kopija baze (sola-db)**.
+> - Baza podatkov ima enega **šefa (PRIMARY)** in enega **pomočnika (REPLICA)**, ki ves čas prepisuje vse, kar šef naredi.
+> - Vsi podatki so shranjeni v **Longhorn** — sistemu, ki poskrbi, da imaš 2 kopiji na 2 različnih računalnikih, tako da tudi če en računalnik crkne, podatki niso izgubljeni.
+> - Ko uporabnik odpre brskalnik, gre promet prek **Cloudflare** (varnostni filter + SSL) na **MetalLB LoadBalancer** (recepcija), ki ga pošlje na eno od dveh kopij aplikacije.
+
 ### **Strojna in omrežna shema**
 
-```
-┌──────────────────────────────────────────────────────────────────────────┐
-│                         K3S KUBERNETES CLUSTER (2 noda)                  │
-├──────────────────────────────────────────────────────────────────────────┤
-│                                                                          │
-│  ┌──────────────────────────┐    ┌──────────────────────────┐            │
-│  │    k3s-1                 │    │    k3s-2                 │            │
-│  │    HP ProBook 455 G5     │    │    HP ProBook 450 G5     │            │
-│  │    IP: {{K3S_1_IP}}   │    │    IP: {{K3S_2_IP}}   │            │
-│  │    control-plane,etcd    │    │    control-plane,etcd    │            │
-│  │                          │    │                          │            │
-│  │  ┌───────────────────┐   │    │  ┌───────────────────┐   │            │
-│  │  │ sola-app Pod 1    │   │    │  │ sola-app Pod 2    │   │            │
-│  │  │ (app.ostc-app.org)  │   │    │  | (app.ostc-app.org)  │   │            │
-│  │  └───────────────────┘   │    │  └───────────────────┘   │            │
-│  │  ┌───────────────────┐   │    │  ┌───────────────────┐   │            │
-│  │  │ sola-db-1         │   │    │  │ sola-db-2         │   │            │
-│  │  │ (PG PRIMARY)      │◄──┼────┼──┤ (PG REPLICA)      │   │            │
-│  │  │ CNPG Instance     │   │    │  │ CNPG Instance     │   │            │
-│  │  └───────────────────┘   │    │  └───────────────────┘   │            │
-│  │                          │    │                          │            │
-│  │  ┌───────────────────┐   │    │  ┌───────────────────┐   │            │
-│  │  │ Longhorn          │   │    │  │ Longhorn          │   │            │
-│  │  │ Instance Manager  │   │    │  │ Instance Manager  │   │            │
-│  │  └───────────────────┘   │    │  └───────────────────┘   │            │
-│  │                          │    │                          │            │
-│  └──────────────────────────┘    └──────────────────────────┘            │
-│                                                  │                       │
-│                    ┌─────────────────────────────┘                       │
-│                    │                                                     │
-│  ┌─────────────────▼────────────────────────────────────────────┐        │
-│  │        Service LoadBalancer (MetalLB, {{LB_IP}}:{{LB_PORT}}) │        │
-│  │        → sola-app Pod 1 ali Pod 2                            │        │
-│  └──────────────────────────────────────────────────────────────┘        │
-└──────────────────────────────────────────────────────────────────────────┘
-                              │
-                    ┌─────────▼─────────────────────┐
-                    │  Cloudflare DNS               │
-                    │  ostc-app.org                   │   
-                    │  → {{LB_IP}}:{{LB_PORT}}  │  📡 Cloudflare proxy
-                    │    (LoadBalancer)          │
-                    └───────────────────────────────┘
-                              │
-                              │  Internet
-                              ▼
+> 📊 **Diagram: arhitektura.drawio** — celotna k3s arhitektura
+> Kopiraj spodnjo kodo, odpri https://app.diagrams.net/, **File → Open → From Device** in prilepi.
+```xml
+<?xml version="1.0" encoding="UTF-8"?>
+<mxfile host="app.diagrams.net" agent="Hermes Agent" version="24.2.5">
+  <diagram name="arhitektura" id="diagram-arhitektura.drawio">
+    <mxGraphModel dx="1000" dy="600" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="827" pageHeight="1169" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="d1-2" value="K3S KUBERNETES CLUSTER (2 noda) — dva računalnika kot eno" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#E8F0FE;strokeColor=#4285F4;fontStyle=1;fontSize=13;" vertex="1" parent="1">
+          <mxGeometry x="10" y="10" width="800" height="420" as="geometry" />
+        </mxCell>
+        <mxCell id="d1-3" value="k3s-1<br>HP ProBook 455 G5<br>IP: {{K3S_1_IP}}<br><i>control-plane, etcd</i>" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFF3E0;strokeColor=#FF9800;fontSize=11;" vertex="1" parent="1">
+          <mxGeometry x="40" y="60" width="320" height="330" as="geometry" />
+        </mxCell>
+        <mxCell id="d1-4" value="k3s-2<br>HP ProBook 450 G5<br>IP: {{K3S_2_IP}}<br><i>control-plane, etcd</i>" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFF3E0;strokeColor=#FF9800;fontSize=11;" vertex="1" parent="1">
+          <mxGeometry x="440" y="60" width="320" height="330" as="geometry" />
+        </mxCell>
+        <mxCell id="d1-5" value="sola-app Pod 1<br>(app.ostc-app.org)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#E8F5E9;strokeColor=#4CAF50;fontSize=11;" vertex="1" parent="1">
+          <mxGeometry x="60" y="130" width="140" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="d1-6" value="sola-app Pod 2<br>(app.ostc-app.org)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#E8F5E9;strokeColor=#4CAF50;fontSize=11;" vertex="1" parent="1">
+          <mxGeometry x="460" y="130" width="140" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="d1-7" value="sola-db-1<br>(PG PRIMARY)<br>CNPG Instance" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F3E5F5;strokeColor=#9C27B0;fontSize=11;" vertex="1" parent="1">
+          <mxGeometry x="60" y="220" width="140" height="70" as="geometry" />
+        </mxCell>
+        <mxCell id="d1-8" value="sola-db-2<br>(PG REPLICA)<br>CNPG Instance" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F3E5F5;strokeColor=#9C27B0;fontSize=11;" vertex="1" parent="1">
+          <mxGeometry x="460" y="220" width="140" height="70" as="geometry" />
+        </mxCell>
+        <mxCell id="d1-9" value="Longhorn Instance Manager" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#E0F7FA;strokeColor=#00BCD4;fontSize=11;" vertex="1" parent="1">
+          <mxGeometry x="60" y="320" width="140" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="d1-10" value="Longhorn Instance Manager" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#E0F7FA;strokeColor=#00BCD4;fontSize=11;" vertex="1" parent="1">
+          <mxGeometry x="460" y="320" width="140" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="d1-11" value="streaming replicacija (asinhrona)" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;dashed=1;dashPattern=6 3;strokeColor=#9C27B0;fontSize=11;" edge="1" parent="1" source="d1-7" target="d1-8">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="d1-12" value="Service LoadBalancer (MetalLB)<br>{{LB_IP}}:{{LB_PORT}}<br>→ sola-app Pod 1 ali Pod 2" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFF9C4;strokeColor=#F57F17;fontSize=11;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="200" y="490" width="420" height="50" as="geometry" />
+        </mxCell>
+        <mxCell id="d1-13" value="Cloudflare DNS<br>ostc-app.org → {{LB_IP}}:{{LB_PORT}}<br>📡 Cloudflare proxy (HTTPS)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F5F5F5;strokeColor=#616161;fontSize=11;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="280" y="570" width="240" height="70" as="geometry" />
+        </mxCell>
+        <mxCell id="d1-14" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;strokeColor=#616161;" edge="1" parent="1" source="d1-13" target="d1-12">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="d1-15" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;strokeColor=#F57F17;exitX=0.25;exitY=0;" edge="1" parent="1" source="d1-12" target="d1-5">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="d1-16" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;strokeColor=#F57F17;exitX=0.75;exitY=0;" edge="1" parent="1" source="d1-12" target="d1-6">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>
 ```
 
-> **Opomba:** Oba noda sta `control-plane, etd` — ni ločenih worker nodov. k3s poganjanje uporabniških podov tudi na control-plane nodih.
+> **Opomba:** Oba noda sta `control-plane, etcd` — ni ločenih worker nodov. k3s poganja uporabniške pode tudi na control-plane nodih. To je čisto v redu za manjši cluster — pri 100+ nodih bi jih ločili, za šolski sistem z dvema HP ProBookoma pa je to standardna praksa.
+
+> **Iz prakse:** Oba HP ProBooka imata `control-plane` vlogo, ker k3s to omogoča brez težav. V velikih podjetjih (Google, Amazon) imajo ločene control-plane node, ampak tam gre za tisoče nodov. Za šolski cluster je to povsem OK — prihraniš strojno opremo in poenostaviš setup.
 
 ### **Prometni tok**
 
-```
-🌐 Uporabnik
-  → Cloudflare (SSL, proxy, ostc-app.org)
-    → Service LoadBalancer (MetalLB, {{LB_IP}}:{{LB_PORT}})
-      → sola-app Pod (k3s-1 ali k3s-2)
+> **Preprosta razlaga:** Ko učitelj vnese `https://ostc-app.org` v brskalnik, se zgodi tole: brskalnik najprej vpraša Cloudflare (telefonski imenik interneta), kje je ta stran. Cloudflare pogleda v svoj imenik, vidi IP {{LB_IP}}, in pošlje uporabnika tja. Tam ga pričaka **MetalLB** (recepcija), ki ga preusmeri na eno od dveh kopij aplikacije — katerakoli je trenutno prosta.
 
-  → http://{{LB_IP}}:{{LB_PORT}} → direkt na LoadBalancer
+> 📊 **Diagram: prometni-tok.drawio** — pot prometa
+> Kopiraj kodo → https://app.diagrams.net/ → **File → Open → From Device**
+```xml
+<?xml version="1.0" encoding="UTF-8"?>
+<mxfile host="app.diagrams.net" agent="Hermes Agent" version="24.2.5">
+  <diagram name="prometni-tok" id="diagram-prometni-tok.drawio">
+    <mxGraphModel dx="1000" dy="600" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="827" pageHeight="1169" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="d2-2" value="🌐 Uporabnik<br>vtipka ostc-app.org" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#E3F2FD;strokeColor=#1E88E5;fontSize=12;" vertex="1" parent="1">
+          <mxGeometry x="10" y="10" width="160" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="d2-3" value="Cloudflare (SSL, proxy)<br>ostc-app.org" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F5F5F5;strokeColor=#616161;fontSize=12;" vertex="1" parent="1">
+          <mxGeometry x="240" y="10" width="180" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="d2-4" value="Service LoadBalancer<br>MetalLB {{LB_IP}}:{{LB_PORT}}" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFF9C4;strokeColor=#F57F17;fontSize=12;" vertex="1" parent="1">
+          <mxGeometry x="490" y="10" width="200" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="d2-5" value="sola-app Pod<br>(k3s-1 ali k3s-2)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#E8F5E9;strokeColor=#4CAF50;fontSize=12;" vertex="1" parent="1">
+          <mxGeometry x="760" y="10" width="160" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="d2-6" value="Alternativa (samo interno):<br>http://{{LB_IP}}:{{LB_PORT}}" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFF3E0;strokeColor=#FF9800;fontSize=11;fontStyle=2;" vertex="1" parent="1">
+          <mxGeometry x="240" y="110" width="300" height="50" as="geometry" />
+        </mxCell>
+        <mxCell id="d2-7" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;strokeColor=#1E88E5;" edge="1" parent="1" source="d2-2" target="d2-3">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="d2-8" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;strokeColor=#1E88E5;" edge="1" parent="1" source="d2-3" target="d2-4">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="d2-9" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;strokeColor=#1E88E5;" edge="1" parent="1" source="d2-4" target="d2-5">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="d2-10" value="direktno" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;dashed=1;dashPattern=6 3;strokeColor=#FF9800;" edge="1" parent="1" source="d2-6" target="d2-4">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint as="offset" />
+          </mxGeometry>
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>
 ```
 
 > **Cloudflare proxy** kaže direktno na **LoadBalancer (`{{LB_IP}}`, port 80)** — promet gre direkt na MetalLB, HA deluje samodejno — če en node crkne, MetalLB premakne IP na drugega.
+
+> **Nasvet seniorja:** Vedno uporabljaj Cloudflare proxy (oranžni oblak) — ne samo DNS-only (sivi oblak). Proxy ti da brezplačen SSL, DDoS zaščito, in skrije tvoj pravi IP pred hekerji. Če daš samo DNS, tvoj IP {{LB_IP}} javno razkriješ in vsak ga lahko direktno napade.
 
 ### **Pregled komponent**
 
 |  | Komponenta | Lokacija | Namen |
 |---|---|---|---|
-|| **k3s-1** | HP ProBook 455 G5 ({{K3S_1_IP}}) | Control-plane, app pod, PG primary |
-|| **k3s-2** | HP ProBook 450 G5 ({{K3S_2_IP}}) | Control-plane, app pod, PG replica |
-|| **Sola App (FastAPI)** | 2 poda (oba noda) | Rezervacije, ocenjevanje, prijava |
-|| **Longhorn** | Oba noda | Distribuirano shranjevanje (PVC-ji) |
-|| **MetalLB** | Oba noda | LoadBalancer IP ({{LB_IP}}) |
-|| **Cloudflare** | Zunanji | DNS, SSL, proxy |
+| | **k3s-1** | HP ProBook 455 G5 ({{K3S_1_IP}}) | Control-plane, app pod, PG primary (glavni računalnik) |
+| | **k3s-2** | HP ProBook 450 G5 ({{K3S_2_IP}}) | Control-plane, app pod, PG replica (pomožni računalnik) |
+| | **Sola App (FastAPI)** | 2 poda (oba noda) | Rezervacije, ocenjevanje, prijava |
+| | **Longhorn** | Oba noda | Distribuirano shranjevanje (PVC-ji) — podatki v 2 kopijah |
+| | **MetalLB** | Oba noda | LoadBalancer IP ({{LB_IP}}) — vhodna vrata |
+| | **Cloudflare** | Zunanji | DNS, SSL, proxy — varnost na internetu |
 
 ---
 
 ## 💻 **Strojna oprema in omrežje**
 
+> **V enem stavku:** Dva običajna prenosnika HP ProBook, vsak s po 256GB diskom, povezana v šolsko Arnes omrežje — to je vse, kar rabiš za celoten sistem.
+
 ### **Specifikacije**
+
+> **ELI5:** Predstavljaj si, da imaš dva pisarniška računalnika. Prvi (k3s-1) ima 16GB RAM — to je kot večja miza, na katero lahko daš več papirjev. Drugi (k3s-2) ima 8GB RAM — manjša miza, ampak še vedno dovolj za rutinsko delo.
 
 | Node | Model | CPU | RAM | Disk | Vloga |
 |---|---|---|---|---|---|
-| **k3s-1** | HP ProBook 455 G5 | AMD Ryzen 5 2500U | 16GB | 256GB SSD | Control-plane, etcd, app, PG primary |
-| **k3s-2** | HP ProBook 450 G5 | Intel Core i5-8250U | 8GB | 256GB SSD | Control-plane, etcd, app, PG replica |
+| **k3s-1** | HP ProBook 455 G5 | AMD Ryzen 5 2500U | 16GB | 256GB SSD | Control-plane, etcd, app, PG primary (glavni) |
+| **k3s-2** | HP ProBook 450 G5 | Intel Core i5-8250U | 8GB | 256GB SSD | Control-plane, etcd, app, PG replica (pomožni) |
+
+> **Iz prakse:** k3s-1 ima 16GB RAM, k3s-2 pa 8GB. To ni napaka — primarna baza (PG primary) na k3s-1 rabi več RAM-a za cache in WAL buffere. Ko k3s-2 postane primary (ob failoverju), bo deloval malo počasneje, ampak sistem bo še vedno delal. Če bo kdaj proračun dopuščal, daj v k3s-2 še 8GB RAM-a.
 
 ### **Omrežne nastavitve**
+
+> **ELI5:** Vsak računalnik v omrežju ima svoj hišni naslov (IP). k3s-1 je na naslovu {{K3S_1_IP}}, k3s-2 pa na {{K3S_2_IP}}. Skupaj z drugimi napravami v šoli tvorijo sosesko (/24 pomeni, da je v isti soseski do 254 naprav). Gateway ({{GATEWAY_IP}}) je glavna vrata v šoli, skozi katera gre ves promet proti internetu.
 
 ```bash
 # Lokalno omrežje (Arnes)
@@ -160,15 +243,18 @@ k3s-2: {{K3S_2_IP}}/24
 Gateway: {{GATEWAY_IP}}
 DNS: {{DNS_IP}}
 
-# Kubernetes Pod CIDR
+# Kubernetes Pod CIDR — zasebni naslovi znotraj clustra
+# (aplikacije v Kubernetesu dobijo te naslove, niso vidni od zunaj)
 10.42.0.0/16
 
-# Kubernetes Service CIDR
+# Kubernetes Service CIDR — notranji naslovi za storitve
 10.43.0.0/16
 
-# LoadBalancer IP pool (MetalLB)
+# LoadBalancer IP pool (MetalLB) — javni naslovi, ki so vidni v omrežju
 {{METALLB_RANGE_START}} - {{METALLB_RANGE_END}}
 ```
+
+> **Pogosta napaka:** Pod CIDR (10.42.0.0/16) in Service CIDR (10.43.0.0/16) se NE smeta prekrivati z lokalnim omrežjem ({{K3S_1_IP}}/24). Če se, Kubernetes ne bo mogel pravilno usmerjati prometa. Vedno preveri s `ip route` na nodih, preden nastaviš k3s.
 
 ### **Dostop**
 
@@ -182,15 +268,21 @@ kubectl get nodes -o wide
 kubectl get pods -A -o wide
 
 # Aplikacija v brskalniku
-https://ostc-app.org          # prek Cloudflare + LoadBalancer
-http://{{LB_IP}}:{{LB_PORT}}     # direkt (samo interno omrežje)
+https://ostc-app.org          # prek Cloudflare + LoadBalancer (priporočeno)
+http://{{LB_IP}}:{{LB_PORT}}     # direkt (samo interno omrežje, brez SSL)
 ```
 
 ---
 
 ## ☸️ **Kubernetes (k3s) Cluster**
 
+> **V enem stavku:** k3s je lažja različica Kubernetesa (orchestra conductor za aplikacije), ki teče na obeh HP ProBookih in skrbi, da aplikacija vedno deluje — tudi če en računalnik odpove.
+
+> **ELI5 — Kubernetes/k3s:** Predstavljaj si orkester. Vsak glasbenik je ena aplikacija (Pod). **Kubernetes** je **dirigent** — on odloča, kdo kaj igra, kdaj igra, in kaj narediti, če kdo zamudi ali zboli. **k3s** je ista stvar, ampak lažja — kot če bi imel manjši orkester, ki ne rabi ogromne koncertne dvorane. Na prenosniku HP ProBook k3s dela odlično, medtem ko bi polni Kubernetes (k8s) bil pretežak.
+
 ### **Stanje nodov**
+
+> **ELI5:** `kubectl get nodes` je kot pregled prisotnosti v razredu — pokaže, kateri računalniki so v gruči in ali so pripravljeni za delo.
 
 ```bash
 kubectl get nodes -o wide
@@ -202,15 +294,17 @@ kubectl get nodes -o wide
 
 ### **Namestitev k3s**
 
+> **Preprosta razlaga:** Na prvem računalniku (k3s-1) zaženeš k3s s `--cluster-init` — to pomeni "ustvari novo gručo". Na drugem (k3s-2) pa se pridružiš obstoječi gruči s `--server https://{{K3S_1_IP}}:6443` — to je kot "prosim, poveži me s šefom na tem naslovu".
+
 ```bash
-# Na k3s-1 (prvi node)
+# Na k3s-1 (prvi node — ustvari novo gručo)
 curl -sfL https://get.k3s.io | sh -s - server \
   --cluster-init \
   --disable=traefik \
   --node-ip={{K3S_1_IP}} \
   --flannel-iface=eth0
 
-# Na k3s-2 (drugi node)
+# Na k3s-2 (drugi node — pridruži se obstoječi gruči)
 curl -sfL https://get.k3s.io | sh -s - server \
   --server https://{{K3S_1_IP}}:6443 \
   --disable=traefik \
@@ -221,11 +315,17 @@ curl -sfL https://get.k3s.io | sh -s - server \
 
 Token dobite z: `sudo cat /var/lib/rancher/k3s/server/node-token` (na k3s-1).
 
-> **Opomba:** `--disable=traefik` izklopi vgrajeni ingress, ker uporabljamo MetalLB LoadBalancer.
+> **Opomba:** `--disable=traefik` izklopi vgrajeni ingress, ker uporabljamo MetalLB LoadBalancer. Če bi pustili Traefik vklopljen, bi imeli dva sistema, ki se potegujeta za isti port — zmeda, ki smo se je izognili.
+
+> **Nasvet seniorja:** Vedno uporabi `--flannel-iface=eth0`, ne glede na to, ali je eth0 edini interface. Na prenosnikih so pogosto interfacei z različnimi imeni (eno WiFi, eno Ethernet). Če ne specificiraš, lahko Flannel izbere napačen interface, cluster ne bo delal. Preveri z `ip a` na vsakem nodu.
 
 ---
 
 ## 🚀 **Aplikacija Sola App**
+
+> **V enem stavku:** Spletna aplikacija (FastAPI + HTML), ki teče v dveh kopijah na obeh računalnikih — če ena crkne, druga nemoteno prevzame.
+
+> **ELI5:** Aplikacija je kot spletna stran za rezervacije, ki jo poznaš iz šole. Tukaj pa teče v **dveh zabojnikih (Podi)** — kot da imaš dva natakarja v restavraciji. Če je eden bolan, drugi streže naprej. Stranke (uporabniki) tega sploh ne opazijo.
 
 ### **Deployment**
 
@@ -249,24 +349,38 @@ kubectl get pods -n sola-app -o wide
 
 ### **Docker Image**
 
+> **ELI5 — Docker Image:** To je kot **recept za torto**. Isti recept uporabiš, da spečeš dve torti (dva Pod-a) na dveh različnih mestih. Vsaka torta je identična — isti program, iste nastavitve, ista koda. Dockerfile vsebuje ta recept.
+
 - **Image:** `sola-app:latest`
 - **Dockerfile:** `reservation_app/k8s/Dockerfile`
 - **Deployment YAML:** `reservation_app/k8s/sola-app.yaml`
 
 ### **Posodobitev aplikacije**
 
+> **ELI5 — rollout restart:** Ko želiš posodobiti aplikacijo, ne rabiš ugašati strežnika. Kubernetes to naredi **brez prekinitve (zero-downtime)** — najprej zažene nov Pod, počaka, da je pripravljen, šele nato ugasi starega. Kot menjava gum na avtu med vožnjo — zamenjaš eno po eno, avto ves čas vozi.
+
 ```bash
 cd reservation_app
 git pull
 # Počakaj, da se CI build konča (GitHub Actions)
-# al pa ročno:
+# ali pa ročno:
 kubectl rollout restart deployment -n sola-app sola-app
 kubectl rollout status deployment -n sola-app sola-app
 ```
 
+> **Nasvet seniorja:** Nikoli ne briši starih Pod-ov ročno. Uporabi `rollout restart`. Kubernetes sam pazi, da je vedno vsaj en Pod aktiven. Če zbrišeš oba hkrati, imaš izpad. `rollout status` ti pove, kdaj je posodobitev končana — ne ugibaj, počakaj na izpis "rollout successfully rolled out".
+
 ---
 
 ## 🗄️ **PostgreSQL HA — CloudNativePG**
+
+> **V enem stavku:** Baza podatkov (PostgreSQL) teče v visoko-razpoložljivi konfiguraciji — ena glavna (primary) na k3s-1 in ena podvojena (replica) na k3s-2, pri čemer CloudNativePG avtomatsko poskrbi za zamenjavo, če glavna odpove.
+
+> **ELI5 — PostgreSQL:** Baza podatkov je kot **šolska mapa z vsemi rezervacijami in ocenami**. Namenjena je shranjevanju podatkov.
+>
+> **ELI5 — HA (High Availability):** Visoka razpoložljivost pomeni, da imaš **dve mapi** — eno originalno (primary) in eno fotokopijo (replica). Vsakič, ko nekaj zapišeš v original, fotokopija to takoj dobi. Če original zgori (crkne), vzameš fotokopijo in nadaljuješ, kjer si končal.
+>
+> **ELI5 — CloudNativePG (CNPG):** To je **pametni pomočnik**, ki pazi na obe mapi. Če opazi, da je original crknil, samodejno reče "fotokopija, zdaj si ti šef!" in preusmeri vse uporabnike na fotokopijo. Vse to brez človeškega posredovanja.
 
 ### **Stanje**
 
@@ -282,27 +396,37 @@ Zgrajena z **CloudNativePG** operatorjem. Primary vedno na k3s-1, replica na k3s
 
 ### **Failover**
 
+> **ELI5 — Failover:** Failover je **samodejna menjava straže**. Predstavljaj si dva stražarja. Prvi (primary) stoji na vratih. Drugi (replica) sedi v pisarni in ves čas spremlja, kaj prvi dela (prepisuje dnevnik). Če prvi omedli, drugi takoj skoči na vrata in nadaljuje, kot da se ni nič zgodilo — obiskovalci (uporabniki) tega sploh ne opazijo.
+
 Ob izpadu k3s-1:
-1. Primarni pod `sola-db-1` postane nedosegljiv
-2. CNPG operator zazna izpad (30s `failoverDelay`)
-3. CNPG promovira `sola-db-2` (na k3s-2) v primary
-4. Service `sola-db-rw` se avtomatsko preusmeri na `sola-db-2`
-5. App pod na k3s-1 je mrtev → k3s ga reschedule-a na k3s-2
-6. App na k3s-2 se poveže na `sola-db-rw` (ki kaže na `sola-db-2`) → deluje naprej
+
+1. **Primarni pod `sola-db-1` postane nedosegljiv** — računalnik je crknil.
+2. **CNPG operator zazna izpad** (30s `failoverDelay`) — pomočnik opazi, da se stražar ne oglaša.
+3. **CNPG promovira `sola-db-2` (na k3s-2) v primary** — pomočnik prevzame.
+4. **Service `sola-db-rw` se avtomatsko preusmeri na `sola-db-2`** — vsa vrata se preusmerijo na novega stražarja.
+5. **App pod na k3s-1 je mrtev → k3s ga reschedule-a na k3s-2** — Kubernetes ugotovi, da je prvi računalnik mrtev, in prestavi aplikacijo na drugega.
+6. **App na k3s-2 se poveže na `sola-db-rw` (ki kaže na `sola-db-2`) → deluje naprej** — sistem teče dalje.
 
 **Skupni čas izpada:** ~1–2 minuti (30s failover delay + ~30s za promocijo + čas, da k3s zazna mrtvi node)
+
+> **Iz prakse:** 1-2 minuti izpada se sliši veliko, ampak v praksi je to za šolski sistem povsem sprejemljivo. Učitelj, ki osveži stran po 2 minutah, bo spet delal normalno — podatki niso izgubljeni, ker je Longhorn poskrbel za replikacijo. V primerjavi s starim sistemom (izpad za cel dan, dokler ne pride IT) je to ogromen napredek.
 
 ### **Dostop**
 
 ```bash
-# Primarna baza (rw)
+# Primarna baza (rw) — kamor se zapisuje
 kubectl exec -it -n sola-app deploy/sola-app -- psql $SOLA_DATABASE_URL
 
-# Replica (read-only)
+# Replica (read-only) — samo za branje (poročila, analitika)
 kubectl exec -it -n sola-app deploy/sola-app -- psql $SOLA_DATABASE_URL_RO
 ```
 
 ### **Servisni endpointi (CNPG)**
+
+> **ELI5:** CNPG ustvari tri imenike:
+> - **sola-db-rw** = "glavni vhod" — vsi, ki želijo kaj napisati ali prebrati, gredo skozi ta vhod. Vedno kaže na primary.
+> - **sola-db-ro** = "stranski vhod" — samo za branje. Kaže na replica (pomožno bazo), kar razbremeni primary.
+> - **sola-db-r** = "katerikoli vhod" — lahko greš na primary ali replica, kdor je prej na vrsti.
 
 CNPG samodejno ustvari tri Kubernetes Services za dostop do baze:
 
@@ -316,9 +440,32 @@ CNPG samodejno ustvari tri Kubernetes Services za dostop do baze:
 
 ---
 
+## 🌐 **MetalLB LoadBalancer**
+
+> **V enem stavku:** MetalLB je **recepcija** za tvoj Kubernetes cluster — dodeli mu javni IP ({{LB_IP}}) in usmerja obiskovalce na pravo aplikacijo, tudi če se aplikacija seli med računalniki.
+
+> **ELI5 — LoadBalancer:** V velikem podjetju imaš recepcijo, ki obiskovalce usmerja v pravo pisarno. **LoadBalancer** je ista stvar za aplikacije. Ko uporabnik pride na IP {{LB_IP}}, LoadBalancer pogleda, katera kopija aplikacije (Pod) je prosta, in ga pošlje tja. Če je ena kopija zasedena ali crknjena, pošlje na drugo.
+>
+> **ELI5 — MetalLB:** MetalLB je ena izmed vrst LoadBalancerjev, specializirana za kraje, kjer nimaš oblačnega strežnika (AWS, Google Cloud), ampak imaš svoje računalnike (on-premise). Za razliko od AWS Load Balancerja, ki ga najameš od Amazona, MetalLB teče kar na tvojih HP ProBookih.
+
+MetalLB je nameščen v namespace-u `metallb-system`. Dodeli zunanji IP {{LB_IP}} za Service `sola-app` v `sola-app` namespace-u.
+
+**Zakaj MetalLB in ne Traefik/Ingress?**
+
+k3s ima vgrajen Traefik ingress controller, ampak smo ga izklopili (`--disable=traefik`). Razlog: Traefik je odličen za HTTP promet, ampak za čisto majhen cluster z 2 nodoma je MetalLB + Service LoadBalancer preprostejši — manj gibljivih delov, manj možnosti za napake. Če bo sistem kdaj zrasel na 5+ nodov z več aplikacijami, potem razmisli o Ingress controllerju.
+
 ---
 
 ## ☁️ **Cloudflare DNS**
+
+> **V enem stavku:** Cloudflare je **telefonski imenik interneta** — ko nekdo vnese `ostc-app.org` v brskalnik, Cloudflare pove, kje (na katerem IP-ju) to aplikacijo najde, in poskrbi za varnostno povezavo (SSL).
+
+> **ELI5 — DNS:** DNS (Domain Name System) je kot telefonski imenik za internet. Ti vpišeš ime (`ostc-app.org`), DNS vrne številko (IP naslov). Namesto da se spomniš številke {{LB_IP}}, se spomniš imena `ostc-app.org`. Veliko lažje, kajne?
+>
+> **ELI5 — Cloudflare proxy:** Ko vklopiš Cloudflare proxy (oranžni oblak), Cloudflare ne dela samo imenika — ampak tudi **stoji pred tvojim strežnikom kot varnostnik**. Vse povezave gredo skozi Cloudflare, ki:
+> - Šifrira promet (SSL) — nihče ne more prisluhniti.
+> - Skrije tvoj pravi IP — hekerji ne vedo, kje točno je tvoj strežnik.
+> - Blokira DDoS napade — če nekdo pošlje milijon zahtev na sekundo, Cloudflare to zadrži.
 
 ### **DNS zapisi**
 
@@ -330,17 +477,29 @@ CNPG samodejno ustvari tri Kubernetes Services za dostop do baze:
 ### **SSL/TLS**
 
 Cloudflare skrbi za:
-- **Edge certifikat** — med uporabnikom in Cloudflare (HTTPS)
-- **Flexible SSL** — Cloudflare → {{LB_IP}} (port 80) prek HTTP (brez certifikata na originu)
+
+- **Edge certifikat** — med uporabnikom in Cloudflare (HTTPS). To je zelena ključavnica v brskalniku.
+- **Flexible SSL** — Cloudflare → {{LB_IP}} (port 80) prek HTTP (brez certifikata na originu). To pomeni, da imaš HTTPS na zunanji strani, ampak znotraj šolskega omrežja gre promet nešifriran — kar je v šolskem omrežju v redu, ker je fizično zaščiteno.
 
 Nastavitve v Cloudflare dashboard:
+
 - **SSL/TLS encryption mode:** `Flexible`
 - **Always Use HTTPS:** ON
 - **Minimum TLS Version:** 1.2
 
+> **Nasvet seniorja:** Flexible SSL je v redu za šolsko okolje, ampak če bi kdaj dodal podatke, ki zahtevajo PCI-DSS ali HIPAA skladnost, bi moral uporabiti Full (strict) SSL z let's encrypt certifikatom na origin strežniku. Za rezervacije terminov in ocene na OŠ pa je Flexible SSL povsem dovolj.
+
+> **Pogosta napaka:** Če nastaviš SSL/TLS na "Full" brez certifikata na originu, Cloudflare ne bo mogel vzpostaviti povezave in uporabniki bodo dobili 502 napako. Začni s "Flexible" (najlažje) in nadgradi, ko boš na origin dodal certifikat.
+
 ---
 
 ## 💾 **Longhorn Storage**
+
+> **V enem stavku:** Longhorn je sistem za shranjevanje, ki poskrbi, da ima vsak podatek 2 kopiji na 2 različnih računalnikih — če en disk crkne, podatki niso izgubljeni.
+
+> **ELI5 — Longhorn:** Predstavljaj si, da imaš pomemben šolski dnevnik. Longhorn je kot **fotokopirni stroj, ki vsako stran takoj po zapisu fotokopira na drugo mizo**. Če ena miza (računalnik) zagori, imaš fotokopijo na drugi mizi. Brez Longhorna bi bil tvoj dnevnik samo na enem mestu — če ta disk crkne, so podatki za vedno izgubljeni.
+>
+> **ELI5 — PVC (PersistentVolumeClaim):** PVC je **virtualni trdi disk** v Kubernetesu. Aplikacija reče "rabim 5GB prostora za shranjevanje" in Kubernetes + Longhorn to zagotovita — tudi če se aplikacija preseli na drug računalnik, podatki ostanejo. To je kot če bi imel prenosni disk, ki ga lahko priklopiš na katerikoli računalnik.
 
 ### **Stanje**
 
@@ -356,20 +515,28 @@ kubectl get volumes.longhorn.io -n longhorn-system
 | `sola-postgresql` | 5Gi | RWO | PG data |
 | `sola-postgresql-wal` | 2Gi | RWO | WAL logi |
 
-**Razlaga PVC-jev:**
+**Razlaga PVC-jev za ne-tehnične:**
 
 | PVC | Kaj shranjuje | Zakaj je pomembno |
 |---|---|---|
 | `sola-postgresql` (5Gi) | **Podatki PG baze** — vse tabele, indeksi, uporabniki, rezervacije, ocene. To je "glavni" PVC. | Brez tega ni baze. 5Gi zadostuje za celotno šolsko leto. |
 | `sola-postgresql-wal` (2Gi) | **Write-Ahead Logs (WAL)** — dnevnik vsake spremembe, preden se zapiše v podatkovne datoteke. | Brez WAL-a replica ne more slediti primaryju. Uporablja se za crash recovery, streaming replikacijo in point-in-time recovery. |
 
+> **ELI5 — WAL (Write-Ahead Log):** Predstavljaj si, da pišeš test. Najprej napišeš odgovor na **list za beležke (WAL)**, šele nato ga prepišeš v **čisto mapo (glavni podatki)**. Če te zmotiš med pisanjem, imaš še vedno beležko, iz katere lahko obnoviš, kar si hotel napisati. WAL je ta beležka — dnevnik sprememb, preden se zapišejo v glavno bazo.
+
 **Zakaj dva ločena PVC-ja?** PostgreSQL vsako spremembo najprej zapiše v WAL, šele nato v glavne podatkovne datoteke. Ločena PVC-ja omogočata različne I/O profile — WAL je zaporedno pisanje (hitro), podatki so naključni bralno-pisalni dostopi. Prav tako omogoča ločeni backup strategiji: WAL se arhivira sproti, podatki se periodično snapshottajo.
 
 **Longhorn replikacija** (2 kopiji) zagotavlja, da tudi ob izgubi enega noda podatki ostanejo. Oba PVC-ja imata dve repliki — vsaka na svojem k3s nodu.
 
+> **Iz prakse:** 5Gi za podatke in 2Gi za WAL se sliši malo, ampak za šolski sistem z nekaj sto uporabniki in rezervacijami je to več kot dovolj. PostgreSQL je presenetljivo učinkovit s prostorom — cela baza za leto dni dela bo verjetno pod 1GB. Če boš kdaj blizu meje, spremljaš z `kubectl get pvc` in povečaš velikost — Longhorn omogoča online resize brez izpada.
+
 ---
 
 ## 📅 **Dnevni backup in reporti**
+
+> **V enem stavku:** Vsako noč ob 4:00 zjutraj sistem samodejno pošlje summary na Discord — število rezervacij, prijavljenih uporabnikov in morebitne napake.
+
+> **ELI5:** Predstavljaj si, da imaš **nočnega čuvaja**, ki vsako jutro ob 4:00 pregleda celotno šolo in napiše poročilo: "Danes je v šoli 150 učencev, 45 rezervacij, vse deluje." To poročilo pošlje na Discord (šolski chat). Tako veš, da sistem deluje, še preden prideš v službo.
 
 ### **Dnevni app report**
 
@@ -380,41 +547,52 @@ kubectl logs -n sola-app job/sola-report
 ```
 
 Posodobi se **samodejno** preko Hermes cron joba. Poročilo vključuje:
+
 - Število aktivnih rezervacij
 - Število prijavljenih uporabnikov
 - Stanje ocenjevanj
 - Morebitne napake
 
+> **Nasvet seniorja:** Discord webhook je odličen za alerting v šolskem okolju — zastonj, preprost, vsi ga imajo na telefonu. Ampak ne zaupaj mu 100%. Enkrat na teden preveri tudi `kubectl get events -n sola-app --sort-by='.lastTimestamp'` — tam vidiš stvari, ki jih Discord report morda ne pokaže (OOMKilled, CrashLoopBackOff, neuspešni volume mounti).
+
 ---
 
 ## 🔧 **Vzdrževanje in okvare**
 
+> **V enem stavku:** Večino težav rešiš z enim ukazom `kubectl get ...` — poglej, kaj ne dela, in sistem sam poskrbi za ostalo.
+
 ### **Dnevne operacije**
 
+> **ELI5:** To so tvoji **jutranji pregledi**, kot preden odpelješ avto — preveriš olje, zrak v gumah, luči. Tukaj preveriš, ali so vsi računalniki v gruči živi, ali aplikacije tečejo, ali diski niso polni.
+
 ```bash
-# Preveri stanje nodov
+# Preveri stanje nodov — ali so vsi računalniki živi?
 kubectl get nodes -o wide
 
-# Preveri pode v sola-app
+# Preveri pode v sola-app — ali aplikacije tečejo?
 kubectl get pods -n sola-app -o wide
 
-# Preveri stanje Longhorn
+# Preveri stanje Longhorn — ali so diski v redu?
 kubectl get volumes.longhorn.io -n longhorn-system
 
-# Preveri CloudNativePG
+# Preveri CloudNativePG — ali baza deluje?
 kubectl get cluster -n sola-app
 ```
 
 ### **Ob izpadu noda**
 
-1. **Ostali node prevzame** — app pod se preseli, PG failover
-2. **Počakaj 30s** — CNP failover in Longhorn se rekonfigurirata
+> **ELI5:** Če eden od računalnikov crkne, se zgodi **samodejna menjava straže**. Ne paničari — sistem je zasnovan tako, da preživi izpad enega računalnika. Počakaj minuto, preveri, popravi crknjeni računalnik, ko imaš čas.
+
+1. **Ostali node prevzame** — app pod se preseli, PG failover se zgodi sam
+2. **Počakaj minuto** — CNPG failover (30s zamuda + promocija) in Longhorn se rekonfigurirata
 3. **Preveri** — `kubectl get pods -n sola-app -o wide`
-4. **Popravi** izpadli node po potrebi
+4. **Popravi** izpadli node po potrebi (zamenjaj disk, popravi napajanje, ponovno namesti k3s)
 
 ### **Popolna zaustavitev (poletna pavza)**
 
 Glej [🌞 Poletna pavza](POLETNA_PAVZA.md).
+
+> **Iz prakse:** Poletna pavza je pogosto spregledana, ampak je ključna za dolgo življenjsko dobo strojne opreme. HP ProBooki v omari brez hlajenja čez poletje zlahka dosežejo 50°C v mirovanju. Izklop za 2 meseca podaljša življenjsko dobo diskov in baterij. Pred izklopom **obvezno** naredi snapshot Longhorn volumnov in dump baze — "bolje imeti in ne rabiti, kot rabiti in ne imeti."
 
 ---
 
@@ -422,32 +600,69 @@ Glej [🌞 Poletna pavza](POLETNA_PAVZA.md).
 
 ```bash
 # === Stanje ===
-kubectl get nodes -o wide
-kubectl get pods -n sola-app -o wide
-kubectl get services -n sola-app
-kubectl get pvc -n sola-app
-kubectl get cluster -n sola-app
-kubectl get events -n sola-app --sort-by='.lastTimestamp'
+kubectl get nodes -o wide                           # Kateri računalniki so v gruči?
+kubectl get pods -n sola-app -o wide                # Katere aplikacije tečejo in kje?
+kubectl get services -n sola-app                    # Katere storitve so na voljo?
+kubectl get pvc -n sola-app                         # Koliko diskovnega prostora je zasedenega?
+kubectl get cluster -n sola-app                     # Kako je z bazo?
+kubectl get events -n sola-app --sort-by='.lastTimestamp'  # Kaj se je nazadnje zgodilo?
 
 # === Upravljanje aplikacije ===
-kubectl rollout restart deployment -n sola-app sola-app
-kubectl rollout status deployment -n sola-app sola-app
-kubectl logs -n sola-app deployment/sola-app --tail=50
-kubectl logs -n sola-app deployment/sola-app --previous
+kubectl rollout restart deployment -n sola-app sola-app          # Ponovni zagon brez izpada
+kubectl rollout status deployment -n sola-app sola-app           # Spremljaj posodobitev
+kubectl logs -n sola-app deployment/sola-app --tail=50           # Zadnjih 50 vrstic loga
+kubectl logs -n sola-app deployment/sola-app --previous          # Log prejšnjega (crknjenega) Pod-a
 
 # === Upravljanje baze ===
-kubectl exec -it -n sola-app deploy/sola-app -- psql $SOLA_DATABASE_URL
-kubectl exec -it -n sola-app deploy/sola-app -- psql $SOLA_DATABASE_URL -c "SELECT * FROM users;"
+kubectl exec -it -n sola-app deploy/sola-app -- psql $SOLA_DATABASE_URL                    # Poveži se na bazo
+kubectl exec -it -n sola-app deploy/sola-app -- psql $SOLA_DATABASE_URL -c "SELECT * FROM users;"  # Poženi poizvedbo
 
 # === Longhorn ===
-kubectl get volumes.longhorn.io -n longhorn-system
-kubectl get engineimages.longhorn.io -n longhorn-system
-kubectl get nodes.longhorn.io -n longhorn-system
+kubectl get volumes.longhorn.io -n longhorn-system               # Stanje diskov
+kubectl get engineimages.longhorn.io -n longhorn-system           # Različica Longhorn engine
+kubectl get nodes.longhorn.io -n longhorn-system                  # Longhorn status na vsakem nodu
 
 # === Git (na k3s-2) ===
 cd /home/admin/reservation_app
-git pull
+git pull                                    # Potegni zadnjo kodo
 ```
+
+---
+
+## 📖 **Razlaga pojmov**
+
+*Razlaga tehničnih izrazov za ne-tehnične bralce — če ti kaj v dokumentaciji ni jasno, poglej tukaj.*
+
+| Pojem | Razlaga |
+|---|---|
+| **Kubernetes (k8s)** | **Orchestra conductor za aplikacije** — sistem, ki avtomatsko upravlja, kje in kako tečejo tvoje aplikacije. Če ena crkne, jo samodejno zažene drugje. |
+| **k3s** | **Lažja različica Kubernetesa** — posebej narejena za manjše računalnike in IoT naprave. Uporabljamo jo na HP ProBookih, ker je polni Kubernetes pretežak za prenosnike. Isti `kubectl` ukazi delujejo za oboje. |
+| **Pod** | **Zabojnik z aplikacijo** — najmanjša enota v Kubernetesu. V njem teče ena kopija aplikacije (npr. sola-app ali sola-db). Vsak pod ima svoj zasebni IP naslov. |
+| **Node** | **Fizični računalnik v gruči** — v našem primeru k3s-1 (HP ProBook 455 G5) in k3s-2 (HP ProBook 450 G5). |
+| **Cluster** | **Gruča računalnikov, ki delajo kot eno** — dva HP ProBooka, povezana v isto Kubernetes gručo. Kubernetes skrbi, da aplikacije tečejo na kateremkoli računalniku je na voljo. |
+| **etcd** | **Spominska knjiga clustra** — shranjuje vse podatke o tem, kaj kje teče, kakšne so nastavitve, kdo je živ in kdo mrtev. Je možgani Kubernetesa. |
+| **Control-plane** | **"Možgani" clustra** — nadzorni del, ki sprejema vse odločitve. Na obeh HP ProBookih imamo control-plane, kar pomeni, da imamo dva "možgana" — če en crkne, drugi prevzame. |
+| **LoadBalancer** | **Recepcija v stavbi** — usmerja obiskovalce (uporabnike) na pravo aplikacijo. V našem primeru MetalLB na IP {{LB_IP}}. |
+| **MetalLB** | **LoadBalancer za domače (on-premise) okolje** — alternativa oblačnim LoadBalancerjem (AWS, Google). Teče kar na tvojih računalnikih. |
+| **DNS** | **Telefonski imenik interneta** — pretvori ime `ostc-app.org` v IP naslov {{LB_IP}} (npr.). |
+| **Cloudflare** | **Varnostnik pred tvojim strežnikom** — šifrira promet (SSL), skrije tvoj IP, blokira napade, pospešuje nalaganje. |
+| **PVC (PersistentVolumeClaim)** | **Virtualni trdi disk** — zahtevek za prostor na disku v Kubernetesu. Podatki ostanejo tudi, če se aplikacija preseli na drug računalnik. |
+| **WAL (Write-Ahead Log)** | **Dnevnik sprememb, preden se zapišejo** — PostgreSQL vsako spremembo najprej zapiše v WAL, šele nato v glavne podatkovne datoteke. To omogoča obnovitev po crashu in replikacijo. |
+| **Failover** | **Samodejna menjava straže** — ko primarni sistem crkne, pomožni samodejno prevzame njegovo vlogo. V našem primeru CNPG promovira replica v primary. |
+| **Replica** | **Kopija, ki budno spremlja original** — druga baza podatkov, ki ves čas prepisuje vse spremembe iz primaryja. Pripravljena prevzeti, če original crkne. |
+| **Longhorn** | **Sistem, ki poskrbi, da imaš 2 kopiji podatkov na 2 različnih računalnikih** — distribuirano shranjevanje za Kubernetes, narejeno za manjše clustre. |
+| **CloudNativePG (CNPG)** | **Pametni pomočnik za PostgreSQL bazo** — avtomatsko upravlja replikacijo, failover, backup in obnovitev. |
+| **Primary (baza)** | **Glavna baza** — edina, v katero se lahko zapisuje. Vse spremembe gredo skozi njo. |
+| **Replica (baza)** | **Pomožna baza** — samo za branje. Ves čas prepisuje spremembe iz primaryja. Če primary crkne, postane nov primary. |
+| **SSL/TLS** | **Šifrirana povezava (ključavnica v brskalniku)** — poskrbi, da nihče ne more prisluhniti komunikaciji med uporabnikom in strežnikom. |
+| **HTTPS** | **Varna spletna povezava** — HTTP + SSL. Zelena ključavnica v brskalniku pomeni, da je povezava varna. |
+| **Arnes** | **Akademsko raziskovalna omrežna infrastruktura Slovenije** — slovenski izobraževalni internet. Šola je prek Arnesa povezana v internet. |
+| **SSH** | **Varen dostop do oddaljenega računalnika prek ukazne vrstice** — kot da bi sedel pred tistim računalnikom, čeprav si v drugi sobi. |
+| **Docker Image** | **Recept za aplikacijo** — vsebuje program, knjižnice, nastavitve. Iz enega recepta lahko narediš več identičnih zabojnikov (Podov). |
+| **Discord webhook** | **Samodejno pošiljanje sporočil na Discord** — naša aplikacija pošlje nočno poročilo na šolski Discord kanal. |
+| **Zero-downtime (rollout)** | **Posodobitev brez prekinitve delovanja** — Kubernetes najprej zažene novo verzijo, počaka da deluje, šele nato ugasi staro. Uporabniki nič ne občutijo. |
+| **Git** | **Sistem za sledenje spremembam kode** — kot "Track Changes" v Wordu, ampak za programsko kodo. |
+| **GitHub Actions** | **Samodejno testiranje in gradnja ob vsaki spremembi** — ko nekdo naloži novo kodo na GitHub, se avtomatsko zgradi nov Docker Image. |
 
 ---
 

@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<mxfile host="app.diagrams.net" agent="Hermes Agent" version="24.2.5">
+  <diagram name="ha-network" id="diagram-ha-network.drawio">
+    <mxGraphModel dx="1000" dy="600" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="827" pageHeight="1169" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="d4-2" value="🌐 Internet → {{DOMAIN}} (Cloudflare)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#E3F2FD;strokeColor=#1E88E5;fontSize=12;" vertex="1" parent="1">
+          <mxGeometry x="180" y="10" width="200" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="d4-3" value="Service LoadBalancer {{LB_IP}}:{{LB_PORT}} (MetalLB)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFF9C4;strokeColor=#F57F17;fontSize=12;" vertex="1" parent="1">
+          <mxGeometry x="180" y="110" width="200" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="d4-4" value="app pod (k3s-1)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#E8F5E9;strokeColor=#4CAF50;fontSize=12;" vertex="1" parent="1">
+          <mxGeometry x="60" y="210" width="160" height="50" as="geometry" />
+        </mxCell>
+        <mxCell id="d4-5" value="app pod (k3s-2)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#E8F5E9;strokeColor=#4CAF50;fontSize=12;" vertex="1" parent="1">
+          <mxGeometry x="340" y="210" width="160" height="50" as="geometry" />
+        </mxCell>
+        <mxCell id="d4-6" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;strokeColor=#1E88E5;" edge="1" parent="1" source="d4-2" target="d4-3">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="d4-7" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;strokeColor=#F57F17;" edge="1" parent="1" source="d4-3" target="d4-4">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="d4-8" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;strokeColor=#F57F17;" edge="1" parent="1" source="d4-3" target="d4-5">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>
