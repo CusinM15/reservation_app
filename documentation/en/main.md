@@ -293,11 +293,11 @@ kubectl get services -n sola-app
 
 The application runs in **1-3 pods**, depending on load. **HorizontalPodAutoscaler (HPA)** automatically adjusts the count:
 
-| Load | Replicas | When |
+| **Load** | **Replicas** | **When** |
 |---|---|---|
-| 🟢 Low (afternoon, weekend, holidays) | **1** — one node works, other rests |
-| 🟡 Normal (school hours, reservations) | **2** — one copy on each node |
-| 🔴 High (assessments, start of year) | **3** — both nodes together cover 3 copies |
+| 🟢 Low (afternoon, weekend, holidays) | **1** | one node works, other rests |
+| 🟡 Normal (school hours, reservations) | **2** | one copy on each node |
+| 🔴 High (assessments, start of year) | **3** | both nodes cover 3 copies across both nodes |
 
 > **ELI5 — HPA:** Like a coffee machine at school — when there are few people, one works. When lunch break comes, a second and third automatically turn on. When the crowd thins out, the extras turn off. HPA does the same for the application.
 
