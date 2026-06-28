@@ -438,9 +438,22 @@ kubectl get volumes.longhorn.io -n longhorn-system
 | PVC | Kaj shranjuje | Zakaj je pomembno |
 |---|---|---|
 | `sola-postgresql` (5Gi) | **Podatki PG baze** — vse tabele, indeksi, uporabniki, rezervacije, ocene. To je "glavni" PVC. | Brez tega ni baze. 5Gi zadostuje za celotno šolsko leto. |
-| `sola-postgresql-wal` (2Gi) | **Write-Ahead Logs (WAL)** — dnevnik vsake spremembe, preden se zapiše v podatkovne datoteke. | Brez WAL-a replica ne more slediti primaryju. Uporablja se za crash recovery, streaming replikacijo in point-in-time recovery. |
+|| `sola-postgresql-wal` (2Gi) | **Write-Ahead Logs (WAL)** — dnevnik vsake spremembe, preden se zapiše v podatkovne datoteke. | Brez WAL-a replica ne more slediti primaryju. Uporablja se za crash recovery, streaming replikacijo in point-in-time recovery. |
 
-> **ELI5 — WAL (Write-Ahead Log):** Predstavljaj si, da pišeš test. Najprej napišeš odgovor na **list za beležke (WAL)**, šele nato ga prepišeš v **čisto mapo (glavni podatki)**. Če te zmotiš med pisanjem, imaš še vedno beležko, iz katere lahko obnoviš, kar si hotel napisati. WAL je ta beležka — dnevnik sprememb, preden se zapišejo v glavno bazo.
+> **ELI5 — PV (PersistentVolume):** V Kubernetesu ločimo:
+> - **PV** = **fizični trdi disk** — dejanski prostor na disku na enem od računalnikov.
+> - **PVC** = **zahtevek** za ta disk — aplikacija reče "rabim 5GB".
+>
+> Na tečaju si verjetno naredil PV ročno (`hostPath` ali `nfs`), da si imel kam shranjevati.
+> Tukaj pa PV-jev **ne ustvarjaš ročno** — **Longhorn to naredi sam**.
+> Ko ustvariš PVC (npr. `sola-postgresql`), Longhorn prek StorageClass `longhorn` v ozadju:
+> 1. Ustvari PV na disku enega noda
+> 2. Naredi repliko na drugem nodu
+> 3. Poveže PVC s tem PV-jem
+>
+> Preveriš lahko z `kubectl get pv` — videl boš PV-je z imeni kot `pvc-...`, ki jih je ustvaril Longhorn.
+
+> **ELI5 — WAL (Write-Ahead Log):** Predstavljaj si, da pišeš test. Najprej napišeš odgovor na **list za beležke (WAL)**
 
 **Zakaj dva ločena PVC-ja?** PostgreSQL vsako spremembo najprej zapiše v WAL, šele nato v glavne podatkovne datoteke. Ločena PVC-ja omogočata različne I/O profile — WAL je zaporedno pisanje (hitro), podatki so naključni bralno-pisalni dostopi. Prav tako omogoča ločeni backup strategiji: WAL se arhivira sproti, podatki se periodično snapshottajo.
 

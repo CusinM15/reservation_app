@@ -489,9 +489,22 @@ kubectl get volumes.longhorn.io -n longhorn-system
 | PVC | What it stores | Why it matters |
 |---|---|---|
 | `sola-postgresql` (5Gi) | **PG database data** — all tables, indexes, users, reservations, assessments. This is the "main" PVC. | Without this, there is no database. 5Gi is enough for an entire school year. |
-| `sola-postgresql-wal` (2Gi) | **Write-Ahead Logs (WAL)** — a journal of every change, written before it is saved to the data files. | Without WAL, the replica cannot keep up with the primary. Used for crash recovery, streaming replication, and point-in-time recovery. |
+|| `sola-postgresql-wal` (2Gi) | **Write-Ahead Logs (WAL)** — a journal of every change, written before it is saved to the data files. | Without WAL, the replica cannot keep up with the primary. Used for crash recovery, streaming replication, and point-in-time recovery. |
 
-> **ELI5 — WAL (Write-Ahead Log):** Imagine you are writing a test. First you write the answer on a **scratch sheet (WAL)**, only then do you copy it into a **clean folder (main data)**. If you get interrupted while writing, you still have the scratch sheet from which you can recover what you wanted to write. WAL is that scratch sheet — a journal of changes before they are written to the main database.
+> **ELI5 — PV (PersistentVolume):** In Kubernetes there are two concepts:
+> - **PV** = **actual physical disk** — real storage space on one of the computers.
+> - **PVC** = **request** for that disk — the application says "I need 5GB".
+>
+> In a course you probably created PVs manually (`hostPath` or `nfs`) to have somewhere to store data.
+> Here, you **don't create PVs manually** — **Longhorn does it for you**.
+> When you create a PVC (e.g. `sola-postgresql`), Longhorn behind the scenes:
+> 1. Creates a PV on one node's disk
+> 2. Creates a replica on the other node
+> 3. Binds the PVC to that PV
+>
+> You can check with `kubectl get pv` — you'll see PVs with names like `pvc-...`, all created by Longhorn.
+
+> **ELI5 — WAL (Write-Ahead Log):** Imagine you are writing a test. First you write the answer on a **scratch sheet (WAL)**
 
 **Why two separate PVCs?** PostgreSQL first writes every change to WAL, then to the main data files. Separate PVCs allow different I/O profiles — WAL is sequential writing (fast), data is random read-write access. It also enables separate backup strategies: WAL is archived continuously, data is snapshotted periodically.
 
