@@ -16,7 +16,7 @@ Naš sistem uporablja **dva fizična računalnika** (v Kubernetes svetu jih imen
 
 Sistem ima **štiri plasti**, ki delajo skupaj kot ekipa:
 
-> 📐 **Diagram:** odpri `diagrams/ha-prometni-tok.drawio` v [app.diagrams.net](https://app.diagrams.net) (File → Open)
+> 📐 **Diagram:** diagrams/ha-prometni-tok.drawio
 Vsaka plast ve, kaj mora narediti, če en računalnik odpove. Poglejmo si vsako posebej.
 ---
 ## 1. 🐳 Aplikacija (sola-app) — sama se postavi na noge
@@ -187,6 +187,6 @@ kubectl get cluster -n sola sola-db
 
 ## 📊 Arhitekturni diagram (povzetek)
 
-> 📐 **Diagram:** odpri `diagrams/ha-arhitektura.drawio` v [app.diagrams.net](https://app.diagrams.net) (File → Open)
+> 📐 **Diagram:** diagrams/ha-arhitektura.drawio
 ---
 > 📌 **Zadnja misel:** Visoka razpoložljivost ni čarovnija. Je sistem dobro premišljenih pravil, ki skupaj poskrbijo, da uporabniki (naši učitelji, starši in učenci) vedno dobijo kar potrebujejo — tudi ko nekaj v ozadju crkne. In ko enkrat vse nastaviš, večinoma deluje samo od sebe. 🎯
