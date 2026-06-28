@@ -228,7 +228,7 @@ Token dobite z: `sudo cat /var/lib/rancher/k3s/server/node-token` (na k3s-1).
 > **V enem stavku:** Spletna aplikacija (FastAPI + HTML), ki teče v dveh kopijah na obeh računalnikih — če ena crkne, druga nemoteno prevzame.
 
 
-> **ELI5:** Predstavljaj si **seznam na papirju** na oglasni deski, kamor se učitelji vpisujejo za rezervacije telovadnice ali učilnice. Pri papirju velja: kar napišeš, ostane. Če si se zmotil, lahko samo prečrtaš (kar je grdo in nepregledno) ali vzameš nov list. Aplikacija je kot **isti seznam, ampak digitalen** — lahko dodaš rezervacijo, jo **kadarkoli spremeniš** ali **zbrišeš** z enim klikom, pa je vse lepo čisto in pregledno. Brez prečrtavanja, brez novih listov, brez packanja.  
+> **ELI5:** Predstavljaj si **seznam na papirju** na oglasni deski, kamor se učitelji vpisujejo za rezervacije računalnice ali učilnice. Pri papirju velja: kar napišeš, ostane. Če si se zmotil, lahko samo prečrtaš (kar je grdo in nepregledno) ali vzameš nov list. Aplikacija je kot **isti seznam, ampak digitalen** — lahko dodaš rezervacijo, jo **kadarkoli spremeniš** ali **zbrišeš** z enim klikom, pa je vse lepo čisto in pregledno. Brez prečrtavanja, brez novih listov, brez packanja.  
 In ker je digitalen, ga lahko zaženeš v **dveh kopijah (Podi)** na dveh računalnikih. Kot da imaš na hodniku dve enaki oglasni deski — če eno nekdo poškoduje ali sname, druga še vedno visi in učitelji normalno rezervirajo. Učitelji (uporabniki) tega sploh ne opazijo — samo odprejo aplikacijo in delajo naprej.
 
 ### **Deployment**

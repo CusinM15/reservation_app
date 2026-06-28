@@ -225,7 +225,7 @@ Get the token with: `sudo cat /var/lib/rancher/k3s/server/node-token` (on k3s-1)
 
 > **In a nutshell:** A web application (FastAPI + HTML) running in two copies on both computers — if one crashes, the other seamlessly takes over.
 
-> **ELI5:** Imagine a **paper list** on a bulletin board where teachers sign up for gym or classroom reservations. With paper, what you write stays. If you make a mistake, you can only cross it out (which is messy and hard to read) or get a new sheet. The application is like **the same list, but digital** — you can add a reservation, **change it anytime** or **delete it** with one click, and everything stays clean and organized. No crossing out, no new sheets, no smudging.
+> **ELI5:** Imagine a **paper list** on a bulletin board where teachers sign up for computer room or classroom reservations. With paper, what you write stays. If you make a mistake, you can only cross it out (which is messy and hard to read) or get a new sheet. The application is like **the same list, but digital** — you can add a reservation, **change it anytime** or **delete it** with one click, and everything stays clean and organized. No crossing out, no new sheets, no smudging.
 > And because it's digital, you can run it in **two copies (Pods)** on two computers. Like having two identical bulletin boards in the hallway — if someone damages or removes one, the other still hangs there and teachers can book normally. Teachers (users) don't even notice — they just open the app and continue working.
 
 ### **Deployment**
