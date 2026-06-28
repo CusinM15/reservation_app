@@ -245,9 +245,9 @@ Aplikacija teče v **1-3 podih**, odvisno od obremenitve. **HorizontalPodAutosca
 
 | Obremenitev | Replik | Kdaj |
 |-------------|--------|------|
-| 🟢 Nizka (popoldne, vikend, počitnice) | **1** — en node dela, drugi počiva |
-| 🟡 Običajna (pouk, rezervacije) | **2** — ena kopija na vsakem nodu |
-| 🔴 Visoka (ocene, začetek leta) | **3** — oba noda pokrivata skupaj 3 kopije |
+| 🟢 Nizka (popoldne, vikend, počitnice) | **1** | en node dela, drugi počiva |
+| 🟡 Običajna (pouk, rezervacije) | **2** | ena kopija na vsakem nodu |
+| 🔴 Visoka (ocene, začetek leta) | **3** | oba noda pokrivata skupaj 3 kopije |
 
 > **ELI5 — HPA:** Kot kavomat v šoli — ko je malo ljudi, dela en. Ko pride malica, se samodejno vključi še drugi in tretji. Ko gneče zmanjka, se odvečni izklopijo. HPA dela isto za aplikacijo.
 
