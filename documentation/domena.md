@@ -67,7 +67,6 @@ Cloudflare proxy v praksi pomeni:
 
 ![DNS in prometni tok prek Cloudflare proxyja](diagrams/domena-promet.png)
 
-📝 **Uredi diagram:** [`diagrams/domena-promet.drawio`](diagrams/domena-promet.drawio) — odpri v https://app.diagrams.net/
 
 ---
 
