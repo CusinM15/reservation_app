@@ -86,52 +86,7 @@ Below is the technical diagram. Above it is the explanation.
 
 ### **Hardware and Network Diagram**
 
-```
-┌──────────────────────────────────────────────────────────────────────────┐
-│                         K3S KUBERNETES CLUSTER (2 nodes)                  │
-├──────────────────────────────────────────────────────────────────────────┤
-│                                                                          │
-│  ┌──────────────────────────┐    ┌──────────────────────────┐            │
-│  │    k3s-1                 │    │    k3s-2                 │            │
-│  │    HP ProBook 455 G5    │    │    HP ProBook 450 G5    │            │
-│  │    IP: {{LB_IP}}         │    │    IP: {{K3S_2_IP}}      │            │
-│  │    control-plane,etcd    │    │    control-plane,etcd    │            │
-│  │                          │    │                          │            │
-│  │  ┌───────────────────┐   │    │  ┌───────────────────┐   │            │
-│  │  │ sola-app Pod 1    │   │    │  │ sola-app Pod 2    │   │            │
-│  │  │ (app.{{DOMAIN}})  │   │    │  │ (app.{{DOMAIN}})  │   │            │
-│  │  └───────────────────┘   │    │  └───────────────────┘   │            │
-│  │  ┌───────────────────┐   │    │  ┌───────────────────┐   │            │
-│  │  │ sola-db-1         │   │    │  │ sola-db-2         │   │            │
-│  │  │ (PG PRIMARY)      │◄──┼────┼──┤ (PG REPLICA)      │   │            │
-│  │  │ CNPG Instance     │   │    │  │ CNPG Instance     │   │            │
-│  │  └───────────────────┘   │    │  └───────────────────┘   │            │
-│  │                          │    │                          │            │
-│  │  ┌───────────────────┐   │    │  ┌───────────────────┐   │            │
-│  │  │ Longhorn          │   │    │  │ Longhorn          │   │            │
-│  │  │ Instance Manager  │   │    │  │ Instance Manager  │   │            │
-│  │  └───────────────────┘   │    │  └───────────────────┘   │            │
-│  │                          │    │                          │            │
-│  │  ┌───────────────────┐   │    │  ┌───────────────────┐   │            │
-│  │  │ MetalLB Speaker   │   │    │  │ MetalLB Speaker   │   │            │
-│  │  └───────────────────┘   │    │  └───────────────────┘   │            │
-│  └──────────────────────────┘    └──────────────────────────┘            │
-│                                                                          │
-│                          {{LB_IP}}:{{LB_PORT}}                         │
-└─────────────────────────────────┬────────────────────────────────────────┘
-                                  │
-                                  │
-                    ┌─────────────▼─────────────┐
-                    │  Cloudflare DNS           │
-                    │  {{DOMAIN}}               │
-                    │  → 203.0.113.1            │  📡 Cloudflare proxy IPs
-                    │  → 203.0.113.2           │
-                    └───────────────────────────┘
-                              │
-                              │  Internet
-                              ▼
-                    🌐 Users (teachers, management)
-```
+![Complete k3s architecture — 2 nodes, app pods, database, LoadBalancer, Cloudflare](../diagrams/arhitektura-clustra.png)
 
 > **Note:** Both nodes are `control-plane, etcd` — there are no separate worker nodes. k3s runs user pods on control-plane nodes as well. This is perfectly fine for a smaller cluster — with 100+ nodes you would separate them, but for a school system with two HP ProBooks this is totally OK (plus HA becomes much simpler).
 
@@ -142,6 +97,8 @@ Below is the technical diagram. Above it is the explanation.
 > **Simple explanation:** When a teacher enters `https://ostc-app.org` in a browser, this happens: the browser first asks Cloudflare (the internet's phonebook) where this page is. Cloudflare checks its directory, sees IP {{LB_IP}}, and sends the user there. There they are greeted by **MetalLB** (reception desk), which redirects them to one of the two application copies — whichever is currently free.
 
 > **Cloudflare proxy** points directly to the **LoadBalancer (`{{LB_IP}}`, port 80)** — traffic goes directly to MetalLB, HA works automatically — if one node crashes, MetalLB moves the IP to the other.
+
+![Traffic flow: user → Cloudflare → LoadBalancer → app pod](../diagrams/prometni-tok.png)
 
 > **Tip:** Always use Cloudflare proxy (orange cloud) — not just DNS-only (gray cloud). Proxy gives you free SSL, DDoS protection, and hides your real IP from hackers. If you use only DNS, you publicly expose your IP {{LB_IP}} and anyone can attack it directly.
 
