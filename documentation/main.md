@@ -235,7 +235,21 @@ kubectl get pods -n sola-app -o wide
 kubectl get services -n sola-app
 ```
 
-Aplikacija teče v **dveh podih** (ena na vsakem nodu):
+Aplikacija teče v **2-3 podih**, odvisno od obremenitve. **HorizontalPodAutoscaler (HPA)** samodejno prilagaja število:
+
+| Obremenitev | Replik | Kdaj |
+|-------------|--------|------|
+| 🟢 Nizka (popoldne, vikend, počitnice) | **1** — en node dela, drugi počiva |
+| 🟡 Običajna (pouk, rezervacije) | **2** — ena kopija na vsakem nodu |
+| 🔴 Visoka (ocene, začetek leta) | **3** — oba noda pokrivata skupaj 3 kopije |
+
+> **ELI5 — HPA:** Kot kavomat v šoli — ko je malo ljudi, dela en. Ko pride malica, se samodejno vključi še drugi in tretji. Ko gneče zmanjka, se odvečni izklopijo. HPA dela isto za aplikacijo.
+
+```bash
+kubectl get hpa -n sola-app
+# NAME            REFERENCE              TARGETS              MIN   MAX   REPLICAS
+# sola-app-hpa    Deployment/sola-app    45%/60% CPU           1     3     2
+#                                        60%/70% MEM
 
 ```bash
 kubectl get pods -n sola-app -o wide

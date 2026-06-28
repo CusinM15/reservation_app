@@ -203,7 +203,23 @@ Aplikacija teče na več računalnikih (nodih). Če eden crkne, drugi prevzamejo
 
 Cron jobi so kot budilke — vsak dan ob določeni uri se zbudi in nekaj naredi. Postavili smo dva:
 
-### 📦 Dnevna varnostna kopija baze (`sola-db-backup`)
+### **HorizontalPodAutoscaler (HPA) — samodejno skaliranje aplikacije**
+
+Število kopij aplikacije se **samodejno prilagaja** glede na obremenitev:
+
+```bash
+kubectl get hpa -n sola-app
+# NAME            REFERENCE              TARGETS              MIN   MAX   REPLICAS
+# sola-app-hpa    Deployment/sola-app    7%/60% CPU            1     3     2
+#                                        61%/70% MEM
+```
+
+HPA uporablja **CPU (60%) in pomnilnik (70%)** kot merilo:
+- **1 replika** — nizka obremenitev (počitnice, popoldne, vikend)
+- **2 repliki** — normalen pouk (ena kopija na vsakem nodu)
+- **3 replike** — visoka obremenitev (ocene, začetek šolskega leta)
+
+### **Dnevna varnostna kopija baze (`sola-db-backup`)**
 
 | Lastnost | Vrednost | Pomen v praksi |
 |---------|---------|---------------|
