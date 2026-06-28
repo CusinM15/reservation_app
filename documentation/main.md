@@ -449,10 +449,9 @@ kubectl get volumes.longhorn.io -n longhorn-system
 
 > **ELI5 — PV (PersistentVolume):** V Kubernetesu ločimo:
 > - **PV** = **fizični trdi disk** — dejanski prostor na disku na enem od računalnikov.
-> - **PVC** = **zahtevek** za ta disk — aplikacija reče "rabim 5GB".
+> - **PVC** = **zahtevek** za ta disk — aplikacija reče "rabim 5 GB".
 >
-> Na tečaju si verjetno naredil PV ročno (`hostPath` ali `nfs`), da si imel kam shranjevati.
-> Tukaj pa PV-jev **ne ustvarjaš ročno** — **Longhorn to naredi sam**.
+> PV-jev **ne ustvarjaš ročno** — **Longhorn to naredi sam**.
 > Ko ustvariš PVC (npr. `sola-postgresql`), Longhorn prek StorageClass `longhorn` v ozadju:
 > 1. Ustvari PV na disku enega noda
 > 2. Naredi repliko na drugem nodu
