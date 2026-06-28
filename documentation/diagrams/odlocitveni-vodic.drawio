@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<mxfile host="app.diagrams.net" agent="Hermes Agent" version="24.2.5">
+<mxfile host="app.diagrams.net" agent="Hermes Agent=" version="24.2.5">
   <diagram name="odlocitveni-vodic" id="diagram-odlocitveni-vodic.drawio">
     <mxGraphModel dx="1000" dy="600" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="827" pageHeight="1169" math="0" shadow="0">
       <root>
@@ -11,25 +11,25 @@
         <mxCell id="d7-2" value="Samo en računalnik?" style="rhombus;whiteSpace=wrap;html=1;fillColor=#FFF9C4;strokeColor=#F57F17;fontSize=12;" vertex="1" parent="1">
           <mxGeometry x="220" y="90" width="160" height="60" as="geometry" />
         </mxCell>
-        <mxCell id="d7-3" value="✅ Da → LOKALNO (uvicorn/Docker)<br>Enostavno, brez Kubernetes" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#E8F5E9;strokeColor=#4CAF50;fontSize=11;" vertex="1" parent="1">
+        <mxCell id="d7-3" value="✅ Da → LOKALNO (uvicorn/Docker)&#xa;Enostavno, brez Kubernetes=" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#E8F5E9;strokeColor=#4CAF50;fontSize=11;" vertex="1" parent="1">
           <mxGeometry x="30" y="200" width="240" height="60" as="geometry" />
         </mxCell>
         <mxCell id="d7-4" value="2+ računalnikov?" style="rhombus;whiteSpace=wrap;html=1;fillColor=#FFF9C4;strokeColor=#F57F17;fontSize=12;" vertex="1" parent="1">
           <mxGeometry x="440" y="90" width="160" height="60" as="geometry" />
         </mxCell>
-        <mxCell id="d7-5" value="✅ Da → KUBERNETES (k3s)<br>Visoka razpoložljivost" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#E8F5E9;strokeColor=#4CAF50;fontSize=11;" vertex="1" parent="1">
+        <mxCell id="d7-5" value="✅ Da → KUBERNETES (k3s)&#xa;Visoka razpoložljivost=" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#E8F5E9;strokeColor=#4CAF50;fontSize=11;" vertex="1" parent="1">
           <mxGeometry x="380" y="200" width="280" height="60" as="geometry" />
         </mxCell>
-        <mxCell id="d7-6" value="Ne, ampak bom dodajal →<br>KUBERNETES (k3s) — začni zdaj" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFF3E0;strokeColor=#FF9800;fontSize=11;" vertex="1" parent="1">
+        <mxCell id="d7-6" value="Ne, ampak bom dodajal →&#xa;KUBERNETES (k3s) — začni zdaj=" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFF3E0;strokeColor=#FF9800;fontSize=11;" vertex="1" parent="1">
           <mxGeometry x="380" y="300" width="280" height="60" as="geometry" />
         </mxCell>
         <mxCell id="d7-7" value="Imaš star laptop v omari?" style="rhombus;whiteSpace=wrap;html=1;fillColor=#FFF9C4;strokeColor=#F57F17;fontSize=12;" vertex="1" parent="1">
           <mxGeometry x="100" y="320" width="200" height="60" as="geometry" />
         </mxCell>
-        <mxCell id="d7-8" value="Samo za test → LOKALNO" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#E8F5E9;strokeColor=#4CAF50;fontSize=11;" vertex="1" parent="1">
+        <mxCell id="d7-8" value="Samo za test → LOKALNO=" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#E8F5E9;strokeColor=#4CAF50;fontSize=11;" vertex="1" parent="1">
           <mxGeometry x="30" y="430" width="200" height="50" as="geometry" />
         </mxCell>
-        <mxCell id="d7-9" value="Za res → k3s (tudi 1 node > nič)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFF3E0;strokeColor=#FF9800;fontSize=11;" vertex="1" parent="1">
+        <mxCell id="d7-9" value="Za res → k3s (tudi 1 node &gt; nič)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFF3E0;strokeColor=#FF9800;fontSize=11;" vertex="1" parent="1">
           <mxGeometry x="280" y="430" width="220" height="50" as="geometry" />
         </mxCell>
         <mxCell id="d7-e1" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;strokeColor=#1E88E5;" edge="1" parent="1" source="d7-1" target="d7-2">
