@@ -73,7 +73,7 @@ Ta datoteka je **glavni vstopni dokument** — kot recepcija v šoli, ki ti pove
 
 ### **Kako si zamisliti celoten sistem? (za ne-tehnične bralce)**
 
-Predstavljaj si, da imaš v šoli dve **recepciji**. Na vsaki recepciji sedi uslužbenec (to je **Pod** — zabojnik z aplikacijo), ki sprejema obiskovalce (uporabnike, ki želijo rezervirati termin). Oba uslužbenca delata isto stvar — če je eden odsoten, drugi kar naprej dela. Za njima so **zabojniki s spisi učencev (baza podatkov)**, ki so v dveh izvodih — če en zgori, imaš rezervno kopijo. Celotno dogajanje vodi **orchestra conductor (Kubernetes)**, ki pazi, da vsi zabojniki delajo usklajeno.
+Predstavljaj si, da imaš v šoli dve **recepciji**. Na vsaki recepciji sedi uslužbenec (to je **Pod** — zabojnik z aplikacijo), ki sprejema obiskovalce (uporabnike, ki želijo rezervirati termin). Oba uslužbenca delata isto stvar — če je eden odsoten, drugi kar naprej dela. Za njima so **zabojniki s spisi učencev (baza podatkov)**, ki so v dveh izvodih — če en zgori, imaš rezervno kopijo. Celotno dogajanje vodi **dirigent orkestra (Kubernetes)**, ki pazi, da vsi zabojniki delajo usklajeno.
 
 Spodaj je tehnična shema, ki jo bodo razumeli tisti, ki Kubernetes poznajo. Nad njo pa je razlaga.
 
@@ -176,7 +176,7 @@ http://{{LB_IP}}:{{LB_PORT}}     # direkt (samo interno omrežje, brez SSL)
 
 ## ☸️ **Kubernetes (k3s) Cluster**
 
-> **V enem stavku:** k3s je lažja različica Kubernetesa (orchestra conductor za aplikacije), ki teče na obeh HP ProBookih in skrbi, da aplikacija vedno deluje — tudi če en računalnik odpove.
+> **V enem stavku:** k3s je lažja različica Kubernetesa (dirigent orkestra za aplikacije), ki teče na obeh HP ProBookih in skrbi, da aplikacija vedno deluje — tudi če en računalnik odpove.
 
 > **ELI5 — Kubernetes/k3s:** Predstavljaj si orkester. Vsak glasbenik je ena aplikacija (Pod). **Kubernetes** je **dirigent** — on odloča, kdo kaj igra, kdaj igra, in kaj narediti, če kdo zamudi ali zboli. **k3s** je ista stvar, ampak lažja — kot če bi imel manjši orkester, ki ne rabi ogromne koncertne dvorane. Na prenosniku HP ProBook k3s dela odlično, medtem ko bi polni Kubernetes (k8s) bil pretežak.
 
@@ -549,7 +549,7 @@ git pull                                    # Potegni zadnjo kodo
 
 | Pojem | Razlaga |
 |---|---|
-| **Kubernetes (k8s)** | **Orchestra conductor za aplikacije** — sistem, ki avtomatsko upravlja, kje in kako tečejo tvoje aplikacije. Če ena crkne, jo samodejno zažene drugje. |
+| **Kubernetes (k8s)** | **Dirigent orkestra za aplikacije** — sistem, ki avtomatsko upravlja, kje in kako tečejo tvoje aplikacije. Če ena crkne, jo samodejno zažene drugje. |
 | **k3s** | **Lažja različica Kubernetesa** — posebej narejena za manjše računalnike in IoT naprave. Uporabljamo jo na HP ProBookih, ker je polni Kubernetes pretežak za prenosnike. Isti `kubectl` ukazi delujejo za oboje. |
 | **Pod** | **Zabojnik z aplikacijo** — najmanjša enota v Kubernetesu. V njem teče ena kopija aplikacije (npr. sola-app ali sola-db). Vsak pod ima svoj zasebni IP naslov. |
 | **Node** | **Fizični računalnik v gruči** — v našem primeru k3s-1 (HP ProBook 455 G5) in k3s-2 (HP ProBook 450 G5). |
