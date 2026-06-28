@@ -445,7 +445,7 @@ kubectl get volumes.longhorn.io -n longhorn-system
 | PVC | Kaj shranjuje | Zakaj je pomembno |
 |---|---|---|
 | `sola-postgresql` (5Gi) | **Podatki PG baze** — vse tabele, indeksi, uporabniki, rezervacije, ocene. To je "glavni" PVC. | Brez tega ni baze. 5Gi zadostuje za celotno šolsko leto. |
-|| `sola-postgresql-wal` (2Gi) | **Write-Ahead Logs (WAL)** — dnevnik vsake spremembe, preden se zapiše v podatkovne datoteke. | Brez WAL-a replica ne more slediti primaryju. Uporablja se za crash recovery, streaming replikacijo in point-in-time recovery. |
+| `sola-postgresql-wal` (2Gi) | **Write-Ahead Logs (WAL)** — dnevnik vsake spremembe, preden se zapiše v podatkovne datoteke. | Brez WAL-a replica ne more slediti primaryju. Uporablja se za crash recovery, streaming replikacijo in point-in-time recovery. |
 
 > **ELI5 — PV (PersistentVolume):** V Kubernetesu ločimo:
 > - **PV** = **fizični trdi disk** — dejanski prostor na disku na enem od računalnikov.
