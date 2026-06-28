@@ -550,6 +550,14 @@ The report includes:
 - ⚠️ **Errors** — any issues found
 
 > **Tip:** Email backup is **reliable and simple** — no extra tools needed, everyone knows how to open email. But email can end up in spam. So once a week also check `kubectl get events -n sola-app --sort-by='.lastTimestamp'` — there you'll see things the email report might not show (OOMKilled, CrashLoopBackOff, failed volume mounts).
+>
+> **What do these errors mean?**
+>
+> | Error | Meaning | In practice |
+> |-------|---------|-------------|
+> | **OOMKilled** | Out Of Memory — the app **ran out of RAM**, Kubernetes killed it | The app is using more memory than allocated (e.g., 128 MB instead of 256 MB). Fix by increasing the `memory` limit in the Deployment YAML. |
+> | **CrashLoopBackOff** | The app **keeps crashing and restarting** — it fails quickly every time, Kubernetes keeps trying to restart it | Like a computer that shuts down right after you turn it on. The cause is almost always a code error or wrong config. Check logs: `kubectl logs -n sola-app <pod-name>` |
+> | **Failed volume mounts** | The app can't **attach its disk** — Longhorn didn't find the disk or it's broken | Like trying to open a folder on a drive that's unplugged. Check with `kubectl get pv,pvc -n sola-app` and `kubectl get volumes.longhorn.io -n longhorn-system`. |
 
 ---
 

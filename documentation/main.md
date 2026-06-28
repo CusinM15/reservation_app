@@ -505,6 +505,14 @@ Poročilo vključuje:
 - ⚠️ **Napake** — morebitne težave
 
 > **Nasvet:** Email backup je **zanesljiv in preprost** — ne potrebuješ dodatnih orodij, vsak zna odpreti email. Ampak email se lahko izgubi v spam mapi. Zato enkrat na teden preveri še `kubectl get events -n sola-app --sort-by='.lastTimestamp'` — tam vidiš stvari, ki jih email report morda ne pokaže (OOMKilled, CrashLoopBackOff, neuspešni volume mounti).
+>
+> **Kaj pomenijo te napake?**
+>
+> | Napaka | Pomen | V praksi |
+> |--------|-------|----------|
+> | **OOMKilled** | Out Of Memory — aplikaciji je **zmanjkalo RAM-a**, Kubernetes jo je ugasnil | Aplikacija porabi več pomnilnika, kot mu je dodeljenega (npr. 128 MB namesto 256 MB). Popraviš s povečanjem `memory` limita v Deployment YAML. |
+> | **CrashLoopBackOff** | Aplikacija se **nenehno sesipa in znova nalaga** — vsakič hitro crkne, Kubernetes jo poskuša znova zagnati | Kot da bi se računalnik sam od sebe ugasoval takoj po vklopu. Vzrok je skoraj vedno napaka v kodi ali napačna nastavitev. Pogledaš log: `kubectl logs -n sola-app <pod-name>` |
+> | **Neuspešni volume mounti** | Aplikacija ne more **priklopiti diska** — Longhorn diska ni našel ali je pokvarjen | Kot da bi hotel odpreti mapo na disku, pa je disk odklopljen. Preveriš z `kubectl get pv,pvc -n sola-app` in `kubectl get volumes.longhorn.io -n longhorn-system`. |
 
 ---
 
