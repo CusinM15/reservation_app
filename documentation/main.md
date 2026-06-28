@@ -90,7 +90,7 @@ sistem, ki ne pozna izpada.
 
 Tole je shema, kako so komponente povezane:
 
-> 📐 **Diagram:** diagrams/arhitektura-clustra.drawio
+![Arhitektura K3S clustra](diagrams/arhitektura-clustra.png)
 
 > **Opomba:** Oba noda (vozlišča) sta `control-plane, etcd` — to pomeni, da
 > ni ločenih "delavskih" (worker) nodov. k3s dovoljuje poganjanje aplikacij

@@ -31,7 +31,7 @@ Naš sistem teče na **dveh HP ProBook laptopih** — oba igrata vlogo krmilnika
 hkrati nosita podatke (etcd). Nimamo ločenih delavskih nodov (worker nodes). To je lažja
 konfiguracija, ki za šolski sistem povsem zadostuje.
 
-> 📐 **Diagram:** diagrams/k3s-setup-arhitektura.drawio
+![K3s setup arhitektura](diagrams/k3s-setup-arhitektura.png)
 
 ### Razlaga arhitekture v preprosti slovenščini:
 

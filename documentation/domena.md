@@ -68,7 +68,7 @@ Obstaja še več tipov DNS-zapisov — AAAA (za IPv6), CNAME (preusmeritev na dr
 
 ## 🔄 Prometni tok — kaj se zgodi, ko nekdo odpre brskalnik?
 
-> 📐 **Diagram:** diagrams/domena-promet.drawio
+![DNS prometni tok](diagrams/domena-promet.png)
 
 ### Alternativna pot (znotraj šolskega omrežja — ne gre prek Cloudflara)
 
