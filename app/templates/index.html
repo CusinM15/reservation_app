@@ -102,6 +102,7 @@
     <a href="#" class="active" data-tab="rezervacije">Rezervacije</a>
     <a href="#" data-tab="ocenjevanja">Ocenjevanje</a>
     <a href="/auth/admin/users" id="admin-link" style="display:none;">Admin panel</a>
+    <a href="/api/audit-log/page" id="audit-link" style="display:none;">📋 Audit log</a>
     <span class="spacer"></span>
     <span class="user-info" id="userInfo"></span>
     <a href="#" onclick="openChangePasswordModal(); return false;">Spremeni geslo</a>
@@ -871,7 +872,10 @@
 
       if (currentUser) {
         document.getElementById('userInfo').textContent = `${currentUser.full_name || currentUser.username} (${currentUser.role === 'admin' ? 'admin' : currentUser.role === 'vodstvo' ? 'vodstvo' : 'učitelj'})`;
-        if (currentUser.role === 'admin') document.getElementById('admin-link').style.display = 'inline';
+        if (currentUser.role === 'admin' || currentUser.role === 'vodstvo') {
+            document.getElementById('admin-link').style.display = 'inline';
+            document.getElementById('audit-link').style.display = 'inline';
+        }
         const allowedIds = [1,2,3,4]; const allowedRoles = ['admin','vodstvo'];
         const btnContainer = document.getElementById('block-btn-container');
         if (allowedIds.includes(currentUser.id) || allowedRoles.includes(currentUser.role)) btnContainer.style.display = 'inline';

@@ -10,6 +10,7 @@ from calendar import monthrange
 from app.database import get_db, log_audit
 from app.models import BlockedDate, User, Assessment, RoleEnum
 from app.config import settings
+from app.audit import log_audit
 
 router = APIRouter(prefix="/api/blocked-dates", tags=["blocked-dates"])
 
@@ -146,6 +147,9 @@ def create_blocked_dates(
         current += timedelta(days=1)
 
     db.commit()
+    log_audit(db, user_id=uid, username=f"{creator.first_name} {creator.last_name}".strip() or "?",
+              action="create_blocked_dates",
+              details=f"razredi={data.razredi}, date_from={data.date_from}, date_to={data.date_to}, created={created_count}, deleted_assessments={deleted_assessments}")
     return {
         "message": f"Dodanih {created_count} zasedenih datumov",
         "deleted_assessments": deleted_assessments,
@@ -174,4 +178,7 @@ def delete_blocked_date(
     )
     db.delete(bd)
     db.commit()
+    log_audit(db, user_id=int(user_id), username="",
+              action="delete_blocked_date",
+              details=f"id={id}, razred={bd.razred}, date={bd.date}")
     return {"message": "Zaseden datum odstranjen"}

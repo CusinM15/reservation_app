@@ -1,28 +1,28 @@
-🌐 **Language / Jezik:** [🇸🇮 Slovenščina](../main.md) | [🇬🇧 English](main.md)
+🌐 **Language / Jezik:** [🇬🇧 English](en/main.md) | [🇸🇮 Slovenščina](main.md)
 
 ---
 
-> ⚠️ **Note:** IP addresses, passwords, email addresses, and other sensitive data
-> in this documentation are replaced with examples. For actual values, check
-> Kubernetes Secrets or contact the administrator.
+> ⚠️ **Note:** IP addresses, passwords, email addresses, and other sensitive data in this
+> documentation are replaced with examples. For actual values, check Kubernetes
+> Secrets or contact the administrator.
 
 ---
 
-> 🛠️ **Customize the documentation to your IPs**
+> 🛠️ **Adapt the documentation to your IPs**
 >
-> All documentation uses a central `.env.ip` file that defines every IP address,
-> port, and domain. Want documentation with your own values?
+> All documentation uses a central `.env.ip` file where all IPs, ports and domains
+> are defined. Want documentation with your own data?
 >
 > ```bash
 > cd documentation
 > nano .env.ip                          # enter your IPs
-> ./replace-ips.sh                      # docs are updated
+> ./replace-ips.sh                      # documentation adapts automatically
 > ```
 >
-> The script replaces all IPs in `.md` files. After running it, you can
-> copy-paste commands directly into your terminal — they'll work as-is.
+> The script replaces all IPs in `.md` files. After running, you can copy and
+> paste the commands directly into the terminal — they work without modification.
 >
-> > 💡 **Note:** Placeholders ({{LB_IP}}, {{K3S_1_IP}}, etc.) remain in `.drawio` diagrams — the `replace-ips.sh` script leaves them untouched as they are part of images.
+> > 💡 **Note:** Placeholders ({{LB_IP}}, {{K3S_1_IP}}, etc.) remain in `.drawio` diagrams — the `replace-ips.sh` script leaves them untouched as they are part of the image.
 
 ---
 
@@ -31,52 +31,46 @@
 
 ---
 
-## 📚 **Documentation Index**
+## 📚 **Table of Contents**
 
-This file is the **main entry point** — like a school reception desk that tells you where to find things. Below are links to specialized subdocuments:
+This file is **the main entry point** — like the reception desk at school that tells you where to find what. Below are links to specialized sub-documents:
 
 | Document | Description |
 |---|---|
 | [🏗️ **HA Architecture**](../HA.md) | CloudNativePG, automatic failover, node failure procedure |
-| [🌞 **Summer Shutdown**](../POLETNA_PAVZA.md) | Safe k3s cluster shutdown for summer and restart in fall |
-| [☁️ **Domain & DNS**](../domena.md) | Domain setup, Cloudflare, DNS records |
-| [🐍 **Local App Setup**](../postavi-lokalni-app.md) | Single-machine installation (no Kubernetes) |
-| [☸️ **K3s Setup**](../k3s-setup.md) | k3s cluster installation from scratch |
-| [⚙️ **Admin/DevOps Guide**](../admin-devops-navodila.md) | Maintenance, updates, troubleshooting |
-| [👩‍🏫 **Teachers Guide**](../navodila-ucitelji.md) | Using the app — reservations and assessments |
-| [👑 **Management Guide**](../navodila-vodstvo.md) | Browser-based administration (series, blocked dates) |
-| [📱 **App Description**](../aplikacija-rezervacije.md) | What the app does, purpose, features |
-| [📖 **User Manual**](../navodila-uporabnika.md) | Login, passwords, daily use |
+| [🌞 **Summer Shutdown**](../POLETNA_PAVZA.md) | Safe shutdown of the k3s cluster over summer and restart in autumn |
+| [☁️ **Domain and DNS**](../domena.md) | Domain setup, Cloudflare, DNS records |
+| [🐍 **Run app locally**](../postavi-lokalni-app.md) | Installation on a single computer (without Kubernetes) |
+| [☸️ **K3s setup**](../k3s-setup.md) | Installing the k3s cluster from scratch |
+| [⚙️ **Admin/devops instructions**](../admin-devops-navodila.md) | Maintenance, updates, troubleshooting |
+| [👩‍🏫 **Teacher instructions**](../navodila-ucitelji.md) | Using the app — reservations and assessments |
+| [👑 **Management instructions**](../navodila-vodstvo.md) | Managing via browser (series, blocked dates) |
+| [📱 **App description**](../aplikacija-rezervacije.md) | What the app offers, purpose, features |
+| [📖 **User instructions**](../navodila-uporabnika.md) | Login, passwords, daily use |
+| [📋 **Audit log**](main.md#audit-log) | Change log — who did what and when |
 
 ---
 
-## 📑 **Table of Contents** (this document)
+## 📑 **Table of Contents**
 
 1. [System Architecture](#system-architecture)
 2. [Hardware and Network](#hardware-and-network)
-3. [Kubernetes (k3s) Cluster](#kubernetes-k3s-cluster)
-4. [Sola App Application](#sola-app-application)
-5. [PostgreSQL HA — CloudNativePG](#postgresql-ha--cloudnativepg)
-6. [MetalLB LoadBalancer](#metallb-loadbalancer)
-7. [Cloudflare DNS](#cloudflare-dns)
-8. [Longhorn Storage](#longhorn-storage)
-9. [Daily Backup and Reports](#daily-backup-and-reports)
-10. [📋 Audit Log (Activity Log)](#audit-log-activity-log)
-11. [Maintenance and Failures](#maintenance-and-failures)
-12. [Complete Command Reference](#complete-command-reference)
-13. [📖 Glossary](#glossary)
+3. [Domain and Cloudflare](#domain-and-cloudflare)
+4. [Longhorn Storage](#longhorn-storage)
+5. [Daily Backup and Reports](#daily-backup-and-reports)
+6. [Audit log — change log](#audit-log--change-log)
+7. [Maintenance and Failures](#maintenance-and-failures)
+7. [Summer Shutdown](#summer-shutdown)
+8. [Complete Command Reference](#complete-command-reference)
+9. [Glossary](#glossary)
 
 ---
 
 ## 🏗️ **System Architecture**
 
-> **In a nutshell:** Two laptops (HP ProBook) work as a team — if one crashes, the other seamlessly takes over everything the first was doing.
+> **In a nutshell:** Two HP ProBook laptops connected in a Kubernetes cluster with high availability (if one crashes, the other takes over).
 
-### **How to imagine the whole system? (for non-technical readers)**
-
-Imagine you have two **reception desks** at school. At each desk sits an employee (this is a **Pod** — a container with the application) who receives visitors (users who want to book a slot). Both employees do the same thing — if one is absent, the other keeps working. Behind them are **containers with student records (the database)**, kept in two copies — if one goes up in flames, you have a backup copy. The whole operation is conducted by an **orchestra conductor (Kubernetes)** who makes sure all containers work in harmony.
-
-Below is the technical diagram. Above it is the explanation.
+> **ELI5:** Imagine **two teachers who have the same lesson plan** (application) and **the same two assistants** (database) — one is the main assistant, the other vigilantly watches everything the main one does. If the main one gets sick (crashes), the assistant immediately takes their place. The students (users) don't even notice. Everything is stored in **two safes** (Longhorn), so even if one safe crashes, no data is lost.
 
 > **Simple explanation of the diagram below:**
 > - Two computers (k3s-1 and k3s-2) are connected in a cluster — like two desks in the same office.
@@ -89,8 +83,6 @@ Below is the technical diagram. Above it is the explanation.
 
 ![Complete k3s architecture — 2 nodes, app pods, database, LoadBalancer, Cloudflare](../diagrams/arhitektura-clustra.png)
 
-![Complete k3s architecture — 2 nodes, app pods, database, LoadBalancer, Cloudflare](diagrams/arhitektura-clustra.png)
-
 > **Note:** Both nodes are `control-plane, etcd` — there are no separate worker nodes. k3s runs user pods on control-plane nodes as well. This is perfectly fine for a smaller cluster — with 100+ nodes you would separate them, but for a school system with two HP ProBooks this is totally OK (plus HA becomes much simpler).
 
 > **Btw:** Both HP ProBooks have the `control-plane` role because k3s allows this without issues. In large companies (Google, Amazon) they have separate control-plane nodes, but there we're talking thousands of nodes. For a school cluster this is perfectly OK — you save hardware and simplify setup.
@@ -98,8 +90,6 @@ Below is the technical diagram. Above it is the explanation.
 ### **Traffic Flow**
 
 > **Simple explanation:** When a teacher enters `https://{{DOMAIN}}` in a browser, this happens: the browser first asks Cloudflare (the internet's phonebook) where this page is. Cloudflare checks its directory, sees IP {{LB_IP}}, and sends the user there. There they are greeted by **MetalLB** (reception desk), which redirects them to one of the two application copies — whichever is currently free.
-
-![Traffic flow: user → Cloudflare → LoadBalancer → app pod](diagrams/prometni-tok.png)
 
 > **Cloudflare proxy** points directly to the **LoadBalancer (`{{LB_IP}}`, port 80)** — traffic goes directly to MetalLB, HA works automatically — if one node crashes, MetalLB moves the IP to the other.
 
@@ -162,247 +152,35 @@ DNS: {{DNS_IP}}
 ### **Access**
 
 ```bash
-# SSH to both nodes
-ssh {{SSH_USER}}@{{K3S_1_IP}}    # k3s-1
-ssh {{SSH_USER}}@{{K3S_2_IP}}    # k3s-2
+# SSH to k3s-1 (main)
+ssh {{SSH_USER}}@{{K3S_1_IP}}
 
-# Kubernetes (k3s) — kubeconfig is on both nodes
-kubectl get nodes -o wide
-kubectl get pods -A -o wide
+# SSH to k3s-2 (backup)
+ssh {{SSH_USER}}@{{K3S_2_IP}}
 
-# Application in browser
-https://{{DOMAIN}}          # via Cloudflare + LoadBalancer (recommended)
-http://{{LB_IP}}:{{LB_PORT}}     # directly (internal network only, no SSL)
+# Check if everyone is running
+kubectl get nodes
 ```
+
+> **Tip:** Use SSH keys instead of passwords — safer and faster. k3s-2 already has SSH key access to k3s-1 set up.
 
 ---
 
-## ☸️ **Kubernetes (k3s) Cluster**
-
-> **In a nutshell:** k3s is a lightweight version of Kubernetes (orchestra conductor for applications) that runs on both HP ProBooks and ensures the application always works — even if one computer fails.
-
-> **ELI5 — Kubernetes/k3s:** Imagine an orchestra. Each musician is one application (Pod). **Kubernetes** is the **conductor** — he decides who plays what, when to play, and what to do if someone is late or falls ill. **k3s** is the same thing but lighter — like having a smaller orchestra that doesn't need a huge concert hall. On an HP ProBook laptop, k3s works great, while full Kubernetes (k8s) would be too heavy.
-
-### **Node Status**
-
-> **ELI5:** `kubectl get nodes` is like taking attendance in class — it shows which computers are in the cluster and whether they are ready for work.
-
-```bash
-kubectl get nodes -o wide
-
-# NAME    STATUS   ROLES                       AGE   VERSION        INTERNAL-IP      EXTERNAL-IP
-# k3s-1   Ready    control-plane,etcd,master   3d    v1.32.3+k3s1   {{K3S_1_IP}}    <none>
-# k3s-2   Ready    control-plane,etcd,master   3d    v1.32.3+k3s1   {{K3S_2_IP}}    <none>
-```
-
-### **k3s Installation**
-
-> **Simple explanation:** On the first computer (k3s-1) you run k3s with `--cluster-init` — that means "create a new cluster". On the second (k3s-2) you join an existing cluster with `--server https://{{K3S_1_IP}}:6443` — that's like "please connect me to the boss at this address".
-
-```bash
-# On k3s-1 (first node — create a new cluster)
-curl -sfL https://get.k3s.io | sh -s - server \
-  --cluster-init \
-  --disable=traefik \
-  --node-ip={{K3S_1_IP}} \
-  --flannel-iface=eth0
-
-# On k3s-2 (second node — join existing cluster)
-curl -sfL https://get.k3s.io | sh -s - server \
-  --server https://{{K3S_1_IP}}:6443 \
-  --disable=traefik \
-  --node-ip={{K3S_2_IP}} \
-  --flannel-iface=eth0 \
-  --token <NODE_TOKEN>
-```
-
-Get the token with: `sudo cat /var/lib/rancher/k3s/server/node-token` (on k3s-1).
-
-> **Note:** `--disable=traefik` disables the built-in ingress because we use MetalLB LoadBalancer. If we left Traefik enabled, we'd have two systems competing for the same port — confusion we've avoided.
-
-> **ELI5:** Each computer has one or more **network interfaces** — like doors in a house. One interface is for the **Ethernet cable** (physical wire), another for **WiFi** (wireless). **Flannel** is the internal network cabling in Kubernetes — it connects all containers (Pods) with each other, even if they are on different computers. `--flannel-iface=eth0` tells it: "use the Ethernet cable, not WiFi." If you don't specify this, Flannel might pick WiFi (which is slower and less reliable) and the whole cluster won't work correctly.
-
-> **Tip:** Always add `--flannel-iface=eth0`. Why? Because a laptop often has multiple network cards — one for WiFi (e.g. `wlan0`) and one for the Ethernet cable (`eth0`). Flannel (the networking system in Kubernetes) doesn't know which one to use. If it picks WiFi, which is slow or unstable, the cluster won't work. With `--flannel-iface=eth0` you tell it: "use the Ethernet cable, not WiFi." Check what your network cards are called with the `ip a` command on each computer.
-
----
-
-## 🚀 **Sola App Application**
-
-> **In a nutshell:** A web application (FastAPI + HTML) running in two copies on both computers — if one crashes, the other seamlessly takes over.
-
-> **ELI5:** Imagine a **paper list** on a bulletin board where teachers sign up for computer room or classroom reservations. With paper, what you write stays. If you make a mistake, you can only cross it out (which is messy and hard to read) or get a new sheet. The application is like **the same list, but digital** — you can add a reservation, **change it anytime** or **delete it** with one click, and everything stays clean and organized. No crossing out, no new sheets, no smudging.
-> And because it's digital, you can run it in **two copies (Pods)** on two computers. Like having two identical bulletin boards in the hallway — if someone damages or removes one, the other still hangs there and teachers can book normally. Teachers (users) don't even notice — they just open the app and continue working.
-
-### **Deployment**
-
-Namespace: `sola-app`
-
-```bash
-kubectl get deployments -n sola-app
-kubectl get pods -n sola-app -o wide
-kubectl get services -n sola-app
-```
-
-The application runs in **1-3 pods**, depending on load. **HorizontalPodAutoscaler (HPA)** automatically adjusts the count:
-
-| **Load** | **Replicas** | **When** |
-|---|---|---|
-| 🟢 Low (afternoon, weekend, holidays) | **1** | one node works, other rests |
-| 🟡 Normal (school hours, reservations) | **2** | one copy on each node |
-| 🔴 High (assessments, start of year) | **3** | 2 on one, 1 on the other — Kubernetes decides |
-
-> **ELI5 — HPA:** Like a coffee machine at school — when there are few people, one works. When lunch break comes, a second and third automatically turn on. When the crowd thins out, the extras turn off. HPA does the same for the application.
-
-```bash
-kubectl get hpa -n sola-app
-# NAME            REFERENCE              TARGETS              MIN   MAX   REPLICAS
-# sola-app-hpa    Deployment/sola-app    45%/60% CPU           1     3     2
-#                                        60%/70% MEM
-```
-
-```bash
-kubectl get pods -n sola-app -o wide
-
-# NAME                        READY   STATUS    RESTARTS   AGE   IP           NODE
-# sola-app-xxxxx-xxxxx        1/1     Running   0          2d    10.42.0.x    k3s-1
-# sola-app-xxxxx-xxxxx        1/1     Running   0          2d    10.42.1.x    k3s-2
-```
-
-### **Docker Image**
-
-> **ELI5 — Docker Image:** This is like a **recipe for a cake**. You use the same recipe to bake two cakes (two Pods) in two different places. Each cake is identical — the same program, the same settings, the same code. The Dockerfile contains this recipe.
-
-- **Image:** `sola-app:latest`
-- **Dockerfile:** `reservation_app/k8s/Dockerfile`
-- **Deployment YAML:** `reservation_app/k8s/sola-app.yaml`
-
-### **Application Update**
-
-> **ELI5 — rollout restart:** When you want to update the application, you don't need to shut down the server. Kubernetes does it **with zero-downtime** — it first starts a new Pod, waits until it's ready, only then shuts down the old one. Like changing tires on a car while driving — you swap them one by one, the car keeps moving.
-
-```bash
-cd reservation_app
-git pull
-# Wait for the CI build to finish (GitHub Actions)
-# or manually:
-kubectl rollout restart deployment -n sola-app sola-app
-kubectl rollout status deployment -n sola-app sola-app
-```
-
-> **Tip:** Never delete old pods manually. Use `rollout restart`. Kubernetes itself ensures at least one Pod is always active. If you delete both at the same time, you'll have an outage. `rollout status` tells you when the update is complete — don't guess, wait for the "rollout successfully rolled out" message.
-
----
-
-## 🗄️ **PostgreSQL HA — CloudNativePG**
-
-> **In a nutshell:** The database (PostgreSQL) runs in a high-availability configuration — one primary on k3s-1 and one replica on k3s-2, with CloudNativePG automatically handling the switchover if the primary fails.
-
-> **ELI5 — PostgreSQL:** The database is like a **school folder with all reservations and grades**. It is meant for storing data.
->
-> **ELI5 — HA (High Availability):** High availability means you have **two folders** — one original (primary) and one photocopy (replica). Every time you write something in the original, the photocopy gets it immediately. If the original burns (crashes), you take the photocopy and continue where you left off.
->
-> **ELI5 — CloudNativePG (CNPG):** This is a **smart assistant** that watches over both folders. If it notices the original has crashed, it automatically says "photocopy, now you're the boss!" and redirects all users to the photocopy. All of this without human intervention.
-
-### **Status**
-
-```bash
-kubectl get pods -n sola-app -o wide | grep db
-
-# NAME                    READY   STATUS    IP            NODE
-# sola-db-1 (primary)     1/1     Running   10.42.0.x     k3s-1
-# sola-db-2 (replica)     1/1     Running   10.42.1.x     k3s-2
-```
-
-Built with the **CloudNativePG** operator. Primary always on k3s-1, replica on k3s-2.
-
-### **Failover**
-
-> **ELI5 — Failover:** Failover is an **automatic guard change**. Imagine two guards. The first one (primary) stands at the door. The second (replica) sits in the office and constantly monitors what the first is doing (copying the log). If the first faints, the second immediately jumps to the door and continues as if nothing happened — visitors (users) don't even notice.
-
-During k3s-1 failure:
-
-1. **Primary pod `sola-db-1` becomes unreachable** — the computer has crashed.
-2. **CNPG operator detects the failure** (30s `failoverDelay`) — the assistant notices the guard isn't responding.
-3. **CNPG promotes `sola-db-2` (on k3s-2) to primary** — the assistant takes over.
-4. **Service `sola-db-rw` automatically redirects to `sola-db-2`** — all doors point to the new guard.
-5. **App pod on k3s-1 is dead → k3s reschedules it to k3s-2** — Kubernetes determines the first computer is dead and moves the application to the other.
-6. **App on k3s-2 connects to `sola-db-rw` (pointing to `sola-db-2`) → continues working** — the system keeps running.
-
-**Total downtime:** ~1–2 minutes (30s failover delay + ~30s for promotion + time for k3s to detect the dead node)
-
-> **Btw:** 1-2 minutes of downtime sounds like a lot, but in practice this is perfectly acceptable for a school system. A teacher who refreshes the page after 2 minutes will be working normally again — no data is lost because Longhorn handled the replication. Compared to the old system (outage for an entire day until IT arrives), this is a huge improvement.
-
-### **Access**
-
-```bash
-# Primary database (rw) — where writes go
-kubectl exec -it -n sola-app deploy/sola-app -- psql $SOLA_DATABASE_URL
-
-# Replica (read-only) — for reading only (reports, analytics)
-kubectl exec -it -n sola-app deploy/sola-app -- psql $SOLA_DATABASE_URL_RO
-```
-
-### **Service Endpoints (CNPG)**
-
-> **ELI5:** CNPG creates three directories:
-> - **sola-db-rw** = "main entrance" — everyone who wants to write or read goes through this entrance. Always points to the primary.
-> - **sola-db-ro** = "side entrance" — read-only. Points to the replica (backup database), which offloads the primary.
-> - **sola-db-r** = "any entrance" — you can go to primary or replica, whoever is first in line.
-
-CNPG automatically creates three Kubernetes Services for database access:
-
-| Service | Role |
-|---|---|
-| `sola-db-rw.sola:5432` | **Read-Write** — always on primary (used by the app) |
-| `sola-db-ro.sola:5432` | Read-Only — replica only (for reports, analytics) |
-| `sola-db-r.sola:5432` | Read — any instance (primary or replica) |
-
-`DATABASE_URL` in the application points to `sola-db-rw` — during failover it automatically redirects to the new primary, the app doesn't know about the change.
-
----
-
-## 🌐 **MetalLB LoadBalancer**
-
-> **In a nutshell:** MetalLB is the **reception desk** for your Kubernetes cluster — it assigns a public IP ({{LB_IP}}) and directs visitors to the right application, even if the application moves between computers.
-
-> **ELI5 — LoadBalancer:** In a large company you have a reception desk that directs visitors to the right office. **LoadBalancer** is the same thing for applications. When a user arrives at IP {{LB_IP}}, the LoadBalancer checks which copy of the application (Pod) is free and sends them there. If one copy is busy or has crashed, it sends them to the other.
->
-> **ELI5 — MetalLB:** MetalLB is one type of LoadBalancer, specialized for places where you don't have a cloud server (AWS, Google Cloud), but have your own computers (on-premise). Unlike an AWS Load Balancer, which you rent from Amazon, MetalLB runs right on your HP ProBooks.
-
-MetalLB is installed in the `metallb-system` namespace. It assigns the external IP {{LB_IP}} to the `sola-app` Service in the `sola-app` namespace.
-
-**Why MetalLB and not Traefik/Ingress?**
-
-k3s has a built-in Traefik ingress controller, but we disabled it (`--disable=traefik`). Reason: Traefik is great for HTTP traffic, but for a very small cluster with 2 nodes, MetalLB + Service LoadBalancer is simpler — fewer moving parts, fewer chances for errors. If the system ever grows to 5+ nodes with multiple applications, then consider an Ingress controller.
-
----
-
-## ☁️ **Cloudflare DNS**
+## ☁️ **Domain and Cloudflare**
 
 > **In a nutshell:** Cloudflare is the **internet's phonebook** — when someone enters `{{DOMAIN}}` in a browser, Cloudflare tells them where (at which IP) to find this application, and handles the secure connection (SSL).
 
 > **ELI5 — DNS:** DNS (Domain Name System) is like a phonebook for the internet. You type in a name (`{{DOMAIN}}`), DNS returns a number (IP address). Instead of remembering the number {{LB_IP}}, you remember the name `{{DOMAIN}}`. Much easier, right?
->
-> **ELI5 — Cloudflare proxy:** When you enable Cloudflare proxy (orange cloud), Cloudflare doesn't just work as a directory — it also **stands in front of your server as a security guard**. All connections go through Cloudflare, which:
-> - Encrypts traffic (SSL) — nobody can eavesdrop.
-> - Hides your real IP — hackers don't know exactly where your server is.
-> - Blocks DDoS attacks — if someone sends a million requests per second, Cloudflare stops them.
 
-### **DNS Records**
+Cloudflare DNS settings (check at [dash.cloudflare.com](https://dash.cloudflare.com)):
 
-| Type | Name | Value | Proxy |
-|---|---|---|---|
+| Type | Name | Value | Proxy status |
+|------|------|-------|-------------|
 | A | `@` ({{DOMAIN}}) | {{LB_IP}} | ✅ Cloudflare proxy (LoadBalancer) |
-| A | `www` | {{LB_IP}} | ✅ Cloudflare proxy |
 
-### **SSL/TLS**
+> **Cloudflare proxy** is like a security guard in front of the door — hides your real IP, encrypts traffic (SSL), blocks attacks. **Always turn on the orange cloud** ☁️🟠
 
-Cloudflare handles:
-
-- **Edge certificate** — between the user and Cloudflare (HTTPS). This is the green lock in the browser.
-- **Flexible SSL** — Cloudflare → {{LB_IP}} (port 80) via HTTP (no certificate on the origin). This means you have HTTPS on the outside, but within the school network traffic is unencrypted — which is fine in a school network because it is physically protected.
-
-Settings in Cloudflare dashboard:
+Cloudflare SSL/TLS settings:
 
 - **SSL/TLS encryption mode:** `Flexible`
 - **Always Use HTTPS:** ON
@@ -518,13 +296,36 @@ The report includes:
 
 ---
 
-## 📋 **Audit Log (Activity Log)**
+## 📋 **Audit log — change log**
 
-> **In a nutshell:** Every deletion — reservations, assessments, users, series, and blocked dates — is automatically recorded in the activity log. Only management (vodstvo) and admin can view it.
+> **In a nutshell:** Every important action (creating/deleting reservations, assessments, users, blocking dates) is automatically recorded in the database with information about **who** did it and **when**.
 
-> **ELI5:** Like a **black box in an airplane** — if someone deletes a reservation or assessment, the system records who, when, and what was deleted. Even if you delete your own reservation, it's logged. If management wants to check "who deleted the computer lab reservation on April 15th?", they look in the log.
+> **ELI5:** Imagine you have a **sign-in book** at school. Every time someone changes something (adds a reservation, deletes an assessment, creates a user), it gets written in the book — with the time and name. You can go back anytime and check what happened. No guessing, no "who deleted this."
 
-> The log is available at `/auth/admin/audit-log` — accessible only to users with the **admin** or **vodstvo** role.
+**Access:** Only **admin and management** (via the app menu → "📋 Audit log" or at `/api/audit-log/page`).
+
+**What is logged:**
+
+| Action | Description |
+|--------|-------------|
+| `create_rezervacija` | Single reservation created |
+| `delete_rezervacija` | Reservation deleted |
+| `create_series` | Weekly/full-day series created |
+| `delete_series` | Entire series deleted |
+| `create_ocenjevanje` | Assessment created |
+| `delete_ocenjevanje` | Assessment deleted |
+| `create_blocked_dates` | Blocked dates added |
+| `delete_blocked_date` | Blocked date removed |
+| `create_user` | New user created (admin) |
+| `update_user` | User updated (admin) |
+| `delete_user` | User deleted (admin) |
+| `activate_user` | User activated (admin) |
+| `deactivate_user` | User deactivated (admin) |
+| `change_password` | User changed their own password |
+
+**Not logged:** data reads (who viewed what), failed login attempts — only actual changes.
+
+> **Tip:** The audit log is **append-only** — entries are only added, never deleted. Even if an admin deletes a user, the record of that deletion remains. This is intentional — an audit trail must be immutable.
 
 ---
 
@@ -537,29 +338,131 @@ The report includes:
 > **ELI5:** These are your **morning checks**, like before driving a car — check the oil, tire pressure, lights. Here you check whether all computers in the cluster are alive, whether applications are running, whether disks aren't full.
 
 ```bash
-# Check node status — are all computers alive?
-kubectl get nodes -o wide
+# Check if all computers are alive
+kubectl get nodes
 
-# Check pods in sola-app — are applications running?
-kubectl get pods -n sola-app -o wide
+# Check if the application is running (all Pods should be Running)
+kubectl get pods -n sola-app
 
-# Check Longhorn status — are disks OK?
+# Check if there is enough disk space
+kubectl get pvc -n sola-app
+
+# Check if Longhorn disks are healthy
 kubectl get volumes.longhorn.io -n longhorn-system
 
-# Check CloudNativePG — is the database working?
-kubectl get cluster -n sola-app
+# Review recent events (errors, warnings)
+kubectl get events -n sola-app --sort-by='.lastTimestamp'
 ```
 
-### **When a Node Fails**
+### **When Something Crashes**
 
-> **ELI5:** If one of the computers crashes, an **automatic guard change** happens. Don't panic — the system is designed to survive the failure of one computer. Wait a minute, check, fix the failed computer when you have time.
+> **ELI5:** Don't panic. Kubernetes is designed to heal itself. Most issues are solved with a single `kubectl get ...` command — look at what's wrong and follow the instructions below.
 
-1. **The remaining node takes over** — the app pod moves, PG failover happens automatically
-2. **Wait a minute** — CNPG failover (30s delay + promotion) and Longhorn reconfigure
-3. **Check** — `kubectl get pods -n sola-app -o wide`
-4. **Fix** the failed node as needed (replace disk, fix power, reinstall k3s)
+#### **If a Pod Crashes (app not working)**
 
-### **Full Shutdown (Summer Break)**
+```bash
+# Find the problematic Pod
+kubectl get pods -n sola-app
+
+# Check logs (why did it crash?)
+kubectl logs -n sola-app deploy/sola-app --tail=50
+
+# Restart (safe, zero downtime)
+kubectl rollout restart deployment -n sola-app sola-app
+
+# Wait for new Pods to start
+kubectl rollout status deployment -n sola-app sola-app
+```
+
+#### **If an Entire Node is Dead (k3s-1 or k3s-2)**
+
+```bash
+# Check if the node is still in the cluster
+kubectl get nodes
+
+# If the node is NotReady, wait 2 minutes — k3s will automatically
+# move pods to the other node. Check with:
+kubectl get pods -n sola-app -o wide
+
+# If pods haven't moved after 5 minutes, manually delete them:
+kubectl delete pod -n sola-app --all
+# Kubernetes will recreate them on the live nodes
+```
+
+> **Tip:** Don't delete Pods unnecessarily. Kubernetes will handle the migration to another node in 2-3 minutes. Only use manual deletion if pods get "stuck" in Terminating or CrashLoopBackOff state for more than 5 minutes. If in doubt, just wait — Kubernetes is smarter than you think.
+
+#### **If the Database is in Trouble**
+
+```bash
+# Check CNPG cluster status
+kubectl get cluster -n sola
+
+# Check which pods are alive
+kubectl get pods -n sola -o wide
+
+# Check Longhorn volume status
+kubectl get volumes.longhorn.io -n longhorn-system
+
+# If the primary has failed, CNPG will automatically promote the replica to primary
+# Wait up to 2 minutes. Check with:
+kubectl logs -n sola deploy/sola-db-1 --tail=50   # primary database
+kubectl logs -n sola deploy/sola-db-2 --tail=50   # backup database
+```
+
+#### **If All Pods are Pending**
+
+The cause is almost always lack of resources (CPU/RAM) or a Longhorn issue:
+
+```bash
+# Check what's happening
+kubectl describe pod -n sola-app <pod-name>
+
+# Check node resources
+kubectl top nodes
+
+# Check Longhorn
+kubectl get volumes.longhorn.io -n longhorn-system
+```
+
+**From below:** If the node is reachable and has resources, Kubernetes will sort it out — wait 2 minutes.
+
+> **ELI5:** **Pending** means Kubernetes is trying to start the Pod but can't find a suitable computer (e.g., all are busy or Longhorn isn't available). Like trying to book a classroom when all are occupied — you wait for one to become free.
+
+---
+
+## 🔁 **High Availability (HA)**
+
+> See [🏗️ **HA Architecture**](../HA.md) for details on CloudNativePG, automatic failover, and node failure procedure.
+
+> **In a nutshell:** The system survives the failure of any computer (k3s-1 or k3s-2) without data loss — the application is unavailable for at most 1–2 minutes while the database and application migrate to the surviving computer.
+
+**Failure procedure:**
+
+> **ELI5:** Imagine you have **two office assistants**. One (PG primary) writes everything in the logbook, the other (PG replica) copies everything. If the first one gets sick and goes home, the second immediately takes their place — nothing is lost. The only thing you notice is a bit of confusion for the first 30 seconds, then everything runs as before.
+
+1. **Node crashes** (power outage, OS crash, disk failure)
+2. k3s **detects dead node** in ~30s (node timeout)
+3. MetalLB **moves LB IP** to the live node
+4. **CNPG promotes** replica to primary (~30s)
+5. **Application Pods** migrate to the live node
+6. System stable in ~60s — total up to 2 min
+
+**Total downtime:** ~1–2 minutes (30s failover delay + ~30s for promotion + time for k3s to detect the dead node)
+
+> **Btw:** 1-2 minutes of downtime sounds like a lot, but in practice this is perfectly acceptable for a school system. A teacher who refreshes the page after 2 minutes will be working normally again — no data is lost because Longhorn handled the replication. Compared to the old system (outage for an entire day until IT arrives), this is a huge improvement.
+
+### **Access**
+
+```bash
+# During failover, check what's happening
+kubectl get events -n sola --sort-by='.lastTimestamp'
+kubectl get cluster -n sola
+kubectl get pods -n sola -o wide
+```
+
+---
+
+## 🌞 **Summer Shutdown**
 
 See [🌞 Summer Shutdown](../POLETNA_PAVZA.md).
 
@@ -609,7 +512,6 @@ git pull                                    # Pull the latest code
 | Term | Explanation |
 |---|---|
 | **Arnes** | **Academic Research Network Infrastructure of Slovenia** — Slovenian educational internet. The school is connected to the internet via Arnes. |
-| **Audit log (activity log)** | **Application's black box** — every deletion (reservations, assessments, users, blocked dates) is automatically recorded with who, when, and what. Accessible only to management and admin at `/auth/admin/audit-log`. |
 | **Cloudflare** | **Security guard in front of your server** — encrypts traffic (SSL), hides your IP, blocks attacks, speeds up loading. |
 | **CloudNativePG (CNPG)** | **Smart assistant for PostgreSQL database** — automatically manages replication, failover, backup, and recovery. |
 | **Cluster** | **A group of computers working as one** — two HP ProBooks connected into the same Kubernetes cluster. Kubernetes ensures applications run on whichever computer is available. |
@@ -628,14 +530,13 @@ git pull                                    # Pull the latest code
 | **HIPAA** | **U.S. health data privacy law** — *Health Insurance Portability and Accountability Act*. Defines how health data may be stored and transmitted. Since we're a Slovenian school and not a hospital, HIPAA doesn't apply to us — but its principles (encryption, access control, logging) are good practice for any system. |
 | **HPA (HorizontalPodAutoscaler)** | **Automatic scaling of application copies** — monitors CPU/RAM usage and adds or removes replicas (1-3) based on load. Like a coffee machine at school — when it's busy, another one turns on. |
 | **HTTPS** | **Secure web connection** — HTTP + SSL. A green lock in the browser means the connection is secure. |
-| **IoT** | **Internet of Things** — devices connected to the internet, such as smart thermostats, cameras, or sensors. k3s is designed specifically for these kinds of devices — lightweight, low-resource, runs on small computers. |
+| **IoT (Internet of Things)** | **Smart devices connected to the internet** — e.g. smart thermostats, cameras, sensors. k3s is specifically made for these kinds of devices (low power, low specs), but it also runs on laptops — like a camping stove that you can also use in your home kitchen. |
 | **k3s** | **Lightweight version of Kubernetes** — specifically made for smaller computers and IoT devices. We use it on HP ProBooks because full Kubernetes is too heavy for laptops. The same `kubectl` commands work for both. |
 | **Kubernetes (k8s)** | **Orchestra conductor for applications** — a system that automatically manages where and how your applications run. If one crashes, it automatically starts it elsewhere. |
 | **LoadBalancer** | **Reception desk in a building** — directs visitors (users) to the right application. In our case, MetalLB at IP {{LB_IP}}. |
 | **Longhorn** | **A system that ensures you have 2 copies of data on 2 different computers** — distributed storage for Kubernetes, made for smaller clusters. |
 | **MetalLB** | **LoadBalancer for on-premise environments** — an alternative to cloud LoadBalancers (AWS, Google). Runs right on your computers. |
 | **Node** | **Physical computer in the cluster** — in our case k3s-1 (HP ProBook 455 G5) and k3s-2 (HP ProBook 450 G5). |
-| **PCI-DSS** | **Payment card security standard** — *Payment Card Industry Data Security Standard*. Rules that define how companies must protect credit card data. Our application does not accept payments, so this standard doesn't apply — but it's good to know what it is if someone asks about security. |
 | **Pod** | **Container with an application** — the smallest unit in Kubernetes. Each pod runs separately: one for the app itself (`sola-app`), another for the database (`sola-db`). Each pod has its own private IP address. |
 | **Primary (database)** | **Main database** — the only one that can be written to. All changes go through it. |
 | **PVC (PersistentVolumeClaim)** | **Virtual hard drive** — a request for disk space in Kubernetes. Data persists even if the application moves to another computer. |
@@ -651,4 +552,3 @@ git pull                                    # Pull the latest code
 ---
 
 *Documentation for ostc-app — OŠ Toneta Čufarja Jesenice*
-*Last updated: 27 June 2026*

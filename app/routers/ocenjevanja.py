@@ -10,6 +10,7 @@ from app.models import Assessment, User, RoleEnum, BlockedDate
 from app.schemas import AssessmentCreate, AssessmentOut
 from app.config import settings
 from app.race import register_intent, check_and_raise, cleanup, get_lock
+from app.audit import log_audit
 import smtplib, ssl
 from email.mime.text import MIMEText
 
@@ -186,6 +187,9 @@ def create_ocenjevanje(data: AssessmentCreate, request: Request, db: Session = D
             pass  # email is best-effort
         
         cleanup(resource_key)
+        log_audit(db, user_id=int(request.cookies.get("user_id") or 0), username=user_name,
+                  action="create_ocenjevanje",
+                  details=f"razred={data.razred}, date={data.date}, ponavljanje={data.ponavljanje}")
         return assessment
 
 @router.delete("/{id}")
@@ -214,4 +218,7 @@ def delete_ocenjevanje(id: int, request: Request, db: Session = Depends(get_db))
     
     db.delete(assessment)
     db.commit()
+    log_audit(db, user_id=current_user.id, username=f"{current_user.first_name} {current_user.last_name}".strip() or current_user.username,
+              action="delete_ocenjevanje",
+              details=f"id={id}, razred={assessment.razred}, date={assessment.date}, teacher_id={assessment.teacher_id}")
     return {"message": "Ocenjevanje izbrisano"}

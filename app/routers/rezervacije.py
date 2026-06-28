@@ -16,6 +16,7 @@ from app.schemas import (
 from app.config import settings
 from app.race import register_intent, check_and_raise, cleanup, get_lock
 from app.routers.blocked_dates import _send_email
+from app.audit import log_audit
 
 router = APIRouter(prefix="/api/rezervacije", tags=["rezervacije"])
 
@@ -135,6 +136,9 @@ def create_rezervacija(data: ReservationCreate, request: Request, db: Session = 
             raise HTTPException(status_code=500, detail="Napaka pri shranjevanju rezervacije")
         
         cleanup(resource_key)
+        log_audit(db, user_id=int(request.cookies.get("user_id") or 0), username=user_name,
+                  action="create_rezervacija",
+                  details=f"prostor={data.prostor}, date={data.date}, hour={data.hour}, razred={data.razred}, qty={data.qty}")
         return reservation
 
 @router.delete("/{id}")
@@ -164,6 +168,9 @@ def delete_rezervacija(id: int, request: Request, db: Session = Depends(get_db))
     
     db.delete(reservation)
     db.commit()
+    log_audit(db, user_id=current_user.id, username=f"{current_user.first_name} {current_user.last_name}".strip() or current_user.username,
+              action="delete_rezervacija",
+              details=f"id={id}, prostor={reservation.prostor}, date={reservation.date}, hour={reservation.hour}, teacher_id={reservation.teacher_id}")
     return {"message": "Rezervacija izbrisana"}
 
 
@@ -304,6 +311,9 @@ def _commit_series(
         db.rollback()
         raise HTTPException(status_code=500, detail=f"Napaka pri shranjevanju serije: {e}")
 
+    log_audit(db, user_id=teacher_id, username=creator_name,
+              action="create_series",
+              details=f"series_id={series_id}, prostor={prostor}, dates={len(planned)}x, removed={removed}")
     return SeriesResult(series_id=series_id, created=len(planned), skipped=[], removed=removed)
 
 
@@ -426,4 +436,7 @@ def delete_series(series_id: str, request: Request, db: Session = Depends(get_db
     for r in rows:
         db.delete(r)
     db.commit()
+    log_audit(db, user_id=current.id, username=f"{current.first_name} {current.last_name}".strip() or current.username,
+              action="delete_series",
+              details=f"series_id={series_id}, deleted={n}")
     return {"message": f"Serija izbrisana ({n} terminov)", "deleted": n}

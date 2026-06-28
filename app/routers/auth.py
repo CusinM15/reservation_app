@@ -6,8 +6,10 @@ from passlib.context import CryptContext
 import os, secrets
 from datetime import datetime, timedelta, timezone
 
-from app.database import get_db, log_audit
-from app.models import User, RoleEnum, AuditLog
+from app.database import get_db
+from app.config import settings
+from app.audit import log_audit
+from app.models import User, RoleEnum
 from app.config import settings, validate_password_strength
 from app.routers.blocked_dates import _send_email
 
@@ -237,6 +239,9 @@ def change_password(
     
     user.password_hash = get_password_hash(new_password)
     db.commit()
+    log_audit(db, user_id=user.id, username=user.username,
+              action="change_password",
+              details="user changed own password")
     return {"message": "Geslo uspešno spremenjeno"}
 
 
@@ -290,6 +295,9 @@ def create_user(
     )
     db.add(new_user)
     db.commit()
+    log_audit(db, user_id=current_user.id, username=current_user.username,
+              action="create_user",
+              details=f"username={username}, email={email}, role={role}")
     return RedirectResponse(url="/auth/admin/users", status_code=303)
 
 
@@ -304,6 +312,9 @@ def deactivate_user(id: int, request: Request, db: Session = Depends(get_db)):
     if user:
         user.is_active = False
         db.commit()
+        log_audit(db, user_id=current_user.id, username=current_user.username,
+                  action="deactivate_user",
+                  details=f"user_id={id}, username={user.username}")
     return RedirectResponse(url="/auth/admin/users", status_code=303)
 
 
@@ -318,6 +329,9 @@ def activate_user(id: int, request: Request, db: Session = Depends(get_db)):
     if user:
         user.is_active = True
         db.commit()
+        log_audit(db, user_id=current_user.id, username=current_user.username,
+                  action="activate_user",
+                  details=f"user_id={id}, username={user.username}")
     return RedirectResponse(url="/auth/admin/users", status_code=303)
 
 
@@ -336,16 +350,13 @@ def delete_user(id: int, request: Request, db: Session = Depends(get_db)):
     
     # Delete user's reservations and assessments first
     from app.models import Reservation, Assessment
-    user_name = f"{current_user.first_name} {current_user.last_name}".strip() or current_user.username
-    target_name = f"{user.first_name} {user.last_name}".strip() or user.username
     db.query(Reservation).filter(Reservation.teacher_id == id).delete()
     db.query(Assessment).filter(Assessment.teacher_id == id).delete()
-    log_audit(
-        db, current_user.id, user_name, "delete", "user", id,
-        f"Izbrisan uporabnik: {target_name} ({user.username})"
-    )
     db.delete(user)
     db.commit()
+    log_audit(db, user_id=current_user.id, username=current_user.username,
+              action="delete_user",
+              details=f"user_id={id}, username={user.username}, role={user.role}")
     return RedirectResponse(url="/auth/admin/users", status_code=303)
 
 
@@ -382,19 +393,7 @@ def update_user(
     user.last_name = last_name
     user.role = role
     db.commit()
+    log_audit(db, user_id=current_user.id, username=current_user.username,
+              action="update_user",
+              details=f"user_id={id}, username={username}, email={email}, role={role}, password_changed={'yes' if new_password else 'no'}")
     return RedirectResponse(url="/auth/admin/users", status_code=303)
-
-
-# ── Audit log ────────────────────────────────────────────────
-
-@router.get("/admin/audit-log", response_class=HTMLResponse)
-def view_audit_log(request: Request, db: Session = Depends(get_db)):
-    user_id = request.cookies.get("user_id")
-    if not user_id:
-        return RedirectResponse(url="/auth/login")
-    current_user = db.query(User).filter(User.id == int(user_id)).first()
-    if current_user.role not in (RoleEnum.admin, RoleEnum.vodstvo):
-        return HTMLResponse("Nimate pravic", status_code=403)
-    
-    logs = db.query(AuditLog).order_by(AuditLog.timestamp.desc()).limit(500).all()
-    return templates.TemplateResponse("audit_log.html", {"request": request, "logs": logs})
