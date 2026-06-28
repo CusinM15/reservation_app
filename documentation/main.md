@@ -225,7 +225,7 @@ Token dobite z: `sudo cat /var/lib/rancher/k3s/server/node-token` (na k3s-1).
 
 > **V enem stavku:** Spletna aplikacija (FastAPI + HTML), ki teče v dveh kopijah na obeh računalnikih — če ena crkne, druga nemoteno prevzame.
 
-> **ELI5:** Aplikacija je kot spletna stran za rezervacije, ki jo poznaš iz šole. Tukaj pa teče v **dveh zabojnikih (Podi)** — kot da imaš dva natakarja v restavraciji. Če je eden bolan, drugi streže naprej. Stranke (uporabniki) tega sploh ne opazijo.
+> **ELI5:** Aplikacija je kot spletna stran za rezervacije. Teče v **dveh kopijah (Podi)** — kot da imaš na hodniku **dve enaki oglasni deski z urnikom**. Če eno nekdo poškoduje ali sname, druga še vedno visi in učitelji lahko normalno rezervirajo. Učitelji (uporabniki) tega sploh ne opazijo — samo odprejo spletno stran in delajo naprej.
 
 ### **Deployment**
 
