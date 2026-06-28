@@ -86,7 +86,6 @@ Spodaj je tehnična shema, ki jo bodo razumeli tisti, ki Kubernetes poznajo. Nad
 
 ![Celotna k3s arhitektura — 2 noda, app podi, baza, LoadBalancer, Cloudflare](diagrams/arhitektura-clustra.png)
 
-📝 **Uredi diagram:** [`diagrams/arhitektura-clustra.drawio`](diagrams/arhitektura-clustra.drawio) — odpri v https://app.diagrams.net/
 
 > **Opomba:** Oba noda sta `control-plane, etcd` — ni ločenih worker nodov. k3s poganja uporabniške pode tudi na control-plane nodih. To je čisto v redu za manjši cluster — pri 100+ nodih bi jih ločili, za šolski sistem z dvema HP ProBookoma pa je to standardna praksa.
 
@@ -98,7 +97,6 @@ Spodaj je tehnična shema, ki jo bodo razumeli tisti, ki Kubernetes poznajo. Nad
 
 ![Prometni tok: uporabnik → Cloudflare → LoadBalancer → app pod](diagrams/prometni-tok.png)
 
-📝 **Uredi diagram:** [`diagrams/prometni-tok.drawio`](diagrams/prometni-tok.drawio) — odpri v https://app.diagrams.net/
 
 > **Cloudflare proxy** kaže direktno na **LoadBalancer (`{{LB_IP}}`, port 80)** — promet gre direkt na MetalLB, HA deluje samodejno — če en node crkne, MetalLB premakne IP na drugega.
 
