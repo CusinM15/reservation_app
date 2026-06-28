@@ -1,0 +1,31 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="480" height="290" viewBox="40 -10 480 290">
+<defs><marker id="arrow" viewBox="0 0 10 10" refX="10" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+<path d="M 0 0 L 10 5 L 0 10 z" fill="#616161"/></marker>
+<marker id="arrow-green" viewBox="0 0 10 10" refX="10" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+<path d="M 0 0 L 10 5 L 0 10 z" fill="#4CAF50"/></marker>
+<marker id="arrow-purple" viewBox="0 0 10 10" refX="10" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+<path d="M 0 0 L 10 5 L 0 10 z" fill="#9C27B0"/></marker>
+<marker id="arrow-orange" viewBox="0 0 10 10" refX="10" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+<path d="M 0 0 L 10 5 L 0 10 z" fill="#F57F17"/></marker>
+</defs>
+<rect x="40" y="-10" width="480" height="290" fill="#FAFBFC"/>
+<line x1="280.0" y1="70.0" x2="280.0" y2="110.0" stroke="#1E88E5" stroke-width="2"  marker-end="url(#arrow)"/>
+<line x1="280.0" y1="170.0" x2="140.0" y2="210.0" stroke="#F57F17" stroke-width="2"  marker-end="url(#arrow-orange)"/>
+<line x1="280.0" y1="170.0" x2="420.0" y2="210.0" stroke="#F57F17" stroke-width="2"  marker-end="url(#arrow-orange)"/>
+<rect x="180.0" y="10.0" width="200.0" height="60.0" rx="10" ry="10" fill="#E3F2FD" stroke="#1E88E5" stroke-width="1.5"/>
+<g font-family="Arial, sans-serif" font-size="12.0" fill="#FFFFFF">
+<text x="280.0" y="42.400000000000006" text-anchor="middle" >🌐 Internet → {{DOMAIN}} (Cloudflare)</text>
+</g>
+<rect x="180.0" y="110.0" width="200.0" height="60.0" rx="10" ry="10" fill="#FFF9C4" stroke="#F57F17" stroke-width="1.5"/>
+<g font-family="Arial, sans-serif" font-size="12.0" fill="#333333">
+<text x="280.0" y="142.39999999999998" text-anchor="middle" >Service LoadBalancer {{LB_IP}}:{{LB_PORT}} (MetalLB)</text>
+</g>
+<rect x="60.0" y="210.0" width="160.0" height="50.0" rx="10" ry="10" fill="#E8F5E9" stroke="#4CAF50" stroke-width="1.5"/>
+<g font-family="Arial, sans-serif" font-size="12.0" fill="#333333">
+<text x="140.0" y="237.39999999999998" text-anchor="middle" >app pod (k3s-1)</text>
+</g>
+<rect x="340.0" y="210.0" width="160.0" height="50.0" rx="10" ry="10" fill="#E8F5E9" stroke="#4CAF50" stroke-width="1.5"/>
+<g font-family="Arial, sans-serif" font-size="12.0" fill="#333333">
+<text x="420.0" y="237.39999999999998" text-anchor="middle" >app pod (k3s-2)</text>
+</g>
+</svg>
