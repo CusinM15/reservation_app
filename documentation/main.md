@@ -549,7 +549,7 @@ git pull                                    # Potegni zadnjo kodo
 
 | Pojem | Razlaga |
 |---|---|
-| **Kubernetes (k8s)** | **Orchestra conductor za aplikacije** — sistem, ki avtomatsko upravlja, kje in kako tečejo tvoje aplikacije. Če ena crkne, jo samodejno zažene drugje. |
+| **Kubernetes (k8s)** | **Dirigent orkestra za aplikacije** — sistem, ki avtomatsko upravlja, kje in kako tečejo tvoje aplikacije. Če ena crkne, jo samodejno zažene drugje. |
 | **k3s** | **Lažja različica Kubernetesa** — posebej narejena za manjše računalnike in IoT naprave. Uporabljamo jo na HP ProBookih, ker je polni Kubernetes pretežak za prenosnike. Isti `kubectl` ukazi delujejo za oboje. |
 | **Pod** | **Zabojnik z aplikacijo** — najmanjša enota v Kubernetesu. V njem teče ena kopija aplikacije (npr. sola-app ali sola-db). Vsak pod ima svoj zasebni IP naslov. |
 | **Node** | **Fizični računalnik v gruči** — v našem primeru k3s-1 (HP ProBook 455 G5) in k3s-2 (HP ProBook 450 G5). |
