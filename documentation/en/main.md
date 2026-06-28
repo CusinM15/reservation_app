@@ -616,6 +616,7 @@ kubectl rollout restart deployment -n sola-app sola-app          # Zero-downtime
 kubectl rollout status deployment -n sola-app sola-app           # Monitor update
 kubectl logs -n sola-app deployment/sola-app --tail=50           # Last 50 log lines
 kubectl logs -n sola-app deployment/sola-app --previous          # Log of the previous (failed) Pod
+kubectl exec -it -n sola-app deploy/sola-app -- /bin/sh          # Connect to container terminal (shell)
 
 # === Database Management ===
 kubectl exec -it -n sola-app deploy/sola-app -- psql $SOLA_DATABASE_URL                    # Connect to database

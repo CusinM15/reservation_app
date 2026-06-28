@@ -571,6 +571,7 @@ kubectl rollout restart deployment -n sola-app sola-app          # Ponovni zagon
 kubectl rollout status deployment -n sola-app sola-app           # Spremljaj posodobitev
 kubectl logs -n sola-app deployment/sola-app --tail=50           # Zadnjih 50 vrstic loga
 kubectl logs -n sola-app deployment/sola-app --previous          # Log prejšnjega (crknjenega) Pod-a
+kubectl exec -it -n sola-app deploy/sola-app -- /bin/sh          # Poveži se v terminal (lupino) zabojnika
 
 # === Upravljanje baze ===
 kubectl exec -it -n sola-app deploy/sola-app -- psql $SOLA_DATABASE_URL                    # Poveži se na bazo
