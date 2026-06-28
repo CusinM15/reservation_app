@@ -1,0 +1,43 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="900" height="305" viewBox="0 65 900 305">
+<defs><marker id="arrow" viewBox="0 0 10 10" refX="10" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+<path d="M 0 0 L 10 5 L 0 10 z" fill="#616161"/></marker>
+<marker id="arrow-green" viewBox="0 0 10 10" refX="10" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+<path d="M 0 0 L 10 5 L 0 10 z" fill="#4CAF50"/></marker>
+<marker id="arrow-purple" viewBox="0 0 10 10" refX="10" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+<path d="M 0 0 L 10 5 L 0 10 z" fill="#9C27B0"/></marker>
+<marker id="arrow-orange" viewBox="0 0 10 10" refX="10" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+<path d="M 0 0 L 10 5 L 0 10 z" fill="#F57F17"/></marker>
+</defs>
+<rect x="0" y="65" width="900" height="305" fill="#FAFBFC"/>
+<line x1="110.0" y1="150.0" x2="420.0" y2="100.0" stroke="#1a73e8" stroke-width="2"  marker-end="url(#arrow)"/>
+<line x1="420.0" y1="150.0" x2="740.0" y2="100.0" stroke="#e07c24" stroke-width="2"  marker-end="url(#arrow)"/>
+<line x1="740.0" y1="150.0" x2="790.0" y2="200.0" stroke="#e94560" stroke-width="2"  marker-end="url(#arrow)"/>
+<rect x="20.0" y="100.0" width="180.0" height="50.0" rx="10" ry="10" fill="#1a73e8" stroke="#1558b0" stroke-width="1.5"/>
+<g font-family="Arial, sans-serif" font-size="11" fill="#FFFFFF">
+<text x="110.0" y="127.19999999999999" text-anchor="middle" >🌐 Uporabnik (brskalnik)</text>
+</g>
+<rect x="330.0" y="100.0" width="180.0" height="50.0" rx="10" ry="10" fill="#f6821f" stroke="#d46914" stroke-width="1.5"/>
+<g font-family="Arial, sans-serif" font-size="11" fill="#FFFFFF">
+<text x="420.0" y="127.19999999999999" text-anchor="middle" >☁️ Cloudflare&#10;(proxy / varnostnik)</text>
+</g>
+<rect x="200.0" y="85.0" width="130.0" height="30.0" fill="#FFFFFF" stroke="#000000" stroke-width="1.5"/>
+<g font-family="Arial, sans-serif" font-size="12.0" fill="#333333">
+<text x="265.0" y="102.4" text-anchor="middle" >🔒 HTTPS</text>
+</g>
+<rect x="510.0" y="85.0" width="130.0" height="30.0" fill="#FFFFFF" stroke="#000000" stroke-width="1.5"/>
+<g font-family="Arial, sans-serif" font-size="12.0" fill="#333333">
+<text x="575.0" y="102.4" text-anchor="middle" >🔓 HTTP</text>
+</g>
+<rect x="640.0" y="100.0" width="200.0" height="50.0" rx="10" ry="10" fill="#e07c24" stroke="#b8631d" stroke-width="1.5"/>
+<g font-family="Arial, sans-serif" font-size="11" fill="#FFFFFF">
+<text x="740.0" y="127.19999999999999" text-anchor="middle" font-weight="bold">{{LB_IP}}:80&#10;(MetalLB LoadBalancer)</text>
+</g>
+<rect x="700.0" y="200.0" width="180.0" height="50.0" rx="10" ry="10" fill="#e94560" stroke="#c23152" stroke-width="1.5"/>
+<g font-family="Arial, sans-serif" font-size="11" fill="#FFFFFF">
+<text x="790.0" y="227.2" text-anchor="middle" >sola-app pod&#10;(k3s-1 / k3s-2)</text>
+</g>
+<rect x="330.0" y="300.0" width="400.0" height="50.0" rx="10" ry="10" fill="#1a1a2e" stroke="#000000" stroke-width="1.5"/>
+<g font-family="Arial, sans-serif" font-size="11.0" fill="#FFFFFF">
+<text x="530.0" y="327.20000000000005" text-anchor="middle" >Alternativna pot (znotraj šolskega omrežja):&#10;http://{{LB_IP}}:{{LB_PORT}} → direkt na LoadBalancer</text>
+</g>
+</svg>
