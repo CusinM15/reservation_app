@@ -21,6 +21,7 @@
 >
 > Skripta zamenja vse IP-je v `.md` datotekah. Po zagonu lahko komande
 > neposredno kopiraš in prilepiš v terminal — delujejo brez spreminjanja.
+> ps razen tisti placeholderji v diagramih
 
 ---
 
