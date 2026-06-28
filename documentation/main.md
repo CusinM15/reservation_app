@@ -121,16 +121,6 @@ Spodaj je tehnična shema. Nad njo pa je razlaga.
 
 > **V enem stavku:** Dva običajna prenosnika HP ProBook, vsak s po 256GB diskom, povezana v šolsko Arnes omrežje — to je vse, kar rabiš za celoten sistem.
 
-> ℹ️ **Kaj pomeni ELI5?**
->
-> ELI5 = **"Explain Like I'm 5"** (razloži kot da sem star 5 let). V tej
-> dokumentaciji so zeleni citati z oznako **ELI5** preproste, vsakdanje razlage
-> tehničnih konceptov — brez strokovnega žargona. Namenjene so računalniško
-> manj izkušenim bralcem. Če ti je kaj nejasno, preberi ELI5 razlago; če
-> hočeš natančno tehnično razlago, pa preberi besedilo nad njo.
->
-> ELI5 razlage so tudi v **domena.md** in **HA.md** — isti princip.
-
 ### **Specifikacije**
 
 > **ELI5:** Predstavljaj si, da imaš dva pisarniška računalnika. Prvi (k3s-1) ima 16GB RAM — to je kot večja miza, na katero lahko daš več papirjev. Drugi (k3s-2) ima 8GB RAM — manjša miza, ampak še vedno dovolj za rutinsko delo.
