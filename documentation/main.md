@@ -84,7 +84,7 @@ Spodaj je tehnična shema, ki jo bodo razumeli tisti, ki Kubernetes poznajo. Nad
 
 ### **Strojna in omrežna shema**
 
-![Celotna k3s arhitektura — 2 noda, app podi, baza, LoadBalancer, Cloudflare](diagrams/arhitektura.png)
+![Celotna k3s arhitektura — 2 noda, app podi, baza, LoadBalancer, Cloudflare](diagrams/arhitektura-clustra.png)
 
 📝 **Uredi diagram:** [`diagrams/arhitektura-clustra.drawio`](diagrams/arhitektura-clustra.drawio) — odpri v https://app.diagrams.net/
 

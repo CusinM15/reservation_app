@@ -5,40 +5,40 @@
       <root>
         <mxCell id="0" />
         <mxCell id="1" parent="0" />
-        <mxCell id="d8-1" value="reservation_app/<br><span style='color:#757575;'>📁 korenska mapa projekta</span>" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#E8F0FE;strokeColor=#4285F4;fontSize=12;fontStyle=1;" vertex="1" parent="1">
+        <mxCell id="d8-1" value="reservation_app/&#xa;📁 korenska mapa projekta" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#E8F0FE;strokeColor=#4285F4;fontSize=12;fontStyle=1;" vertex="1" parent="1">
           <mxGeometry x="250" y="10" width="160" height="50" as="geometry" />
         </mxCell>
-        <mxCell id="d8-2" value="📁 app/<br><span style='color:#757575;'>Python aplikacija (FastAPI)</span>" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#E8F5E9;strokeColor=#4CAF50;fontSize=11;" vertex="1" parent="1">
+        <mxCell id="d8-2" value="📁 app/&#xa;Python aplikacija (FastAPI)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#E8F5E9;strokeColor=#4CAF50;fontSize=11;" vertex="1" parent="1">
           <mxGeometry x="10" y="90" width="220" height="40" as="geometry" />
         </mxCell>
-        <mxCell id="d8-3" value="📄 main.py<br><span style='color:#757575;'>Vstopna točka</span>" style="text;whiteSpace=wrap;html=1;fontSize=10;" vertex="1" parent="1">
+        <mxCell id="d8-3" value="📄 main.py&#xa;Vstopna točka" style="text;whiteSpace=wrap;html=1;fontSize=10;" vertex="1" parent="1">
           <mxGeometry x="30" y="140" width="190" height="20" as="geometry" />
         </mxCell>
-        <mxCell id="d8-4" value="📄 config.py<br><span style='color:#757575;'>Nastavitve (IP-ji, gesla)</span>" style="text;whiteSpace=wrap;html=1;fontSize=10;" vertex="1" parent="1">
+        <mxCell id="d8-4" value="📄 config.py&#xa;Nastavitve (IP-ji, gesla)" style="text;whiteSpace=wrap;html=1;fontSize=10;" vertex="1" parent="1">
           <mxGeometry x="30" y="165" width="190" height="20" as="geometry" />
         </mxCell>
-        <mxCell id="d8-5" value="📄 database.py<br><span style='color:#757575;'>Povezava z bazo</span>" style="text;whiteSpace=wrap;html=1;fontSize=10;" vertex="1" parent="1">
+        <mxCell id="d8-5" value="📄 database.py&#xa;Povezava z bazo" style="text;whiteSpace=wrap;html=1;fontSize=10;" vertex="1" parent="1">
           <mxGeometry x="30" y="190" width="190" height="20" as="geometry" />
         </mxCell>
-        <mxCell id="d8-6" value="📄 models.py<br><span style='color:#757575;'>Organizacija podatkov</span>" style="text;whiteSpace=wrap;html=1;fontSize=10;" vertex="1" parent="1">
+        <mxCell id="d8-6" value="📄 models.py&#xa;Organizacija podatkov" style="text;whiteSpace=wrap;html=1;fontSize=10;" vertex="1" parent="1">
           <mxGeometry x="30" y="215" width="190" height="20" as="geometry" />
         </mxCell>
-        <mxCell id="d8-7" value="📄 race.py<br><span style='color:#757575;'>Zaščita pred dvojnimi kliki</span>" style="text;whiteSpace=wrap;html=1;fontSize=10;" vertex="1" parent="1">
+        <mxCell id="d8-7" value="📄 race.py&#xa;Zaščita pred dvojnimi kliki" style="text;whiteSpace=wrap;html=1;fontSize=10;" vertex="1" parent="1">
           <mxGeometry x="30" y="240" width="190" height="20" as="geometry" />
         </mxCell>
-        <mxCell id="d8-8" value="📁 routers/<br><span style='color:#757575;'>Poti do funkcionalnosti</span>" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#E8F5E9;strokeColor=#4CAF50;fontSize=11;" vertex="1" parent="1">
+        <mxCell id="d8-8" value="📁 routers/&#xa;Poti do funkcionalnosti" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#E8F5E9;strokeColor=#4CAF50;fontSize=11;" vertex="1" parent="1">
           <mxGeometry x="260" y="130" width="180" height="40" as="geometry" />
         </mxCell>
-        <mxCell id="d8-9" value="📁 templates/<br><span style='color:#757575;'>HTML predloge (izgled strani)</span>" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#E8F5E9;strokeColor=#4CAF50;fontSize=11;" vertex="1" parent="1">
+        <mxCell id="d8-9" value="📁 templates/&#xa;HTML predloge (izgled strani)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#E8F5E9;strokeColor=#4CAF50;fontSize=11;" vertex="1" parent="1">
           <mxGeometry x="470" y="130" width="220" height="40" as="geometry" />
         </mxCell>
-        <mxCell id="d8-10" value="📁 scripts/<br><span style='color:#757575;'>Pomožni skripti</span>" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFF3E0;strokeColor=#FF9800;fontSize=11;" vertex="1" parent="1">
+        <mxCell id="d8-10" value="📁 scripts/&#xa;Pomožni skripti" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFF3E0;strokeColor=#FF9800;fontSize=11;" vertex="1" parent="1">
           <mxGeometry x="10" y="300" width="220" height="40" as="geometry" />
         </mxCell>
-        <mxCell id="d8-11" value="📁 k8s/<br><span style='color:#757575;'>Kubernetes config</span>" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFF3E0;strokeColor=#FF9800;fontSize=11;" vertex="1" parent="1">
+        <mxCell id="d8-11" value="📁 k8s/&#xa;Kubernetes config" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFF3E0;strokeColor=#FF9800;fontSize=11;" vertex="1" parent="1">
           <mxGeometry x="260" y="300" width="200" height="40" as="geometry" />
         </mxCell>
-        <mxCell id="d8-12" value="📁 documentation/<br><span style='color:#757575;'>Dokumentacija</span>" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFF3E0;strokeColor=#FF9800;fontSize=11;" vertex="1" parent="1">
+        <mxCell id="d8-12" value="📁 documentation/&#xa;Dokumentacija" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFF3E0;strokeColor=#FF9800;fontSize=11;" vertex="1" parent="1">
           <mxGeometry x="490" y="300" width="200" height="40" as="geometry" />
         </mxCell>
         <mxCell id="d8-13" value="📄 Dockerfile" style="text;whiteSpace=wrap;html=1;fontSize=11;" vertex="1" parent="1">

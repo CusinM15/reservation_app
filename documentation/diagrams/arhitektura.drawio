@@ -8,22 +8,22 @@
         <mxCell id="d1-2" value="K3S KUBERNETES CLUSTER (2 noda) — dva računalnika kot eno" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#E8F0FE;strokeColor=#4285F4;fontStyle=1;fontSize=13;" vertex="1" parent="1">
           <mxGeometry x="10" y="10" width="800" height="420" as="geometry" />
         </mxCell>
-        <mxCell id="d1-3" value="k3s-1<br>HP ProBook 455 G5<br>IP: {{K3S_1_IP}}<br><i>control-plane, etcd</i>" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFF3E0;strokeColor=#FF9800;fontSize=11;" vertex="1" parent="1">
+        <mxCell id="d1-3" value="k3s-1&#xa;HP ProBook 455 G5&#xa;IP: {{K3S_1_IP}}&#xa;control-plane, etcd" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFF3E0;strokeColor=#FF9800;fontSize=11;" vertex="1" parent="1">
           <mxGeometry x="40" y="60" width="320" height="330" as="geometry" />
         </mxCell>
-        <mxCell id="d1-4" value="k3s-2<br>HP ProBook 450 G5<br>IP: {{K3S_2_IP}}<br><i>control-plane, etcd</i>" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFF3E0;strokeColor=#FF9800;fontSize=11;" vertex="1" parent="1">
+        <mxCell id="d1-4" value="k3s-2&#xa;HP ProBook 450 G5&#xa;IP: {{K3S_2_IP}}&#xa;control-plane, etcd" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFF3E0;strokeColor=#FF9800;fontSize=11;" vertex="1" parent="1">
           <mxGeometry x="440" y="60" width="320" height="330" as="geometry" />
         </mxCell>
-        <mxCell id="d1-5" value="sola-app Pod 1<br>(app.ostc-app.org)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#E8F5E9;strokeColor=#4CAF50;fontSize=11;" vertex="1" parent="1">
+        <mxCell id="d1-5" value="sola-app Pod 1&#xa;(app.ostc-app.org)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#E8F5E9;strokeColor=#4CAF50;fontSize=11;" vertex="1" parent="1">
           <mxGeometry x="60" y="130" width="140" height="60" as="geometry" />
         </mxCell>
-        <mxCell id="d1-6" value="sola-app Pod 2<br>(app.ostc-app.org)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#E8F5E9;strokeColor=#4CAF50;fontSize=11;" vertex="1" parent="1">
+        <mxCell id="d1-6" value="sola-app Pod 2&#xa;(app.ostc-app.org)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#E8F5E9;strokeColor=#4CAF50;fontSize=11;" vertex="1" parent="1">
           <mxGeometry x="460" y="130" width="140" height="60" as="geometry" />
         </mxCell>
-        <mxCell id="d1-7" value="sola-db-1<br>(PG PRIMARY)<br>CNPG Instance" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F3E5F5;strokeColor=#9C27B0;fontSize=11;" vertex="1" parent="1">
+        <mxCell id="d1-7" value="sola-db-1&#xa;(PG PRIMARY)&#xa;CNPG Instance" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F3E5F5;strokeColor=#9C27B0;fontSize=11;" vertex="1" parent="1">
           <mxGeometry x="60" y="220" width="140" height="70" as="geometry" />
         </mxCell>
-        <mxCell id="d1-8" value="sola-db-2<br>(PG REPLICA)<br>CNPG Instance" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F3E5F5;strokeColor=#9C27B0;fontSize=11;" vertex="1" parent="1">
+        <mxCell id="d1-8" value="sola-db-2&#xa;(PG REPLICA)&#xa;CNPG Instance" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F3E5F5;strokeColor=#9C27B0;fontSize=11;" vertex="1" parent="1">
           <mxGeometry x="460" y="220" width="140" height="70" as="geometry" />
         </mxCell>
         <mxCell id="d1-9" value="Longhorn Instance Manager" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#E0F7FA;strokeColor=#00BCD4;fontSize=11;" vertex="1" parent="1">
@@ -37,10 +37,10 @@
             <mxPoint as="offset" />
           </mxGeometry>
         </mxCell>
-        <mxCell id="d1-12" value="Service LoadBalancer (MetalLB)<br>{{LB_IP}}:{{LB_PORT}}<br>→ sola-app Pod 1 ali Pod 2" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFF9C4;strokeColor=#F57F17;fontSize=11;fontStyle=1;" vertex="1" parent="1">
+        <mxCell id="d1-12" value="Service LoadBalancer (MetalLB)&#xa;{{LB_IP}}:{{LB_PORT}}&#xa;→ sola-app Pod 1 ali Pod 2" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFF9C4;strokeColor=#F57F17;fontSize=11;fontStyle=1;" vertex="1" parent="1">
           <mxGeometry x="200" y="490" width="420" height="50" as="geometry" />
         </mxCell>
-        <mxCell id="d1-13" value="Cloudflare DNS<br>ostc-app.org → {{LB_IP}}:{{LB_PORT}}<br>📡 Cloudflare proxy (HTTPS)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F5F5F5;strokeColor=#616161;fontSize=11;fontStyle=1;" vertex="1" parent="1">
+        <mxCell id="d1-13" value="Cloudflare DNS&#xa;ostc-app.org → {{LB_IP}}:{{LB_PORT}}&#xa;📡 Cloudflare proxy (HTTPS)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F5F5F5;strokeColor=#616161;fontSize=11;fontStyle=1;" vertex="1" parent="1">
           <mxGeometry x="280" y="570" width="240" height="70" as="geometry" />
         </mxCell>
         <mxCell id="d1-14" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;strokeColor=#616161;" edge="1" parent="1" source="d1-13" target="d1-12">
