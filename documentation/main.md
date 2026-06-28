@@ -471,7 +471,7 @@ kubectl get volumes.longhorn.io -n longhorn-system
 
 ## 📅 **Dnevni backup in reporti**
 
-> **V enem stavku:** Vsako noč ob 4:00 zjutraj sistem samodejno pošlje varnostno kopijo baze in dnevno poročilo na **email** (obe gresta na `BACKUP_EMAIL` — isti naslov v Kubernetes Secretu, nobenega posebnega REPORT_MAIL ni). Na Discord ne pošilja ničesar samodejno — tja gre samo, kar ti izrecno zahtevaš preko Hermes agenta.
+> **V enem stavku:** Vsako noč ob 4:00 zjutraj sistem samodejno pošlje varnostno kopijo baze na `BACKUP_EMAIL` in dnevno poročilo o stanju na `STANJE_MAIL` (obe spremenljivki v Kubernetes Secretu, obe trenutno na isti naslov). Na Discord ne pošilja ničesar samodejno — tja gre samo, kar ti izrecno zahtevaš preko Hermes agenta.
 
 > **ELI5:** Predstavljaj si, da imaš **nočnega čuvaja**, ki vsako jutro ob 4:00:
 > 1. **Fotokopira celotno šolsko matično knjigo** in ti jo pošlje v nabiralnik (email).
@@ -493,7 +493,7 @@ Naredi popoln posnetek baze (vse tabele, uporabniki, rezervacije, ocene) in ga p
 
 ```bash
 # Cron: 04:00 vsak dan (Europe/Ljubljana)
-# Pošlje poročilo o stanju nodov, Longhorn replik in aplikacij na BACKUP_EMAIL
+# Pošlje poročilo o stanju nodov, Longhorn replik in aplikacij na STANJE_MAIL
 kubectl get cronjob -n sola-app sola-daily-report
 ```
 
