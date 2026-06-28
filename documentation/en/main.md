@@ -181,7 +181,7 @@ Below is the technical diagram. Above it is the explanation.
 | **k3s-1** | HP ProBook 455 G5 | AMD Ryzen 5 2500U | 16GB | 256GB SSD | Control-plane, etcd, app, PG primary (main) |
 | **k3s-2** | HP ProBook 450 G5 | Intel Core i5-8250U | 8GB | 256GB SSD | Control-plane, etcd, app, PG replica (backup) |
 
-> **From experience:** k3s-1 has 16GB RAM, k3s-2 has 8GB. This is not a mistake — the primary database (PG primary) on k3s-1 needs more RAM for cache and WAL buffers. When k3s-2 becomes primary (during failover), it will run a bit slower, but the system will still work. If the budget ever allows, add another 8GB RAM to k3s-2.
+> **From experience:** k3s-1 has 16GB RAM, k3s-2 has 8GB. This is not a mistake — the primary database (PG primary) on k3s-1 needs more RAM for cache and WAL buffers. When k3s-2 becomes primary (during failover), it will run a bit slower, but the system will still work.
 
 ### **Network Settings**
 
