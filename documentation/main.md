@@ -91,7 +91,7 @@ Spodaj je tehnična shema. Nad njo pa je razlaga.
 
 > **Opomba:** Oba noda sta `control-plane, etcd` — ni ločenih worker nodov. k3s poganja uporabniške pode tudi na control-plane nodih. To je čisto v redu za manjši cluster — pri 100+ nodih bi jih ločili, za šolski sistem z dvema HP ProBookoma pa je to tudi čisto ok (poleg tega je HA potem precej lažja).
 
-> **Iz prakse:** Oba HP ProBooka imata `control-plane` vlogo, ker k3s to omogoča brez težav. V velikih podjetjih (Google, Amazon) imajo ločene control-plane node, ampak tam gre za tisoče nodov. Za šolski cluster je to povsem OK — prihraniš strojno opremo in poenostaviš setup.
+> **Iz prakse:** Oba HP ProBooka imata `control-plane` vlogo, ker k3s to omogoča brez težav. V velikih podjetjih (Google, Amazon) imajo ločene control-plane node, ampak tam gre za tisoče nodov. Za šolski cluster je to povsem OK — prihraniš strojno opremo in poenostaviš nastavitev.
 
 ### **Prometni tok**
 
@@ -119,18 +119,18 @@ Spodaj je tehnična shema. Nad njo pa je razlaga.
 
 ## 💻 **Strojna oprema in omrežje**
 
-> **V enem stavku:** Dva običajna prenosnika HP ProBook, vsak s po 256GB diskom, povezana v šolsko Arnes omrežje — to je vse, kar rabiš za celoten sistem.
+> **V enem stavku:** Dva običajna prenosnika HP ProBook, vsak z 256 GB diskom, povezana v šolsko Arnes omrežje — to je vse, kar rabiš za celoten sistem.
 
 ### **Specifikacije**
 
-> **ELI5:** Predstavljaj si, da imaš dva pisarniška računalnika. Prvi (k3s-1) ima 16GB RAM — to je kot večja miza, na katero lahko daš več papirjev. Drugi (k3s-2) ima 8GB RAM — manjša miza, ampak še vedno dovolj za rutinsko delo.
+> **ELI5:** Predstavljaj si, da imaš dva pisarniška računalnika. Prvi (k3s-1) ima 16 GB RAM — to je kot večja miza, na katero lahko daš več papirjev. Drugi (k3s-2) ima 8 GB RAM — manjša miza, ampak še vedno dovolj za rutinsko delo.
 
 | Node | Model | CPU | RAM | Disk | Vloga |
 |---|---|---|---|---|---|
 | **k3s-1** | HP ProBook 455 G5 | AMD Ryzen 5 2500U | 16GB | 256GB SSD | Control-plane, etcd, app, PG primary (glavni) |
 | **k3s-2** | HP ProBook 450 G5 | Intel Core i5-8250U | 8GB | 256GB SSD | Control-plane, etcd, app, PG replica (pomožni) |
 
-> **Iz prakse:** k3s-1 ima 16GB RAM, k3s-2 pa 8GB. To ni napaka — primarna baza (PG primary) na k3s-1 rabi več RAM-a za cache in WAL buffere. Ko k3s-2 postane primary (ob failoverju), bo deloval malo počasneje, ampak sistem bo še vedno delal. Če bo kdaj proračun dopuščal, daj v k3s-2 še 8GB RAM-a.
+> **Iz prakse:** k3s-1 ima 16 GB RAM-a, k3s-2 pa 8 GB RAM-a. To ni napaka — primarna baza (PG primary) na k3s-1 rabi več RAM-a za cache in WAL buffere. Ko k3s-2 postane primary (ob failoverju), bo deloval malo počasneje, ampak sistem bo še vedno delal. Če bo kdaj proračun dopuščal, daj v k3s-2 še 8 GB RAM-a.
 
 ### **Omrežne nastavitve**
 
@@ -169,7 +169,7 @@ kubectl get pods -A -o wide
 
 # Aplikacija v brskalniku
 https://ostc-app.org          # prek Cloudflare + LoadBalancer (priporočeno)
-http://{{LB_IP}}:{{LB_PORT}}     # direkt (samo interno omrežje, brez SSL)
+http://{{LB_IP}}:{{LB_PORT}}     # neposredno (samo interno omrežje, brez SSL)
 ```
 
 ---
@@ -215,7 +215,7 @@ curl -sfL https://get.k3s.io | sh -s - server \
 
 Token dobite z: `sudo cat /var/lib/rancher/k3s/server/node-token` (na k3s-1).
 
-> **Opomba:** `--disable=traefik` izklopi vgrajeni ingress, ker uporabljamo MetalLB LoadBalancer. Če bi pustili Traefik vklopljen, bi imeli dva sistema, ki se potegujeta za isti port — zmeda, ki smo se je izognili.
+> **Opomba:** `--disable=traefik` izklopi vgrajeni ingress, ker uporabljamo MetalLB LoadBalancer. Če bi pustili Traefik vključen, bi imeli dva sistema, ki se potegujeta za isti port — zmeda, ki smo se je izognili.
 
 > **Nasvet:** Vedno dodaj `--flannel-iface=eth0`. Zakaj? Ker ima prenosnik pogosto več omrežnih kartic — eno za WiFi (npr. `wlan0`) in eno za ethernet kabel (`eth0`). Flannel (omrežni sistem v Kubernetesu) ne ve, katero naj uporabi. Če izbere WiFi, ki je počasen ali nestabilen, cluster ne bo delal. Z `--flannel-iface=eth0` mu poveš: "uporabi ethernet kabel, ne WiFi." Preveri, kako se tvoji omrežni kartici imenujeta z ukazom `ip a` na vsakem računalniku.
 
@@ -254,6 +254,7 @@ kubectl get hpa -n sola-app
 # sola-app-hpa    Deployment/sola-app    45%/60% CPU           1     3     2
 #                                        60%/70% MEM
 
+```
 ```bash
 kubectl get pods -n sola-app -o wide
 
@@ -414,7 +415,7 @@ Nastavitve v Cloudflare dashboard:
 
 > **ELI5 — Longhorn:** Predstavljaj si, da imaš pomemben šolski dnevnik. Longhorn je kot **fotokopirni stroj, ki vsako stran takoj po zapisu fotokopira na drugo mizo**. Če ena miza (računalnik) zagori, imaš fotokopijo na drugi mizi. Brez Longhorna bi bil tvoj dnevnik samo na enem mestu — če ta disk crkne, so podatki za vedno izgubljeni.
 >
-> **ELI5 — PVC (PersistentVolumeClaim):** PVC je **virtualni trdi disk** v Kubernetesu. Aplikacija reče "rabim 5GB prostora za shranjevanje" in Kubernetes + Longhorn to zagotovita — tudi če se aplikacija preseli na drug računalnik, podatki ostanejo. To je kot če bi imel prenosni disk, ki ga lahko priklopiš na katerikoli računalnik.
+> **ELI5 — PVC (PersistentVolumeClaim):** PVC je **virtualni trdi disk** v Kubernetesu. Aplikacija reče "rabim 5 GB prostora za shranjevanje" in Kubernetes + Longhorn to zagotovita — tudi če se aplikacija preseli na drug računalnik, podatki ostanejo. To je kot če bi imel prenosni disk, ki ga lahko priklopiš na katerikoli računalnik.
 
 ### **Stanje**
 
@@ -443,7 +444,7 @@ kubectl get volumes.longhorn.io -n longhorn-system
 
 **Longhorn replikacija** (2 kopiji) zagotavlja, da tudi ob izgubi enega noda podatki ostanejo. Oba PVC-ja imata dve repliki — vsaka na svojem k3s nodu.
 
-> **Iz prakse:** 5Gi za podatke in 2Gi za WAL se sliši malo, ampak za šolski sistem z nekaj sto uporabniki in rezervacijami je to več kot dovolj. PostgreSQL je presenetljivo učinkovit s prostorom — cela baza za leto dni dela bo verjetno pod 1GB. Če boš kdaj blizu meje, spremljaš z `kubectl get pvc` in povečaš velikost — Longhorn omogoča online resize brez izpada.
+> **Iz prakse:** 5 Gi za podatke in 2 Gi za WAL se sliši malo, ampak za šolski sistem z nekaj sto uporabniki in rezervacijami je to več kot dovolj. PostgreSQL je presenetljivo učinkovit s prostorom — cela baza za leto dni dela bo verjetno pod 1 GB. Če boš kdaj blizu meje, spremljaš z `kubectl get pvc` in povečaš velikost — Longhorn omogoča online resize brez izpada.
 
 ---
 
