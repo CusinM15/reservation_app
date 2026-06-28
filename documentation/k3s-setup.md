@@ -51,7 +51,6 @@ Ampak kaj če nočeš za vsako aplikacijo svojega IP-ja? Ingress je kot recepcij
 
 ![K3s arhitektura: Internet → Cloudflare → MetalLB → 2 noda](diagrams/k3s-setup-arhitektura.png)
 
-📝 **Uredi diagram:** [`diagrams/k3s-setup-arhitektura.drawio`](diagrams/k3s-setup-arhitektura.drawio) — odpri v https://app.diagrams.net/
 
 ---
 

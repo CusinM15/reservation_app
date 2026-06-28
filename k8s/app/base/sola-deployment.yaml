@@ -6,7 +6,7 @@ metadata:
   labels:
     app: sola-app
 spec:
-  replicas: 1  # HPA (HorizontalPodAutoscaler) upravlja 1-3 dinamično
+  replicas: 2  # ena replika na node; HPA (HorizontalPodAutoscaler) lahko doda tretjo
   strategy:
     type: RollingUpdate
     rollingUpdate:

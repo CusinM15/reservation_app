@@ -191,7 +191,6 @@ Aplikacija teče na več računalnikih (nodih). Če eden crkne, drugi prevzamejo
 
 ![Odločitveni diagram: kateri način namestitve izbrati](diagrams/odlocitveni-vodic.png)
 
-📝 **Uredi diagram:** [`diagrams/odlocitveni-vodic.drawio`](diagrams/odlocitveni-vodic.drawio) — odpri v https://app.diagrams.net/
 
 **Zlato pravilo:** Če nisi prepričan, začni z mDNS. Je kompromis med enostavnostjo in zanesljivostjo. Na k3s lahko preideš kasneje brez izgube podatkov.
 
@@ -387,7 +386,6 @@ journalctl -u k3s --tail=50
 
 ![Struktura projekta reservation_app](diagrams/repo-struktura.png)
 
-📝 **Uredi diagram:** [`diagrams/repo-struktura.drawio`](diagrams/repo-struktura.drawio) — odpri v https://app.diagrams.net/
 
 **Privzeti admin:** uporabnik `admin`, geslo `admin123`.  
 **Takoj po namestitvi spremenite geslo!**  

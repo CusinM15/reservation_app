@@ -23,30 +23,19 @@ Aplikacija in baza tečeta na dveh fizičnih nodih (HP ProBook 455 G5 in 450 G5)
 
 Aplikacija teče v **dveh kopijah (pod-ih)**, ena na vsakem nodu. To ni luksuz, to je osnovni minimum za HA.
 
-Število kopij pa ni fiksno — **HorizontalPodAutoscaler (HPA)** samodejno prilagaja število glede na obremenitev:
+**Ena replika na en node** — to je pravilo. Ker imava 2 noda (k3s-1 in k3s-2), imava vedno 2 repliki, vsaka na svojem računalniku.
 
-| Stanje | Replik | Kdaj |
-|--------|--------|------|
-| 🟢 Majhna obremenitev (počitnice, popoldne, zvečer) | **1** | Ko CPU < 60% in RAM < 70% |
-| 🟡 Srednja obremenitev (običajen pouk) | **2** | Med šolskimi urami, ko učitelji rezervirajo termine |
-| 🔴 Visoka obremenitev (ocenjevanja, začetek leta) | **3** | Ko CPU ali RAM preseže ciljne vrednosti |
+Če pa je gneča (ocene, začetek šolskega leta), **HorizontalPodAutoscaler (HPA)** samodejno doda še tretjo repliko. Ko obremenitev pade, se vrne na 2.
 
-```
+```bash
 kubectl get hpa -n sola-app
-# NAME            REFERENCE              TARGETS          MINPODS   MAXPODS   REPLICAS
-# sola-app-hpa    Deployment/sola-app    45%/60% (CPU)    1         3         2
-#                                        60%/70% (MEM)
+# NAME            REFERENCE              TARGETS          MIN   MAX   REPLICAS
+# sola-app-hpa    Deployment/sola-app    45%/60% (CPU)    2     3     2
 ```
 
-> **ELI5 — HPA:** Predstavljaj si, da imaš v šoli **kavomat**. Ko je malo ljudi, dela en. Ko pride malica in je gneča, se samodejno vključi še drugi in tretji kavomat. Ko gneče zmanjka, se odvečni izklopijo. HPA je isti princip za aplikacijo — pazi na porabo in dodaja/odvzema kopije po potrebi.
+> **ELI5:** Kot dva učitelja v razredu — vsak ima svojo tablo (svoj računalnik). Ko je pouk, oba pišeta. Ko je gneča (kontrolne naloge), pride še tretji pomočnik in pomaga. Ko gneče zmanjka, gresta spet dva.
 
-- **1 replica** = če ni prometa (ponoči, vikend, počitnice). Prihrani RAM in CPU na drugem nodu.
-- **2 replici** = privzeto med poukom. Vsak node ima eno kopijo — HA je zagotovljena.
-- **3 replike** = ko je gneča (ocene, začetek šolskega leta). Oba noda imata skupaj 3 kopije (2 na enem, 1 na drugem).
-- Če eden crkne, HPA poskrbi, da preživeli node pobere vse replike.
-- **Health check** na `/health` endpoint — če vrne 200 OK, je pod živ. Če ne, ga Kubernetes ubije in zažene znova.
-
-> 💡 **ELI5:** Kot da imaš dva natakarja. Eden zboli — drugi streže vse mize sam, dokler prvi ne pride nazaj. Gostje (uporabniki) sploh ne opazijo razlike, ker je hrana (odgovor) vedno na mizi.
+> 💡 **Opomba:** Health check na `/health` endpoint — če vrne 200 OK, je pod živ. Če ne, ga Kubernetes ubije in zažene znova.
 
 ---
 
@@ -54,7 +43,6 @@ kubectl get hpa -n sola-app
 
 ![HA omrežni tok: Internet → Cloudflare → LoadBalancer → app poda](diagrams/ha-network.png)
 
-📝 **Uredi diagram:** [`diagrams/ha-network.drawio`](diagrams/ha-network.drawio) — odpri v https://app.diagrams.net/
 
 - **Cloudflare** kaže na fiksni IP `{{LB_IP}}` — to je javna vstopna točka
 - **MetalLB** (Layer2 način) ta IP oglašuje na enem od nodov
@@ -70,7 +58,6 @@ kubectl get hpa -n sola-app
 
 ![CNPG PostgreSQL cluster — primary, replica, servisni endpointi](diagrams/cnpg-cluster.png)
 
-📝 **Uredi diagram:** [`diagrams/cnpg-cluster.drawio`](diagrams/cnpg-cluster.drawio) — odpri v https://app.diagrams.net/
 
 ### Kako deluje streaming replication?
 
