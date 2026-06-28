@@ -135,7 +135,7 @@ Below is the technical diagram. Above it is the explanation.
 
 > **Note:** Both nodes are `control-plane, etcd` — there are no separate worker nodes. k3s runs user pods on control-plane nodes as well. This is perfectly fine for a smaller cluster — with 100+ nodes you would separate them, but for a school system with two HP ProBooks this is totally OK (plus HA becomes much simpler).
 
-> **From experience:** Both HP ProBooks have the `control-plane` role because k3s allows this without issues. In large companies (Google, Amazon) they have separate control-plane nodes, but there we're talking thousands of nodes. For a school cluster this is perfectly OK — you save hardware and simplify setup.
+> **Btw:** Both HP ProBooks have the `control-plane` role because k3s allows this without issues. In large companies (Google, Amazon) they have separate control-plane nodes, but there we're talking thousands of nodes. For a school cluster this is perfectly OK — you save hardware and simplify setup.
 
 ### **Traffic Flow**
 
@@ -181,7 +181,7 @@ Below is the technical diagram. Above it is the explanation.
 | **k3s-1** | HP ProBook 455 G5 | AMD Ryzen 5 2500U | 16GB | 256GB SSD | Control-plane, etcd, app, PG primary (main) |
 | **k3s-2** | HP ProBook 450 G5 | Intel Core i5-8250U | 8GB | 256GB SSD | Control-plane, etcd, app, PG replica (backup) |
 
-> **From experience:** k3s-1 has 16GB RAM, k3s-2 has 8GB. This is not a mistake — the primary database (PG primary) on k3s-1 needs more RAM for cache and WAL buffers. When k3s-2 becomes primary (during failover), it will run a bit slower, but the system will still work.
+> **Btw:** k3s-1 has 16GB RAM, k3s-2 has 8GB. This is not a mistake — the primary database (PG primary) on k3s-1 needs more RAM for cache and WAL buffers. When k3s-2 becomes primary (during failover), it will run a bit slower, but the system will still work.
 
 ### **Network Settings**
 
@@ -378,7 +378,7 @@ During k3s-1 failure:
 
 **Total downtime:** ~1–2 minutes (30s failover delay + ~30s for promotion + time for k3s to detect the dead node)
 
-> **From experience:** 1-2 minutes of downtime sounds like a lot, but in practice this is perfectly acceptable for a school system. A teacher who refreshes the page after 2 minutes will be working normally again — no data is lost because Longhorn handled the replication. Compared to the old system (outage for an entire day until IT arrives), this is a huge improvement.
+> **Btw:** 1-2 minutes of downtime sounds like a lot, but in practice this is perfectly acceptable for a school system. A teacher who refreshes the page after 2 minutes will be working normally again — no data is lost because Longhorn handled the replication. Compared to the old system (outage for an entire day until IT arrives), this is a huge improvement.
 
 ### **Access**
 
@@ -510,7 +510,7 @@ kubectl get volumes.longhorn.io -n longhorn-system
 
 **Longhorn replication** (2 copies) ensures data survives the loss of one node. Both PVCs have two replicas — one on each k3s node.
 
-> **From experience:** 5Gi for data and 2Gi for WAL sounds small, but for a school system with a few hundred users and reservations, it's more than enough. PostgreSQL is surprisingly efficient with space — the entire database for a year of work will likely be under 1GB. If you ever get close to the limit, monitor with `kubectl get pvc` and increase the size — Longhorn supports online resize without downtime.
+> **Btw:** 5Gi for data and 2Gi for WAL sounds small, but for a school system with a few hundred users and reservations, it's more than enough. PostgreSQL is surprisingly efficient with space — the entire database for a year of work will likely be under 1GB. If you ever get close to the limit, monitor with `kubectl get pvc` and increase the size — Longhorn supports online resize without downtime.
 
 ---
 
@@ -596,7 +596,7 @@ kubectl get cluster -n sola-app
 
 See [🌞 Summer Shutdown](../POLETNA_PAVZA.md).
 
-> **From experience:** The summer shutdown is often overlooked, but it is crucial for the longevity of the hardware. HP ProBooks in a cabinet without cooling can easily reach 50°C at idle during summer. Shutting down for 2 months extends the life of disks and batteries. Before shutdown, **mandatorily** take a snapshot of Longhorn volumes and dump the database — "better to have it and not need it, than need it and not have it."
+> **Btw:** The summer shutdown is often overlooked, but it is crucial for the longevity of the hardware. HP ProBooks in a cabinet without cooling can easily reach 50°C at idle during summer. Shutting down for 2 months extends the life of disks and batteries. Before shutdown, **mandatorily** take a snapshot of Longhorn volumes and dump the database — "better to have it and not need it, than need it and not have it."
 
 ---
 

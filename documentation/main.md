@@ -91,7 +91,7 @@ Spodaj je tehnična shema. Nad njo pa je razlaga.
 
 > **Opomba:** Oba noda sta `control-plane, etcd` — ni ločenih worker nodov. k3s poganja uporabniške pode tudi na control-plane nodih. To je čisto v redu za manjši cluster — pri 100+ nodih bi jih ločili, za šolski sistem z dvema HP ProBookoma pa je to tudi čisto ok (poleg tega je HA potem precej lažja).
 
-> **Iz prakse:** Oba HP ProBooka imata `control-plane` vlogo, ker k3s to omogoča brez težav. V velikih podjetjih (Google, Amazon) imajo ločene control-plane node, ampak tam gre za tisoče nodov. Za šolski cluster je to povsem OK — prihraniš strojno opremo in poenostaviš nastavitev.
+> **Nmig:** Oba HP ProBooka imata `control-plane` vlogo, ker k3s to omogoča brez težav. V velikih podjetjih (Google, Amazon) imajo ločene control-plane node, ampak tam gre za tisoče nodov. Za šolski cluster je to povsem OK — prihraniš strojno opremo in poenostaviš nastavitev.
 
 ### **Prometni tok**
 
@@ -130,7 +130,7 @@ Spodaj je tehnična shema. Nad njo pa je razlaga.
 | **k3s-1** | HP ProBook 455 G5 | AMD Ryzen 5 2500U | 16GB | 256GB SSD | Control-plane, etcd, app, PG primary (glavni) |
 | **k3s-2** | HP ProBook 450 G5 | Intel Core i5-8250U | 8GB | 256GB SSD | Control-plane, etcd, app, PG replica (pomožni) |
 
-> **Iz prakse:** k3s-1 ima 16 GB RAM-a, k3s-2 pa 8 GB RAM-a. To ni napaka — primarna baza (PG primary) na k3s-1 rabi več RAM-a za cache in WAL buffere. Ko k3s-2 postane primary (ob failoverju), bo deloval malo počasneje, ampak sistem bo še vedno delal.
+> **Nmig:** k3s-1 ima 16 GB RAM-a, k3s-2 pa 8 GB RAM-a. To ni napaka — primarna baza (PG primary) na k3s-1 rabi več RAM-a za cache in WAL buffere. Ko k3s-2 postane primary (ob failoverju), bo deloval malo počasneje, ampak sistem bo še vedno delal.
 
 ### **Omrežne nastavitve**
 
@@ -327,7 +327,7 @@ Ob izpadu k3s-1:
 
 **Skupni čas izpada:** ~1–2 minuti (30s failover delay + ~30s za promocijo + čas, da k3s zazna mrtvi node)
 
-> **Iz prakse:** 1-2 minuti izpada se sliši veliko, ampak v praksi je to za šolski sistem povsem sprejemljivo. Učitelj, ki osveži stran po 2 minutah, bo spet delal normalno — podatki niso izgubljeni, ker je Longhorn poskrbel za replikacijo. V primerjavi s starim sistemom (izpad za cel dan, dokler ne pride IT) je to ogromen napredek.
+> **Nmig:** 1-2 minuti izpada se sliši veliko, ampak v praksi je to za šolski sistem povsem sprejemljivo. Učitelj, ki osveži stran po 2 minutah, bo spet delal normalno — podatki niso izgubljeni, ker je Longhorn poskrbel za replikacijo. V primerjavi s starim sistemom (izpad za cel dan, dokler ne pride IT) je to ogromen napredek.
 
 ### **Dostop**
 
@@ -465,7 +465,7 @@ kubectl get volumes.longhorn.io -n longhorn-system
 
 **Longhorn replikacija** (2 kopiji) zagotavlja, da tudi ob izgubi enega noda podatki ostanejo. Oba PVC-ja imata dve repliki — vsaka na svojem k3s nodu.
 
-> **Iz prakse:** 5Gi za podatke in 2Gi za WAL se sliši malo, ampak za šolski sistem z nekaj sto uporabniki in rezervacijami je to več kot dovolj. PostgreSQL je presenetljivo učinkovit s prostorom — cela baza za leto dni dela bo verjetno pod 1GB. Če boš kdaj blizu meje, spremljaš z `kubectl get pvc` in povečaš velikost — Longhorn omogoča online resize brez izpada.
+> **Nmig:** 5Gi za podatke in 2Gi za WAL se sliši malo, ampak za šolski sistem z nekaj sto uporabniki in rezervacijami je to več kot dovolj. PostgreSQL je presenetljivo učinkovit s prostorom — cela baza za leto dni dela bo verjetno pod 1GB. Če boš kdaj blizu meje, spremljaš z `kubectl get pvc` in povečaš velikost — Longhorn omogoča online resize brez izpada.
 
 ---
 
@@ -551,7 +551,7 @@ kubectl get cluster -n sola-app
 
 Glej [🌞 Poletna pavza](POLETNA_PAVZA.md).
 
-> **Iz prakse:** Poletna pavza je pogosto spregledana, ampak je ključna za dolgo življenjsko dobo strojne opreme. HP ProBooki v omari brez hlajenja čez poletje zlahka dosežejo 50°C v mirovanju. Izklop za 2 meseca podaljša življenjsko dobo diskov in baterij. Pred izklopom **obvezno** naredi snapshot Longhorn volumnov in dump baze — "bolje imeti in ne rabiti, kot rabiti in ne imeti."
+> **Nmig:** Poletna pavza je pogosto spregledana, ampak je ključna za dolgo življenjsko dobo strojne opreme. HP ProBooki v omari brez hlajenja čez poletje zlahka dosežejo 50°C v mirovanju. Izklop za 2 meseca podaljša življenjsko dobo diskov in baterij. Pred izklopom **obvezno** naredi snapshot Longhorn volumnov in dump baze — "bolje imeti in ne rabiti, kot rabiti in ne imeti."
 
 ---
 
