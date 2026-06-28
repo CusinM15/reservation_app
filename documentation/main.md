@@ -621,6 +621,7 @@ git pull                                    # Potegni zadnjo kodo
 | **HIPAA** | **Ameriški zakon o varovanju zdravstvenih podatkov** — *Health Insurance Portability and Accountability Act*. Določa, kako se smejo hraniti in pošiljati zdravstveni podatki. Ker smo slovenska šola in ne bolnišnica, HIPAA ne velja za nas — so pa načela tega zakona (šifriranje, nadzor dostopa, beleženje) dobra praksa za vsak sistem. |
 | **HPA (HorizontalPodAutoscaler)** | **Samodejno prilagajanje števila kopij aplikacije** — pazi na porabo CPU/RAM in doda ali odstrani replike (1-3) glede na obremenitev. Kot kavomat v šoli — ko je gužva, se vključi še en. |
 | **HTTPS** | **Varna spletna povezava** — HTTP + SSL. Zelena ključavnica v brskalniku pomeni, da je povezava varna. |
+| **IoT** | **Internet of Things (internet stvari)** — naprave, ki so povezane v internet, kot so pametni termostati, kamere, ali merilniki. k3s je zasnovan prav za take naprave — lahek, varčen, deluje na majhnih računalnikih. |
 | **k3s** | **Lažja različica Kubernetesa** — posebej narejena za manjše računalnike in IoT naprave. Uporabljamo jo na HP ProBookih, ker je polni Kubernetes pretežak za prenosnike. Isti `kubectl` ukazi delujejo za oboje. |
 | **Kubernetes (k8s)** | **Dirigent orkestra za aplikacije** — sistem, ki avtomatsko upravlja, kje in kako tečejo tvoje aplikacije. Če ena crkne, jo samodejno zažene drugje. |
 | **LoadBalancer** | **Recepcija v stavbi** — usmerja obiskovalce (uporabnike) na pravo aplikacijo. V našem primeru MetalLB na IP {{LB_IP}}. |

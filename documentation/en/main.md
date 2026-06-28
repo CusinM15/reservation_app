@@ -616,6 +616,7 @@ git pull                                    # Pull the latest code
 | **HIPAA** | **U.S. health data privacy law** — *Health Insurance Portability and Accountability Act*. Defines how health data may be stored and transmitted. Since we're a Slovenian school and not a hospital, HIPAA doesn't apply to us — but its principles (encryption, access control, logging) are good practice for any system. |
 | **HPA (HorizontalPodAutoscaler)** | **Automatic scaling of application copies** — monitors CPU/RAM usage and adds or removes replicas (1-3) based on load. Like a coffee machine at school — when it's busy, another one turns on. |
 | **HTTPS** | **Secure web connection** — HTTP + SSL. A green lock in the browser means the connection is secure. |
+| **IoT** | **Internet of Things** — devices connected to the internet, such as smart thermostats, cameras, or sensors. k3s is designed specifically for these kinds of devices — lightweight, low-resource, runs on small computers. |
 | **k3s** | **Lightweight version of Kubernetes** — specifically made for smaller computers and IoT devices. We use it on HP ProBooks because full Kubernetes is too heavy for laptops. The same `kubectl` commands work for both. |
 | **Kubernetes (k8s)** | **Orchestra conductor for applications** — a system that automatically manages where and how your applications run. If one crashes, it automatically starts it elsewhere. |
 | **LoadBalancer** | **Reception desk in a building** — directs visitors (users) to the right application. In our case, MetalLB at IP {{LB_IP}}. |
