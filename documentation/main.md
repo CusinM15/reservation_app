@@ -73,7 +73,7 @@ Ta datoteka je **glavni vstopni dokument** — kot recepcija v šoli, ki ti pove
 
 Predstavljaj si, da imaš v šoli dve **recepciji**. Na vsaki recepciji sedi uslužbenec (to je **Pod** — zabojnik z aplikacijo), ki sprejema obiskovalce (uporabnike, ki želijo rezervirati termin). Oba uslužbenca delata isto stvar — če je eden odsoten, drugi kar naprej dela. Za njima so **zabojniki s spisi učencev (baza podatkov)**, ki so v dveh izvodih — če en zgori, imaš rezervno kopijo. Celotno dogajanje vodi **orchestra conductor (Kubernetes)**, ki pazi, da vsi zabojniki delajo usklajeno.
 
-Spodaj je tehnična shema, ki jo bodo razumeli tisti, ki Kubernetes poznajo. Nad njo pa je razlaga v preprosti angleščini.
+Spodaj je tehnična shema, ki jo bodo razumeli tisti, ki Kubernetes poznajo. Nad njo pa je razlaga.
 
 > **Preprosta razlaga diagrama spodaj:**
 > - Dva računalnika (k3s-1 in k3s-2) sta povezana v gručo — kot dve mizi v isti pisarni.
