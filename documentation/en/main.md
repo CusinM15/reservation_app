@@ -88,6 +88,8 @@ Below is the technical diagram. Above it is the explanation.
 
 ![Complete k3s architecture — 2 nodes, app pods, database, LoadBalancer, Cloudflare](../diagrams/arhitektura-clustra.png)
 
+![Complete k3s architecture — 2 nodes, app pods, database, LoadBalancer, Cloudflare](diagrams/arhitektura-clustra.png)
+
 > **Note:** Both nodes are `control-plane, etcd` — there are no separate worker nodes. k3s runs user pods on control-plane nodes as well. This is perfectly fine for a smaller cluster — with 100+ nodes you would separate them, but for a school system with two HP ProBooks this is totally OK (plus HA becomes much simpler).
 
 > **Btw:** Both HP ProBooks have the `control-plane` role because k3s allows this without issues. In large companies (Google, Amazon) they have separate control-plane nodes, but there we're talking thousands of nodes. For a school cluster this is perfectly OK — you save hardware and simplify setup.
@@ -95,6 +97,8 @@ Below is the technical diagram. Above it is the explanation.
 ### **Traffic Flow**
 
 > **Simple explanation:** When a teacher enters `https://{{DOMAIN}}` in a browser, this happens: the browser first asks Cloudflare (the internet's phonebook) where this page is. Cloudflare checks its directory, sees IP {{LB_IP}}, and sends the user there. There they are greeted by **MetalLB** (reception desk), which redirects them to one of the two application copies — whichever is currently free.
+
+![Traffic flow: user → Cloudflare → LoadBalancer → app pod](diagrams/prometni-tok.png)
 
 > **Cloudflare proxy** points directly to the **LoadBalancer (`{{LB_IP}}`, port 80)** — traffic goes directly to MetalLB, HA works automatically — if one node crashes, MetalLB moves the IP to the other.
 
