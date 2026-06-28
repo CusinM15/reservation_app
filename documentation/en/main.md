@@ -119,16 +119,6 @@ Below is the technical diagram. Above it is the explanation.
 
 > **In a nutshell:** Two ordinary HP ProBook laptops, each with 256GB disk, connected to the school's Arnes network — that's all you need for the entire system.
 
-> ℹ️ **What does ELI5 mean?**
->
-> ELI5 = **"Explain Like I'm 5"**. In this
-> documentation, green quotes tagged with **ELI5** are simple, everyday explanations
-> of technical concepts — without professional jargon. They are intended for
-> readers less experienced with computers. If something is unclear, read the ELI5
-> explanation; if you want a precise technical explanation, read the text above it.
->
-> ELI5 explanations are also in **domena.md** and **HA.md** — same principle.
-
 ### **Specifications**
 
 > **ELI5:** Imagine you have two office computers. The first one (k3s-1) has 16GB RAM — that's like a bigger desk where you can put more papers. The second (k3s-2) has 8GB RAM — a smaller desk, but still enough for routine work.
