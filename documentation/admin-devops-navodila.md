@@ -142,7 +142,7 @@ sudo systemctl enable --now ssh
 ssh tvoj_uporabnik@<IP_STREZNIKA>
 ```
 
-**Nasvet seniorja:** Omogoči SSH ključe namesto gesla. Potem se lahko povežeš brez tipkanja gesla — in heker se ne more prijaviti, tudi če ugane geslo.
+**Nasvet:** Omogoči SSH ključe namesto gesla. Potem se lahko povežeš brez tipkanja gesla — in heker se ne more prijaviti, tudi če ugane geslo.
 
 ---
 
@@ -323,7 +323,7 @@ sudo cat /var/lib/rancher/k3s/server/token
 
 **Dobiš nekaj takega:** `K107f8a7b6c5d4e3f2a1b0c9d8e7f6a5b4c3d2e1f::server:token`
 
-**Nasvet seniorja:** Token je **občutljiv podatek**. Z njim lahko kdorkoli priključi svoj računalnik v tvoj cluster. Ne shranjuj ga v javnih repozitorijih ali na listkih na monitorju.
+**Nasvet:** Token je **občutljiv podatek**. Z njim lahko kdorkoli priključi svoj računalnik v tvoj cluster. Ne shranjuj ga v javnih repozitorijih ali na listkih na monitorju.
 
 ### 3. Priključitev kot dodaten master
 

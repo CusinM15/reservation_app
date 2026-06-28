@@ -100,7 +100,7 @@ Spodaj je tehnična shema, ki jo bodo razumeli tisti, ki Kubernetes poznajo. Nad
 
 > **Cloudflare proxy** kaže direktno na **LoadBalancer (`{{LB_IP}}`, port 80)** — promet gre direkt na MetalLB, HA deluje samodejno — če en node crkne, MetalLB premakne IP na drugega.
 
-> **Nasvet seniorja:** Vedno uporabljaj Cloudflare proxy (oranžni oblak) — ne samo DNS-only (sivi oblak). Proxy ti da brezplačen SSL, DDoS zaščito, in skrije tvoj pravi IP pred hekerji. Če daš samo DNS, tvoj IP {{LB_IP}} javno razkriješ in vsak ga lahko direktno napade.
+> **Nasvet:** Vedno uporabljaj Cloudflare proxy (oranžni oblak) — ne samo DNS-only (sivi oblak). Proxy ti da brezplačen SSL, DDoS zaščito, in skrije tvoj pravi IP pred hekerji. Če daš samo DNS, tvoj IP {{LB_IP}} javno razkriješ in vsak ga lahko direktno napade.
 
 ### **Pregled komponent**
 
@@ -215,7 +215,7 @@ Token dobite z: `sudo cat /var/lib/rancher/k3s/server/node-token` (na k3s-1).
 
 > **Opomba:** `--disable=traefik` izklopi vgrajeni ingress, ker uporabljamo MetalLB LoadBalancer. Če bi pustili Traefik vklopljen, bi imeli dva sistema, ki se potegujeta za isti port — zmeda, ki smo se je izognili.
 
-> **Nasvet seniorja:** Vedno uporabi `--flannel-iface=eth0`, ne glede na to, ali je eth0 edini interface. Na prenosnikih so pogosto interfacei z različnimi imeni (eno WiFi, eno Ethernet). Če ne specificiraš, lahko Flannel izbere napačen interface, cluster ne bo delal. Preveri z `ip a` na vsakem nodu.
+> **Nasvet:** Vedno uporabi `--flannel-iface=eth0`, ne glede na to, ali je eth0 edini interface. Na prenosnikih so pogosto interfacei z različnimi imeni (eno WiFi, eno Ethernet). Če ne specificiraš, lahko Flannel izbere napačen interface, cluster ne bo delal. Preveri z `ip a` na vsakem nodu.
 
 ---
 
@@ -280,7 +280,7 @@ kubectl rollout restart deployment -n sola-app sola-app
 kubectl rollout status deployment -n sola-app sola-app
 ```
 
-> **Nasvet seniorja:** Nikoli ne briši starih Pod-ov ročno. Uporabi `rollout restart`. Kubernetes sam pazi, da je vedno vsaj en Pod aktiven. Če zbrišeš oba hkrati, imaš izpad. `rollout status` ti pove, kdaj je posodobitev končana — ne ugibaj, počakaj na izpis "rollout successfully rolled out".
+> **Nasvet:** Nikoli ne briši starih Pod-ov ročno. Uporabi `rollout restart`. Kubernetes sam pazi, da je vedno vsaj en Pod aktiven. Če zbrišeš oba hkrati, imaš izpad. `rollout status` ti pove, kdaj je posodobitev končana — ne ugibaj, počakaj na izpis "rollout successfully rolled out".
 
 ---
 
@@ -399,7 +399,7 @@ Nastavitve v Cloudflare dashboard:
 - **Always Use HTTPS:** ON
 - **Minimum TLS Version:** 1.2
 
-> **Nasvet seniorja:** Flexible SSL je v redu za šolsko okolje, ampak če bi kdaj dodal podatke, ki zahtevajo PCI-DSS ali HIPAA skladnost, bi moral uporabiti Full (strict) SSL z let's encrypt certifikatom na origin strežniku. Za rezervacije terminov in ocene na OŠ pa je Flexible SSL povsem dovolj.
+> **Nasvet:** Flexible SSL je v redu za šolsko okolje, ampak če bi kdaj dodal podatke, ki zahtevajo PCI-DSS ali HIPAA skladnost, bi moral uporabiti Full (strict) SSL z let's encrypt certifikatom na origin strežniku. Za rezervacije terminov in ocene na OŠ pa je Flexible SSL povsem dovolj.
 
 > **Pogosta napaka:** Če nastaviš SSL/TLS na "Full" brez certifikata na originu, Cloudflare ne bo mogel vzpostaviti povezave in uporabniki bodo dobili 502 napako. Začni s "Flexible" (najlažje) in nadgradi, ko boš na origin dodal certifikat.
 
@@ -465,7 +465,7 @@ Posodobi se **samodejno** preko Hermes cron joba. Poročilo vključuje:
 - Stanje ocenjevanj
 - Morebitne napake
 
-> **Nasvet seniorja:** Discord webhook je odličen za alerting v šolskem okolju — zastonj, preprost, vsi ga imajo na telefonu. Ampak ne zaupaj mu 100%. Enkrat na teden preveri tudi `kubectl get events -n sola-app --sort-by='.lastTimestamp'` — tam vidiš stvari, ki jih Discord report morda ne pokaže (OOMKilled, CrashLoopBackOff, neuspešni volume mounti).
+> **Nasvet:** Discord webhook je odličen za alerting v šolskem okolju — zastonj, preprost, vsi ga imajo na telefonu. Ampak ne zaupaj mu 100%. Enkrat na teden preveri tudi `kubectl get events -n sola-app --sort-by='.lastTimestamp'` — tam vidiš stvari, ki jih Discord report morda ne pokaže (OOMKilled, CrashLoopBackOff, neuspešni volume mounti).
 
 ---
 
