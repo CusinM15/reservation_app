@@ -516,7 +516,7 @@ kubectl get volumes.longhorn.io -n longhorn-system
 
 ## 📅 **Daily Backup and Reports**
 
-> **In a nutshell:** Every night at 4:00 AM, the system automatically sends a database backup and a daily status report via **email** (to the address from `BACKUP_EMAIL` in the Kubernetes Secret). Nothing is sent to Discord automatically — Discord is only used when you explicitly ask Hermes Agent for something.
+> **In a nutshell:** Every night at 4:00 AM, the system automatically sends a database backup and a daily status report via **email** (both go to `BACKUP_EMAIL` — the same address in the Kubernetes Secret, there is no separate REPORT_MAIL). Nothing is sent to Discord automatically — Discord is only used when you explicitly ask Hermes Agent for something.
 
 > **ELI5:** Imagine you have a **night guard** who every morning at 4:00:
 > 1. **Photocopies the entire school register** and puts it in your mailbox (email).

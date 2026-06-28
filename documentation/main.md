@@ -471,7 +471,7 @@ kubectl get volumes.longhorn.io -n longhorn-system
 
 ## 📅 **Dnevni backup in reporti**
 
-> **V enem stavku:** Vsako noč ob 4:00 zjutraj sistem samodejno pošlje varnostno kopijo baze in dnevno poročilo na **email** (naslov iz `BACKUP_EMAIL` v Kubernetes Secretu). Na Discord ne pošilja ničesar samodejno — tja gre samo, kar ti izrecno zahtevaš preko Hermes agenta.
+> **V enem stavku:** Vsako noč ob 4:00 zjutraj sistem samodejno pošlje varnostno kopijo baze in dnevno poročilo na **email** (obe gresta na `BACKUP_EMAIL` — isti naslov v Kubernetes Secretu, nobenega posebnega REPORT_MAIL ni). Na Discord ne pošilja ničesar samodejno — tja gre samo, kar ti izrecno zahtevaš preko Hermes agenta.
 
 > **ELI5:** Predstavljaj si, da imaš **nočnega čuvaja**, ki vsako jutro ob 4:00:
 > 1. **Fotokopira celotno šolsko matično knjigo** in ti jo pošlje v nabiralnik (email).
