@@ -8,423 +8,371 @@
 
 ---
 
-# ⚙️ Admin & DevOps navodila — priročnik za vzdrževanje šolskega sistema
+# ⚙️ Admin & DevOps navodila
 
-**Celovita navodila za namestitev, vzdrževanje in odpravljanje težav** — napisana tako, da jih razume tudi učitelj, ki se šele spoznava z računalniki. Vsak ukaz in vsak pojem je razložen s preprostimi primerami iz vsakdanjega življenja.
+*"Delaj kot senior, razloženo kot petletniku."*
+
+Celovita navodila za namestitev, vzdrževanje in odpravljanje težav — z razlago **zakaj** vsak korak sploh obstaja.
 
 > **Avtor:** Matej Čušin  
-> **Šola:** OŠ Toneta Čufarja, Jesenice  
-> **Aplikacija:** ostc-app — sistem za rezervacije, ocenjevanja in administracijo
+> **Šola:** OŠ Toneta Čufarja, Jesenice
 
 ---
 
-## 📋 Kazalo vsebine
+## 📋 Kazalo
 
-1. [Kaj aplikacija omogoča — čemu sploh služi?](#1-kaj-aplikacija-omogoča--čemu-sploh-služi)
-2. [Namestitev Ubuntu Server 24.04 LTS — priprava računalnika na strežniško vlogo](#2-namestitev-ubuntu-server-2404-lts--priprava-računalnika-na-strežniško-vlogo)
-3. [Načini namestitve — kako lahko zaženemo aplikacijo](#3-načini-namestitve--kako-lahko-zaženemo-aplikacijo)
-4. [Vzdrževanje in avtomatizacija (cron jobi) — roboti, ki delajo namesto vas](#4-vzdrževanje-in-avtomatizacija-cron-jobi--roboti-ki-delajo-namesto-vas)
-5. [AI agent Hermes — pametni pomočnik za vsakdanja opravila](#5-ai-agent-hermes--pametni-pomočnik-za-vsakdanja-opravila)
-6. [Dodajanje novega računalnika v k3s cluster — širitev gruče](#6-dodajanje-novega-računalnika-v-k3s-cluster--širitev-gruče)
-7. [Struktura repozitorija — mapa za mapo, kaj kje leži](#7-struktura-repozitorija--mapa-za-mapo-kaj-kje-leži)
-
----
-
-## 1. Kaj aplikacija omogoča — čemu sploh služi?
-
-Predstavljajte si elektronski oglasni desko in dnevnik v enem. Aplikacija **ostc-app** rešuje tri glavne težave, ki jih pozna vsaka šola:
-
-### 📅 Rezervacije prostorov
-
-Učitelji si lahko preko spleta rezervirajo prostore, ne da bi se podpisovali na papir ali klicali po hodniku. Sistem skrbi, da si prostorov ne rezervirata dva hkrati.
-
-| Prostor | Kapaciteta | Kako deluje rezervacija |
-|---------|-----------|------------------------|
-| **Tablice** | 28 kosov | Več učiteljev si lahko tablice deli v isti šolski uri — vsak rezervira samo svoj delček ure |
-| **Računalnica** | 1 učilnica | Samo en učitelj na uro — kot učilnica, kjer ne moreta hkrati poučevati dva |
-| **Ladja** | 1 učilnica | Prav tako ena rezervacija na uro |
-| **Gospodinjska učilnica** | 1 učilnica | Ena rezervacija na uro |
-
-### 📝 Ocenjevanja — napovedovanje pisnih preverjanj
-
-Učitelji vnesejo, kdaj bodo pisali test. Aplikacija sama poskrbi, da:
-- **Ne bo več kot 3 ocenjevanja na teden** (preveč testov v enem tednu ni dobro za otroke)
-- **Ne bo več kot 2 običajni ocenjevanji na teden** (poleg tega so še govorilne ure, nastopi ipd.)
-- **Ne bo dveh ocenjevanj istega tipa na isti dan**
-
-### 🚫 Zasedeni datumi
-
-Vodstvo ali admin lahko označi dneve kot **zasedene** — recimo zaključne konference, prazniki, dnevi dejavnosti — takrat sistem ne dovoli novih ocenjevanj ali rezervacij.
-
-### 👥 Admin panel — upravljanje uporabnikov
-
-Skozi admin vmesnik lahko dodajate, brišete in urejate uporabnike. Nič več Excel tabel ali ročnega urejanja baze.
-
-### 🔑 Pozabljeno geslo
-
-Če učitelj pozabi geslo, lahko zahteva ponastavitev preko emaila. Sistem mu pošlje povezavo za nastavitev novega gesla — kot pri spletni banki.
+1. [Kaj aplikacija omogoča — in kaj to pomeni v praksi](#kaj-aplikacija-omogoča)
+2. [Namestitev Ubuntu Server 24.04 — z razlago vsakega koraka](#0-namestitev-ubuntu-server-2404-lts)
+3. [Načini namestitve — kdaj kaj uporabiti](#načini-namestitve)
+4. [📖 Kdaj uporabiti kateri način? — odločitveni vodič](#-kdaj-uporabiti-kateri-način)
+5. [Vzdrževanje in avtomatizacija — cron jobi, ki skrbijo sami](#vzdrževanje-in-avtomatizacija-cron-jobi)
+6. [AI agenti za pomoč — kot pripravnik, ki ne sprašuje neumnih vprašanj](#ai-agenti-za-pomoč)
+7. [Dodajanje novega računalnika v k3s cluster — korak za korakom](#dodajanje-novega-računalnika-v-k3s-cluster)
 
 ---
 
-## 2. Namestitev Ubuntu Server 24.04 LTS — priprava računalnika na strežniško vlogo
+## Kaj aplikacija omogoča — in kaj to pomeni v praksi
 
-### Kaj sploh je "Ubuntu Server"?
+Aplikacija rešuje eno glavno težavo: **kdo je kdaj v katerem prostoru in kdaj so ocenjevanja.** Namesto da se učitelji lovijo po hodnikih in prepisujejo iz papirja v papir, vse lepo piše na enem mestu.
 
-Ubuntu Server je **operacijski sistem za strežnike**. Če je navaden Windows ali macOS kot osebni avto, je Ubuntu Server kot **tovornjak** — nima luksuzne opreme (kot je namizje z ikonami), je pa zanesljiv, varen in narejen za to, da deluje 24 ur na dan, 7 dni v tednu, brez ponovnega zagona.
+### Prostori za rezervacije
 
-**LTS** pomeni *Long Term Support* (dolgoročna podpora) — to je kot garancija: Ubuntu obljublja, da bo ta različica dobivala varnostne popravke kar **5 let**, brez da bi morali znova nameščati sistem.
+| Prostor | Kapaciteta | Kako deluje | V praksi pomeni... |
+|---------|-----------|-------------|-------------------|
+| **📱 Tablice** | 28 kosov | Lahko si jih deli več učiteljev v **isti uri** | Če Mateja vzame 14 tablic, jih lahko Ana še vedno vzame 14 — aplikacija pazi, da ne gre čez 28 |
+| **💻 Računalnica** | 1 rezervacija na uro | Rezerviraš cel prostor zase | Ko si ti notri, drugi ne morejo — kot da imaš ključ od vrat |
+| **🚢 Ladja** | 1 rezervacija na uro | Enako kot računalnica | Isti princip, drug prostor |
+| **🍳 Gospodinjska učilnica** | 1 rezervacija na uro | Enako kot zgoraj | Tretji prostor, ista logika |
 
-### 2.1 Priprava namestitvenega medija — kako narediti "zagonski ključek"
+**Zakaj tako?** Tablice so fizični predmeti — lahko jih razdeliš. Prostori so sobe — vanje fizično ne moreš stlačiti dveh razredov hkrati.
+
+### Ostale funkcionalnosti
+
+- **📝 Ocenjevanja** — Učitelji napovejo pisna ocenjevanja. Aplikacija pazi, da jih ni več kot **3 na teden** in **največ 2 običajni** (tretji je lahko samo "lažji"). **Zakaj?** Da nimajo mulci 5 testov v enem dnevu.
+- **🚫 Zasedeni datumi** — Ravnatelj/admin označi dneve, ko nič ne gre (prazniki, ekskurzije, športni dnevi). **Zakaj?** Da se kdo ne muči z rezervacijo na dan, ko šole sploh ni.
+- **👥 Admin panel** — Dodaš/brišeš učitelje, nastavljaš vloge. **Zakaj?** Nekdo mora imeti ključe od vrat.
+- **🔑 Pozabljeno geslo** — Pošlje mail za ponastavitev. **Zakaj?** Ker vsak pozabi geslo enkrat na mesec in kričanje "miha.ne.veš.gesla" čez hodnik ni profesionalno.
+
+---
+
+## 0. Namestitev Ubuntu Server 24.04 LTS
+
+*"Vsaka dobra hiša stoji na trdnih temeljih."*
+
+### Priprava namestitvenega medija
+
+1. **Prenesi Ubuntu Server 24.04 LTS** z https://ubuntu.com/download/server  
+   *(LTS = Long Term Support — 5 let posodobitev, ne rabiš vsako leto znova nameščati)*
+
+2. **Ustvari zagonski USB** z Rufus (https://rufus.ie/)  
+   *(Rufus naredi USB, s katerega računalnik lahko zažene namestitev)*
+
+3. **Namesti na ciljni računalnik** — v BIOS-u nastavi USB kot prvi boot device  
+   *(BIOS pove računalniku: "najprej poglej USB, šele potem disk")*
+
+### Potek namestitve — z razlago vsake izbire
+
+| Korak | Izbira | Zakaj? |
+|-------|--------|--------|
+| **Izbira OS** | **Ubuntu Server** (NE Desktop) | **Zakaj Ubuntu Server?** Ker nima namizja (= manj programov, ki jedo RAM → več RAMa za aplikacijo). Manj programov pomeni tudi manj lukenj za hekerje — pri Desktop različici je več vrat, skozi katera lahko kdo vdre. Server je kot prazna soba z enimi vrati; Desktop je kot soba polna omar in oken. |
+| **Jezik** | English (slovenščina ni podprta) | Ubuntu Server nima slovenskega jezika. Konzola bo vseeno angleška, vendar to ni problem — SSH dela v vseh jezikih. |
+| **Omrežje** | Nastavi **statičen IP** | **Zakaj statični IP?** Strežnik mora biti vedno na istem naslovu. Če bi dobil dinamični IP (preko DHCP), bi se lahko jutri zamenjal in aplikacija bi bila nedosegljiva. Kot da bi se tvoja hiša vsak dan preselila na drugo ulico — poštar te ne bi našel. |
+| **OpenSSH** | ✅ **Obvezno označi "Install OpenSSH server"** | **Zakaj OpenSSH?** Strežnik bo stal brez tipkovnice in monitorja v kotu. Edina pot do njega je prek omrežja — SSH je tvoja daljinska tipkovnica. Če ga ne namestiš, moraš fizčno nosit monitor do strežnika vsakič, ko kaj rabiš. |
+| **Uporabnik** | Ustvari uporabnika in geslo | To bo tvoj admin račun. Zapiši ga nekam *(v telefon, na listek, v password manager — samo ne izgubi)*. |
+
+### Nastavitev statičnega IP-ja
+
+Če med namestitvijo nisi nastavil statičnega IP-ja (ali če ga rabiš spremeniti):
 
 ```bash
-# 1. Pojdi na https://ubuntu.com/download/server in prenesi Ubuntu Server 24.04 LTS
-#    To je datoteka s končnico .iso — kot "slika" sistema, ki jo zapišemo na USB ključek.
-
-# 2. Program Rufus (https://rufus.ie/) — orodje za Windows, ki naredi USB ključek zagonski.
-#    Izberi preneseno .iso datoteko, ciljni USB ključek, in klikni "Start".
-#    POZOR: Vsebina USB ključka se bo izbrisala!
-
-# 3. Vstavi USB ključek v ciljni računalnik in ga vklopi.
-#    Med zagonom pritisni tipko za vstop v BIOS (ponavadi F2, F10, F12 ali Delete).
-#    V BIOSU nastavi USB kot prvi "boot device" — to pomeni: "ko se računalnik zažene,
-#    naj najprej pogleda USB ključek in zažene tisto, kar je na njem."
-```
-
-### 2.2 Potek namestitve — korak za korakom
-
-Ko se računalnik zažene z USB ključka, vas bo namestitveni program vodil skozi postopek. Tukaj so ključni koraki:
-
-1. **Izberite English** — žal Ubuntu Server v slovenskem jeziku ne obstaja. Angleščina je enostavna in večina ukazov je v angleščini, tako da to ni težava.
-
-2. **Omrežne nastavitve** — pozneje bomo nastavili statični IP (fiksni naslov). Med namestitvijo lahko pustite, da dobi IP samodejno preko DHCP (kot običajen računalnik v šolskem omrežju).
-
-3. **Obvezno označite "Install OpenSSH server"** — to je ključnega pomena!
-   - **Kaj je OpenSSH?** To je protokol za **oddaljen dostop** do strežnika. Predstavljajte si, da ima računalnik, ki ga nameščate, svoj daljinski upravljalnik. OpenSSH je ta daljinski upravljalnik — omogoča vam, da se s svojega prenosnika povežete na ta strežnik in upravljate z njim, ne da bi fizično sedeli pred njim.
-   - **Zakaj je to pomembno?** Strežnik bo verjetno stal v omarici, brez monitorja in tipkovnice. Edini način, da kaj spremenite na njem, je preko SSH.
-
-4. **Ustvarite uporabnika in geslo** — to bo vaš "skrbniški" dostop. Geslo shranite na varno mesto (npr. v sef za gesla kot je Bitwarden ali KeePass).
-
-### 2.3 Nastavitev statičnega IP-ja — zakaj mora biti IP fiksen?
-
-**Zakaj statični IP?** Predstavljajte si, da je IP naslov kot **hišna številka** vašega strežnika. Če ima strežnik dinamičen IP (kot večina domačih računalnikov), se lahko njegova "hišna številka" vsakič, ko se ponovno zažene, spremeni. Ko potem aplikacija išče bazo podatkov, je ne najde, ker je baza "preselila na drugo hišno številko". Statični IP pomeni: "ta računalnik bo vedno imel isti naslov" — kot pošta, ki vedno pride na pravi naslov.
-
-**Netplan** je orodje v Ubuntuju, s katerim povemo operacijskemu sistemu, **kateri IP naj uporablja**. To je kot da bi hiši dali hišno številko in zemljevidu povedali, kje ta hiša stoji.
-
-```bash
-# Odpri datoteko z omrežnimi nastavitvami. nano je preprost urejevalnik besedila.
 sudo nano /etc/netplan/00-installer-config.yaml
 ```
 
-V datoteko vpišite sledeče. **Pozor:** {{LB_IP}}, {{K3S_1_IP}}, {{K3S_2_IP}} so **nadomestne oznake (placeholders)** — na njihovo mesto vpišite dejanske IP naslove vašega omrežja.
+Primer konfiguracije (zamenjaj `{{VAR}}` z dejanskimi vrednostmi):
 
 ```yaml
 network:
   ethernets:
-    eth0:                              # eth0 je ime omrežne kartice (kot "LAN vrata")
+    eth0:
       addresses:
-        - {{LB_IP}}/24                 # Tukaj vpiši želeni statični IP. /24 pomeni "maska podomrežja"
+        - {{LB_IP}}/24
       routes:
-        - to: default                  # "default" pomeni "vsa promet, ki ni namenjen lokalnemu omrežju"
-          via: {{K3S_1_IP}}            # to je vaš "gateway" — vrata v svet (ponavadi šolski usmerjevalnik)
+        - to: default
+          via: {{K3S_1_IP}}
       nameservers:
         addresses:
-          - {{LB_IP}}                  # DNS strežnik — kot "telefonski imenik" za internet
-          - 8.8.8.8                    # Googlov pomožni DNS — če prvi ne dela
+          - {{LB_IP}}
+          - 8.8.8.8
   version: 2
 ```
 
 ```bash
-# Po shranitvi datoteke moramo netplanu povedati, naj nove nastavitve uveljavi:
 sudo netplan apply
 ```
 
-**Kaj se zgodi zdaj?** Netplan prebere datoteko in nastavi omrežje na novo. Če se povezava izgubi (ker ste se prek SSH povezovali na stari IP), se preprosto povežite na novi IP.
+**Kaj se zgodi?** Računalnik dobi fiksen naslov v omrežju. Drugi računalniki ga vedno najdejo na istem mestu.
 
-### 2.4 Nastavitev laptopa kot strežnik — zankanje pokrova
+### Nastavitev laptopa kot strežnik
 
-Če kot strežnik uporabljate prenosnik (laptop), ima ta eno težavo: ko zaprete pokrov, gre v "spanje" (mirovanje). Strežnik pa mora delovati 24/7, tudi ko je pokrov zaprt.
+Če uporabljaš laptop (prenosnik) kot strežnik:
 
 ```bash
-# Odpri nastavitveno datoteko za upravljanje z energijo
 sudo nano /etc/systemd/logind.conf
-
-# Poišči vrstico: #HandleLidSwitch=ignore
-# Odstrani # (začetni "klicaj") spredaj, tako da postane:
-HandleLidSwitch=ignore
-
-# To pomeni: "ko nekdo zapre pokrov, naj računalnik IGNORIRA to dejanje in ostane prižgan"
-
-# Nato ponovno zaženi storitev, da se sprememba uveljavi:
-sudo systemctl restart systemlog-ind
+# Poišči vrstico #HandleLidSwitch=ignore in odstrani '#'
+# Na koncu mora pisati: HandleLidSwitch=ignore
+sudo systemctl restart systemd-logind
 ```
 
-### 2.5 SSH — oddaljen dostop (če ga niste namestili med namestitvijo)
+**Zakaj HandleLidSwitch=ignore?** Ko laptop zapreš, gre privzeto v spanje. To je super za baterijo, ampak grozno za strežnik. Strežnik mora delati 24/7 — tudi ko zapreš pokrov. Ta nastavitev reče: "pokrov je zaprt? Vseeno delaj naprej."
 
-Če ste med namestitvijo pozabili označiti "Install OpenSSH server", nič hudega — lahko ga namestite naknadno:
+**V praksi:** Laptop stoji v omari s pritrjenim pokrovom. Brez te nastavitve bi ob vsakem zaprtju pokrova aplikacija padla v spanec in nihče je ne bi mogel več doseči, dokler nekdo fizično ne odpre pokrova.
+
+### SSH — oddaljen dostop
 
 ```bash
-# apt-get je "trgovina z aplikacijami" za Ubuntu. install pomeni "namesti".
-# -y pomeni "ne sprašuj me, ali sem prepričan — kar naredi"
+# Če med namestitvijo nisi označil (čeprav bi moral):
 sudo apt install -y openssh-server
-
-# systemctl je "upravitelj storitev" — kot stikalo za prižiganje/ugašanje programov.
-# enable pomeni "naj se SSH zažene samodejno ob vsakem zagonu računalnika"
-# --now pomeni "zaženi ga takoj, ne šele ob naslednjem zagonu"
 sudo systemctl enable --now ssh
 ```
 
+**Preveri, da dela:**
+
 ```bash
-# Na svojem prenosniku (Windows, Mac ali Linux) odprite terminal in vpišite:
-ssh {{SSH_USER}}@{{LB_IP}} -p {{LB_PORT}}
+# S katerega drugega računalnika:
+ssh tvoj_uporabnik@<IP_STREZNIKA>
 ```
-Zamenjajte {{SSH_USER}} z imenom uporabnika, ki ste ga ustvarili med namestitvijo, {{LB_IP}} z IP naslovom strežnika in {{LB_PORT}} z vrati, na katerih SSH posluša (privzeto je 22).
+
+**Nasvet seniorja:** Omogoči SSH ključe namesto gesla. Potem se lahko povežeš brez tipkanja gesla — in heker se ne more prijaviti, tudi če ugane geslo.
 
 ---
 
-## 3. Načini namestitve — kako lahko zaženemo aplikacijo
+## Načini namestitve
 
-Aplikacijo lahko zaženemo na tri načine, odvisno od tega, koliko računalnikov imamo na voljo in kako zanesljiv sistem potrebujemo.
+Aplikacija deluje na treh načinih. Vsak ima svoje prednosti in slabosti — kot orodja v škatli: kladivo je super za žeblje, ampak za vijake rabiš izvijač.
 
-| Način | Zahtevnost | Za kaj je primeren | Kako deluje |
-|------|-----------|-------------------|-------------|
-| **Lokalno (uvicorn)** | ⭐ Enostavno | En računalnik v zbornici | Aplikacija teče neposredno na enem računalniku. Najbolj preprosto, a če ta računalnik crkne, aplikacije ni več. |
-| **mDNS** | ⭐⭐ Srednje | Več računalnikov znotraj šolskega omrežja | Več enakih kopij aplikacije teče na različnih računalnikih. Če eden pade, drugi še vedno delajo. Napredno: vsak najde drugega samodejno. |
-| **Kubernetes (k3s)** | ⭐⭐⭐ Zahtevno | Visoka razpoložljivost, 2+ računalnikov | Prava "industrijska" rešitev. Kubernetes (k3s je lažja različica) je kot **pametni krmilnik prometa** — samodejno usmerja delo na tiste računalnike, ki imajo proste zmogljivosti. Če en računalnik crkne, prestavi vse na drugega, brez izpada. |
+### Primerjava načinov
+
+| Način | Zahtevnost | Za kaj je primeren | Analogija |
+|------|-----------|-------------------|-----------|
+| **Lokalno (uvicorn)** | ⭐ Enostavno | En računalnik v zbornici | Kot en koledar na mizi — če ga nekdo odnese, je konec. Ampak je preprost in dela takoj. |
+| **mDNS** | ⭐⭐ Srednje | Več računalnikov znotraj šolskega omrežja | Kot več koledarjev v isti pisarni — vsak vidi iste podatke, ampak če glavni pade, pade vse. |
+| **Kubernetes (k3s)** | ⭐⭐⭐ Zahtevno | Visoka razpoložljivost, 2+ računalnikov | Kot 2 koledarja na 2 mizah — če eno mizo kdo odnese, druga še vedno stoji. Aplikacija sama poskrbi, da sta oba enaka. |
+
+### Kratek opis vsakega načina
+
+**🏠 Lokalno (uvicorn)**
+Poženeš aplikacijo kot en sam proces na enem računalniku. Podatki so v SQLite datoteki na istem disku.
+- ✅ **Plus:** Namestiš v 5 minutah, ni odvisnosti, dela takoj.
+- ❌ **Minus:** Če računalnik crkne — aplikacije ni več. Če disk crkne — podatkov ni več. Brez varnostne kopije si v težavah.
+- **Dobro za:** Testiranje, majhne šole, začasne postavitve.
+
+**🌐 mDNS**
+Aplikacija teče na enem strežniku, do nje pa lahko dostopaš z drugih naprav prek imena kot `sola.local`.
+- ✅ **Plus:** Ne rabiš pomniti IP-ja. Drugi računalniki v omrežju jo najdejo samodejno.
+- ❌ **Minus:** Še vedno ena točka odpovedi. Če strežnik pade — nihče ne more do aplikacije.
+- **Dobro za:** Manjše šole, kjer je en IT strežnik dovolj.
+
+**☸️ Kubernetes (k3s)**
+Aplikacija teče na več računalnikih (nodih). Če eden crkne, drugi prevzamejo. Kubernetes sam poskrbi, da aplikacija vedno teče.
+- ✅ **Plus:** Visoka razpoložljivost, samodejno okrevanje, enostavno dodajanje novih nodov v prihodnosti.
+- ❌ **Minus:** Bolj zapleteno za postavitev. Rabiš vsaj 2 računalnika. Več znanja za vzdrževanje.
+- **Dobro za:** Večje šole, kritične sisteme, kjer izpad ni opcija.
 
 > **Podrobna navodila za vsak način:**
-> - **Lokalno:** [postavi-lokalni-app.md](postavi-lokalni-app.md) — najlažji način, primeren za testiranje in manjše šole.
-> - **k3s (Kubernetes):** [k3s-setup.md](k3s-setup.md) — za resno uporabo v produkciji.
-> - **HA arhitektura (High Availability = Visoka Razpoložljivost):** [HA.md](HA.md) — kako dosežemo, da je sistem na voljo tudi če odpove en računalnik.
+> - Lokalno: [postavi-lokalni-app.md](postavi-lokalni-app.md)
+> - k3s: [k3s-setup.md](k3s-setup.md)
+> - HA arhitektura: [HA.md](HA.md)
 
 ---
 
-## 4. Vzdrževanje in avtomatizacija (cron jobi) — roboti, ki delajo namesto vas
+## 📖 Kdaj uporabiti kateri način?
 
-### Kaj sploh je "cron job"?
+*"Ne uporabi gradbenega žerjava za obešanje slike."*
 
-**Cron** je star, a zelo uporaben mehanizem v Linuxu, ki omogoča **samodejno izvajanje opravil ob določenem času**. To je kot **budilka z opravilom**: ob določeni uri pozvoni in namesto, da bi vas zbudila, zažene določen program ali skripto.
+> 📊 **Diagram:** [`diagrams/odlocitveni-vodic.drawio`](diagrams/odlocitveni-vodic.drawio) — odpri v https://app.diagrams.net/
 
-Cron job torej pomeni: *"ob uri X zaženi nalogo Y, brez da bi se kdo usedel pred računalnik in to naredil ročno."*
+**Zlato pravilo:** Če nisi prepričan, začni z mDNS. Je kompromis med enostavnostjo in zanesljivostjo. Na k3s lahko preideš kasneje brez izgube podatkov.
 
-### Zakaj so cron jobi pomembni?
+---
 
-Ker pozabljamo. Ker smo utrujeni. Ker gremo na dopust. **Cron jobi poskrbijo, da se določene stvari zgodijo vedno ob istem času** — tudi ko vas ni v službi.
+## Vzdrževanje in avtomatizacija (cron jobi)
 
-### 4.1 Dnevna varnostna kopija baze (`sola-db-backup`)
+*"Najboljši strežnik je tisti, za katerega ti ni treba nič delati."*
 
-**Zakaj potrebujemo varnostne kopije?** Predstavljajte si bazo podatkov kot **šolski dnevnik, ki obstaja samo v enem izvodu**. Kaj se zgodi, če:
-- Crkne trdi disk? → Dnevnik je izgubljen.
-- Kdo pomotoma zbriše podatke? → Dnevnik je izgubljen.
-- Požar, vlom, poplava? → Dnevnik je izgubljen.
-- Programska napaka pobriše tabele? → Dnevnik je izgubljen.
+Cron jobi so kot budilke — vsak dan ob določeni uri se zbudi in nekaj naredi. Postavili smo dva:
 
-**Varnostna kopija (backup) je fotokopija tega dnevnika, shranjena na drugi lokaciji.** Če se original uniči, vzamete fotokopijo in nadaljujete, kjer ste končali. To ni vprašanje "če" se bo kaj zgodilo, ampak "kdaj".
+### 📦 Dnevna varnostna kopija baze (`sola-db-backup`)
 
-**Kako to deluje v praksi?** Vsako noč ob 4:00 (ko nihče ne uporablja aplikacije) se zažene ukaz `pg_dump`, ki **naredi posnetek celotne baze podatkov** — vse rezervacije, vsi uporabniki, vsa ocenjevanja — in to pošlje na vnaprej določen email naslov (BACKUP_EMAIL).
+| Lastnost | Vrednost | Pomen v praksi |
+|---------|---------|---------------|
+| **Schedule** | `0 4 * * *` | Vsako noč ob 4:00, ko nihče ne uporablja aplikacije |
+| **Kaj naredi** | Pošlje pg_dump baze na BACKUP_EMAIL | Naredi "posnetek" baze in ga pošlje na email |
 
-- **Schedule:** `0 4 * * *` (dnevno ob 4:00 zjutraj — to je slovenski zapis za "vsak dan ob štirih")
-- **Kaj se zgodi:** pg_dump izvozi bazo → skripta zapakira v datoteko → pošlje na email
+**Zakaj ob 4h zjutraj?** Ker takrat noben učitelj ne rezervira termina. Če bi bazo kopiral sredi dneva, bi lahko kdo ravno takrat nekaj shranjeval in backup bi bil nedosleden.
 
+**V praksi to pomeni:** Če podatki crknejo (disk odpove, nekdo zbriše bazo, požar), imaš v emailu varnostno kopijo iz prejšnje noči. Največ kar izgubiš je en dan podatkov.
+
+### 📊 Dnevno poročilo o stanju (`sola-daily-report`)
+
+| Lastnost | Vrednost | Pomen v praksi |
+|---------|---------|---------------|
+| **Schedule** | `0 4 * * *` | Isto kot backup — ob 4:00 |
+| **Kaj naredi** | Poročilo o stanju nodov, Longhorn replik in aplikacij | Preveri, ali vsi strežniki dihajo in ali so podatki pravilno podvojeni |
+
+**Zakaj to potrebujemo?** Če eden od treh strežnikov crkne, aplikacija še vedno deluje — ampak ti tega ne veš. Poročilo ti pove: "Hej, node 2 je crknil. Popravi ga, preden crkne še node 3."
+
+---
+
+## AI agenti za pomoč
+
+*"Kot pripravnik, ki ne sprašuje neumnih vprašanj — in dela 24/7."*
+
+### Kaj je AI agent?
+
+AI agent je kot **pomočnik, ki razume kaj hočeš in to naredi sam.** Ne rabiš se spomniti točnega kubectl ukaza ali brati 50 strani dokumentacije — samo poveš kaj rabiš in agent to izvede.
+
+**Primer:** Namesto da pišeš:
 ```bash
-# Če želite ročno preveriti, ali backup deluje:
-# Poiščite cron job v Kubernetes:
-kubectl get cronjob sola-db-backup
-
-# Ali pa zaženite backup takoj (za test):
-kubectl create job --from=cronjob/sola-db-backup manual-backup-test
+kubectl get pods -n sola
+kubectl logs sola-app-xyz123 -n sola --tail=50
+kubectl describe pod sola-app-xyz123 -n sola
 ```
 
-### 4.2 Dnevno poročilo o stanju (`sola-daily-report`)
+Agentu samo rečeš:
+```bash
+hermes "poglej kaj je narobe s sola-app podom"
+```
 
-To je kot **jutranji pregled** za strežnike. Vsako noč ob 4:00 sistem preveri:
-- Ali so vsi računalniki (node-i) v gruči živi in zdravi? (Če je eden crknil, boste vedeli prvi.)
-- Ali Longhorn replike (shramba podatkov) delujejo pravilno? (Če se podatki ne replicirajo, ste v nevarnosti.)
-- Ali aplikacije tečejo brez napak?
+In on sam pogleda, analizira in pove kaj je narobe. **Kot bi vzel avto na servis in rekel 'čudno brni' — mojster sam ve, kaj pogledati.**
 
-**Zakaj je to pomembno?** Strežniki lahko crknejo kadarkoli — tudi sredi noči. Vi pa boste zjutraj v emailu prebrali: *"Vse je v redu"* ali pa *"Pozor: node-2 ni dosegljiv!"* in se boste lahko takoj lotili težave, namesto da bi čakali, da uporabniki (učitelji) pokličejo in rečejo "aplikacija ne dela".
+### Hermes Agent
 
-- **Schedule:** `0 4 * * *` (dnevno ob 4:00 — istočasno kot backup, ker gresta z roko v roki)
+[Hermes Agent](https://github.com/NousResearch/hermes-agent) je CLI orodje za pomoč pri vzdrževanju. Teče v terminalu in razume navodila v naravnem jeziku.
 
----
-
-## 5. AI agent Hermes — pametni pomočnik za vsakdanja opravila
-
-### Kaj je Hermes Agent?
-
-[Hermes Agent](https://github.com/NousResearch/hermes-agent) je **pametni asistent v ukazni vrstici**. Predstavljajte si, da imate svojega IT strokovnjaka, ki ga pokličete kar preko terminala. Hermes razume **navaden jezik (slovenščino)** in lahko namesto vas izvaja ukaze na strežniku.
-
-**Ne znate kubectl ukazov? Ni problema.** Hermesu povejte v slovenščini, kaj želite, in on bo poskrbel za ustrezne ukaze.
-
-### Primeri uporabe — kaj lahko Hermes naredi za vas
+**Primeri uporabe:**
 
 ```bash
-# 1. "Preveri, ali je vse v redu s strežniki"
-# Hermes bo samodejno pognal:
-#   - kubectl get nodes (seznam vseh računalnikov v gruči)
-#   - kubectl get pods -n longhorn-system (preveril, ali Longhorn deluje)
-#   - In vam vrnil povzetek v slovenščini
+# "Preveri stanje klustra"
 hermes "kubectl get nodes, preveri longhorn in povej stanje"
 
-# 2. "Dodaj novega učitelja v aplikacijo"
-# Hermes bo poiskal pravi API klic ali podatkovni vnos
-# in dodal uporabnika brez da bi se ukvarjali z bazo
+# "Dodaj novega uporabnika v app"
 hermes "dodaj uporabnika Ana Zupančič v aplikacijo, email ana@sola.si, vloga teacher"
 
-# 3. "Nastavi dnevno varnostno kopijo"
-# Če želite spremeniti uro backupa ali dodati nov cron job:
+# "Nastavi dnevno varnostno kopijo"
 hermes "nastavi cronjob za dnevno backup baze ob 3h zjutraj"
 
-# 4. "Zakaj aplikacija ne deluje?"
-# Namesto da brskate po log datotekah, vprašajte Hermesa:
+# "Preveri zakaj app ne dela"
 hermes "poglej loge sola-app podov in ugotovi zakaj se restartajo"
 ```
 
-### Namestitev Hermesa
+**Zakaj je to uporabno?** Namesto da odpiraš 5 terminalskih oken, tipkaš kubectl ukaze, brskaš po logih in googlaš napake — samo poveš agentu kaj rabiš in on to naredi v nekaj sekundah.
+
+**Namestitev:**
 
 ```bash
-# Hermes se namesti z enim samim ukazom.
-# curl prenese namestitveni skript s spleta
-# sh ga zažene
 curl -fsSL https://hermes-agent.io/install.sh | sh
 ```
 
+*To je vse. Konfiguracija in nastavitve so v dokumentaciji Hermes Agent — tukaj jih ne ponavljamo, ker se spreminjajo pogosteje kot šolski urnik.*
+
 ---
 
-## 6. Dodajanje novega računalnika v k3s cluster — širitev gruče
+## Dodajanje novega računalnika v k3s cluster
 
-### Kaj pomeni "dodati računalnik v cluster"?
+*"Kmetija raste — dodajamo novo živino."*
 
-Predstavljajte si, da vaša k3s gruča (cluster) deluje kot **ekipa delavcev, ki skupaj nosijo težko breme**. Vsak računalnik je en delavec. Če potrebujete več zmogljivosti ali če želite, da sistem ostane delujoč tudi če en delavec zboli (crkne), dodate novega delavca v ekipo.
+### 1. Priprava novega računalnika
 
-### 6.1 Priprava novega računalnika
+Preden nov računalnik sploh pomisli na k3s, mora imeti osnovno namestitev:
 
-Preden lahko računalnik postane del gruče, mora biti pravilno nameščen:
+1. **Namesti Ubuntu Server 24.04** na nov računalnik  
+   *(enak postopek kot v poglavju 0 — uporabi isti USB ključek)*
 
-1. **Namestite Ubuntu Server 24.04** na nov računalnik (glejte poglavje 2 zgoraj)
-2. **Nastavite statičen IP** — vsak računalnik v gruči potrebuje svoj fiksen naslov, da ga ostali vedno najdejo (glejte [2.3 Nastavitev statičnega IP-ja](#23-nastavitev-statičnega-ip-ja))
-3. **Omogočite SSH** — potrebovali boste oddaljen dostop do novega računalnika (glejte [2.5 SSH](#25-ssh--oddaljen-dostop))
+2. **Nastavi statičen IP**  
+   *(nov računalnik dobi svoj fiksen naslov — npr. 192.168.1.30)*  
+   **Zakaj?** Če dobi dinamični IP, ga bo k3s izgubil ob naslednjem vklopu in cluster ga ne bo več prepoznal.
 
-### 6.2 Pridobitev tokena — ključ za vstop v gručo
+3. **Omogoči SSH**  
+   **Zakaj?** Ker boš vse nadaljnje korake delal prek SSH — ne nosi monitorja v drugo nadstropje.
 
-Vsaka k3s gruča ima **skrivni ključ (token)**, ki ga mora nov računalnik pokazati, preden ga gruča sprejme. To je kot **članska izkaznica** — brez nje ne morete vstopiti.
+### 2. Pridobitev tokena — "vstopnica" v cluster
+
+Token je kot **geslo za vstop v cluster**. Vsak nov računalnik ga rabi, da se dokaže: "Hej, jaz sem dober fant, spusti me noter."
 
 ```bash
-# Na kateremkoli obstoječem master računalniku (glavnem vozlišču) zaženite:
-# cat prebere vsebino datoteke, sudo pa da skrbniška dovoljenja
+# Poženi na kateremkoli MASTER nodu (obstoječem)
 sudo cat /var/lib/rancher/k3s/server/token
-
-# Izpiše se dolg niz črk in številk — to je vaš token.
-# Kopirajte ga v beležko, potrebovali ga boste v naslednjem koraku.
 ```
 
-### 6.3 Priključitev novega računalnika kot dodatni master (glavno vozlišče)
+**Dobiš nekaj takega:** `K107f8a7b6c5d4e3f2a1b0c9d8e7f6a5b4c3d2e1f::server:token`
 
-Nov računalnik lahko postane **master** (glavni) ali **worker** (delavec). Masterji upravljajo gručo, workerji poganjajo aplikacije. Če dodajate master, gruča postane bolj odporna na izpade — če en master crkne, drugi prevzamejo njegovo vlogo.
+**Nasvet seniorja:** Token je **občutljiv podatek**. Z njim lahko kdorkoli priključi svoj računalnik v tvoj cluster. Ne shranjuj ga v javnih repozitorijih ali na listkih na monitorju.
+
+### 3. Priključitev kot dodaten master
+
+Na **novem** računalniku poženi:
 
 ```bash
-# Na NOVEM računalniku zaženite ta ukaz (v eni vrstici):
-# curl -sfL https://get.k3s.io | sh -s - server \
-#   --server https://<IP_MASTERJA>:6443 \
-#   --token <TOKEN> \
-#   --node-ip <NOVI_IP> \
-#   --disable traefik --disable=servicelb
-
-# Razlaga parametrov (del za delom):
-# curl -sfL https://get.k3s.io  →  Prenesi namestitveni skript s spleta
-# sh -s - server                →  Zaženi skript v načinu "server" (master)
-# --server https://...:6443     →  Poveži se na obstoječo gručo (na vratih 6443)
-# --token <TOKEN>               →  Pokaži skrivni ključ (člansko izkaznico)
-# --node-ip <NOVI_IP>           →  Povej, kateri IP ima ta novi računalnik
-# --disable traefik             →  Ne nameščaj novega usmerjevalnika prometa
-# --disable=servicelb           →  Ne nameščaj novega krmilnika bremena
+curl -sfL https://get.k3s.io | sh -s - server \
+  --server https://<IP_MASTERJA>:6443 \
+  --token <TOKEN> \
+  --node-ip <NOVI_IP> \
+  --disable traefik --disable=servicelb
 ```
 
-**Zamenjajte:**
-- `<IP_MASTERJA>` → IP naslov katerega koli obstoječega master računalnika
-- `<TOKEN>` → token, ki ste ga pridobili v prejšnjem koraku
-- `<NOVI_IP>` → statični IP naslov tega novega računalnika
+**Kaj ta ukaz naredi?** Kot bi rekel: "Hej k3s, prosim namesti se na ta računalnik. Poveži me z obstoječim clusterjem na IP-ju MASTERJA. Tukaj je token, da veš da smem. Moj IP je ta. In ne namesti traefik in servicelb — to že imamo."
 
-### 6.4 Kar mora vsebovati vsako vozlišče — kaj se namesti na nov računalnik
+**Zakaj `--disable traefik --disable=servicelb`?** Ker ta opravila že tečejo na prvem masterju. Če jih namestiš še enkrat, se bosta stepla kdo je glavni. Kot bi imel dva kapitana na isti ladji.
 
-Vsak računalnik v gruči lahko opravlja več vlog hkrati:
+### 4. Kar mora vsebovati vozlišče — vse v enem
 
-| Vloga | Opis | Ali je obvezna? |
-|-------|------|----------------|
-| **Control-plane** | Upravlja gručo — odloča, kje se bodo izvajale aplikacije | ✅ Da (vsaj 1 vozlišče mora biti master) |
-| **Worker** | Poganja zabojnike (aplikacijo) — kot "delavec", ki opravlja delo | ✅ Da (sicer aplikacija nima kje teči) |
-| **Longhorn** | Shranjuje podatke (baza, datoteke) na dodaten disk | ⚠️ Potreben dodaten disk (ne samo sistemski) |
-| **MetalLB speaker** | Omogoča, da aplikacije dobijo javni IP naslov (LoadBalancer) | ⚠️ Potreben za dostop do aplikacije |
+Vsako vozlišče **lahko** vsebuje vse. To je lepota k3s — ni ločenih "master" in "worker" računalnikov, vsak je lahko vse:
 
-### 6.5 Po dodajanju — končni pregled
+| Vloga | Kaj dela | Ali nujno? |
+|-------|---------|-----------|
+| **Control-plane** | Upravlja cluster — odloča kje bodo tekli zabojniki | ✅ Ja, vsaj 1 v clusterju |
+| **Worker** | Poganja zabojnike — dejansko izvaja kodo aplikacije | ✅ Ja |
+| **Longhorn** | Shranjuje podatke — diskovni prostor za bazo | ⚠️ Potrebuje dodaten disk (ne sistemskega) |
+| **MetalLB speaker** | Omogoča LoadBalancer IP — zunanji naslov za aplikacijo | ⚠️ Potreben samo na 1 nodu v omrežju |
 
-Ko se nov računalnik uspešno priključi, moramo namestiti še nekaj dodatnih komponent in preveriti, ali je vse v redu.
+**V praksi:** Dodaten disk za Longhorn pomeni, da ne smeš uporabiti sistemskega diska (/dev/sda) za shranjevanje podatkov. Če ima drugi disk (/dev/sdb ali /dev/nvme1n1), ga dodeli Longhornu. Sicer bo ob polnjenju sistemskega diska crknil celoten OS in s tem tudi Longhorn.
+
+### 5. Po dodajanju — preverjanje in priprava diska
 
 ```bash
-# 1. Namesti Longhorn predpogoje (potrebne knjižnice za deljenje diska)
-#    open-iscsi: orodje za povezovanje z oddaljenimi diski
-#    nfs-common: orodje za deljenje datotek preko omrežja
+# Namesti Longhorn predpogoje (potrebno za shranjevanje)
 sudo apt-get install -y open-iscsi nfs-common
-
-# 2. Omogoči in zaženi iscsi storitev
 sudo systemctl enable --now iscsid
 
-# 3. Preveri, ali je nov računalnik viden in pripravljen
-#    kubectl get nodes prikaže vse računalnike v gruči
-#    Nov node mora imeti status "Ready" (Pripravljen)
+# Preveri, da je nov node viden in pripravljen
 kubectl get nodes
+```
 
-# Če piše "Ready" — čestitamo, nov računalnik je uspešno dodan!
-# Če piše "NotReady" — počakajte minuto ali dve in poskusite znova.
+**Pričakovan rezultat:**
+```
+NAME     STATUS   ROLES                  AGE   VERSION
+master1  Ready    control-plane,master   30d   v1.30.0+k3s1
+master2  Ready    control-plane,master   2d    v1.30.0+k3s1
+node3    Ready    control-plane,master   1h    v1.30.0+k3s1   ← NOV!
+```
+
+Če STATUS ni `Ready`, počakaj minuto ali dve. k3s rabi čas, da postavi vse komponente. Če čez 5 minut še ni Ready, preveri:
+
+```bash
+systemctl status k3s
+journalctl -u k3s --tail=50
 ```
 
 ---
 
-## 7. Struktura repozitorija — mapa za mapo, kaj kje leži
+## Struktura repozitorija
 
-Repozitorij (mapa z vsemi datotekami aplikacije) je organiziran tako, da je vsaka stvar na svojem mestu. Spodaj je zemljevid celotne strukture.
+> 📊 **Diagram:** [`diagrams/repo-struktura.drawio`](diagrams/repo-struktura.drawio) — odpri v https://app.diagrams.net/
 
-```
-reservation_app/                    # Glavna mapa projekta (koren repozitorija)
-│
-├── app/                            # Jedro aplikacije — Python koda (FastAPI)
-│   ├── main.py                     # Vstopna točka — tukaj se aplikacija zažene
-│   ├── config.py                   # Nastavitve (gesla, povezave, skrivnosti)
-│   ├── database.py                 # Povezava z bazo podatkov
-│   ├── models.py                   # Modeli podatkov (kako izgleda tabela v bazi)
-│   ├── schemas.py                  # API sheme (kako izgleda sporočilo med aplikacijami)
-│   ├── race.py                     # Zaščita pred "race condition" — ko dva uporabnika
-│   │                               #   hkrati rezervirata isti termin
-│   ├── routers/                    # API endpointi — "naslovi" za posamezne funkcije
-│   │   ├── auth.py                 #   Prijava, registracija, gesla
-│   │   ├── rezervacije.py          #   Rezervacije prostorov
-│   │   ├── ocenjevanja.py          #   Napovedovanje ocenjevanj
-│   │   └── blocked_dates.py        #   Zasedeni datumi
-│   └── templates/                  # HTML predloge (kako izgleda spletna stran)
-│
-├── scripts/                        # Pomožni skripti (avtomatizacija, backup, obnova)
-├── k8s/                            # Kubernetes konfiguracija (navodila za k3s gručo)
-├── documentation/                  # Dokumentacija (tukaj ste zdaj)
-├── Dockerfile                      # Navodila za izdelavo "zabojnika" (Docker image)
-└── requirements.txt                # Seznam potrebnih knjižnic (kot nakupovalni listek)
-```
-
-### Ključne informacije
-
-> **⚠️ Privzeti admin uporabnik:** `admin`, geslo `admin123`  
-> **⚠️ Takoj po namestitvi spremenite geslo!** Privzeta gesla so kot da bi hišo pustili odklenjeno — vsak, ki pozna naslov, lahko vstopi.
-
-### Kako se znajti v mapah
-
-- Potrebujete spremeniti, kako izgleda spletna stran? → Pojdite v `app/templates/`
-- Aplikacija ne zna več dostopati do baze? → Preverite `app/database.py` in privzete nastavitve v `app/config.py`
-- Želite dodati nov API klic? → Ustvarite nov router v `app/routers/`
-- Kubernetes (k3s) nastavitve? → Vse je v `k8s/`
-- Manjka vam kakšna knjižnica? → Preverite `requirements.txt` in po potrebi dodajte vrstico
+**Privzeti admin:** uporabnik `admin`, geslo `admin123`.  
+**Takoj po namestitvi spremenite geslo!**  
+*(To ni hec. Prva stvar, ki jo vsak heker proba, je admin/admin123.)*
 
 ---
 
-> **Kaj pa, če gre kaj narobe?**  
-> 1. Najprej preverite dnevno poročilo (`sola-daily-report`) — morda je težava že zabeležena.  
-> 2. Zaženite `kubectl get pods` in `kubectl get nodes` — kateri del sistema ne deluje?  
-> 3. Vprašajte Hermesa: *"hermes preveri zakaj app ne dela"* — pametni agent pogleda loge in vam pove.  
-> 4. Če vse drugo odpove, ponovno zaženite storitve ali kontaktirajte administratorja.
+> *"Če lahko to razložiš petletniku, ga res razumeš." — vsak dober DevOps inženir*
