@@ -21,6 +21,8 @@
 >
 > Skripta zamenja vse IP-je v `.md` datotekah. Po zagonu lahko komande
 > neposredno kopiraš in prilepiš v terminal — delujejo brez spreminjanja.
+>
+> > 💡 **Opomba:** Placeholderji ({{LB_IP}}, {{K3S_1_IP}}, itd.) ostanejo tudi v `.drawio` diagramih — skripta `replace-ips.sh` jih pusti nedotaknjene, ker so del slik.
 
 ---
 
