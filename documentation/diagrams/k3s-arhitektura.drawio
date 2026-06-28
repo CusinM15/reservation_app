@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<mxfile host="app.diagrams.net" agent="Hermes Agent" version="24.2.5">
+  <diagram name="k3s-arhitektura" id="diagram-k3s-arhitektura.drawio">
+    <mxGraphModel dx="1000" dy="600" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="827" pageHeight="1169" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="d5-2" value="🌐 Internet" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#E3F2FD;strokeColor=#1E88E5;fontSize=12;" vertex="1" parent="1">
+          <mxGeometry x="250" y="10" width="100" height="50" as="geometry" />
+        </mxCell>
+        <mxCell id="d5-3" value="Cloudflare DNS<br>ostc-app.org" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F5F5F5;strokeColor=#616161;fontSize=12;" vertex="1" parent="1">
+          <mxGeometry x="220" y="90" width="160" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="d5-4" value="MetalLB LoadBalancer<br>{{LB_IP}}:{{LB_PORT}}" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFF9C4;strokeColor=#F57F17;fontSize=12;" vertex="1" parent="1">
+          <mxGeometry x="220" y="190" width="160" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="d5-5" value="k3s-1 (cp, etcd)<br>{{K3S_1_IP}}" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFF3E0;strokeColor=#FF9800;fontSize=11;" vertex="1" parent="1">
+          <mxGeometry x="40" y="300" width="200" height="130" as="geometry" />
+        </mxCell>
+        <mxCell id="d5-6" value="k3s-2 (cp, etcd)<br>{{K3S_2_IP}}" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFF3E0;strokeColor=#FF9800;fontSize=11;" vertex="1" parent="1">
+          <mxGeometry x="340" y="300" width="200" height="130" as="geometry" />
+        </mxCell>
+        <mxCell id="d5-7" value="sola-app<br>sola-db-1 (PRIMARY)<br>Longhorn / MetalLB" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#E8F5E9;strokeColor=#4CAF50;fontSize=10;" vertex="1" parent="1">
+          <mxGeometry x="60" y="320" width="160" height="90" as="geometry" />
+        </mxCell>
+        <mxCell id="d5-8" value="sola-app<br>sola-db-2 (REPLICA)<br>Longhorn / MetalLB" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#E8F5E9;strokeColor=#4CAF50;fontSize=10;" vertex="1" parent="1">
+          <mxGeometry x="360" y="320" width="160" height="90" as="geometry" />
+        </mxCell>
+        <mxCell id="d5-9" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;strokeColor=#616161;" edge="1" parent="1" source="d5-2" target="d5-3">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="d5-10" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;strokeColor=#616161;" edge="1" parent="1" source="d5-3" target="d5-4">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="d5-11" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;strokeColor=#F57F17;" edge="1" parent="1" source="d5-4" target="d5-5">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="d5-12" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;strokeColor=#F57F17;" edge="1" parent="1" source="d5-4" target="d5-6">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="d5-13" value="stream repl." style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;dashed=1;dashPattern=6 3;strokeColor=#9C27B0;fontSize=11;" edge="1" parent="1" source="d5-5" target="d5-6">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint as="offset" />
+          </mxGeometry>
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>
