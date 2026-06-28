@@ -217,7 +217,7 @@ Token dobite z: `sudo cat /var/lib/rancher/k3s/server/node-token` (na k3s-1).
 
 > **Opomba:** `--disable=traefik` izklopi vgrajeni ingress, ker uporabljamo MetalLB LoadBalancer. Če bi pustili Traefik vklopljen, bi imeli dva sistema, ki se potegujeta za isti port — zmeda, ki smo se je izognili.
 
-> **Nasvet:** Vedno uporabi `--flannel-iface=eth0`, ne glede na to, ali je eth0 edini interface. Na prenosnikih so pogosto interfacei z različnimi imeni (eno WiFi, eno Ethernet). Če ne specificiraš, lahko Flannel izbere napačen interface, cluster ne bo delal. Preveri z `ip a` na vsakem nodu.
+> **Nasvet:** Vedno dodaj `--flannel-iface=eth0`. Zakaj? Ker ima prenosnik pogosto več omrežnih kartic — eno za WiFi (npr. `wlan0`) in eno za ethernet kabel (`eth0`). Flannel (omrežni sistem v Kubernetesu) ne ve, katero naj uporabi. Če izbere WiFi, ki je počasen ali nestabilen, cluster ne bo delal. Z `--flannel-iface=eth0` mu poveš: "uporabi ethernet kabel, ne WiFi." Preveri, kako se tvoji omrežni kartici imenujeta z ukazom `ip a` na vsakem računalniku.
 
 ---
 
