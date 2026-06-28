@@ -665,7 +665,7 @@ git pull                                    # Pull the latest code
 | **Longhorn** | **A system that ensures you have 2 copies of data on 2 different computers** — distributed storage for Kubernetes, made for smaller clusters. |
 | **MetalLB** | **LoadBalancer for on-premise environments** — an alternative to cloud LoadBalancers (AWS, Google). Runs right on your computers. |
 | **Node** | **Physical computer in the cluster** — in our case k3s-1 (HP ProBook 455 G5) and k3s-2 (HP ProBook 450 G5). |
-| **Pod** | **Container with an application** — the smallest unit in Kubernetes. Inside it runs one copy of an application (e.g. sola-app or sola-db). Each pod has its own private IP address. |
+| **Pod** | **Container with an application** — the smallest unit in Kubernetes. Each pod runs separately: one for the app itself (`sola-app`), another for the database (`sola-db`). Each pod has its own private IP address. |
 | **Primary (database)** | **Main database** — the only one that can be written to. All changes go through it. |
 | **PVC (PersistentVolumeClaim)** | **Virtual hard drive** — a request for disk space in Kubernetes. Data persists even if the application moves to another computer. |
 | **Replica** | **A copy that vigilantly watches the original** — a second database that constantly copies all changes from the primary. Ready to take over if the original crashes. |
