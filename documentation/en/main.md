@@ -94,7 +94,7 @@ Below is the technical diagram. Above it is the explanation.
 
 ### **Traffic Flow**
 
-> **Simple explanation:** When a teacher enters `https://ostc-app.org` in a browser, this happens: the browser first asks Cloudflare (the internet's phonebook) where this page is. Cloudflare checks its directory, sees IP {{LB_IP}}, and sends the user there. There they are greeted by **MetalLB** (reception desk), which redirects them to one of the two application copies — whichever is currently free.
+> **Simple explanation:** When a teacher enters `https://{{DOMAIN}}` in a browser, this happens: the browser first asks Cloudflare (the internet's phonebook) where this page is. Cloudflare checks its directory, sees IP {{LB_IP}}, and sends the user there. There they are greeted by **MetalLB** (reception desk), which redirects them to one of the two application copies — whichever is currently free.
 
 > **Cloudflare proxy** points directly to the **LoadBalancer (`{{LB_IP}}`, port 80)** — traffic goes directly to MetalLB, HA works automatically — if one node crashes, MetalLB moves the IP to the other.
 
@@ -176,7 +176,7 @@ kubectl get nodes -o wide
 kubectl get pods -A -o wide
 
 # Application in browser
-https://ostc-app.org          # via Cloudflare + LoadBalancer (recommended)
+https://{{DOMAIN}}          # via Cloudflare + LoadBalancer (recommended)
 http://{{LB_IP}}:{{LB_PORT}}     # directly (internal network only, no SSL)
 ```
 
@@ -384,9 +384,9 @@ k3s has a built-in Traefik ingress controller, but we disabled it (`--disable=tr
 
 ## ☁️ **Cloudflare DNS**
 
-> **In a nutshell:** Cloudflare is the **internet's phonebook** — when someone enters `ostc-app.org` in a browser, Cloudflare tells them where (at which IP) to find this application, and handles the secure connection (SSL).
+> **In a nutshell:** Cloudflare is the **internet's phonebook** — when someone enters `{{DOMAIN}}` in a browser, Cloudflare tells them where (at which IP) to find this application, and handles the secure connection (SSL).
 
-> **ELI5 — DNS:** DNS (Domain Name System) is like a phonebook for the internet. You type in a name (`ostc-app.org`), DNS returns a number (IP address). Instead of remembering the number {{LB_IP}}, you remember the name `ostc-app.org`. Much easier, right?
+> **ELI5 — DNS:** DNS (Domain Name System) is like a phonebook for the internet. You type in a name (`{{DOMAIN}}`), DNS returns a number (IP address). Instead of remembering the number {{LB_IP}}, you remember the name `{{DOMAIN}}`. Much easier, right?
 >
 > **ELI5 — Cloudflare proxy:** When you enable Cloudflare proxy (orange cloud), Cloudflare doesn't just work as a directory — it also **stands in front of your server as a security guard**. All connections go through Cloudflare, which:
 > - Encrypts traffic (SSL) — nobody can eavesdrop.
@@ -397,7 +397,7 @@ k3s has a built-in Traefik ingress controller, but we disabled it (`--disable=tr
 
 | Type | Name | Value | Proxy |
 |---|---|---|---|
-| A | `@` (ostc-app.org) | {{LB_IP}} | ✅ Cloudflare proxy (LoadBalancer) |
+| A | `@` ({{DOMAIN}}) | {{LB_IP}} | ✅ Cloudflare proxy (LoadBalancer) |
 | A | `www` | {{LB_IP}} | ✅ Cloudflare proxy |
 
 ### **SSL/TLS**
@@ -605,7 +605,7 @@ git pull                                    # Pull the latest code
 | **ConfigMap / Secret** | **Kubernetes objects for storing settings** — ConfigMap for public settings (e.g. BASE_URL), Secret for sensitive data (passwords, keys). Secret is encoded, ConfigMap is readable. |
 | **Control-plane** | **The "brain" of the cluster** — the control part that makes all decisions. Both HP ProBooks have control-plane, meaning we have two "brains" — if one crashes, the other takes over. |
 | **Discord webhook** | **Automatic message sending to Discord** — used for communication with Hermes Agent: you say something, Hermes replies. No automatic notifications (nightly report, backup) — everything goes via email. |
-| **DNS** | **Internet phonebook** — converts the name `ostc-app.org` into an IP address {{LB_IP}} (for example). |
+| **DNS** | **Internet phonebook** — converts the name `{{DOMAIN}}` into an IP address {{LB_IP}} (for example). |
 | **Docker Image** | **Recipe for an application** — contains the program, libraries, settings. From one recipe you can make multiple identical containers (Pods). |
 | **ELI5** | *Explain Like I'm 5* — an explanation style where you avoid technical terms and use everyday analogies. E.g. Kubernetes is not "a container orchestration system" but "an orchestra conductor for applications." |
 | **etcd** | **The cluster's memory book** — stores all data about what runs where, what the settings are, who is alive and who is dead. It is the brain of Kubernetes. |

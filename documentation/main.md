@@ -95,7 +95,7 @@ Spodaj je tehnična shema. Nad njo pa je razlaga.
 
 ### **Prometni tok**
 
-> **Preprosta razlaga:** Ko učitelj vnese `https://ostc-app.org` v brskalnik, se zgodi tole: brskalnik najprej vpraša Cloudflare (telefonski imenik interneta), kje je ta stran. Cloudflare pogleda v svoj imenik, vidi IP {{LB_IP}}, in pošlje uporabnika tja. Tam ga pričaka **MetalLB** (recepcija), ki ga preusmeri na eno od dveh kopij aplikacije — katerakoli je trenutno prosta.
+> **Preprosta razlaga:** Ko učitelj vnese `https://{{DOMAIN}}` v brskalnik, se zgodi tole: brskalnik najprej vpraša Cloudflare (telefonski imenik interneta), kje je ta stran. Cloudflare pogleda v svoj imenik, vidi IP {{LB_IP}}, in pošlje uporabnika tja. Tam ga pričaka **MetalLB** (recepcija), ki ga preusmeri na eno od dveh kopij aplikacije — katerakoli je trenutno prosta.
 
 ![Prometni tok: uporabnik → Cloudflare → LoadBalancer → app pod](diagrams/prometni-tok.png)
 
@@ -168,7 +168,7 @@ kubectl get nodes -o wide
 kubectl get pods -A -o wide
 
 # Aplikacija v brskalniku
-https://ostc-app.org          # prek Cloudflare + LoadBalancer (priporočeno)
+https://{{DOMAIN}}          # prek Cloudflare + LoadBalancer (priporočeno)
 http://{{LB_IP}}:{{LB_PORT}}     # direktno (samo interno omrežje, brez SSL)
 ```
 
@@ -376,9 +376,9 @@ k3s ima vgrajen Traefik ingress controller, ampak smo ga izklopili (`--disable=t
 
 ## ☁️ **Cloudflare DNS**
 
-> **V enem stavku:** Cloudflare je **telefonski imenik interneta** — ko nekdo vnese `ostc-app.org` v brskalnik, Cloudflare pove, kje (na katerem IP-ju) to aplikacijo najde, in poskrbi za varnostno povezavo (SSL).
+> **V enem stavku:** Cloudflare je **telefonski imenik interneta** — ko nekdo vnese `{{DOMAIN}}` v brskalnik, Cloudflare pove, kje (na katerem IP-ju) to aplikacijo najde, in poskrbi za varnostno povezavo (SSL).
 
-> **ELI5 — DNS:** DNS (Domain Name System) je kot telefonski imenik za internet. Ti vpišeš ime (`ostc-app.org`), DNS vrne številko (IP naslov). Namesto da se spomniš številke {{LB_IP}}, se spomniš imena `ostc-app.org`. Veliko lažje, kajne?
+> **ELI5 — DNS:** DNS (Domain Name System) je kot telefonski imenik za internet. Ti vpišeš ime (`{{DOMAIN}}`), DNS vrne številko (IP naslov). Namesto da se spomniš številke {{LB_IP}}, se spomniš imena `{{DOMAIN}}`. Veliko lažje, kajne?
 >
 > **ELI5 — Cloudflare proxy:** Ko vklopiš Cloudflare proxy (oranžni oblak), Cloudflare ne dela samo imenika — ampak tudi **stoji pred tvojim strežnikom kot varnostnik**. Vse povezave gredo skozi Cloudflare, ki:
 > - Šifrira promet (SSL) — nihče ne more prisluhniti.
@@ -389,7 +389,7 @@ k3s ima vgrajen Traefik ingress controller, ampak smo ga izklopili (`--disable=t
 
 | Tip | Ime | Vrednost | Proxy |
 |---|---|---|---|
-| A | `@` (ostc-app.org) | {{LB_IP}} | ✅ Cloudflare proxy (LoadBalancer) |
+| A | `@` ({{DOMAIN}}) | {{LB_IP}} | ✅ Cloudflare proxy (LoadBalancer) |
 | A | `www` | {{LB_IP}} | ✅ Cloudflare proxy |
 
 ### **SSL/TLS**
@@ -603,7 +603,7 @@ git pull                                    # Potegni zadnjo kodo
 | **ConfigMap / Secret** | **Kubernetes objekti za shranjevanje nastavitev** — ConfigMap za javne nastavitve (npr. BASE_URL), Secret za občutljive podatke (gesla, ključi). Secret je zakodiran, ConfigMap je berljiv. |
 | **Control-plane** | **"Možgani" clustra** — nadzorni del, ki sprejema vse odločitve. Na obeh HP ProBookih imamo control-plane, kar pomeni, da imamo dva "možgana" — če en crkne, drugi prevzame. |
 | **Discord webhook** | **Samodejno pošiljanje sporočil na Discord** — uporabljamo ga za komunikacijo s Hermes agentom: ti poveš kaj, Hermes ti odgovori. Avtomatskih obvestil (nočni report, backup) ni — vse gre prek emaila. |
-| **DNS** | **Telefonski imenik interneta** — pretvori ime `ostc-app.org` v IP naslov {{LB_IP}} (npr.). |
+| **DNS** | **Telefonski imenik interneta** — pretvori ime `{{DOMAIN}}` v IP naslov {{LB_IP}} (npr.). |
 | **Docker Image** | **Recept za aplikacijo** — vsebuje program, knjižnice, nastavitve. Iz enega recepta lahko narediš več identičnih zabojnikov (Podov). |
 | **ELI5** | *Explain Like I'm 5* (razloži kot petletniku) — način razlage, kjer se izogneš strokovnim izrazom in uporabiš vsakdanje analogije. Npr. Kubernetes ni "sistem za orkestracijo kontejnerjev", ampak "dirigent orkestra za aplikacije". |
 | **etcd** | **Spominska knjiga clustra** — shranjuje vse podatke o tem, kaj kje teče, kakšne so nastavitve, kdo je živ in kdo mrtev. Je možgani Kubernetesa. |

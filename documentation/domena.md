@@ -10,15 +10,15 @@
 
 # Domena — kako nas najde internet?
 
-Trenutna domena: **`ostc-app.org`** (Cloudflare proxied — oranžni oblak prižgan 🟠)
+Trenutna domena: **`{{DOMAIN}}`** (Cloudflare proxied — oranžni oblak prižgan 🟠)
 
 ---
 
 ## 📋 Kaj sploh je DNS? (ELI5)
 
-> DNS je **telefonski imenik interneta**. Ko vtipkaš `ostc-app.org`, DNS pove brskalniku
+> DNS je **telefonski imenik interneta**. Ko vtipkaš `{{DOMAIN}}`, DNS pove brskalniku
 > na kateri IP naj gre. Namesto da bi si zapomnil `{{LB_IP}}` (kar je grda številka),
-> si zapomniš `ostc-app.org`. To je vse.
+> si zapomniš `{{DOMAIN}}`. To je vse.
 
 ### Trenutne DNS nastavitve
 
@@ -36,7 +36,7 @@ Trenutna domena: **`ostc-app.org`** (Cloudflare proxied — oranžni oblak priž
 > Vidiš samo varnostnika.
 
 **Oranžni oblak (Proxied) 🟠** — Cloudflare aktivno posreduje promet. Uporabnik
-pokliče `ostc-app.org`, Cloudflare pogleda, ali je zahteva varna, in jo pošlje
+pokliče `{{DOMAIN}}`, Cloudflare pogleda, ali je zahteva varna, in jo pošlje
 naprej na `{{LB_IP}}`. Vse gre skozi Cloudflare.
 
 **Siv oblak (DNS only) ⚪** — Cloudflare samo pove "hej, IP je `{{LB_IP}}`",
@@ -77,13 +77,13 @@ Cloudflare proxy v praksi pomeni:
 > svoj naslov) in za preusmeritve (ko te pošlje iz ene strani na drugo).
 >
 > Če bi BASE_URL manjkal ali bil napačen, bi aplikacija pošiljala email povezave
-> kot `http://localhost:3000/...» namesto `https://ostc-app.org/...» — in to ne
+> kot `http://localhost:3000/...» namesto `https://{{DOMAIN}}/...» — in to ne
 > deluje.
 
 Konfiguracija v ConfigMap (`sola-config`, namespace `sola-app`):
 
 ```yaml
-BASE_URL: "https://ostc-app.org"
+BASE_URL: "https://{{DOMAIN}}"
 ```
 
 ---
@@ -93,7 +93,7 @@ BASE_URL: "https://ostc-app.org"
 | Obdobje       | Domena           | Opis                              |
 |---------------|------------------|-----------------------------------|
 | Maj 2026      | sola-app.local   | Začetna lokalna domena (mDNS)     |
-| Junij 2026    | ostc-app.org     | Trenutna produkcijska domena 🏆   |
+| Junij 2026    | {{DOMAIN}}     | Trenutna produkcijska domena 🏆   |
 
 ---
 
@@ -119,7 +119,7 @@ kubectl -n sola-app rollout restart deployment/sola-app
 
 ## 📖 Pogoste zmede (FAQ za nestrpne)
 
-### ❓ Zakaj ne vidim svojega strežnika ko pingam `ostc-app.org`?
+### ❓ Zakaj ne vidim svojega strežnika ko pingam `{{DOMAIN}}`?
 
 > Ker imamo **oranžni oblak (Proxied)**. Ping gre na Cloudflare edge, ne na tvoj
 > strežnik. Cloudflare se ne pusta pingat — vrže timeout. To je **normalno**.
@@ -156,4 +156,4 @@ kubectl -n sola-app rollout restart deployment/sola-app
 - **Cloudflare SSL** je "Flexible" — HTTPS med uporabnikom in Cloudflarom, HTTP med Cloudflarom in `{{LB_IP}}` (znotraj šolskega omrežja — v redu)
 - **server: cloudflare** se pojavi v HTTP headerjih — to je dokaz da Cloudflare posreduje
 - Če bi želeli **end-to-end HTTPS**, bi potrebovali certifikat na aplikaciji (trenutno ni potrebe — ne kompliciraj)
-- DNS propagacija lahko traja. Če si ravno spremenil DNS in ne dela — počakaj. Ne paničari. Skoči na `dig ostc-app.org` po 5 minutah.
+- DNS propagacija lahko traja. Če si ravno spremenil DNS in ne dela — počakaj. Ne paničari. Skoči na `dig {{DOMAIN}}` po 5 minutah.
