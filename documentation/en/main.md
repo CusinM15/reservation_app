@@ -613,6 +613,7 @@ git pull                                    # Pull the latest code
 | **Git** | **System for tracking code changes** — like "Track Changes" in Word, but for program code. |
 | **GitHub Actions** | **Automatic testing and building with every change** — when someone uploads new code to GitHub, a new Docker Image is automatically built. |
 | **Helm** | **"App Store" for Kubernetes** — a tool for installing ready-made packages (e.g. Longhorn, CNPG) into Kubernetes. Instead of manually writing YAML, you just say "install Longhorn." |
+| **HIPAA** | **U.S. health data privacy law** — *Health Insurance Portability and Accountability Act*. Defines how health data may be stored and transmitted. Since we're a Slovenian school and not a hospital, HIPAA doesn't apply to us — but its principles (encryption, access control, logging) are good practice for any system. |
 | **HPA (HorizontalPodAutoscaler)** | **Automatic scaling of application copies** — monitors CPU/RAM usage and adds or removes replicas (1-3) based on load. Like a coffee machine at school — when it's busy, another one turns on. |
 | **HTTPS** | **Secure web connection** — HTTP + SSL. A green lock in the browser means the connection is secure. |
 | **k3s** | **Lightweight version of Kubernetes** — specifically made for smaller computers and IoT devices. We use it on HP ProBooks because full Kubernetes is too heavy for laptops. The same `kubectl` commands work for both. |
@@ -621,6 +622,7 @@ git pull                                    # Pull the latest code
 | **Longhorn** | **A system that ensures you have 2 copies of data on 2 different computers** — distributed storage for Kubernetes, made for smaller clusters. |
 | **MetalLB** | **LoadBalancer for on-premise environments** — an alternative to cloud LoadBalancers (AWS, Google). Runs right on your computers. |
 | **Node** | **Physical computer in the cluster** — in our case k3s-1 (HP ProBook 455 G5) and k3s-2 (HP ProBook 450 G5). |
+| **PCI-DSS** | **Payment card security standard** — *Payment Card Industry Data Security Standard*. Rules that define how companies must protect credit card data. Our application does not accept payments, so this standard doesn't apply — but it's good to know what it is if someone asks about security. |
 | **Pod** | **Container with an application** — the smallest unit in Kubernetes. Each pod runs separately: one for the app itself (`sola-app`), another for the database (`sola-db`). Each pod has its own private IP address. |
 | **Primary (database)** | **Main database** — the only one that can be written to. All changes go through it. |
 | **PVC (PersistentVolumeClaim)** | **Virtual hard drive** — a request for disk space in Kubernetes. Data persists even if the application moves to another computer. |

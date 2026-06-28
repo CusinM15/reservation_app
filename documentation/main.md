@@ -618,6 +618,7 @@ git pull                                    # Potegni zadnjo kodo
 | **Git** | **Sistem za sledenje spremembam kode** — kot "Track Changes" v Wordu, ampak za programsko kodo. |
 | **GitHub Actions** | **Samodejno testiranje in gradnja ob vsaki spremembi** — ko nekdo naloži novo kodo na GitHub, se avtomatsko zgradi nov Docker Image. |
 | **Helm** | **"App Store" za Kubernetes** — orodje za nameščanje pripravljenih paketov (npr. Longhorn, CNPG) v Kubernetes. Namesto da ročno pišeš YAML, samo poveš "namesti Longhorn". |
+| **HIPAA** | **Ameriški zakon o varovanju zdravstvenih podatkov** — *Health Insurance Portability and Accountability Act*. Določa, kako se smejo hraniti in pošiljati zdravstveni podatki. Ker smo slovenska šola in ne bolnišnica, HIPAA ne velja za nas — so pa načela tega zakona (šifriranje, nadzor dostopa, beleženje) dobra praksa za vsak sistem. |
 | **HPA (HorizontalPodAutoscaler)** | **Samodejno prilagajanje števila kopij aplikacije** — pazi na porabo CPU/RAM in doda ali odstrani replike (1-3) glede na obremenitev. Kot kavomat v šoli — ko je gužva, se vključi še en. |
 | **HTTPS** | **Varna spletna povezava** — HTTP + SSL. Zelena ključavnica v brskalniku pomeni, da je povezava varna. |
 | **k3s** | **Lažja različica Kubernetesa** — posebej narejena za manjše računalnike in IoT naprave. Uporabljamo jo na HP ProBookih, ker je polni Kubernetes pretežak za prenosnike. Isti `kubectl` ukazi delujejo za oboje. |
@@ -626,6 +627,7 @@ git pull                                    # Potegni zadnjo kodo
 | **Longhorn** | **Sistem, ki poskrbi, da imaš 2 kopiji podatkov na 2 različnih računalnikih** — distribuirano shranjevanje za Kubernetes, narejeno za manjše clustre. |
 | **MetalLB** | **LoadBalancer za domače (on-premise) okolje** — alternativa oblačnim LoadBalancerjem (AWS, Google). Teče kar na tvojih računalnikih. |
 | **Node** | **Fizični računalnik v gruči** — v našem primeru k3s-1 (HP ProBook 455 G5) in k3s-2 (HP ProBook 450 G5). |
+| **PCI-DSS** | **Varnostni standard za kartična plačila** — *Payment Card Industry Data Security Standard*. Pravila, ki določajo, kako mora podjetje varovati podatke kreditnih kartic. Naša aplikacija ne sprejema plačil, zato tega standarda ni treba upoštevati — je pa dobro vedeti, kaj je, če te kdo vpraša o varnosti. |
 | **Pod** | **Zabojnik z aplikacijo** — najmanjša enota v Kubernetesu. Vsak pod teče ločeno: eden za samo aplikacijo (`sola-app`), drugi za bazo (`sola-db`). Vsak pod ima svoj zasebni IP naslov. |
 | **Primary (baza)** | **Glavna baza** — edina, v katero se lahko zapisuje. Vse spremembe gredo skozi njo. |
 | **PV (PersistentVolume)** | **Pravi disk na pravem računalniku** — Longhorn ga samodejno ustvari, ko narediš PVC. Za razliko od PVC-ja (zahtevek) je PV dejanski kos diska na enem od nodov. Preveriš ga z `kubectl get pv`. |
