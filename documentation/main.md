@@ -546,9 +546,11 @@ git pull                                    # Potegni zadnjo kodo
 ## 📖 **Razlaga pojmov**
 
 *Razlaga tehničnih izrazov za ne-tehnične bralce — če ti kaj v dokumentaciji ni jasno, poglej tukaj.*
+*💡 **ELI5** = *Explain Like I'm 5* (razloži kot petletniku) — pomeni, da je razlaga napisana čim bolj preprosto, brez strokovnega žargona.*
 
 | Pojem | Razlaga |
 |---|---|
+| **ELI5** | *Explain Like I'm 5* (razloži kot petletniku) — način razlage, kjer se izogneš strokovnim izrazom in uporabiš vsakdanje analogije. Npr. Kubernetes ni "sistem za orkestracijo kontejnerjev", ampak "dirigent orkestra za aplikacije". |
 | **Kubernetes (k8s)** | **Dirigent orkestra za aplikacije** — sistem, ki avtomatsko upravlja, kje in kako tečejo tvoje aplikacije. Če ena crkne, jo samodejno zažene drugje. |
 | **k3s** | **Lažja različica Kubernetesa** — posebej narejena za manjše računalnike in IoT naprave. Uporabljamo jo na HP ProBookih, ker je polni Kubernetes pretežak za prenosnike. Isti `kubectl` ukazi delujejo za oboje. |
 | **Pod** | **Zabojnik z aplikacijo** — najmanjša enota v Kubernetesu. V njem teče ena kopija aplikacije (npr. sola-app ali sola-db). Vsak pod ima svoj zasebni IP naslov. |
@@ -577,6 +579,12 @@ git pull                                    # Potegni zadnjo kodo
 | **Zero-downtime (rollout)** | **Posodobitev brez prekinitve delovanja** — Kubernetes najprej zažene novo verzijo, počaka da deluje, šele nato ugasi staro. Uporabniki nič ne občutijo. |
 | **Git** | **Sistem za sledenje spremembam kode** — kot "Track Changes" v Wordu, ampak za programsko kodo. |
 | **GitHub Actions** | **Samodejno testiranje in gradnja ob vsaki spremembi** — ko nekdo naloži novo kodo na GitHub, se avtomatsko zgradi nov Docker Image. |
+| **HPA (HorizontalPodAutoscaler)** | **Samodejno prilagajanje števila kopij aplikacije** — pazi na porabo CPU/RAM in doda ali odstrani replike (1-3) glede na obremenitev. Kot kavomat v šoli — ko je gužva, se vključi še en. |
+| **FastAPI** | **Ogrodje za spletne aplikacije v Pythonu** — v njem je napisana sola-app. Hitro, moderno, podpira samodejno dokumentacijo. |
+| **Uvicorn** | **Strežnik, ki poganja FastAPI aplikacijo** — bere Python kodo in jo streže kot spletno stran. Kot natakar, ki hrano (odgovore) nosi do strank. |
+| **Helm** | **"App Store" za Kubernetes** — orodje za nameščanje pripravljenih paketov (npr. Longhorn, CNPG) v Kubernetes. Namesto da ročno pišeš YAML, samo poveš "namesti Longhorn". |
+| **YAML** | **Človeku berljiv format za zapis konfiguracije** — nekaj podobnega kot JSON, ampak bolj pregleden. V Kubernetesu vse nastavitve pišejo v YAML formatu. |
+| **ConfigMap / Secret** | **Kubernetes objekti za shranjevanje nastavitev** — ConfigMap za javne nastavitve (npr. BASE_URL), Secret za občutljive podatke (gesla, ključi). Secret je zakodiran, ConfigMap je berljiv. |
 
 ---
 
