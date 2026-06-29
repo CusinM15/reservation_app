@@ -106,6 +106,37 @@ potrebno.
 
 ---
 
+## 📋 **Audit log — dnevnik sprememb**
+
+> **Kaj je to?** Audit log je **dnevnik vseh pomembnih sprememb** v aplikaciji — nekakšna "črna skrinjica". Vsakič, ko nekdo ustvari ali zbriše rezervacijo, ocenjevanje, uporabnika ali zasedene datume, se to zapiše skupaj s časom in imenom uporabnika.
+
+> **Zakaj je to koristno za vodstvo?**
+> - **Preglednost** — vedno lahko preverite, kdo je kaj naredil in kdaj
+> - **Reševanje sporov** — če je rezervacija "čudežno izginila", audit log pokaže, kdo jo je zbrisal
+> - **Nadzor** — veste, kaj se dogaja v sistemu, tudi ko niste prijavljeni
+
+### Kako dostopa vodstvo do audit loga?
+
+Ker audit log ni viden v običajnem meniju (vidljiv je samo adminu), lahko do njega dostopate prek **skrivne povezave** s posebnim **žetonom (tokenom)**:
+
+1. Administrator vam bo dal povezavo v obliki:  
+   `https://{{DOMAIN}}/history?token=SKRIVNI_ZETON`
+2. To povezavo preprosto **prilepite v brskalnik** (ni treba biti prijavljen)
+3. Odpre se enak pregled kot ga vidi admin — tabela z vsemi spremembami
+
+> **ELI5:** Kot da bi imeli **poseben ključ**, ki odpre vrata v arhiv. Ta ključ ne odpira ničesar drugega — samo arhiv sprememb. Če ključ izgubite ali vam ga kdo ukrade, naj administrator ustvari novega.
+
+### Kaj vidite v audit logu?
+
+| Stolpec | Pomen |
+|---------|-------|
+| **Čas** | Kdaj se je zgodilo (datum + ura) |
+| **Uporabnik** | Kdo je akcijo izvedel |
+| **Akcija** | Kaj se je zgodilo (ustvarjanje, brisanje ...) |
+| **Podrobnosti** | Dodatni podatki (kateri prostor, kateri datum ...) |
+
+---
+
 ## 🛡️ Skrbniška plošča — SAMO ADMIN
 
 > ⛔ **Vodstvo do tega dela nima dostopa.** Sledi samo za informacijo, kaj dela

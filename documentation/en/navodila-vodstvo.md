@@ -71,6 +71,37 @@ When management cancels a reservation or assessment, the application automatical
 
 ---
 
+## 📋 **Audit log — change log**
+
+> **What is this?** The audit log is a **record of all important changes** in the application — a "black box". Every time someone creates or deletes a reservation, assessment, user, or blocked dates, it gets recorded together with the time and username.
+
+> **Why is this useful for management?**
+> - **Transparency** — you can always check who did what and when
+> - **Dispute resolution** — if a reservation "mysteriously disappeared", the audit log shows who deleted it
+> - **Oversight** — you know what's happening in the system even when you're not logged in
+
+### How does management access the audit log?
+
+Since the audit log isn't visible in the regular menu (only admins see it), you can access it via a **secret link** with a special **token**:
+
+1. The administrator will give you a link like this:  
+   `https://{{DOMAIN}}/history?token=SECRET_TOKEN`
+2. Simply **paste this link into your browser** (no login required)
+3. You'll see the same view as the admin — a table with all changes
+
+> **ELI5:** It's like having a **special key** that opens the archive door. This key doesn't open anything else — just the change archive. If you lose the key or someone steals it, ask the administrator to create a new one.
+
+### What do you see in the audit log?
+
+| Column | Meaning |
+|--------|---------|
+| **Time** | When it happened (date + time) |
+| **User** | Who performed the action |
+| **Action** | What happened (creation, deletion ...) |
+| **Details** | Additional info (which room, which date ...) |
+
+---
+
 ## Admin Panel (admin only)
 
 > Accessible only to the administrator — management does not have access to it.
