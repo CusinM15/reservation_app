@@ -212,13 +212,10 @@ def delete_ocenjevanje(id: int, request: Request, db: Session = Depends(get_db))
     
     user_name = f"{current_user.first_name} {current_user.last_name}".strip() or current_user.username
     log_audit(
-        db, current_user.id, user_name, "delete", "assessment", assessment.id,
+        db, current_user.id, user_name, "delete_ocenjevanje",
         f"Izbrisano ocenjevanje: {assessment.razred}, {assessment.date}"
     )
-    
+
     db.delete(assessment)
     db.commit()
-    log_audit(db, user_id=current_user.id, username=f"{current_user.first_name} {current_user.last_name}".strip() or current_user.username,
-              action="delete_ocenjevanje",
-              details=f"id={id}, razred={assessment.razred}, date={assessment.date}, teacher_id={assessment.teacher_id}")
     return {"message": "Ocenjevanje izbrisano"}

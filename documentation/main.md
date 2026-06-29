@@ -302,7 +302,7 @@ Poročilo vključuje:
 
 > **ELI5:** Predstavljaj si, da imaš **knjigo prihodov in odhodov** v šoli. Vsakič, ko nekdo nekaj spremeni (doda rezervacijo, zbriše ocenjevanje, ustvari uporabnika), se to zapiše v knjigo — s časom in imenom. Lahko greš kadarkoli nazaj in preveriš, kaj se je dogajalo. Brez ugibanj, brez "kdo je to zbrisal".
 
-**Dostop:** Samo **admin** (prek menija v aplikaciji → "📋 Audit log", na `ostc-app.org/history` ali na `/api/audit-log/page`). Vodstvo audit loga ne vidi.
+**Dostop:** Samo **admin** — v meniju aplikacije se ti pokaže gumb "📋 Audit log". Vodstvo audit loga ne vidi.
 
 > **Nasvet:** Audit log je **append-only** — vanj se samo dodaja, nikoli ne briše. Tudi če admin zbriše uporabnika, ostane zapis o tem v audit logu. To je namerno — revizijska sled mora biti nespremenljiva.
 

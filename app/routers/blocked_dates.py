@@ -126,7 +126,7 @@ def create_blocked_dates(
             for a in assessments:
                 teacher = db.query(User).filter(User.id == a.teacher_id).first()
                 log_audit(
-                    db, uid, creator_name, "delete", "assessment", a.id,
+                    db, uid, creator_name, "delete_assessment",
                     f"Avtomatsko izbrisano ocenjevanje (zaseden datum): {razred}, {current}"
                 )
                 db.delete(a)

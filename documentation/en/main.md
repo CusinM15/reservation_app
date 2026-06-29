@@ -302,7 +302,7 @@ The report includes:
 
 > **ELI5:** Imagine you have a **sign-in book** at school. Every time someone changes something (adds a reservation, deletes an assessment, creates a user), it gets written in the book — with the time and name. You can go back anytime and check what happened. No guessing, no "who deleted this."
 
-**Access:** Only **admin** (via the app menu → "📋 Audit log", at `ostc-app.org/history`, or at `/api/audit-log/page`). Management does not have access to the audit log.
+**Access:** Only **admin** — the "📋 Audit log" button appears in the app menu. Management does not have access to the audit log.
 
 > **Tip:** The audit log is **append-only** — entries can only be added, never deleted. Even if admin deletes a user, the audit trail remains. This is intentional — the audit trail must be immutable.
 
