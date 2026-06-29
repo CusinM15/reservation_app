@@ -25,15 +25,15 @@ Aplikacija teče v **dveh kopijah (pod-ih)**, ena na vsakem nodu. To ni luksuz, 
 
 **Ena replika na en node** — to je pravilo. Ker imava 2 noda (k3s-1 in k3s-2), imava vedno 2 repliki, vsaka na svojem računalniku.
 
-Če pa je gneča (ocene, začetek šolskega leta), **HorizontalPodAutoscaler (HPA)** samodejno doda še tretjo repliko. Ko obremenitev pade, se vrne na 2.
+Če pa je gneča (ocene, začetek šolskega leta), **HorizontalPodAutoscaler (HPA)** samodejno doda replike, vse do 4. Ko obremenitev pade, se vrne na 2.
 
 ```bash
 kubectl get hpa -n sola-app
 # NAME            REFERENCE              TARGETS          MIN   MAX   REPLICAS
-# sola-app-hpa    Deployment/sola-app    45%/60% (CPU)    2     3     2
+# sola-app-hpa    Deployment/sola-app    45%/60% (CPU)    2     4     2
 ```
 
-> **ELI5:** Kot dva učitelja v razredu — vsak ima svojo tablo (svoj računalnik). Ko je pouk, oba pišeta. Ko je gneča (kontrolne naloge), pride še tretji pomočnik in pomaga. Ko gneče zmanjka, gresta spet dva.
+> **ELI5:** Kot dva kavomata v šolski avli. Vsak ima svoj rezervoar za kavo in mleko. Ko je malica, oba točita. Ko je gneča (govorilne ure), se samodejno vključi še tretji kavomat. Ko gneče zmanjka, gresta spet dva.
 
 > 💡 **Opomba:** Health check na `/health` endpoint — če vrne 200 OK, je pod živ. Če ne, ga Kubernetes ubije in zažene znova.
 
