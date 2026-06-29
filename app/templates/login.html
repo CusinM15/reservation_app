@@ -35,9 +35,25 @@
             {% endif %}
             <form method="POST" action="/auth/login">
                 <input type="text" name="username" placeholder="Uporabniško ime" required>
-                <input type="password" name="password" placeholder="Geslo" required>
+                <div style="position:relative;">
+                    <input type="password" name="password" id="login-pw" placeholder="Geslo" required style="padding-right:36px;">
+                    <span onclick="togglePw()" style="position:absolute;right:10px;top:50%;transform:translateY(-50%);cursor:pointer;font-size:1.2rem;user-select:none;color:#888;" id="pw-toggle">👁</span>
+                </div>
                 <button type="submit">Prijava</button>
             </form>
+            <script>
+            function togglePw() {
+                const pw = document.getElementById('login-pw');
+                const icon = document.getElementById('pw-toggle');
+                if (pw.type === 'password') {
+                    pw.type = 'text';
+                    icon.textContent = '🙈';
+                } else {
+                    pw.type = 'password';
+                    icon.textContent = '👁';
+                }
+            }
+            </script>
             <div style="text-align:center;margin-top:15px;">
                 <a href="/auth/forgot-password" style="color:#007bff;text-decoration:none;font-size:0.85rem;">Pozabljeno geslo?</a>
             </div>
