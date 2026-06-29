@@ -5,7 +5,7 @@ from datetime import date as DateType, timedelta
 import uuid
 from collections import defaultdict
 
-from app.database import get_db, log_audit
+from app.database import get_db
 from app.models import Reservation, User, RoleEnum
 from app.schemas import (
     ReservationCreate,
