@@ -3,6 +3,7 @@ from sqlalchemy.orm import Session, joinedload
 from typing import Optional
 from datetime import date as DateType, timedelta
 import uuid
+from collections import defaultdict
 
 from app.database import get_db, log_audit
 from app.models import Reservation, User, RoleEnum
@@ -392,6 +393,50 @@ def create_full_day_series(
         creator_id=user.id,
         qty=data.qty,
     )
+
+
+@router.get("/series", response_model=list[dict])
+def list_all_series(
+    request: Request,
+    db: Session = Depends(get_db),
+):
+    """Vrne vse serije (bodoče) s povzetkom — prostor, termin, št. datumov, ustvarjalec."""
+    from datetime import date
+    today = date.today()
+    rows = db.query(Reservation).options(joinedload(Reservation.teacher)).filter(
+        Reservation.series_id.isnot(None),
+        Reservation.date >= today,
+    ).order_by(Reservation.date).all()
+
+    # Group by series_id
+    groups = defaultdict(list)
+    for r in rows:
+        groups[r.series_id].append(r)
+
+    result = []
+    for series_id, items in groups.items():
+        items.sort(key=lambda x: x.date)
+        first = items[0]
+        last = items[-1]
+        teacher_name = ""
+        if first.teacher:
+            teacher_name = f"{first.teacher.first_name} {first.teacher.last_name}".strip() or first.teacher.username
+        # Build date list
+        dates = sorted(set(r.date for r in items))
+        result.append({
+            "series_id": series_id,
+            "prostor": first.prostor,
+            "hour": first.hour,  # None for full-day series
+            "date_from": dates[0].isoformat(),
+            "date_to": dates[-1].isoformat(),
+            "date_count": len(dates),
+            "total_entries": len(items),
+            "teacher_name": teacher_name,
+            "teacher_id": first.teacher_id,
+        })
+
+    result.sort(key=lambda x: x["date_from"])
+    return result
 
 
 @router.get("/series/{series_id}", response_model=list[ReservationOut])

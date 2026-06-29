@@ -165,7 +165,7 @@ def reset_password_page(
 ):
     stored_token = request.query_params.get("token", "")
     user = db.query(User).filter(User.email == email, User.reset_token == stored_token).first()
-    if not user or _decode_reset_token(user.reset_token) != stored_token:
+    if not user or _decode_reset_token(user.reset_token) is None:
         return templates.TemplateResponse("login.html", {
             "request": request,
             "error": "Neveljavna ali potekla povezava za ponastavitev gesla.",
@@ -188,7 +188,7 @@ def reset_password(
     db: Session = Depends(get_db),
 ):
     user = db.query(User).filter(User.email == email, User.reset_token == token).first()
-    if not user or _decode_reset_token(user.reset_token) != token:
+    if not user or _decode_reset_token(user.reset_token) is None:
         return templates.TemplateResponse("login.html", {
             "request": request,
             "error": "Neveljavna ali potekla povezava za ponastavitev gesla.",

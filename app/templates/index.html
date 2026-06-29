@@ -72,7 +72,7 @@
     .add-asm-btn:hover { opacity: 1; }
     .modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.4); z-index: 100; justify-content: center; align-items: center; }
     .modal-overlay.active { display: flex; }
-    .modal { background: #fff; border-radius: 12px; padding: 2rem; width: 100%; max-width: 450px; box-shadow: 0 4px 24px rgba(0,0,0,0.15); }
+    .modal { background: #fff; border-radius: 12px; padding: 2rem; width: 100%; max-width: 450px; box-shadow: 0 4px 24px rgba(0,0,0,0.15); position: relative; z-index: 101; }
     .modal h3 { margin-bottom: 1rem; }
     .modal .form-group { margin-bottom: 0.8rem; }
     .modal label { display: block; font-size: 0.85rem; font-weight: 500; color: #555; margin-bottom: 0.2rem; }
@@ -243,6 +243,9 @@
         <button class="btn btn-cancel" onclick="closeModal('weekly-series-modal')">Prekliči</button>
         <button class="btn btn-primary" onclick="submitWeeklySeries()">Ustvari serijo</button>
       </div>
+      <hr style="margin:1rem 0;border:none;border-top:1px solid #eee;">
+      <h4 style="margin-bottom:0.5rem;font-size:0.9rem;color:#555;">📋 Obstoječe serije</h4>
+      <div id="series-list" style="max-height:200px;overflow-y:auto;font-size:0.85rem;"></div>
     </div>
   </div>
 
@@ -545,10 +548,9 @@
 
     // --- Export rezervacij ---
     function openExportRezModal() {
-        document.getElementById('export-rez-from').value = formatDate(new Date());
-        const to = new Date();
-        to.setDate(to.getDate() + 30);
-        document.getElementById('export-rez-to').value = formatDate(to);
+        const from = new Date(); from.setMonth(from.getMonth() - 1);
+        document.getElementById('export-rez-from').value = formatDate(from);
+        document.getElementById('export-rez-to').value = formatDate(new Date());
         const sel = document.getElementById('export-rez-prostor');
         sel.innerHTML = '<option value="">Vsi prostori</option>' + prostori.map(p => `<option value="${p}">${prostorLabel(p)}</option>`).join('');
         document.getElementById('export-rez-msg').textContent = '';
@@ -577,10 +579,9 @@
 
     // --- Export ocenjevanj ---
     function openExportOcModal() {
-        document.getElementById('export-oc-from').value = formatDate(new Date());
-        const to = new Date();
-        to.setDate(to.getDate() + 30);
-        document.getElementById('export-oc-to').value = formatDate(to);
+        const from = new Date(); from.setMonth(from.getMonth() - 1);
+        document.getElementById('export-oc-from').value = formatDate(from);
+        document.getElementById('export-oc-to').value = formatDate(new Date());
         const sel = document.getElementById('export-oc-razred');
         sel.innerHTML = '<option value="">Vsi razredi</option>' + razredi.map(r => `<option value="${r}">${r}</option>`).join('');
         document.getElementById('export-oc-msg').textContent = '';
@@ -682,6 +683,7 @@
       const nextMonth = new Date(); nextMonth.setMonth(nextMonth.getMonth() + 3);
       document.getElementById('weekly-date-to').value = nextMonth.toISOString().split('T')[0];
       document.getElementById('weekly-qty').value = '1';
+      loadSeriesList();
       openModal('weekly-series-modal');
     }
     async function submitWeeklySeries() {
@@ -707,6 +709,38 @@
         else { showMsg(json.detail?.message || json.detail || 'Napaka pri ustvarjanju serije.', 'error'); }
       } catch(e) { showMsg('Napaka pri povezavi s strežnikom.', 'error'); }
     }
+
+    // --- Seznam serij ---
+    async function loadSeriesList() {
+      try {
+        const resp = await fetch('/api/rezervacije/series');
+        if (!resp.ok) { document.getElementById('series-list').innerHTML = '<span style="color:#999;">Napaka pri nalaganju</span>'; return; }
+        const data = await resp.json();
+        const container = document.getElementById('series-list');
+        if (!data.length) { container.innerHTML = '<span style="color:#999;">Ni aktivnih serij za bodoče datume.</span>'; return; }
+        let html = '';
+        for (const s of data) {
+          const roomLabel = prostorLabel(s.prostor);
+          const hourInfo = s.hour !== null && s.hour !== undefined ? `ura ${s.hour}` : 'cel dan';
+          html += `<div style="display:flex;align-items:center;justify-content:space-between;padding:4px 0;border-bottom:1px solid #f0f0f0;">
+            <span><strong>${roomLabel}</strong> — ${hourInfo}<br>
+            <span style="font-size:0.8rem;color:#666;">${s.teacher_name} • ${s.date_from} do ${s.date_to} (${s.date_count} dni)</span></span>
+            <span onclick="deleteSeries('${s.series_id}')" style="cursor:pointer;color:#c00;font-weight:700;padding:2px 6px;">✕</span>
+          </div>`;
+        }
+        container.innerHTML = html;
+      } catch(e) { document.getElementById('series-list').innerHTML = '<span style="color:#999;">Napaka pri povezavi</span>'; }
+    }
+    async function deleteSeries(seriesId) {
+      if (!confirm('Izbriši celotno serijo?')) return;
+      try {
+        const resp = await fetch(`/api/rezervacije/series/${seriesId}`, { method: 'DELETE' });
+        if (!resp.ok) { const e = await resp.json(); alert(e.detail || 'Napaka pri brisanju.'); return; }
+        loadSeriesList();
+        if (typeof loadAllReservations === 'function') loadAllReservations();
+      } catch(e) { alert('Napaka pri povezavi.'); }
+    }
+
     function openFullDaySeriesModal() {
       document.getElementById('fullday-prostor').value = prostori[0] || '';
       const today = new Date().toISOString().split('T')[0];
