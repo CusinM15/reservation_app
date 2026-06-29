@@ -11,7 +11,7 @@ Usage:
 import os
 import sys
 from collections import Counter, defaultdict
-from datetime import datetime, timedelta, timezone
+from datetime import date, datetime, timedelta, timezone
 from zoneinfo import ZoneInfo
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
@@ -349,7 +349,126 @@ def estimate_node_lifetime(node, k3s_summary, longhorn_summary):
     }
 
 
-def render_report(k3s, longhorn, kube_error=None):
+def _get_week_start(d: date) -> date:
+    """Vrne ponedeljek tedna za dan d"""
+    return d - timedelta(days=d.weekday())
+
+
+def _get_week_end(week_start: date) -> date:
+    return week_start + timedelta(days=6)
+
+
+def _check_consecutive_days(dates_list) -> bool:
+    """Preveri ali so 3 datumi zaporedni dnevi"""
+    if len(dates_list) < 3:
+        return False
+    sorted_dates = sorted(dates_list)
+    for i in range(len(sorted_dates) - 2):
+        if (sorted_dates[i+1] - sorted_dates[i]).days == 1 and \
+           (sorted_dates[i+2] - sorted_dates[i+1]).days == 1:
+            return True
+    return False
+
+
+def collect_app_data_agent():
+    """Preveri celovitost podatkov (ocene, rezervacije) za danes + 30 dni.
+
+    Namen: zazna morebitne bug-e, ki so spustili neveljavne podatke mimo validacije.
+    """
+    from app.database import SessionLocal
+    from app.models import Assessment, BlockedDate
+
+    db = SessionLocal()
+    try:
+        today = date.today()
+        end = today + timedelta(days=30)
+        issues = []
+
+        # ── Assessments ──
+        assessments = db.query(Assessment).filter(
+            Assessment.date >= today,
+            Assessment.date <= end
+        ).order_by(Assessment.razred, Assessment.date).all()
+
+        # Group by class + week
+        by_class_week = defaultdict(list)
+        for a in assessments:
+            ws = _get_week_start(a.date)
+            by_class_week[(a.razred, ws)].append(a)
+
+        for (razred_class, ws), group in by_class_week.items():
+            we = _get_week_end(ws)
+            ws_s = ws.strftime("%d.%m.")
+            we_s = we.strftime("%d.%m.%Y")
+
+            # Max 3 per week (any type)
+            if len(group) > 3:
+                issues.append(
+                    f"❌ {razred_class}: {len(group)} ocenjevanj v tednu "
+                    f"{ws_s}-{we_s} (dovoljeno max 3)"
+                )
+
+            # Max 2 normal (non-ponavljanje) per week
+            normal = [a for a in group if not a.ponavljanje]
+            if len(normal) > 2:
+                issues.append(
+                    f"❌ {razred_class}: {len(normal)} običajnih ocenjevanj v tednu "
+                    f"{ws_s}-{we_s} (dovoljeno max 2)"
+                )
+
+            # Same-day duplicates
+            date_counts = Counter(a.date for a in group)
+            for d, cnt in date_counts.items():
+                if cnt > 1:
+                    issues.append(
+                        f"❌ {razred_class}: {cnt} ocenjevanj na isti dan {d}"
+                    )
+
+            # 3 consecutive days
+            all_dates = sorted(set(a.date for a in group))
+            if _check_consecutive_days(all_dates):
+                issues.append(
+                    f"❌ {razred_class}: ocenjevanja na 3 zaporedne dni v tednu "
+                    f"{ws_s}-{we_s}"
+                )
+
+        # Assessments on blocked dates
+        blocked = db.query(BlockedDate).filter(
+            BlockedDate.date >= today,
+            BlockedDate.date <= end
+        ).all()
+        blocked_set = {(b.razred, b.date) for b in blocked}
+
+        for a in assessments:
+            if (a.razred, a.date) in blocked_set:
+                issues.append(
+                    f"⚠️ {a.razred} ima ocenjevanje na zaseden datum {a.date}"
+                )
+
+        # ── Blocked dates without any assessments (info only) ──
+        affected_blocked = 0
+        for b in blocked:
+            has_assessment = any(
+                a.razred == b.razred and a.date == b.date for a in assessments
+            )
+            if has_assessment:
+                affected_blocked += 1
+
+        total_assessments = len(assessments)
+        total_blocked = len(blocked)
+
+        return {
+            "issues": issues,
+            "total_assessments": total_assessments,
+            "total_blocked": total_blocked,
+            "period_start": today.isoformat(),
+            "period_end": end.isoformat(),
+        }
+    finally:
+        db.close()
+
+
+def render_report(k3s, longhorn, app_data=None, kube_error=None):
     lines = []
     generated = now_ljubljana().strftime("%Y-%m-%d %H:%M %Z")
     lines.append("🛡️ Daily k3s/Longhorn health report")
@@ -467,13 +586,35 @@ def render_report(k3s, longhorn, kube_error=None):
     else:
         lines.append("- none")
 
+    # ── App data integrity section ──
+    if app_data:
+        lines.append("")
+        lines.append("## App data integrity agent")
+        lines.append(f"Period: {app_data['period_start']} → {app_data['period_end']}")
+        lines.append(f"Assessments checked: {app_data['total_assessments']}")
+        lines.append(f"Blocked dates checked: {app_data['total_blocked']}")
+        if app_data["issues"]:
+            lines.append(f"Issues found: {len(app_data['issues'])}")
+            for issue in app_data["issues"]:
+                lines.append(f"- {issue}")
+        else:
+            lines.append("✅ No data integrity issues found.")
+        lines.append("")
+
+    # ── Documentation reference ──
+    lines.append("## Documentation links")
+    lines.append("- 📄 [Poletna pavza — navodila za izklop jeseni](https://github.com/os-tc-jesenice/reservation_app/blob/main/POLETNA_PAVZA.md)")
+    lines.append("")
+
     return "\n".join(lines)
 
 
 def run():
     kube, _apis, kube_error = load_kube()
     if kube_error:
-        body = render_report({}, {}, kube_error=kube_error)
+        app_data = {"period_start": "N/A", "period_end": "N/A",
+                     "total_assessments": 0, "total_blocked": 0, "issues": []}
+        body = render_report({}, {}, app_data=app_data, kube_error=kube_error)
         print(body)
         _send_email(settings.BACKUP_EMAIL, "⚠️ Daily report napaka - k3s/Longhorn", body)
         return
@@ -481,7 +622,8 @@ def run():
     core, apps, batch, custom = kube
     k3s = collect_k3s_agent(core, apps, batch)
     longhorn = collect_longhorn_agent(custom)
-    body = render_report(k3s, longhorn)
+    app_data = collect_app_data_agent()
+    body = render_report(k3s, longhorn, app_data=app_data)
     print(body)
     _send_email(settings.BACKUP_EMAIL, "🛡️ Daily k3s/Longhorn health report", body)
 
