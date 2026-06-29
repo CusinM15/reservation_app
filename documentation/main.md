@@ -306,18 +306,19 @@ Poročilo vključuje:
 
 > **ELI5:** Predstavljaj si, da imaš **knjigo prihodov in odhodov** v šoli. Vsakič, ko nekdo nekaj spremeni (doda rezervacijo, zbriše ocenjevanje, ustvari uporabnika), se to zapiše v knjigo — s časom in imenom. Lahko greš kadarkoli nazaj in preveriš, kaj se je dogajalo. Brez ugibanj, brez "kdo je to zbrisal".
 
-**Dostop:** Samo **admin** — v meniju aplikacije se ti pokaže gumb "📋 Audit log". Vodstvo audit loga ne vidi.
+**Dostop:** Samo **admin** — v Admin panelu klikni **"Dnevnik dogodkov"** (poveže na `/history`). Vodstvo audit loga ne vidi — dobi skrivno povezavo s tokenom.
 
 > **Nasvet:** Audit log je **append-only** — vanj se samo dodaja, nikoli ne briše. Tudi če admin zbriše uporabnika, ostane zapis o tem v audit logu. To je namerno — revizijska sled mora biti nespremenljiva.
 
 ### Kako dostopam do audit loga?
 
 1. Prijavi se v aplikacijo kot **admin**
-2. V meniju na vrhu strani klikni **"📋 Audit log"** desno od gumba "Admin panel"
+2. Klikni **Admin panel** v zgornjem meniju
+3. V Admin panelu klikni **"Dnevnik dogodkov"**
 
 **Kdo lahko vidi audit log?**
-- **Admin** — ja (prek menija)
-- **Vodstvo** — **ne**
+- **Admin** — ja (prek Admin panel → Dnevnik dogodkov)
+- **Vodstvo** — prek skrivne povezave s tokenom
 - **Učitelji** — **ne**
 
 

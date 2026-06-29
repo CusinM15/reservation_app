@@ -754,19 +754,20 @@
 
     // --- Seznam serij ---
     async function _renderSeriesList(containerId) {
-      const resp = await fetch('/api/rezervacije/series');
+      const resp = await fetch('/api/rezervacije/series-list', { credentials: 'include' });
       if (!resp.ok) { document.getElementById(containerId).innerHTML = '<span style="color:#999;">Napaka pri nalaganju</span>'; return; }
       const data = await resp.json();
       const container = document.getElementById(containerId);
       if (!data.length) { container.innerHTML = '<span style="color:#999;">Ni aktivnih serij za bodoče datume.</span>'; return; }
-      data.sort((a,b) => a.date_from.localeCompare(b.date_from));
+      data.sort((a,b) => a.min_date.localeCompare(b.min_date));
       let html = '';
       for (const s of data) {
         const roomLabel = prostorLabel(s.prostor);
-        const hourInfo = s.hour !== null && s.hour !== undefined ? `ura ${s.hour}` : 'cel dan';
+        const minDate = s.min_date.split('-').reverse().join('.');
+        const maxDate = s.max_date.split('-').reverse().join('.');
         html += `<div style="display:flex;align-items:center;justify-content:space-between;padding:4px 0;border-bottom:1px solid #f0f0f0;">
-          <span><strong>${roomLabel}</strong> — ${hourInfo}<br>
-          <span style="font-size:0.8rem;color:#666;">${s.teacher_name} • ${s.date_from} do ${s.date_to} (${s.date_count} dni)</span></span>
+          <span><strong>${roomLabel}</strong><br>
+          <span style="font-size:0.8rem;color:#666;">${s.count} terminov (${minDate} - ${maxDate})</span></span>
           <span onclick="deleteSeries('${s.series_id}')" style="cursor:pointer;color:#c00;font-weight:700;padding:2px 6px;">✕</span>
         </div>`;
       }
@@ -781,14 +782,13 @@
     async function deleteSeries(seriesId) {
       if (!confirm('Izbriši celotno serijo?')) return;
       try {
-        const resp = await fetch(`/api/rezervacije/series/${seriesId}`, { method: 'DELETE' });
+        const resp = await fetch(`/api/rezervacije/series/${seriesId}`, { method: 'DELETE', credentials: 'include' });
         if (!resp.ok) { const e = await resp.json(); alert(e.detail || 'Napaka pri brisanju.'); return; }
         loadSeriesList();
         loadFullDaySeriesList();
         if (typeof loadAllReservations === 'function') loadAllReservations();
       } catch(e) { alert('Napaka pri povezavi.'); }
     }
-
     function openFullDaySeriesModal() {
       document.getElementById('fullday-prostor').value = prostori[0] || '';
       const today = new Date().toISOString().split('T')[0];
@@ -825,40 +825,6 @@
           loadAllReservations(); 
         }
         else { showMsg(json.detail?.message || json.detail || 'Napaka pri ustvarjanju serije.', 'error'); }
-      } catch(e) { showMsg('Napaka pri povezavi s strežnikom.', 'error'); }
-    }
-
-    // --- Seznam serij ---
-    async function loadSeriesList() {
-      try {
-        const res = await fetch('/api/rezervacije/series-list', { credentials: 'include' });
-        if (!res.ok) { document.querySelectorAll('.series-list').forEach(el => el.innerHTML = ''); return; }
-        const series = await res.json();
-        document.querySelectorAll('.series-list').forEach(el => {
-          if (series.length === 0) { el.innerHTML = '<p style="color:#999;font-size:0.85rem;">Ni aktivnih serij.</p>'; return; }
-          let html = '<h4 style="margin-bottom:8px;font-size:0.9rem;">Aktivne serije:</h4>';
-          for (const s of series) {
-            const minDate = s.min_date.split('-').reverse().join('.');
-            const maxDate = s.max_date.split('-').reverse().join('.');
-            const label = {
-              tablice: 'Tablice', racunalnica: 'Računalnica', ladja: 'Ladja',
-              "gospodinjska-ucilnica": "Gospodinjska učilnica"
-            }[s.prostor] || s.prostor;
-            html += `<div class="series-item">
-              <span>${label} - ${s.count} terminov (${minDate} - ${maxDate})</span>
-              <span class="del-series" onclick="deleteSeries('${s.series_id}')">✕</span>
-            </div>`;
-          }
-          el.innerHTML = html;
-        });
-      } catch(e) { document.querySelectorAll('.series-list').forEach(el => el.innerHTML = '<p style="color:#999;font-size:0.85rem;">Napaka pri nalaganju serij.</p>'); }
-    }
-    async function deleteSeries(seriesId) {
-      if (!confirm('Ste prepričani, da želite izbrisati to serijo?')) return;
-      try {
-        const res = await fetch(`/api/rezervacije/series/${seriesId}`, { method: 'DELETE', credentials: 'include' });
-        if (res.ok) { showMsg('Serija izbrisana.', 'success'); loadSeriesList(); loadAllReservations(); }
-        else { const json = await res.json(); showMsg(json.detail || 'Napaka pri brisanju serije.', 'error'); }
       } catch(e) { showMsg('Napaka pri povezavi s strežnikom.', 'error'); }
     }
 
