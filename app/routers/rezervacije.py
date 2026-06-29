@@ -473,15 +473,10 @@ def delete_series(series_id: str, request: Request, db: Session = Depends(get_db
         raise HTTPException(status_code=403, detail="Samo admin/vodstvo ali avtor serije lahko briše.")
 
     n = len(rows)
-    user_name = f"{current.first_name} {current.last_name}".strip() or current.username
-    log_audit(
-        db, current.id, user_name, "delete", "series", None,
-        f"Izbrisana serija ({n} terminov): {rows[0].prostor}, od {min(r.date for r in rows)} do {max(r.date for r in rows)}"
-    )
+    details = f"Izbrisana serija ({n} terminov): {rows[0].prostor}, od {min(r.date for r in rows)} do {max(r.date for r in rows)}"
+    username = f"{current.first_name} {current.last_name}".strip() or current.username
     for r in rows:
         db.delete(r)
     db.commit()
-    log_audit(db, user_id=current.id, username=f"{current.first_name} {current.last_name}".strip() or current.username,
-              action="delete_series",
-              details=f"series_id={series_id}, deleted={n}")
+    log_audit(db, user_id=current.id, username=username, action="delete_series", details=details)
     return {"message": f"Serija izbrisana ({n} terminov)", "deleted": n}
