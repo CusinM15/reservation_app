@@ -302,8 +302,40 @@ Poročilo vključuje:
 
 > **ELI5:** Predstavljaj si, da imaš **knjigo prihodov in odhodov** v šoli. Vsakič, ko nekdo nekaj spremeni (doda rezervacijo, zbriše ocenjevanje, ustvari uporabnika), se to zapiše v knjigo — s časom in imenom. Lahko greš kadarkoli nazaj in preveriš, kaj se je dogajalo. Brez ugibanj, brez "kdo je to zbrisal".
 
-**Dostop:** Samo **admin** (prek menija v aplikaciji → "📋 Audit log", na `ostc-app.org/history` ali na `/api/audit-log/page`).  
-Če odpreš `ostc-app.org/history` v brskalniku, te preusmeri na audit log — če nisi admin, dobiš napako.
+**Dostop:** Samo **admin** (prek menija v aplikaciji → "📋 Audit log", na `ostc-app.org/history` ali na `/api/audit-log/page`). Vodstvo audit loga ne vidi.
+
+> **Nasvet:** Audit log je **append-only** — vanj se samo dodaja, nikoli ne briše. Tudi če admin zbriše uporabnika, ostane zapis o tem v audit logu. To je namerno — revizijska sled mora biti nespremenljiva.
+
+### Kako dostopam do audit loga?
+
+**Najlažje — prek menija v aplikaciji:**
+
+1. Prijavi se kot **admin**
+2. V meniju na vrhu klikni **"📋 Audit log"**
+
+**Prek URLja v brskalniku (če si že prijavljen kot admin):**
+
+```
+https://ostc-app.org/history
+```
+
+**Prek URLja z žetonom (če nisi prijavljen — odpre se v brskalniku brez prijave):**
+
+Nastavi si `AUDIT_TOKEN` v `.env` datoteki, nato odpri:
+
+```
+https://ostc-app.org/history?token=TAJNO_GESLO
+```
+
+Žeton nastaviš tako, da v `.env` dodaš `AUDIT_TOKEN=tvoje-geslo` in restart-aš app. Potem imaš vedno dostop do audit loga prek te povezave — tudi če nisi prijavljen.
+
+> **Varnostni namig:** Žeton hrani zase. Če ga kdo izve, ga lahko spremeniš v `.env` in restart-aš app.
+
+**Kdo lahko vidi audit log?**
+- **Admin** — ja (prek menija, URLja ali URLja z žetonom)
+- **Vodstvo** — **ne** (tudi če klikne na povezavo, ne more dostopati)
+- **Učitelji** — **ne** (sploh ne vidijo, da audit log obstaja)
+
 
 **Kaj se beleži:**
 
@@ -325,8 +357,6 @@ Poročilo vključuje:
 | `change_password` | Uporabnik spremenil svoje geslo |
 
 **Ne beleži se:** branje podatkov (kdo si je kaj ogledal), neuspeli poskusi prijave — samo dejanske spremembe.
-
-> **Nasvet:** Audit log je **append-only** — vanj se samo dodaja, nikoli ne briše. Tudi če admin zbriše uporabnika, ostane zapis o tem v audit logu. To je namerno — revizijska sled mora biti nespremenljiva.
 
 ---
 

@@ -31,6 +31,9 @@ class Settings:
     STANJE_MAIL = os.getenv("STANJE_MAIL", "")
     ADMIN_EMAIL = os.getenv("ADMIN_EMAIL", "admin@ostc.si")
 
+    # Audit log — admin token za dostop do /history?token=...
+    AUDIT_TOKEN = os.getenv("AUDIT_TOKEN", "")
+
 
 settings = Settings()
 

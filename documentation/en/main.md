@@ -302,8 +302,40 @@ The report includes:
 
 > **ELI5:** Imagine you have a **sign-in book** at school. Every time someone changes something (adds a reservation, deletes an assessment, creates a user), it gets written in the book — with the time and name. You can go back anytime and check what happened. No guessing, no "who deleted this."
 
-**Access:** Only **admin** (via the app menu → "📋 Audit log", at `ostc-app.org/history`, or at `/api/audit-log/page`).  
-Opening `ostc-app.org/history` in your browser redirects you to the audit log — if you're not an admin, you'll get an error.
+**Access:** Only **admin** (via the app menu → "📋 Audit log", at `ostc-app.org/history`, or at `/api/audit-log/page`). Management does not have access to the audit log.
+
+> **Tip:** The audit log is **append-only** — entries can only be added, never deleted. Even if admin deletes a user, the audit trail remains. This is intentional — the audit trail must be immutable.
+
+### How do I access the audit log?
+
+**Easiest — via the app menu:**
+
+1. Log in as **admin**
+2. In the top menu, click **"📋 Audit log"**
+
+**Via URL in browser (if already logged in as admin):**
+
+```
+https://ostc-app.org/history
+```
+
+**Via URL with token (if not logged in — opens in browser without login):**
+
+Set `AUDIT_TOKEN` in the `.env` file, then open:
+
+```
+https://ostc-app.org/history?token=SECRET_PASSWORD
+```
+
+Set the token by adding `AUDIT_TOKEN=your-secret` to `.env` and restarting the app. You can then always access the audit log via this link — even without being logged in.
+
+> **Security note:** Keep the token private. If someone finds it out, change it in `.env` and restart the app.
+
+**Who can see the audit log?**
+- **Admin** — yes (via menu, URL, or URL with token)
+- **Management** — **no** (even if they click the link, they cannot access)
+- **Teachers** — **no** (they don't even know the audit log exists)
+
 
 **What is logged:**
 
@@ -325,8 +357,6 @@ Opening `ostc-app.org/history` in your browser redirects you to the audit log �
 | `change_password` | User changed their own password |
 
 **Not logged:** data reads (who viewed what), failed login attempts — only actual changes.
-
-> **Tip:** The audit log is **append-only** — entries are only added, never deleted. Even if an admin deletes a user, the record of that deletion remains. This is intentional — an audit trail must be immutable.
 
 ---
 

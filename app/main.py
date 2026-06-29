@@ -1,4 +1,4 @@
-from fastapi import FastAPI, Request
+from fastapi import FastAPI, Request, Query
 from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.templating import Jinja2Templates
 from starlette.middleware.base import BaseHTTPMiddleware
@@ -18,7 +18,7 @@ templates = Jinja2Templates(directory="app/templates")
 class AuthMiddleware(BaseHTTPMiddleware):
     async def dispatch(self, request: Request, call_next):
         path = request.url.path
-        public = ["/auth/login", "/auth/forgot-password", "/auth/reset-password", "/health", "/", "/api/razredi", "/api/prostori", "/api/schedule"]
+        public = ["/auth/login", "/auth/forgot-password", "/auth/reset-password", "/health", "/", "/history", "/api/razredi", "/api/prostori", "/api/schedule"]
         is_public = any(path == p for p in public) or path.startswith("/static")
         if not is_public and not request.cookies.get("user_id"):
             return RedirectResponse(url="/auth/login")
@@ -88,11 +88,23 @@ def get_prostori():
 def get_schedule():
     return settings.SCHEDULE
 
-# Shortcut URLs
-@app.get("/history")
-def history_redirect():
-    """Enostaven URL za dostop do audit loga — preusmeri na /api/audit-log/page."""
-    return RedirectResponse(url="/api/audit-log/page")
+@app.get("/history", response_class=HTMLResponse)
+def history_page(request: Request, token: str | None = Query(None)):
+    """Pokaži audit log — prek prijave (cookie) ali ?token=..."""
+    user_id = request.cookies.get("user_id")
+    if user_id:
+        try:
+            from app.database import SessionLocal
+            db = SessionLocal()
+            user = db.query(User).filter(User.id == int(user_id)).first()
+            db.close()
+            if user and user.role == RoleEnum.admin:
+                return templates.TemplateResponse("audit_log.html", {"request": request})
+        except Exception:
+            pass
+    if token and settings.AUDIT_TOKEN and token == settings.AUDIT_TOKEN:
+        return templates.TemplateResponse("audit_log.html", {"request": request})
+    return HTMLResponse("Ni dostopa. Prijavi se kot admin ali uporabi ?token=...", status_code=403)
 
 # Include routers
 app.include_router(rezervacije.router)

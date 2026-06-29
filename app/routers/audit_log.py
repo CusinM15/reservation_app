@@ -1,10 +1,11 @@
 from fastapi import APIRouter, Depends, HTTPException, Query, Request
-from fastapi.responses import HTMLResponse
+from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.templating import Jinja2Templates
 from sqlalchemy.orm import Session, joinedload
 
 from app.database import get_db
 from app.models import AuditLog, User, RoleEnum
+from app.config import settings
 
 router = APIRouter(prefix="/api/audit-log", tags=["audit-log"])
 templates = Jinja2Templates(directory="app/templates")
