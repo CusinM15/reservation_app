@@ -89,22 +89,23 @@ def get_schedule():
     return settings.SCHEDULE
 
 @app.get("/history", response_class=HTMLResponse)
-def history_page(request: Request, token: str | None = Query(None)):
-    """Pokaži audit log — prek prijave (cookie) ali ?token=..."""
+def history_page(request: Request):
+    """Pokaži audit log — samo za prijavljenega admina."""
     user_id = request.cookies.get("user_id")
-    if user_id:
-        try:
-            from app.database import SessionLocal
-            db = SessionLocal()
-            user = db.query(User).filter(User.id == int(user_id)).first()
+    if not user_id:
+        return RedirectResponse(url="/auth/login")
+    try:
+        from app.database import SessionLocal
+        db = SessionLocal()
+        user = db.query(User).filter(User.id == int(user_id)).first()
+        if user and user.role == RoleEnum.admin:
+            users = db.query(User.id, User.username, User.first_name, User.last_name).order_by(User.first_name).all()
             db.close()
-            if user and user.role == RoleEnum.admin:
-                return templates.TemplateResponse("audit_log.html", {"request": request})
-        except Exception:
-            pass
-    if token and settings.AUDIT_TOKEN and token == settings.AUDIT_TOKEN:
-        return templates.TemplateResponse("audit_log.html", {"request": request})
-    return HTMLResponse("Ni dostopa. Prijavi se kot admin ali uporabi ?token=...", status_code=403)
+            return templates.TemplateResponse("audit_log.html", {"request": request, "users": users})
+        db.close()
+    except Exception:
+        pass
+    return HTMLResponse("Dostop samo za admina. Prijavite se kot admin.", status_code=403)
 
 # Include routers
 app.include_router(rezervacije.router)

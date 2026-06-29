@@ -106,36 +106,37 @@ potrebno.
 
 ---
 
-## 📋 **Audit log — dnevnik sprememb**
-
-> **Kaj je to?** Audit log je **dnevnik vseh pomembnih sprememb** v aplikaciji — nekakšna "črna skrinjica". Vsakič, ko nekdo ustvari ali zbriše rezervacijo, ocenjevanje, uporabnika ali zasedene datume, se to zapiše skupaj s časom in imenom uporabnika.
-
-> **Zakaj je to koristno za vodstvo?**
-> - **Preglednost** — vedno lahko preverite, kdo je kaj naredil in kdaj
-> - **Reševanje sporov** — če je rezervacija "čudežno izginila", audit log pokaže, kdo jo je zbrisal
-> - **Nadzor** — veste, kaj se dogaja v sistemu, tudi ko niste prijavljeni
-
-### Kako dostopa vodstvo do audit loga?
-
-Ker audit log ni viden v običajnem meniju (vidljiv je samo adminu), lahko do njega dostopate prek **skrivne povezave** s posebnim **žetonom (tokenom)**:
-
-1. Administrator vam bo dal povezavo v obliki:  
-   `https://{{DOMAIN}}/history?token=SKRIVNI_ZETON`
-2. To povezavo preprosto **prilepite v brskalnik** (ni treba biti prijavljen)
-3. Odpre se enak pregled kot ga vidi admin — tabela z vsemi spremembami
-
-> **ELI5:** Kot da bi imeli **poseben ključ**, ki odpre vrata v arhiv. Ta ključ ne odpira ničesar drugega — samo arhiv sprememb. Če ključ izgubite ali vam ga kdo ukrade, naj administrator ustvari novega.
-
-### Kaj vidite v audit logu?
-
-| Stolpec | Pomen |
-|---------|-------|
-| **Čas** | Kdaj se je zgodilo (datum + ura) |
-| **Uporabnik** | Kdo je akcijo izvedel |
-| **Akcija** | Kaj se je zgodilo (ustvarjanje, brisanje ...) |
-| **Podrobnosti** | Dodatni podatki (kateri prostor, kateri datum ...) |
-
 ---
+
+## 📥 **Izvoz podatkov v CSV**
+
+> **Kaj je to?** Izvoz podatkov v CSV (Excelu prijazna oblika) — enostaven način, da podatke iz aplikacije prenesete na svoj računalnik in jih odprete v Excelu, Google Sheets ali podobnem programu.
+
+### Kaj lahko izvozite?
+
+| Vrsta izvoza | Kam kliknete | Kateri podatki |
+|---|---|---|
+| **Rezervacije prostorov** | 📥 Export rezervacij (v meniju) | Datum, ura, prostor, razred, učitelj |
+| **Ocenjevanja** | 📥 Export ocenjevanj (v meniju) | Datum, razred, tip ocenjevanja, učitelj |
+
+### Kako to naredite?
+
+1. V zgornjem meniju kliknite **📥 Export rezervacij** ali **📥 Export ocenjevanj**
+2. Izberite **obdobje** (privzeto zadnji mesec):
+   - **Od datuma** — začetek obdobja
+   - **Do datuma** — konec obdobja
+3. Pri rezervacijah lahko izberete tudi **prostor** (ali pustite "Vsi prostori")
+4. Kliknite **📥 Prenesi CSV**
+
+> **ELI5:** Kot da bi iz knjižnice izposodili knjigo in si naredili kopijo strani, ki vas zanimajo. CSV je univerzalni jezik, ki ga razumejo vsi pisarniški programi.
+
+### Kaj narediti s CSV?
+
+- Odprite v **Excelu** (File → Open)
+- Odprite v **Google Sheets** (File → Import)
+- Uvozite v **katerikoli podatkovni program**
+
+> **Namig:** CSV uporablja podpičje (`;`) kot ločilo, kar Excel v slovenščini samodejno prepozna. Če se vam zdi zmešano v en stolpec, pri uvozu izberite **ločilo: podpičje**.
 
 ## 🛡️ Skrbniška plošča — SAMO ADMIN
 

@@ -71,36 +71,33 @@ When management cancels a reservation or assessment, the application automatical
 
 ---
 
-## 📋 **Audit log — change log**
+## 📥 **Exporting data to CSV**
 
-> **What is this?** The audit log is a **record of all important changes** in the application — a "black box". Every time someone creates or deletes a reservation, assessment, user, or blocked dates, it gets recorded together with the time and username.
+> **What is this?** CSV export — download data from the app as a file you can open in Excel, Google Sheets, or any spreadsheet program.
 
-> **Why is this useful for management?**
-> - **Transparency** — you can always check who did what and when
-> - **Dispute resolution** — if a reservation "mysteriously disappeared", the audit log shows who deleted it
-> - **Oversight** — you know what's happening in the system even when you're not logged in
+### What can you export?
 
-### How does management access the audit log?
+| Export type | How to access | What data |
+|---|---|---|
+| **Room reservations** | 📥 Export rezervacij (in the menu) | Date, period, room, class, teacher |
+| **Assessments** | 📥 Export ocenjevanj (in the menu) | Date, class, assessment type, teacher |
 
-Since the audit log isn't visible in the regular menu (only admins see it), you can access it via a **secret link** with a special **token**:
+### How to do it?
 
-1. The administrator will give you a link like this:  
-   `https://{{DOMAIN}}/history?token=SECRET_TOKEN`
-2. Simply **paste this link into your browser** (no login required)
-3. You'll see the same view as the admin — a table with all changes
+1. In the top menu click **📥 Export rezervacij** or **📥 Export ocenjevanj**
+2. Choose the **date range** (default: last month):
+   - **From date** — start of the range
+   - **To date** — end of the range
+3. For reservations, you can also filter by **room** (or leave "All rooms")
+4. Click **📥 Prenesi CSV**
 
-> **ELI5:** It's like having a **special key** that opens the archive door. This key doesn't open anything else — just the change archive. If you lose the key or someone steals it, ask the administrator to create a new one.
+> **Tip:** CSV uses semicolons (`;`) as delimiters. Excel (Slovenian locale) recognizes this automatically. If data appears in a single column, choose **semicolon delimiter** during import.
 
-### What do you see in the audit log?
+### What to do with the CSV?
 
-| Column | Meaning |
-|--------|---------|
-| **Time** | When it happened (date + time) |
-| **User** | Who performed the action |
-| **Action** | What happened (creation, deletion ...) |
-| **Details** | Additional info (which room, which date ...) |
-
----
+- Open in **Excel** (File → Open)
+- Open in **Google Sheets** (File → Import)
+- Import into **any data analysis tool**
 
 ## Admin Panel (admin only)
 

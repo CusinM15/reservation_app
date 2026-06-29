@@ -60,6 +60,14 @@
             <span class="chip" data-action="delete_user" onclick="setFilter('delete_user')">➖ uporabniki</span>
             <span class="chip" data-action="update_user" onclick="setFilter('update_user')">✏️ uporabniki</span>
         </div>
+        <label style="margin-left:auto;font-size:13px;color:#555;">Uporabnik:
+            <select id="userFilter" onchange="setUserFilter(this.value)" style="padding:6px 10px;border:1px solid #ccc;border-radius:6px;font-size:13px;">
+                <option value="">Vsi uporabniki</option>
+                {% for u in users %}
+                <option value="{{ u.id }}">{{ u.first_name }} {{ u.last_name }} ({{ u.username }})</option>
+                {% endfor %}
+            </select>
+        </label>
     </div>
 
     <div class="stats" id="stats"></div>
@@ -73,7 +81,14 @@
     <script>
         let currentOffset = 0;
         let currentAction = '';
+        let currentUserId = '';
         const LIMIT = 100;
+
+        function setUserFilter(userId) {
+            currentOffset = 0;
+            currentUserId = userId;
+            loadLog();
+        }
 
         function setFilter(action) {
             currentOffset = 0;
@@ -97,7 +112,9 @@
         }
 
         async function loadLog() {
-            const url = `/api/audit-log?limit=${LIMIT}&offset=${currentOffset}${currentAction ? '&action=' + currentAction : ''}`;
+            let url = `/api/audit-log?limit=${LIMIT}&offset=${currentOffset}`;
+            if (currentAction) url += `&action=${currentAction}`;
+            if (currentUserId) url += `&user_id=${currentUserId}`;
             
             try {
                 const resp = await fetch(url);
