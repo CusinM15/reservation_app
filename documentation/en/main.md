@@ -313,7 +313,7 @@ The report includes:
 ### How do I access the audit log?
 
 1. Log in as **admin**
-2. In the top menu, click **"📋 Audit log"**
+2. In the top menu, click **"📋 Audit log"** to the right of the "Admin panel" button
 
 **Who can see the audit log?**
 - **Admin** — yes (via menu)

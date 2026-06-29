@@ -70,6 +70,9 @@
     .empty-calendar { text-align: center; padding: 2rem; color: #999; }
     .add-asm-btn { font-size: 0.7rem; color: #4a6cf7; cursor: pointer; opacity: 0.5; }
     .add-asm-btn:hover { opacity: 1; }
+    .series-list .series-item { display: flex; justify-content: space-between; padding: 4px 0; border-bottom: 1px solid #eee; font-size: 0.85rem; }
+    .series-list .series-item .del-series { cursor: pointer; font-weight: 700; padding: 0 2px; opacity: 0.6; }
+    .series-list .series-item .del-series:hover { opacity: 1; color: #c00; }
     .modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.4); z-index: 100; justify-content: center; align-items: center; }
     .modal-overlay.active { display: flex; }
     .modal { background: #fff; border-radius: 12px; padding: 2rem; width: 100%; max-width: 450px; box-shadow: 0 4px 24px rgba(0,0,0,0.15); position: relative; z-index: 101; }
@@ -77,6 +80,7 @@
     .modal .form-group { margin-bottom: 0.8rem; }
     .modal label { display: block; font-size: 0.85rem; font-weight: 500; color: #555; margin-bottom: 0.2rem; }
     .modal select, .modal input { width: 100%; padding: 0.5rem 0.7rem; border: 1px solid #ddd; border-radius: 6px; font-size: 0.9rem; }
+    .modal input[type=date] { cursor: pointer; min-height: 2.5rem; }
     .modal .form-actions { display: flex; gap: 0.5rem; justify-content: end; margin-top: 1rem; }
     .modal .btn-cancel { background: #6c757d; color: #fff; }
     .modal .btn-cancel:hover { background: #5a6268; }
@@ -102,9 +106,12 @@
     <a href="#" class="active" data-tab="rezervacije">Rezervacije</a>
     <a href="#" data-tab="ocenjevanja">Ocenjevanje</a>
     <a href="/auth/admin/users" id="admin-link" style="display:none;">Admin panel</a>
+<<<<<<< Updated upstream
     <a href="/history" id="audit-link" style="display:none;">📋 Audit log</a>
     <a href="#" id="export-rez-link" style="display:none;" onclick="openExportRezModal(); return false;">📥 Export rezervacij</a>
     <a href="#" id="export-oc-link" style="display:none;" onclick="openExportOcModal(); return false;">📥 Export ocenjevanj</a>
+=======
+>>>>>>> Stashed changes
     <span class="spacer"></span>
     <span class="user-info" id="userInfo"></span>
     <a href="#" onclick="openChangePasswordModal(); return false;">Spremeni geslo</a>
@@ -133,6 +140,25 @@
         <div class="prostor-tabs" id="prostor-tabs"></div>
         <div id="rez-views-container"></div>
       </div>
+      <!-- CSV izvoz rezervacij (samo admin/vodstvo) -->
+      <div class="card" id="csv-rezervacije-section" style="display:none;">
+        <h2>📥 Izvozi rezervacije (CSV)</h2>
+        <div class="filters">
+          <div>
+            <label>Od datuma</label>
+            <input type="date" id="csv-rez-from">
+          </div>
+          <div>
+            <label>Do datuma</label>
+            <input type="date" id="csv-rez-to">
+          </div>
+          <div>
+            <label>Prostor</label>
+            <select id="csv-rez-prostor"><option value="">Vsi prostori</option></select>
+          </div>
+          <button class="btn btn-success" onclick="downloadRezervacijeCSV()">⬇ Prenesi CSV</button>
+        </div>
+      </div>
     </div>
 
     <!-- OCENJEVANJA -->
@@ -150,6 +176,17 @@
         </div>
         <div id="oc-calendar-container">
           <p style="text-align:center;color:#999;padding:2rem;">Nalaganje ...</p>
+        </div>
+      </div>
+      <!-- CSV izvoz ocenjevanj (samo admin/vodstvo) -->
+      <div class="card" id="csv-ocenjevanja-section" style="display:none;">
+        <h2>📥 Izvozi ocenjevanja (CSV)</h2>
+        <div class="filters">
+          <div>
+            <label>Razred</label>
+            <select id="csv-oc-razred"><option value="">Vsi razredi</option></select>
+          </div>
+          <button class="btn btn-success" onclick="downloadOcenjevanjaCSV()">⬇ Prenesi CSV</button>
         </div>
       </div>
     </div>
@@ -243,9 +280,13 @@
         <button class="btn btn-cancel" onclick="closeModal('weekly-series-modal')">Prekliči</button>
         <button class="btn btn-primary" onclick="submitWeeklySeries()">Ustvari serijo</button>
       </div>
+<<<<<<< Updated upstream
       <hr style="margin:1rem 0;border:none;border-top:1px solid #eee;">
       <h4 style="margin-bottom:0.5rem;font-size:0.9rem;color:#555;">📋 Obstoječe serije</h4>
       <div id="series-list" style="max-height:200px;overflow-y:auto;font-size:0.85rem;"></div>
+=======
+      <div class="series-list" style="margin-top:15px;max-height:200px;overflow-y:auto;"></div>
+>>>>>>> Stashed changes
     </div>
   </div>
 
@@ -306,9 +347,13 @@
         <button class="btn btn-cancel" onclick="closeModal('fullday-series-modal')">Prekliči</button>
         <button class="btn btn-primary" onclick="submitFullDaySeries()">Ustvari serijo</button>
       </div>
+<<<<<<< Updated upstream
       <hr style="margin:1rem 0;border:none;border-top:1px solid #eee;">
       <h4 style="margin-bottom:0.5rem;font-size:0.9rem;color:#555;">📋 Obstoječe serije</h4>
       <div id="fullday-series-list" style="max-height:200px;overflow-y:auto;font-size:0.85rem;"></div>
+=======
+      <div class="series-list" style="margin-top:15px;max-height:200px;overflow-y:auto;"></div>
+>>>>>>> Stashed changes
     </div>
   </div>
 
@@ -637,12 +682,22 @@
     }
     async function renderBlockList() {
       const container = document.getElementById('block-list');
+<<<<<<< Updated upstream
       const today = new Date().toISOString().split('T')[0];
       const future = allBlocked.filter(b => b.date >= today);
       if (future.length === 0) { container.innerHTML = '<p style="color:#999;">Ni zasedenih datumov od danes naprej.</p>'; return; }
       let html = '<h4 style="margin-bottom:8px;">Zasedeni datumi od danes naprej:</h4>';
       const sorted = [...future].sort((a,b) => a.date.localeCompare(b.date));
       for (const b of sorted) {
+=======
+      if (allBlocked.length === 0) { container.innerHTML = '<p style="color:#999;">Ni zasedenih datumov.</p>'; return; }
+      let html = '<h4 style="margin-bottom:8px;">Obstoječi zasedeni datumi:</h4>';
+      const sorted = [...allBlocked].sort((a,b) => a.date.localeCompare(b.date));
+      const today = new Date().toISOString().split('T')[0];
+      const filtered = sorted.filter(b => b.date >= today);
+      if (filtered.length === 0) { container.innerHTML = '<p style="color:#999;">Ni zasedenih datumov od danes naprej.</p>'; return; }
+      for (const b of filtered) {
+>>>>>>> Stashed changes
         html += `<div style="display:flex;justify-content:space-between;padding:4px 0;border-bottom:1px solid #eee;">
           <span>${b.razred} - ${b.date}</span>
           <span class="del-asm" onclick="deleteBlockedDate(${b.id})" style="cursor:pointer;">✕</span>
@@ -673,9 +728,10 @@
     }
     async function deleteBlockedDate(id) {
       try {
-        const res = await fetch(`/api/blocked-dates/${id}`, { method: 'DELETE' });
+        const res = await fetch(`/api/blocked-dates/${id}`, { method: 'DELETE', credentials: 'include' });
         if (res.ok) { await loadAllBlockedDates(); renderBlockList(); loadAssessments(); }
-      } catch(e) {}
+        else { const json = await res.json(); showMsg(json.detail || 'Napaka pri brisanju.', 'error'); }
+      } catch(e) { showMsg('Napaka pri povezavi.', 'error'); }
     }
 
     // --- Serije ---
@@ -709,9 +765,14 @@
           if (json.removed > 0) msg += ` Pobrisanih konfliktnih: ${json.removed}.`;
           showMsg(msg, 'success'); 
           closeModal('weekly-series-modal'); 
+<<<<<<< Updated upstream
           loadSeriesList();
           loadFullDaySeriesList();
           loadAllReservations(); 
+=======
+          loadAllReservations();
+          loadSeriesList();
+>>>>>>> Stashed changes
         }
         else { showMsg(json.detail?.message || json.detail || 'Napaka pri ustvarjanju serije.', 'error'); }
       } catch(e) { showMsg('Napaka pri povezavi s strežnikom.', 'error'); }
@@ -762,7 +823,11 @@
       document.getElementById('fullday-date-to').value = nextWeek.toISOString().split('T')[0];
       document.getElementById('fullday-qty').value = '1';
       document.getElementById('fullday-hours').value = '';
+<<<<<<< Updated upstream
       loadFullDaySeriesList();
+=======
+      loadSeriesList();
+>>>>>>> Stashed changes
       openModal('fullday-series-modal');
     }
     async function submitFullDaySeries() {
@@ -785,11 +850,50 @@
           if (json.removed > 0) msg += ` Pobrisanih konfliktnih: ${json.removed}.`;
           showMsg(msg, 'success'); 
           closeModal('fullday-series-modal'); 
+<<<<<<< Updated upstream
           loadSeriesList();
           loadFullDaySeriesList();
           loadAllReservations(); 
+=======
+          loadAllReservations();
+          loadSeriesList();
+>>>>>>> Stashed changes
         }
         else { showMsg(json.detail?.message || json.detail || 'Napaka pri ustvarjanju serije.', 'error'); }
+      } catch(e) { showMsg('Napaka pri povezavi s strežnikom.', 'error'); }
+    }
+
+    // --- Seznam serij ---
+    async function loadSeriesList() {
+      try {
+        const res = await fetch('/api/rezervacije/series-list', { credentials: 'include' });
+        if (!res.ok) { document.querySelectorAll('.series-list').forEach(el => el.innerHTML = ''); return; }
+        const series = await res.json();
+        document.querySelectorAll('.series-list').forEach(el => {
+          if (series.length === 0) { el.innerHTML = '<p style="color:#999;font-size:0.85rem;">Ni aktivnih serij.</p>'; return; }
+          let html = '<h4 style="margin-bottom:8px;font-size:0.9rem;">Aktivne serije:</h4>';
+          for (const s of series) {
+            const minDate = s.min_date.split('-').reverse().join('.');
+            const maxDate = s.max_date.split('-').reverse().join('.');
+            const label = {
+              tablice: 'Tablice', racunalnica: 'Računalnica', ladja: 'Ladja',
+              "gospodinjska-ucilnica": "Gospodinjska učilnica"
+            }[s.prostor] || s.prostor;
+            html += `<div class="series-item">
+              <span>${label} - ${s.count} terminov (${minDate} - ${maxDate})</span>
+              <span class="del-series" onclick="deleteSeries('${s.series_id}')">✕</span>
+            </div>`;
+          }
+          el.innerHTML = html;
+        });
+      } catch(e) { document.querySelectorAll('.series-list').forEach(el => el.innerHTML = '<p style="color:#999;font-size:0.85rem;">Napaka pri nalaganju serij.</p>'); }
+    }
+    async function deleteSeries(seriesId) {
+      if (!confirm('Ste prepričani, da želite izbrisati to serijo?')) return;
+      try {
+        const res = await fetch(`/api/rezervacije/series/${seriesId}`, { method: 'DELETE', credentials: 'include' });
+        if (res.ok) { showMsg('Serija izbrisana.', 'success'); loadSeriesList(); loadAllReservations(); }
+        else { const json = await res.json(); showMsg(json.detail || 'Napaka pri brisanju serije.', 'error'); }
       } catch(e) { showMsg('Napaka pri povezavi s strežnikom.', 'error'); }
     }
 
@@ -1043,8 +1147,12 @@
             document.getElementById('export-rez-link').style.display = 'inline';
             document.getElementById('export-oc-link').style.display = 'inline';
         }
-        if (currentUser.role === 'admin') {
-            document.getElementById('audit-link').style.display = 'inline';
+        // CSV izvoz — admin in vodstvo
+        if (currentUser.role === 'admin' || currentUser.role === 'vodstvo') {
+            const csvRez = document.getElementById('csv-rezervacije-section');
+            const csvOc = document.getElementById('csv-ocenjevanja-section');
+            if (csvRez) csvRez.style.display = 'block';
+            if (csvOc) csvOc.style.display = 'block';
         }
         const allowedIds = [1,2,3,4]; const allowedRoles = ['admin','vodstvo'];
         const btnContainer = document.getElementById('block-btn-container');
@@ -1057,6 +1165,12 @@
       populateSelect('rez-form-prostor', prostori);
       populateSelect('weekly-prostor', prostori);
       populateSelect('fullday-prostor', prostori);
+      // Populate CSV dropdowns
+      const csvProstor = document.getElementById('csv-rez-prostor');
+      if (csvProstor) {
+        csvProstor.innerHTML = '<option value="">Vsi prostori</option>' + prostori.map(p => `<option value="${p}">${prostorLabel(p)}</option>`).join('');
+      }
+      populateOcRazredi('csv-oc-razred', razredi, true);
       populateOcRazredi('oc-razred', razredi, true);
       populateOcRazredi('oc-form-razred', razredi);
       populateHours('rez-form-hour');
@@ -1091,6 +1205,40 @@
       currentOcMonth = new Date().getFullYear() + '-' + String(new Date().getMonth() + 1).padStart(2, '0');
       loadAllBlockedDates();
       loadAssessments();
+
+      // Default CSV dates: prejsnji mesec do danes
+      const csvRezFrom = document.getElementById('csv-rez-from');
+      const csvRezTo = document.getElementById('csv-rez-to');
+      if (csvRezFrom && csvRezTo) {
+        const now = new Date();
+        const oneMonthAgo = new Date(now);
+        oneMonthAgo.setMonth(oneMonthAgo.getMonth() - 1);
+        csvRezFrom.value = formatDate(oneMonthAgo);
+        csvRezTo.value = formatDate(now);
+      }
+    });
+
+    // ── CSV izvoz ──────────────────────────────────────────
+    function downloadRezervacijeCSV() {
+      const from = document.getElementById('csv-rez-from').value;
+      const to = document.getElementById('csv-rez-to').value;
+      const prostor = document.getElementById('csv-rez-prostor').value;
+      let url = '/api/rezervacije/export/csv?';
+      if (from) url += 'date_from=' + from + '&';
+      if (to) url += 'date_to=' + to + '&';
+      if (prostor) url += 'prostor=' + prostor;
+      window.location.href = url;
+    }
+    function downloadOcenjevanjaCSV() {
+      const razred = document.getElementById('csv-oc-razred').value;
+      let url = '/api/ocenjevanja/export/csv?';
+      if (razred) url += 'razred=' + razred;
+      window.location.href = url;
+    }
+
+    // ── Popravek za date pickerje: klik kjerkoli na input odpre koledar ──
+    document.querySelectorAll('input[type=date]').forEach(el => {
+      el.addEventListener('click', function() { this.showPicker?.(); });
     });
   </script>
 </body>

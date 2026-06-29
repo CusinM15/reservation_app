@@ -6,7 +6,11 @@ metadata:
   labels:
     app: sola-app
 spec:
+<<<<<<< Updated upstream
   replicas: 2  # ena replika na node; HPA (HorizontalPodAutoscaler) lahko doda do 4 replike
+=======
+  replicas: 2  # minimalno 2 repliki; HPA (HorizontalPodAutoscaler) lahko doda do 2 dodatni (skupaj 4)
+>>>>>>> Stashed changes
   strategy:
     type: RollingUpdate
     rollingUpdate:

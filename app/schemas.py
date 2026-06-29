@@ -59,6 +59,14 @@ class SeriesResult(BaseModel):
     removed: int = 0  # število pobrisanih konfliktnih rezervacij
 
 
+class SeriesListItem(BaseModel):
+    series_id: str
+    prostor: str
+    count: int
+    min_date: date
+    max_date: date
+
+
 # ── Assessments ─────────────────────────────────────────────
 
 class AssessmentCreate(BaseModel):
