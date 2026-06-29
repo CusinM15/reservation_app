@@ -7,7 +7,7 @@ import smtplib, ssl
 from email.mime.text import MIMEText
 from calendar import monthrange
 
-from app.database import get_db, log_audit
+from app.database import get_db
 from app.models import BlockedDate, User, Assessment, RoleEnum
 from app.config import settings
 from app.audit import log_audit
@@ -166,15 +166,18 @@ def delete_blocked_date(
     user_id = request.cookies.get("user_id")
     if not user_id:
         raise HTTPException(status_code=401, detail="Niste prijavljeni")
-    _check_allowed(user_id, db)
+    uid = _check_allowed(user_id, db)
+    user = db.query(User).filter(User.id == uid).first()
+    if not user:
+        raise HTTPException(status_code=401, detail="Uporabnik ne obstaja")
 
     bd = db.query(BlockedDate).filter(BlockedDate.id == id).first()
     if not bd:
         raise HTTPException(status_code=404, detail="Zaseden datum ne obstaja")
     user_name = f"{user.first_name} {user.last_name}".strip() or user.username
     log_audit(
-        db, user.id, user_name, "delete_blocked_date",
-        f"Odstranjen zaseden datum: {bd.razred}, {bd.date}"
+        db, user_id=user.id, username=user_name, action="delete_blocked_date",
+        details=f"Odstranjen zaseden datum: {bd.razred}, {bd.date}"
     )
     db.delete(bd)
     db.commit()
