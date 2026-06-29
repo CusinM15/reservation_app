@@ -119,7 +119,7 @@
         <div class="filters">
           <div>
             <label>Začetek tedna</label>
-            <input type="date" id="rez-week-start">
+            <input type="date" id="rez-week-start" onchange="loadAllReservations()">
           </div>
           <button class="btn btn-primary" onclick="loadAllReservations()">Osveži</button>
           <button class="btn btn-outline" onclick="openRezModal()">+ Nova rezervacija</button>
