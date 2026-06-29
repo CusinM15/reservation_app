@@ -9,9 +9,13 @@
         body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #f5f5f5; padding: 20px; color: #333; }
         h1 { margin-bottom: 20px; font-size: 24px; }
         .controls { margin-bottom: 15px; display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
-        .controls select, .controls button { padding: 8px 16px; font-size: 14px; border: 1px solid #ccc; border-radius: 6px; background: #fff; cursor: pointer; }
+        .controls button { padding: 8px 16px; font-size: 14px; border: 1px solid #ccc; border-radius: 6px; background: #fff; cursor: pointer; }
         .controls button { background: #1976D2; color: #fff; border-color: #1976D2; }
         .controls button:hover { background: #1565C0; }
+        .filter-chips { display: flex; flex-wrap: wrap; gap: 6px; }
+        .chip { display: inline-block; padding: 6px 12px; font-size: 13px; border: 1px solid #ddd; border-radius: 20px; background: #fff; cursor: pointer; white-space: nowrap; transition: all 0.15s; user-select: none; }
+        .chip:hover { background: #e3f2fd; border-color: #1976D2; }
+        .chip.active { background: #1976D2; color: #fff; border-color: #1976D2; }
         .stats { margin-bottom: 15px; font-size: 14px; color: #666; }
         table { width: 100%; border-collapse: collapse; background: #fff; border-radius: 8px; overflow: hidden; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
         th, td { padding: 10px 14px; text-align: left; border-bottom: 1px solid #eee; font-size: 14px; }
@@ -42,24 +46,20 @@
     <h1>📋 Audit log — dnevnik sprememb</h1>
 
     <div class="controls">
-        <select id="actionFilter" onchange="loadLog()">
-            <option value="">Vse akcije</option>
-            <option value="create_rezervacija">create_rezervacija</option>
-            <option value="delete_rezervacija">delete_rezervacija</option>
-            <option value="create_series">create_series</option>
-            <option value="delete_series">delete_series</option>
-            <option value="create_ocenjevanje">create_ocenjevanje</option>
-            <option value="delete_ocenjevanje">delete_ocenjevanje</option>
-            <option value="create_blocked_dates">create_blocked_dates</option>
-            <option value="delete_blocked_date">delete_blocked_date</option>
-            <option value="create_user">create_user</option>
-            <option value="update_user">update_user</option>
-            <option value="delete_user">delete_user</option>
-            <option value="activate_user">activate_user</option>
-            <option value="deactivate_user">deactivate_user</option>
-            <option value="change_password">change_password</option>
-        </select>
-        <button onclick="loadLog()">Osveži</button>
+        <div class="filter-chips" id="filterChips">
+            <span class="chip active" data-action="" onclick="setFilter('')">Vse</span>
+            <span class="chip" data-action="create_rezervacija" onclick="setFilter('create_rezervacija')">➕ rezervacije</span>
+            <span class="chip" data-action="delete_rezervacija" onclick="setFilter('delete_rezervacija')">➖ rezervacije</span>
+            <span class="chip" data-action="create_series" onclick="setFilter('create_series')">➕ serije</span>
+            <span class="chip" data-action="delete_series" onclick="setFilter('delete_series')">➖ serije</span>
+            <span class="chip" data-action="create_ocenjevanje" onclick="setFilter('create_ocenjevanje')">➕ ocenjevanja</span>
+            <span class="chip" data-action="delete_ocenjevanje" onclick="setFilter('delete_ocenjevanje')">➖ ocenjevanja</span>
+            <span class="chip" data-action="create_blocked_dates" onclick="setFilter('create_blocked_dates')">➕ blokade</span>
+            <span class="chip" data-action="delete_blocked_date" onclick="setFilter('delete_blocked_date')">➖ blokade</span>
+            <span class="chip" data-action="create_user" onclick="setFilter('create_user')">➕ uporabniki</span>
+            <span class="chip" data-action="delete_user" onclick="setFilter('delete_user')">➖ uporabniki</span>
+            <span class="chip" data-action="update_user" onclick="setFilter('update_user')">✏️ uporabniki</span>
+        </div>
     </div>
 
     <div class="stats" id="stats"></div>
@@ -75,6 +75,16 @@
         let currentAction = '';
         const LIMIT = 100;
 
+        function setFilter(action) {
+            currentOffset = 0;
+            currentAction = action;
+            // Update active chip
+            document.querySelectorAll('.chip').forEach(c => c.classList.remove('active'));
+            const chip = document.querySelector(`.chip[data-action="${action}"]`);
+            if (chip) chip.classList.add('active');
+            loadLog();
+        }
+
         function getActionClass(action) {
             if (action.startsWith('create')) return 'badge-create';
             if (action.startsWith('delete')) return 'badge-delete';
@@ -87,7 +97,6 @@
         }
 
         async function loadLog() {
-            currentAction = document.getElementById('actionFilter').value;
             const url = `/api/audit-log?limit=${LIMIT}&offset=${currentOffset}${currentAction ? '&action=' + currentAction : ''}`;
             
             try {
@@ -101,7 +110,7 @@
 
         function render(data) {
             const rows = data.rows || [];
-            document.getElementById('stats').textContent = `Skupaj: ${data.total} vnosov | Prikazanih: ${rows.length}`;
+            document.getElementById('stats').textContent = `Skupaj: ${data.total} vnosov | Prikazanih: ${rows.length}${currentAction ? ' (filter: ' + currentAction + ')' : ''}`;
 
             const container = document.getElementById('tableContainer');
             if (rows.length === 0) {
