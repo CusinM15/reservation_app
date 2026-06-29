@@ -724,6 +724,7 @@
       const data = await resp.json();
       const container = document.getElementById(containerId);
       if (!data.length) { container.innerHTML = '<span style="color:#999;">Ni aktivnih serij za bodoče datume.</span>'; return; }
+      data.sort((a,b) => a.date_from.localeCompare(b.date_from));
       let html = '';
       for (const s of data) {
         const roomLabel = prostorLabel(s.prostor);
