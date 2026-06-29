@@ -780,7 +780,7 @@
       _renderSeriesList('fullday-series-list');
     }
     async function deleteSeries(seriesId) {
-      if (!confirm('Izbriši celotno serijo?')) return;
+      if (!confirm('Ste prepričani, da želite izbrisati to serijo?')) return;
       try {
         const resp = await fetch(`/api/rezervacije/series/${seriesId}`, { method: 'DELETE', credentials: 'include' });
         if (!resp.ok) { const e = await resp.json(); alert(e.detail || 'Napaka pri brisanju.'); return; }
@@ -789,42 +789,55 @@
         if (typeof loadAllReservations === 'function') loadAllReservations();
       } catch(e) { alert('Napaka pri povezavi.'); }
     }
+
     function openFullDaySeriesModal() {
-      document.getElementById('fullday-prostor').value = prostori[0] || '';
+      const sel = document.getElementById('fullday-prostor');
+      if (sel) sel.value = prostori[0] || '';
       const today = new Date().toISOString().split('T')[0];
-      document.getElementById('fullday-date-from').value = today;
+      const el1 = document.getElementById('fullday-date-from');
+      if (el1) el1.value = today;
       const nextWeek = new Date(); nextWeek.setDate(nextWeek.getDate() + 7);
-      document.getElementById('fullday-date-to').value = nextWeek.toISOString().split('T')[0];
-      document.getElementById('fullday-qty').value = '1';
-      document.getElementById('fullday-hours').value = '';
+      const el2 = document.getElementById('fullday-date-to');
+      if (el2) el2.value = nextWeek.toISOString().split('T')[0];
+      const el3 = document.getElementById('fullday-qty');
+      if (el3) el3.value = '1';
+      const el4 = document.getElementById('fullday-hours');
+      if (el4) el4.value = '';
       loadFullDaySeriesList();
       openModal('fullday-series-modal');
     }
     async function submitFullDaySeries() {
-      const prostor = document.getElementById('fullday-prostor').value;
-      let hours = document.getElementById('fullday-hours').value;
+      const prostor = document.getElementById('fullday-prostor');
+      if (!prostor) return;
+      const hoursInput = document.getElementById('fullday-hours');
       let hoursArray = null;
-      if (hours && hours.trim() !== '') { hoursArray = hours.split(',').map(h => parseInt(h.trim())).filter(n => !isNaN(n)); }
+      if (hoursInput && hoursInput.value.trim() !== '') {
+        hoursArray = hoursInput.value.split(',').map(h => parseInt(h.trim())).filter(n => !isNaN(n));
+      }
       const data = {
-        prostor: prostor,
-        date_from: document.getElementById('fullday-date-from').value,
-        date_to: document.getElementById('fullday-date-to').value,
+        prostor: prostor.value,
+        date_from: document.getElementById('fullday-date-from')?.value || '',
+        date_to: document.getElementById('fullday-date-to')?.value || '',
       };
-      if (prostor === 'tablice') data.qty = parseInt(document.getElementById('fullday-qty').value) || 1;
+      if (prostor.value === 'tablice') {
+        const qty = document.getElementById('fullday-qty');
+        data.qty = parseInt(qty?.value) || 1;
+      }
       if (hoursArray && hoursArray.length > 0) data.hours = hoursArray;
       try {
         const res = await fetch('/api/rezervacije/series/full-day', { method: 'POST', headers: {'Content-Type': 'application/json'}, credentials: 'include', body: JSON.stringify(data) });
         const json = await res.json();
-        if (res.ok) { 
+        if (res.ok) {
           let msg = `Celodnevna serija ustvarjena (${json.created} terminov).`;
           if (json.removed > 0) msg += ` Pobrisanih konfliktnih: ${json.removed}.`;
-          showMsg(msg, 'success'); 
-          closeModal('fullday-series-modal'); 
+          showMsg(msg, 'success');
+          closeModal('fullday-series-modal');
           loadSeriesList();
           loadFullDaySeriesList();
-          loadAllReservations(); 
+          loadAllReservations();
+        } else {
+          showMsg(json.detail?.message || json.detail || 'Napaka pri ustvarjanju serije.', 'error');
         }
-        else { showMsg(json.detail?.message || json.detail || 'Napaka pri ustvarjanju serije.', 'error'); }
       } catch(e) { showMsg('Napaka pri povezavi s strežnikom.', 'error'); }
     }
 
