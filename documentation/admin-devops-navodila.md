@@ -214,8 +214,13 @@ kubectl get hpa -n sola-app
 ```
 
 HPA uporablja **CPU (60%) in pomnilnik (70%)** kot merilo:
+<<<<<<< Updated upstream
 - **2 repliki** — nizka obremenitev (počitnice, popoldne, vikend) — osnovni minimum
 - **3 replike** — normalen pouk
+=======
+- **2 repliki** — nizka obremenitev (počitnice, popoldne, vikend)
+- **3 replike** — normalen pouk (ena kopija na vsakem nodu)
+>>>>>>> Stashed changes
 - **4 replike** — visoka obremenitev (ocene, začetek šolskega leta)
 
 ### **Dnevna varnostna kopija baze (`sola-db-backup`)**

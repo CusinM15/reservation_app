@@ -558,6 +558,11 @@ def render_report(k3s, longhorn, app_data=None, kube_error=None):
     lines.append("")
     lines.append("Note: lifetime estimate is heuristic, based on readiness, pressure conditions, pod restarts, failed jobs, recent warning events and Longhorn disk usage.")
     lines.append("")
+    lines.append("Dokumentacija:")
+    lines.append("  https://github.com/os-tc-jesenice/reservation_app/blob/main/documentation/navodila-uporabnika.md")
+    lines.append("  https://github.com/os-tc-jesenice/reservation_app/blob/main/documentation/navodila-vodstvo.md")
+    lines.append("  https://github.com/os-tc-jesenice/reservation_app/blob/main/POLETNA_PAVZA.md")
+    lines.append("")
 
     lines.append("## Recent warning events")
     if summary["warning_events"]:

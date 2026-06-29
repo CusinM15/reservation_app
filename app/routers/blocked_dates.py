@@ -91,6 +91,7 @@ def create_blocked_dates(
         raise HTTPException(status_code=401, detail="Niste prijavljeni")
     uid = _check_allowed(user_id, db)
     creator = db.query(User).filter(User.id == uid).first()
+    creator_name = f"{creator.first_name} {creator.last_name}".strip() or creator.username
 
     if data.date_to < data.date_from:
         raise HTTPException(status_code=400, detail="Končni datum mora biti po začetnem")
@@ -181,4 +182,4 @@ def delete_blocked_date(
     )
     db.delete(bd)
     db.commit()
-    return {"message": "Zaseden datum odstranjen"}
+    return {"message": "Zaseden datum odstranjen."}

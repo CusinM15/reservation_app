@@ -136,17 +136,22 @@
     </div>
     <script>
         function filterUsers() {
-            const query = document.getElementById('user-search').value.toLowerCase();
+            const query = document.getElementById('user-search').value.toLowerCase().trim();
             const table = document.getElementById('user-table');
+            if (!table) return;
             const tbody = table.querySelector('tbody');
-            const rows = tbody.querySelectorAll('tr:not(.edit-form)');
+            if (!tbody) return;
+            // Get all rows that are NOT edit-form rows
+            const rows = tbody.querySelectorAll('tr');
             rows.forEach(r => {
-                const text = Array.from(r.querySelectorAll('td'))
-                    .map(td => td.textContent.toLowerCase())
-                    .join(' ');
+                if (r.classList.contains('edit-form')) return;
+                const cells = r.querySelectorAll('td');
+                if (cells.length === 0) return;
+                const text = Array.from(cells).map(td => td.textContent.toLowerCase()).join(' ');
                 const match = !query || text.includes(query);
                 r.style.display = match ? '' : 'none';
-                const editRow = document.getElementById('edit-row-' + r.children[0]?.textContent.trim());
+                const userId = cells[0].textContent.trim();
+                const editRow = document.getElementById('edit-row-' + userId);
                 if (editRow) editRow.style.display = match ? '' : 'none';
             });
         }

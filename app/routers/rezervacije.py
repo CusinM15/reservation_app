@@ -1,11 +1,17 @@
 from fastapi import APIRouter, Depends, HTTPException, Query, Request
 from sqlalchemy.orm import Session, joinedload
 from typing import Optional
-from datetime import date as DateType, timedelta
+from datetime import date as DateType, timedelta, date
 import uuid
 from collections import defaultdict
 
+<<<<<<< Updated upstream
 from app.database import get_db
+=======
+from sqlalchemy import func
+
+from app.database import get_db, log_audit
+>>>>>>> Stashed changes
 from app.models import Reservation, User, RoleEnum
 from app.schemas import (
     ReservationCreate,
@@ -13,6 +19,7 @@ from app.schemas import (
     WeeklySeriesCreate,
     FullDaySeriesCreate,
     SeriesResult,
+    SeriesListItem,
 )
 from app.config import settings
 from app.race import register_intent, check_and_raise, cleanup, get_lock
@@ -453,9 +460,49 @@ def list_series(series_id: str, db: Session = Depends(get_db)):
     return rows
 
 
+@router.get("/series-list", response_model=list[SeriesListItem])
+def list_all_series(
+    request: Request,
+    db: Session = Depends(get_db),
+):
+    """Vrni vse unikatne serije (z datumi >= danes). Samo admin/vodstvo."""
+    _require_admin_or_vodstvo(request, db)
+
+    rows = db.query(
+        Reservation.series_id,
+        Reservation.prostor,
+        func.count(Reservation.id).label("count"),
+        func.min(Reservation.date).label("min_date"),
+        func.max(Reservation.date).label("max_date"),
+    ).filter(
+        Reservation.series_id.isnot(None),
+        Reservation.date >= date.today(),
+    ).group_by(
+        Reservation.series_id,
+        Reservation.prostor,
+    ).order_by(
+        func.min(Reservation.date).asc()
+    ).all()
+
+    return [
+        SeriesListItem(
+            series_id=r.series_id,
+            prostor=r.prostor,
+            count=r.count,
+            min_date=r.min_date,
+            max_date=r.max_date,
+        )
+        for r in rows
+    ]
+
+
 @router.delete("/series/{series_id}")
-def delete_series(series_id: str, request: Request, db: Session = Depends(get_db)):
-    """Pobriši celotno serijo. Samo admin/vodstvo ali avtor cele serije."""
+def delete_series(
+    series_id: str,
+    request: Request,
+    db: Session = Depends(get_db),
+):
+    """Izbriši vse rezervacije v seriji. Samo admin/vodstvo ali avtor."""
     user_id = request.cookies.get("user_id")
     if not user_id:
         raise HTTPException(status_code=401, detail="Niste prijavljeni")
@@ -473,6 +520,7 @@ def delete_series(series_id: str, request: Request, db: Session = Depends(get_db
         raise HTTPException(status_code=403, detail="Samo admin/vodstvo ali avtor serije lahko briše.")
 
     n = len(rows)
+<<<<<<< Updated upstream
     details = f"Izbrisana serija ({n} terminov): {rows[0].prostor}, od {min(r.date for r in rows)} do {max(r.date for r in rows)}"
     username = f"{current.first_name} {current.last_name}".strip() or current.username
     for r in rows:
@@ -480,3 +528,60 @@ def delete_series(series_id: str, request: Request, db: Session = Depends(get_db
     db.commit()
     log_audit(db, user_id=current.id, username=username, action="delete_series", details=details)
     return {"message": f"Serija izbrisana ({n} terminov)", "deleted": n}
+=======
+    user_name = f"{current.first_name} {current.last_name}".strip() or current.username
+    for r in rows:
+        db.delete(r)
+    db.commit()
+
+    log_audit(db, user_id=current.id, username=user_name,
+              action="delete_series",
+              details=f"series_id={series_id}, prostor={rows[0].prostor}, dates={n}")
+    return {"message": f"Serija izbrisana ({n} terminov).", "deleted": n}
+
+
+@router.get("/export/csv")
+def export_rezervacije_csv(
+    request: Request,
+    date_from: Optional[DateType] = Query(None),
+    date_to: Optional[DateType] = Query(None),
+    prostor: Optional[str] = Query(None),
+    db: Session = Depends(get_db),
+):
+    """Izvozi rezervacije v CSV. Samo admin in vodstvo."""
+    user_id = request.cookies.get("user_id")
+    if not user_id:
+        raise HTTPException(status_code=401, detail="Niste prijavljeni")
+    user = db.query(User).filter(User.id == int(user_id)).first()
+    if not user or user.role not in (RoleEnum.admin, RoleEnum.vodstvo):
+        raise HTTPException(status_code=403, detail="Samo admin in vodstvo lahko izvažata CSV.")
+
+    query = db.query(Reservation).options(joinedload(Reservation.teacher))
+    if date_from:
+        query = query.filter(Reservation.date >= date_from)
+    if date_to:
+        query = query.filter(Reservation.date <= date_to)
+    if prostor:
+        query = query.filter(Reservation.prostor == prostor)
+    rows = query.order_by(Reservation.date, Reservation.hour).all()
+
+    import csv, io
+    output = io.StringIO()
+    writer = csv.writer(output)
+    writer.writerow(["Datum", "Ura", "Prostor", "Učitelj", "Razred", "Količina", "ID"])
+    for r in rows:
+        teacher_name = ""
+        if r.teacher:
+            full = f"{r.teacher.first_name} {r.teacher.last_name}".strip()
+            teacher_name = full if full else r.teacher.username
+        hour_label = settings.SCHEDULE.get(str(r.hour), str(r.hour))
+        writer.writerow([r.date, hour_label, r.prostor, teacher_name, r.razred or "", r.qty or "", r.id])
+
+    from fastapi.responses import StreamingResponse
+    output.seek(0)
+    return StreamingResponse(
+        iter([output.getvalue()]),
+        media_type="text/csv",
+        headers={"Content-Disposition": f"attachment; filename=rezervacije_{date_from or 'vse'}_{date_to or 'vse'}.csv"},
+    )
+>>>>>>> Stashed changes

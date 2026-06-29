@@ -192,6 +192,48 @@ def create_ocenjevanje(data: AssessmentCreate, request: Request, db: Session = D
                   details=f"razred={data.razred}, date={data.date}, ponavljanje={data.ponavljanje}")
         return assessment
 
+
+@router.get("/export/csv")
+def export_ocenjevanja_csv(
+    request: Request,
+    razred: Optional[str] = Query(None),
+    db: Session = Depends(get_db),
+):
+    """Izvozi ocenjevanja v CSV. Samo admin in vodstvo."""
+    user_id = request.cookies.get("user_id")
+    if not user_id:
+        raise HTTPException(status_code=401, detail="Niste prijavljeni")
+    user = db.query(User).filter(User.id == int(user_id)).first()
+    if not user or user.role not in (RoleEnum.admin, RoleEnum.vodstvo):
+        raise HTTPException(status_code=403, detail="Samo admin in vodstvo lahko izvažata CSV.")
+
+    query = db.query(Assessment).options(joinedload(Assessment.teacher))
+    if razred:
+        _validate_razred(razred)
+        query = query.filter(Assessment.razred == razred)
+    rows = query.order_by(Assessment.date, Assessment.razred).all()
+
+    import csv, io
+    output = io.StringIO()
+    writer = csv.writer(output)
+    writer.writerow(["Datum", "Razred", "Tip", "Ucitelj", "ID"])
+    for a in rows:
+        teacher_name = ""
+        if a.teacher:
+            full = f"{a.teacher.first_name} {a.teacher.last_name}".strip()
+            teacher_name = full if full else a.teacher.username
+        tip = "Ponavljanje" if a.ponavljanje else "Običajno"
+        writer.writerow([a.date, a.razred, tip, teacher_name, a.id])
+
+    from fastapi.responses import StreamingResponse
+    output.seek(0)
+    return StreamingResponse(
+        iter([output.getvalue()]),
+        media_type="text/csv",
+        headers={"Content-Disposition": f"attachment; filename=ocenjevanja_{razred or 'vsi'}.csv"},
+    )
+
+
 @router.delete("/{id}")
 def delete_ocenjevanje(id: int, request: Request, db: Session = Depends(get_db)):
     user_id = request.cookies.get("user_id")

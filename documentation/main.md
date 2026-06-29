@@ -298,9 +298,13 @@ Poročilo vključuje:
 
 ## 📋 **Audit log — dnevnik sprememb**
 
+<<<<<<< Updated upstream
 > 🆕 **Zadnja posodobitev:** Audit log gumba na prejšnjih slikah domače strani še ni — dodan je bil naknadno. Na domači strani (Home page) se prikaže **desno od gumba "Admin panel"**.
 
 ![Audit log pregled — filter, tabela, iskanje po akcijah](diagrams/audit-log-zgodovina.png)
+=======
+![Audit log gumb v meniju — domača stran, prijavljen admin](diagrams/audit-log-gumb.png)
+>>>>>>> Stashed changes
 
 > **V enem stavku:** Vsaka pomembna akcija (ustvarjanje/brisanje rezervacij, ocenjevanj, uporabnikov, blokiranje datumov) se samodejno zapiše v bazo skupaj s podatki o tem, **kdo** je to naredil in **kdaj**.
 
@@ -313,7 +317,7 @@ Poročilo vključuje:
 ### Kako dostopam do audit loga?
 
 1. Prijavi se v aplikacijo kot **admin**
-2. V meniju na vrhu strani klikni **"📋 Audit log"**
+2. V meniju na vrhu strani klikni **"📋 Audit log"** desno od gumba "Admin panel"
 
 **Kdo lahko vidi audit log?**
 - **Admin** — ja (prek menija)

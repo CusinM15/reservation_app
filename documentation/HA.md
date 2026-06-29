@@ -30,10 +30,10 @@ Aplikacija teče v **dveh kopijah (pod-ih)**, ena na vsakem nodu. To ni luksuz, 
 ```bash
 kubectl get hpa -n sola-app
 # NAME            REFERENCE              TARGETS          MIN   MAX   REPLICAS
-# sola-app-hpa    Deployment/sola-app    45%/60% (CPU)    2     3     2
+# sola-app-hpa    Deployment/sola-app    45%/60% (CPU)    2     4     2
 ```
 
-> **ELI5:** Kot dva učitelja v razredu — vsak ima svojo tablo (svoj računalnik). Ko je pouk, oba pišeta. Ko je gneča (kontrolne naloge), pride še tretji pomočnik in pomaga. Ko gneče zmanjka, gresta spet dva.
+> **ELI5:** Kot dva kavomata v šolski kuhinji — vsak ima svoj rezervoar za vodo in kavo. Ko je malica in gneča (100 učiteljev hoče kavo naenkrat), se samodejno vključi še tretji in četrti kavomat. Ko gneče zmanjka, gresta spet dva. Učitelji (uporabniki) samo dobijo kavo, ne zanima jih, koliko kavomatov stoji za zaveso.
 
 > 💡 **Opomba:** Health check na `/health` endpoint — če vrne 200 OK, je pod živ. Če ne, ga Kubernetes ubije in zažene znova.
 

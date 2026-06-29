@@ -106,6 +106,7 @@ potrebno.
 
 ---
 
+<<<<<<< Updated upstream
 ---
 
 ## 📥 **Izvoz podatkov v CSV**
@@ -137,6 +138,81 @@ potrebno.
 - Uvozite v **katerikoli podatkovni program**
 
 > **Namig:** CSV uporablja podpičje (`;`) kot ločilo, kar Excel v slovenščini samodejno prepozna. Če se vam zdi zmešano v en stolpec, pri uvozu izberite **ločilo: podpičje**.
+=======
+## 📋 Audit log — dnevnik sprememb
+
+> ⚠️ **Zadnja posodobitev:** Audit log je zdaj na voljo tudi vodstvu.
+
+![Gumb za Audit log na domači strani — desno od Admin panel](diagrams/audit-log-gumb.png)
+
+Audit log omogoča **pregled vseh pomembnih sprememb v sistemu** — kdo je kaj naredil in kdaj.
+
+**Kaj se beleži:**
+
+| Akcija | Opis |
+|--------|------|
+| `create_rezervacija` | Ustvarjena enkratna rezervacija |
+| `delete_rezervacija` | Izbrisana rezervacija |
+| `create_series` | Ustvarjena tedenska/celodnevna serija |
+| `delete_series` | Izbrisana celotna serija |
+| `create_ocenjevanje` | Napovedano ocenjevanje |
+| `delete_ocenjevanje` | Izbrisano ocenjevanje |
+| `create_blocked_dates` | Dodani zasedeni datumi |
+| `delete_blocked_date` | Odstranjen zaseden datum |
+| `create_user` | Ustvarjen nov uporabnik |
+| `update_user` | Posodobljen uporabnik |
+| `delete_user` | Izbrisan uporabnik |
+| `change_password` | Sprememba gesla |
+
+**Kaj se NE beleži:**
+- ❌ Branje podatkov (kdo si je kaj ogledal)
+- ❌ Neuspeli poskusi prijave
+
+### Kako dostopa vodstvo do audit loga?
+
+Ker audit log ni viden v običajnem meniju (vidljiv je samo adminu), lahko do njega dostopate prek skrivne povezave s posebnim žetonom (tokenom):
+
+1. **Administrator vam bo dal povezavo** v obliki:
+   `https://{{DOMAIN}}/history?token=SKRIVNI_ZETON`
+2. To povezavo **preprosto prilepite v brskalnik** (ni treba biti prijavljen)
+3. Odpre se **enak pregled kot ga vidi admin** — tabela z vsemi spremembami
+
+> 💡 **ELI5:** Kot da bi imeli poseben ključ, ki odpre vrata v arhiv. Ta ključ ne odpira ničesar drugega — samo arhiv sprememb. Če ključ izgubite ali vam ga kdo ukrade, naj administrator ustvari novega.
+
+### Audit log v nastavitvah za admina
+
+Administrator lahko do audit loga dostopa tudi prek **Admin panela** — v zgornji navigaciji admin panela je gumb **"Dnevnik dogodkov"**.
+
+---
+
+## 📥 Izvoz podatkov (CSV)
+
+Vodstvo lahko izvozi rezervacije in ocenjevanja v CSV datoteko (odpre se v Excelu).
+
+### Izvoz rezervacij
+
+Na domači strani se vam pod rezervacijami prikaže kartica **"📥 Izvozi rezervacije (CSV)"**:
+
+| Polje | Opis |
+|-------|------|
+| Od datuma | Privzeto nastavljen na **danes - 1 mesec** |
+| Do datuma | Privzeto nastavljen na **danes** |
+| Prostor | Izberete lahko samo en prostor ali pustite vse |
+| Gumb »Prenesi CSV« | Kliknite za prenos datoteke |
+
+### Izvoz ocenjevanj
+
+Pod ocenjevanji se prikaže kartica **"📥 Izvozi ocenjevanja (CSV)"**:
+
+| Polje | Opis |
+|-------|------|
+| Razred | Izberite razred ali pustite prazno za vse |
+| Gumb »Prenesi CSV« | Kliknite za prenos datoteke |
+
+> CSV datoteko lahko odprete v **Excelu**, **LibreOffice Calc** ali **Google Sheets** za nadaljnjo obdelavo, filtriranje in tiskanje.
+
+---
+>>>>>>> Stashed changes
 
 ## 🛡️ Skrbniška plošča — SAMO ADMIN
 
