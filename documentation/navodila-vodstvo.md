@@ -106,44 +106,13 @@ potrebno.
 
 ---
 
-<<<<<<< Updated upstream
 ---
 
-## 📥 **Izvoz podatkov v CSV**
-
-> **Kaj je to?** Izvoz podatkov v CSV (Excelu prijazna oblika) — enostaven način, da podatke iz aplikacije prenesete na svoj računalnik in jih odprete v Excelu, Google Sheets ali podobnem programu.
-
-### Kaj lahko izvozite?
-
-| Vrsta izvoza | Kam kliknete | Kateri podatki |
-|---|---|---|
-| **Rezervacije prostorov** | 📥 Export rezervacij (v meniju) | Datum, ura, prostor, razred, učitelj |
-| **Ocenjevanja** | 📥 Export ocenjevanj (v meniju) | Datum, razred, tip ocenjevanja, učitelj |
-
-### Kako to naredite?
-
-1. V zgornjem meniju kliknite **📥 Export rezervacij** ali **📥 Export ocenjevanj**
-2. Izberite **obdobje** (privzeto zadnji mesec):
-   - **Od datuma** — začetek obdobja
-   - **Do datuma** — konec obdobja
-3. Pri rezervacijah lahko izberete tudi **prostor** (ali pustite "Vsi prostori")
-4. Kliknite **📥 Prenesi CSV**
-
-> **ELI5:** Kot da bi iz knjižnice izposodili knjigo in si naredili kopijo strani, ki vas zanimajo. CSV je univerzalni jezik, ki ga razumejo vsi pisarniški programi.
-
-### Kaj narediti s CSV?
-
-- Odprite v **Excelu** (File → Open)
-- Odprite v **Google Sheets** (File → Import)
-- Uvozite v **katerikoli podatkovni program**
-
-> **Namig:** CSV uporablja podpičje (`;`) kot ločilo, kar Excel v slovenščini samodejno prepozna. Če se vam zdi zmešano v en stolpec, pri uvozu izberite **ločilo: podpičje**.
-=======
 ## 📋 Audit log — dnevnik sprememb
 
 > ⚠️ **Zadnja posodobitev:** Audit log je zdaj na voljo tudi vodstvu.
 
-![Gumb za Audit log na domači strani — desno od Admin panel](diagrams/audit-log-gumb.png)
+![Audit log pregled — filter, tabela, iskanje po akcijah](diagrams/audit-log-zgodovina.png)
 
 Audit log omogoča **pregled vseh pomembnih sprememb v sistemu** — kdo je kaj naredil in kdaj.
 
@@ -179,40 +148,39 @@ Ker audit log ni viden v običajnem meniju (vidljiv je samo adminu), lahko do nj
 
 > 💡 **ELI5:** Kot da bi imeli poseben ključ, ki odpre vrata v arhiv. Ta ključ ne odpira ničesar drugega — samo arhiv sprememb. Če ključ izgubite ali vam ga kdo ukrade, naj administrator ustvari novega.
 
-### Audit log v nastavitvah za admina
-
-Administrator lahko do audit loga dostopa tudi prek **Admin panela** — v zgornji navigaciji admin panela je gumb **"Dnevnik dogodkov"**.
-
 ---
 
-## 📥 Izvoz podatkov (CSV)
+## 📥 **Izvoz podatkov v CSV**
 
-Vodstvo lahko izvozi rezervacije in ocenjevanja v CSV datoteko (odpre se v Excelu).
+> **Kaj je to?** Izvoz podatkov v CSV (Excelu prijazna oblika) — enostaven način, da podatke iz aplikacije prenesete na svoj računalnik in jih odprete v Excelu, Google Sheets ali podobnem programu.
 
-### Izvoz rezervacij
+### Kaj lahko izvozite?
 
-Na domači strani se vam pod rezervacijami prikaže kartica **"📥 Izvozi rezervacije (CSV)"**:
+| Vrsta izvoza | Kam kliknete | Kateri podatki |
+|---|---|---|
+| **Rezervacije prostorov** | 📥 Export rezervacij (v meniju) | Datum, ura, prostor, razred, učitelj |
+| **Ocenjevanja** | 📥 Export ocenjevanj (v meniju) | Datum, razred, tip ocenjevanja, učitelj |
 
-| Polje | Opis |
-|-------|------|
-| Od datuma | Privzeto nastavljen na **danes - 1 mesec** |
-| Do datuma | Privzeto nastavljen na **danes** |
-| Prostor | Izberete lahko samo en prostor ali pustite vse |
-| Gumb »Prenesi CSV« | Kliknite za prenos datoteke |
+### Kako to naredite?
 
-### Izvoz ocenjevanj
+1. V zgornjem meniju kliknite **📥 Export rezervacij** ali **📥 Export ocenjevanj**
+2. Izberite **obdobje** (privzeto zadnji mesec):
+   - **Od datuma** — začetek obdobja
+   - **Do datuma** — konec obdobja
+3. Pri rezervacijah lahko izberete tudi **prostor** (ali pustite "Vsi prostori")
+4. Kliknite **📥 Prenesi CSV**
 
-Pod ocenjevanji se prikaže kartica **"📥 Izvozi ocenjevanja (CSV)"**:
+> **ELI5:** Kot da bi iz knjižnice izposodili knjigo in si naredili kopijo strani, ki vas zanimajo. CSV je univerzalni jezik, ki ga razumejo vsi pisarniški programi.
 
-| Polje | Opis |
-|-------|------|
-| Razred | Izberite razred ali pustite prazno za vse |
-| Gumb »Prenesi CSV« | Kliknite za prenos datoteke |
+### Kaj narediti s CSV?
 
-> CSV datoteko lahko odprete v **Excelu**, **LibreOffice Calc** ali **Google Sheets** za nadaljnjo obdelavo, filtriranje in tiskanje.
+- Odprite v **Excelu** (File → Open)
+- Odprite v **Google Sheets** (File → Import)
+- Uvozite v **katerikoli podatkovni program**
+
+> **Namig:** CSV uporablja podpičje (`;`) kot ločilo, kar Excel v slovenščini samodejno prepozna. Če se vam zdi zmešano v en stolpec, pri uvozu izberite **ločilo: podpičje**.
 
 ---
->>>>>>> Stashed changes
 
 ## 🛡️ Skrbniška plošča — SAMO ADMIN
 
