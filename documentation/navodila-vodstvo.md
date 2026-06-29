@@ -107,7 +107,6 @@
    107|---
    108|
    109|## 📥 **Izvoz podatkov v CSV**
-   110|## 📥 **Izvoz podatkov v CSV**
    111|
    112|> **Kaj je to?** Izvoz podatkov v CSV (Excelu prijazna oblika) — enostaven način, da podatke iz aplikacije prenesete na svoj računalnik in jih odprete v Excelu, Google Sheets ali podobnem programu.
    113|
