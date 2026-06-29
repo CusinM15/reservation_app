@@ -6,7 +6,7 @@ from sqlalchemy.orm import Session
 
 from app.config import settings
 from app.database import init_db, get_db
-from app.routers import rezervacije, ocenjevanja, auth, blocked_dates, audit_log
+from app.routers import rezervacije, ocenjevanja, auth, blocked_dates, audit_log, export
 from app.audit import log_audit
 from app.models import User, RoleEnum
 from passlib.context import CryptContext
@@ -112,3 +112,4 @@ app.include_router(ocenjevanja.router)
 app.include_router(auth.router)
 app.include_router(blocked_dates.router)
 app.include_router(audit_log.router)
+app.include_router(export.router)

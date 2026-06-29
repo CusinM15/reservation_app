@@ -103,6 +103,8 @@
     <a href="#" data-tab="ocenjevanja">Ocenjevanje</a>
     <a href="/auth/admin/users" id="admin-link" style="display:none;">Admin panel</a>
     <a href="/history" id="audit-link" style="display:none;">📋 Audit log</a>
+    <a href="#" id="export-rez-link" style="display:none;" onclick="openExportRezModal(); return false;">📥 Export rezervacij</a>
+    <a href="#" id="export-oc-link" style="display:none;" onclick="openExportOcModal(); return false;">📥 Export ocenjevanj</a>
     <span class="spacer"></span>
     <span class="user-info" id="userInfo"></span>
     <a href="#" onclick="openChangePasswordModal(); return false;">Spremeni geslo</a>
@@ -354,6 +356,56 @@
     </div>
   </div>
 
+  <!-- Modal - Export rezervacij -->
+  <div class="modal-overlay" id="export-rez-modal">
+    <div class="modal" style="max-width:450px;">
+      <h3>📥 Export rezervacij</h3>
+      <p style="font-size:0.85rem;color:#666;margin-bottom:1rem;">Izberi obdobje in prostor za izvoz v CSV.</p>
+      <div class="form-group">
+        <label>Od datuma</label>
+        <input type="date" id="export-rez-from">
+      </div>
+      <div class="form-group">
+        <label>Do datuma</label>
+        <input type="date" id="export-rez-to">
+      </div>
+      <div class="form-group">
+        <label>Prostor</label>
+        <select id="export-rez-prostor"></select>
+      </div>
+      <div class="form-actions">
+        <button class="btn btn-cancel" onclick="closeModal('export-rez-modal')">Prekliči</button>
+        <button class="btn btn-primary" onclick="exportRezervacije()">📥 Prenesi CSV</button>
+      </div>
+      <div id="export-rez-msg" style="margin-top:10px;font-size:0.9rem;"></div>
+    </div>
+  </div>
+
+  <!-- Modal - Export ocenjevanj -->
+  <div class="modal-overlay" id="export-oc-modal">
+    <div class="modal" style="max-width:450px;">
+      <h3>📥 Export ocenjevanj</h3>
+      <p style="font-size:0.85rem;color:#666;margin-bottom:1rem;">Izberi obdobje in razred za izvoz v CSV.</p>
+      <div class="form-group">
+        <label>Od datuma</label>
+        <input type="date" id="export-oc-from">
+      </div>
+      <div class="form-group">
+        <label>Do datuma</label>
+        <input type="date" id="export-oc-to">
+      </div>
+      <div class="form-group">
+        <label>Razred</label>
+        <select id="export-oc-razred"></select>
+      </div>
+      <div class="form-actions">
+        <button class="btn btn-cancel" onclick="closeModal('export-oc-modal')">Prekliči</button>
+        <button class="btn btn-primary" onclick="exportOcenjevanja()">📥 Prenesi CSV</button>
+      </div>
+      <div id="export-oc-msg" style="margin-top:10px;font-size:0.9rem;"></div>
+    </div>
+  </div>
+
   <!-- Modal - Change Password -->
   <div class="modal-overlay" id="pw-modal">
     <div class="modal" style="max-width:400px;">
@@ -489,6 +541,70 @@
         if (res.ok) { msgEl.style.color = 'green'; msgEl.textContent = 'Geslo uspešno spremenjeno!'; setTimeout(() => closeModal('pw-modal'), 1500); }
         else { msgEl.style.color = 'red'; msgEl.textContent = json.detail || 'Napaka pri spreminjanju gesla.'; }
       } catch(e) { msgEl.style.color = 'red'; msgEl.textContent = 'Napaka pri povezavi s strežnikom.'; }
+    }
+
+    // --- Export rezervacij ---
+    function openExportRezModal() {
+        document.getElementById('export-rez-from').value = formatDate(new Date());
+        const to = new Date();
+        to.setDate(to.getDate() + 30);
+        document.getElementById('export-rez-to').value = formatDate(to);
+        const sel = document.getElementById('export-rez-prostor');
+        sel.innerHTML = '<option value="">Vsi prostori</option>' + prostori.map(p => `<option value="${p}">${prostorLabel(p)}</option>`).join('');
+        document.getElementById('export-rez-msg').textContent = '';
+        openModal('export-rez-modal');
+    }
+    async function exportRezervacije() {
+        const from = document.getElementById('export-rez-from').value;
+        const to = document.getElementById('export-rez-to').value;
+        const prostor = document.getElementById('export-rez-prostor').value;
+        const msgEl = document.getElementById('export-rez-msg');
+        if (!from || !to) { msgEl.style.color = 'red'; msgEl.textContent = 'Izberite datumsko obdobje.'; return; }
+        let url = `/api/export/rezervacije?date_from=${from}&date_to=${to}`;
+        if (prostor) url += `&prostor=${prostor}`;
+        try {
+            const resp = await fetch(url);
+            if (!resp.ok) { const e = await resp.json(); msgEl.style.color = 'red'; msgEl.textContent = e.detail || 'Napaka pri izvozu.'; return; }
+            const blob = await resp.blob();
+            const link = document.createElement('a');
+            link.href = URL.createObjectURL(blob);
+            link.download = `rezervacije_${from}_${to}${prostor ? '_' + prostor : ''}.csv`;
+            link.click();
+            URL.revokeObjectURL(link.href);
+            closeModal('export-rez-modal');
+        } catch(e) { msgEl.style.color = 'red'; msgEl.textContent = 'Napaka pri povezavi s strežnikom.'; }
+    }
+
+    // --- Export ocenjevanj ---
+    function openExportOcModal() {
+        document.getElementById('export-oc-from').value = formatDate(new Date());
+        const to = new Date();
+        to.setDate(to.getDate() + 30);
+        document.getElementById('export-oc-to').value = formatDate(to);
+        const sel = document.getElementById('export-oc-razred');
+        sel.innerHTML = '<option value="">Vsi razredi</option>' + razredi.map(r => `<option value="${r}">${r}</option>`).join('');
+        document.getElementById('export-oc-msg').textContent = '';
+        openModal('export-oc-modal');
+    }
+    async function exportOcenjevanja() {
+        const from = document.getElementById('export-oc-from').value;
+        const to = document.getElementById('export-oc-to').value;
+        const razred = document.getElementById('export-oc-razred').value;
+        const msgEl = document.getElementById('export-oc-msg');
+        if (!from || !to) { msgEl.style.color = 'red'; msgEl.textContent = 'Izberite datumsko obdobje.'; return; }
+        let url = `/api/export/ocenjevanja?date_from=${from}&date_to=${to}`;
+        if (razred) url += `&razred=${razred}`;
+        try {
+            const resp = await fetch(url);
+            if (!resp.ok) { const e = await resp.json(); msgEl.style.color = 'red'; msgEl.textContent = e.detail || 'Napaka pri izvozu.'; return; }
+            const blob = await resp.blob();
+            const link = document.createElement('a');
+            link.href = URL.createObjectURL(blob);
+            link.download = `ocenjevanja_${from}_${to}${razred ? '_' + razred : ''}.csv`;
+            link.click();
+            URL.revokeObjectURL(link.href);
+            closeModal('export-oc-modal');
+        } catch(e) { msgEl.style.color = 'red'; msgEl.textContent = 'Napaka pri povezavi s strežnikom.'; }
     }
 
     // --- Zasedeni datumi ---
@@ -874,6 +990,8 @@
         document.getElementById('userInfo').textContent = `${currentUser.full_name || currentUser.username} (${currentUser.role === 'admin' ? 'admin' : currentUser.role === 'vodstvo' ? 'vodstvo' : 'učitelj'})`;
         if (currentUser.role === 'admin' || currentUser.role === 'vodstvo') {
             document.getElementById('admin-link').style.display = 'inline';
+            document.getElementById('export-rez-link').style.display = 'inline';
+            document.getElementById('export-oc-link').style.display = 'inline';
         }
         if (currentUser.role === 'admin') {
             document.getElementById('audit-link').style.display = 'inline';
