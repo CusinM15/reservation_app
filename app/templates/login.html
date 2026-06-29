@@ -36,21 +36,30 @@
             <form method="POST" action="/auth/login">
                 <input type="text" name="username" placeholder="Uporabniško ime" required>
                 <div style="position:relative;">
-                    <input type="password" name="password" id="login-pw" placeholder="Geslo" required style="padding-right:36px;">
-                    <span onclick="togglePw()" style="position:absolute;right:10px;top:50%;transform:translateY(-50%);cursor:pointer;font-size:1.2rem;user-select:none;color:#888;" id="pw-toggle">👁</span>
+                    <input type="password" name="password" id="login-pw" placeholder="Geslo" required style="padding-right:40px;">
+                    <span onclick="togglePw()" id="pw-toggle" style="position:absolute;right:10px;bottom:9px;cursor:pointer;font-size:1.1rem;user-select:none;color:#999;line-height:1;">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path id="pw-eye-path" d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+                            <circle id="pw-pupil" cx="12" cy="12" r="3"/>
+                        </svg>
+                    </span>
                 </div>
                 <button type="submit">Prijava</button>
             </form>
             <script>
             function togglePw() {
                 const pw = document.getElementById('login-pw');
-                const icon = document.getElementById('pw-toggle');
+                const eye = document.getElementById('pw-toggle');
+                const path = document.getElementById('pw-eye-path');
+                const pupil = document.getElementById('pw-pupil');
                 if (pw.type === 'password') {
                     pw.type = 'text';
-                    icon.textContent = '🙈';
+                    path.setAttribute('d', 'M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8zM3.5 3.5l17 17');
+                    pupil.style.display = 'none';
                 } else {
                     pw.type = 'password';
-                    icon.textContent = '👁';
+                    path.setAttribute('d', 'M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z');
+                    pupil.style.display = 'block';
                 }
             }
             </script>
