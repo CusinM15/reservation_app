@@ -67,16 +67,30 @@
             {% if error and show_reset %}
             <div class="error">{{ error }}</div>
             {% endif %}
-            <form method="POST" action="/auth/reset-password">
+            <form method="POST" action="/auth/reset-password" onsubmit="return validateResetPasswords()">
                 <input type="hidden" name="token" value="{{ reset_token }}">
                 <input type="hidden" name="email" value="{{ reset_email }}">
-                <input type="password" name="new_password" placeholder="Novo geslo" required>
-                <input type="password" name="confirm_password" placeholder="Ponovite novo geslo" required>
+                <input type="password" name="new_password" id="reset_pw1" placeholder="Novo geslo" required>
+                <input type="password" name="confirm_password" id="reset_pw2" placeholder="Ponovite novo geslo" required
+                       oninput="document.getElementById('reset_pw_match').style.display='none'"
+                       style="margin-top:6px;">
+                <div id="reset_pw_match" style="color:red;font-size:0.85rem;display:none;">Gesli se ne ujemata.</div>
                 <p style="font-size:0.8rem;color:#666;margin:-5px 0 10px;">
                     Geslo mora biti dolgo vsaj 5 znakov ter vsebovati vsaj eno malo črko, eno veliko črko in eno številko.
                 </p>
                 <button type="submit">Spremeni geslo</button>
             </form>
+            <script>
+            function validateResetPasswords() {
+                const pw1 = document.getElementById('reset_pw1').value;
+                const pw2 = document.getElementById('reset_pw2').value;
+                if (pw1 !== pw2) {
+                    document.getElementById('reset_pw_match').style.display = 'block';
+                    return false;
+                }
+                return true;
+            }
+            </script>
             <div class="back-link">
                 <a href="/auth/login">← Nazaj na prijavo</a>
             </div>
