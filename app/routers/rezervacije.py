@@ -5,13 +5,9 @@ from datetime import date as DateType, timedelta, date
 import uuid
 from collections import defaultdict
 
-<<<<<<< Updated upstream
-from app.database import get_db
-=======
 from sqlalchemy import func
 
 from app.database import get_db, log_audit
->>>>>>> Stashed changes
 from app.models import Reservation, User, RoleEnum
 from app.schemas import (
     ReservationCreate,
@@ -520,7 +516,6 @@ def delete_series(
         raise HTTPException(status_code=403, detail="Samo admin/vodstvo ali avtor serije lahko briše.")
 
     n = len(rows)
-<<<<<<< Updated upstream
     details = f"Izbrisana serija ({n} terminov): {rows[0].prostor}, od {min(r.date for r in rows)} do {max(r.date for r in rows)}"
     username = f"{current.first_name} {current.last_name}".strip() or current.username
     for r in rows:
@@ -528,11 +523,6 @@ def delete_series(
     db.commit()
     log_audit(db, user_id=current.id, username=username, action="delete_series", details=details)
     return {"message": f"Serija izbrisana ({n} terminov)", "deleted": n}
-=======
-    user_name = f"{current.first_name} {current.last_name}".strip() or current.username
-    for r in rows:
-        db.delete(r)
-    db.commit()
 
     log_audit(db, user_id=current.id, username=user_name,
               action="delete_series",
@@ -584,4 +574,3 @@ def export_rezervacije_csv(
         media_type="text/csv",
         headers={"Content-Disposition": f"attachment; filename=rezervacije_{date_from or 'vse'}_{date_to or 'vse'}.csv"},
     )
->>>>>>> Stashed changes
