@@ -209,14 +209,14 @@ Cron jobi so kot budilke — vsak dan ob določeni uri se zbudi in nekaj naredi.
 ```bash
 kubectl get hpa -n sola-app
 # NAME            REFERENCE              TARGETS              MIN   MAX   REPLICAS
-# sola-app-hpa    Deployment/sola-app    7%/60% CPU            1     3     2
+# sola-app-hpa    Deployment/sola-app    7%/60% CPU            2     4     2
 #                                        61%/70% MEM
 ```
 
 HPA uporablja **CPU (60%) in pomnilnik (70%)** kot merilo:
-- **1 replika** — nizka obremenitev (počitnice, popoldne, vikend)
-- **2 repliki** — normalen pouk (ena kopija na vsakem nodu)
-- **3 replike** — visoka obremenitev (ocene, začetek šolskega leta)
+- **2 repliki** — nizka obremenitev (počitnice, popoldne, vikend) — osnovni minimum
+- **3 replike** — normalen pouk
+- **4 replike** — visoka obremenitev (ocene, začetek šolskega leta)
 
 ### **Dnevna varnostna kopija baze (`sola-db-backup`)**
 
