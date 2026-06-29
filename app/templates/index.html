@@ -306,6 +306,9 @@
         <button class="btn btn-cancel" onclick="closeModal('fullday-series-modal')">Prekliči</button>
         <button class="btn btn-primary" onclick="submitFullDaySeries()">Ustvari serijo</button>
       </div>
+      <hr style="margin:1rem 0;border:none;border-top:1px solid #eee;">
+      <h4 style="margin-bottom:0.5rem;font-size:0.9rem;color:#555;">📋 Obstoječe serije</h4>
+      <div id="fullday-series-list" style="max-height:200px;overflow-y:auto;font-size:0.85rem;"></div>
     </div>
   </div>
 
@@ -634,9 +637,11 @@
     }
     async function renderBlockList() {
       const container = document.getElementById('block-list');
-      if (allBlocked.length === 0) { container.innerHTML = '<p style="color:#999;">Ni zasedenih datumov.</p>'; return; }
-      let html = '<h4 style="margin-bottom:8px;">Obstoječi zasedeni datumi:</h4>';
-      const sorted = [...allBlocked].sort((a,b) => a.date.localeCompare(b.date));
+      const today = new Date().toISOString().split('T')[0];
+      const future = allBlocked.filter(b => b.date >= today);
+      if (future.length === 0) { container.innerHTML = '<p style="color:#999;">Ni zasedenih datumov od danes naprej.</p>'; return; }
+      let html = '<h4 style="margin-bottom:8px;">Zasedeni datumi od danes naprej:</h4>';
+      const sorted = [...future].sort((a,b) => a.date.localeCompare(b.date));
       for (const b of sorted) {
         html += `<div style="display:flex;justify-content:space-between;padding:4px 0;border-bottom:1px solid #eee;">
           <span>${b.razred} - ${b.date}</span>
@@ -704,6 +709,8 @@
           if (json.removed > 0) msg += ` Pobrisanih konfliktnih: ${json.removed}.`;
           showMsg(msg, 'success'); 
           closeModal('weekly-series-modal'); 
+          loadSeriesList();
+          loadFullDaySeriesList();
           loadAllReservations(); 
         }
         else { showMsg(json.detail?.message || json.detail || 'Napaka pri ustvarjanju serije.', 'error'); }
@@ -711,25 +718,29 @@
     }
 
     // --- Seznam serij ---
+    async function _renderSeriesList(containerId) {
+      const resp = await fetch('/api/rezervacije/series');
+      if (!resp.ok) { document.getElementById(containerId).innerHTML = '<span style="color:#999;">Napaka pri nalaganju</span>'; return; }
+      const data = await resp.json();
+      const container = document.getElementById(containerId);
+      if (!data.length) { container.innerHTML = '<span style="color:#999;">Ni aktivnih serij za bodoče datume.</span>'; return; }
+      let html = '';
+      for (const s of data) {
+        const roomLabel = prostorLabel(s.prostor);
+        const hourInfo = s.hour !== null && s.hour !== undefined ? `ura ${s.hour}` : 'cel dan';
+        html += `<div style="display:flex;align-items:center;justify-content:space-between;padding:4px 0;border-bottom:1px solid #f0f0f0;">
+          <span><strong>${roomLabel}</strong> — ${hourInfo}<br>
+          <span style="font-size:0.8rem;color:#666;">${s.teacher_name} • ${s.date_from} do ${s.date_to} (${s.date_count} dni)</span></span>
+          <span onclick="deleteSeries('${s.series_id}')" style="cursor:pointer;color:#c00;font-weight:700;padding:2px 6px;">✕</span>
+        </div>`;
+      }
+      container.innerHTML = html;
+    }
     async function loadSeriesList() {
-      try {
-        const resp = await fetch('/api/rezervacije/series');
-        if (!resp.ok) { document.getElementById('series-list').innerHTML = '<span style="color:#999;">Napaka pri nalaganju</span>'; return; }
-        const data = await resp.json();
-        const container = document.getElementById('series-list');
-        if (!data.length) { container.innerHTML = '<span style="color:#999;">Ni aktivnih serij za bodoče datume.</span>'; return; }
-        let html = '';
-        for (const s of data) {
-          const roomLabel = prostorLabel(s.prostor);
-          const hourInfo = s.hour !== null && s.hour !== undefined ? `ura ${s.hour}` : 'cel dan';
-          html += `<div style="display:flex;align-items:center;justify-content:space-between;padding:4px 0;border-bottom:1px solid #f0f0f0;">
-            <span><strong>${roomLabel}</strong> — ${hourInfo}<br>
-            <span style="font-size:0.8rem;color:#666;">${s.teacher_name} • ${s.date_from} do ${s.date_to} (${s.date_count} dni)</span></span>
-            <span onclick="deleteSeries('${s.series_id}')" style="cursor:pointer;color:#c00;font-weight:700;padding:2px 6px;">✕</span>
-          </div>`;
-        }
-        container.innerHTML = html;
-      } catch(e) { document.getElementById('series-list').innerHTML = '<span style="color:#999;">Napaka pri povezavi</span>'; }
+      _renderSeriesList('series-list');
+    }
+    async function loadFullDaySeriesList() {
+      _renderSeriesList('fullday-series-list');
     }
     async function deleteSeries(seriesId) {
       if (!confirm('Izbriši celotno serijo?')) return;
@@ -737,6 +748,7 @@
         const resp = await fetch(`/api/rezervacije/series/${seriesId}`, { method: 'DELETE' });
         if (!resp.ok) { const e = await resp.json(); alert(e.detail || 'Napaka pri brisanju.'); return; }
         loadSeriesList();
+        loadFullDaySeriesList();
         if (typeof loadAllReservations === 'function') loadAllReservations();
       } catch(e) { alert('Napaka pri povezavi.'); }
     }
@@ -749,6 +761,7 @@
       document.getElementById('fullday-date-to').value = nextWeek.toISOString().split('T')[0];
       document.getElementById('fullday-qty').value = '1';
       document.getElementById('fullday-hours').value = '';
+      loadFullDaySeriesList();
       openModal('fullday-series-modal');
     }
     async function submitFullDaySeries() {
@@ -771,6 +784,8 @@
           if (json.removed > 0) msg += ` Pobrisanih konfliktnih: ${json.removed}.`;
           showMsg(msg, 'success'); 
           closeModal('fullday-series-modal'); 
+          loadSeriesList();
+          loadFullDaySeriesList();
           loadAllReservations(); 
         }
         else { showMsg(json.detail?.message || json.detail || 'Napaka pri ustvarjanju serije.', 'error'); }
