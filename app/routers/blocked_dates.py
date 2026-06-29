@@ -173,12 +173,9 @@ def delete_blocked_date(
         raise HTTPException(status_code=404, detail="Zaseden datum ne obstaja")
     user_name = f"{user.first_name} {user.last_name}".strip() or user.username
     log_audit(
-        db, user.id, user_name, "delete", "blocked_date", bd.id,
+        db, user.id, user_name, "delete_blocked_date",
         f"Odstranjen zaseden datum: {bd.razred}, {bd.date}"
     )
     db.delete(bd)
     db.commit()
-    log_audit(db, user_id=int(user_id), username="",
-              action="delete_blocked_date",
-              details=f"id={id}, razred={bd.razred}, date={bd.date}")
     return {"message": "Zaseden datum odstranjen"}
