@@ -67,6 +67,8 @@
     .assessment-ponavljanje { background: #ffcccc; color: #8b0000; }
     .assessment-badge .del-asm { cursor: pointer; font-weight: 700; padding: 0 2px; opacity: 0.6; }
     .assessment-badge .del-asm:hover { opacity: 1; }
+    .del-rez { cursor: pointer; font-weight: 700; padding: 0 4px; opacity: 0.5; font-size: 0.8rem; color: #c00; }
+    .del-rez:hover { opacity: 1; }
     .empty-calendar { text-align: center; padding: 2rem; color: #999; }
     .add-asm-btn { font-size: 0.7rem; color: #4a6cf7; cursor: pointer; opacity: 0.5; }
     .add-asm-btn:hover { opacity: 1; }
@@ -897,7 +899,7 @@
                 html += `<div class="rez-label">${parts.join(' : ')}</div>`;
               } else { html += `<div class="rez-label">${res.teacher_name || '?'}</div>`; }
               if (currentUser && (res.teacher_id === currentUser.id || currentUser.role === 'admin' || currentUser.role === 'vodstvo')) {
-                html += `<button class="btn btn-danger btn-sm" onclick="deleteReservation(${res.id})">✕</button>`;
+                html += `<span class="del-rez" onclick="deleteReservation(${res.id})">✕</span>`;
               }
             }
             if (prostor === 'tablice') { const used = tabliceMap[key] || 0; const free = 28 - used; html += `<div class="slot-info" style="margin-top:4px;">Prosto: ${free}/28</div>`; }
