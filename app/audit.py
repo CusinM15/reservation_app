@@ -21,4 +21,4 @@ def log_audit(
         timestamp=datetime.utcnow(),
     )
     db.add(entry)
-    db.flush()  # flush, ne commit — kličeš znotraj obstoječe transakcije
+    db.commit()  # commit samostojno — deluje tudi če je klican po drugem commit

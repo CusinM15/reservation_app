@@ -128,17 +128,20 @@ def create_rezervacija(data: ReservationCreate, request: Request, db: Session = 
         
         reservation = Reservation(**data.model_dump())
         db.add(reservation)
+        
+        # Audit log — pred commitom, da je v isti transakciji
+        log_audit(db, user_id=int(request.cookies.get("user_id") or 0), username=user_name,
+                  action="create_rezervacija",
+                  details=f"prostor={data.prostor}, date={data.date}, hour={data.hour}, razred={data.razred}, qty={data.qty}")
+
         try:
             db.commit()
             db.refresh(reservation)
         except Exception:
             db.rollback()
             raise HTTPException(status_code=500, detail="Napaka pri shranjevanju rezervacije")
-        
+
         cleanup(resource_key)
-        log_audit(db, user_id=int(request.cookies.get("user_id") or 0), username=user_name,
-                  action="create_rezervacija",
-                  details=f"prostor={data.prostor}, date={data.date}, hour={data.hour}, razred={data.razred}, qty={data.qty}")
         return reservation
 
 @router.delete("/{id}")
@@ -160,17 +163,14 @@ def delete_rezervacija(id: int, request: Request, db: Session = Depends(get_db))
         raise HTTPException(status_code=403, detail="Samo avtor, admin ali vodstvo lahko briše rezervacijo")
     
     user_name = f"{current_user.first_name} {current_user.last_name}".strip() or current_user.username
-    prostor_label = {"tablice": "tablice", "racunalnica": "računalnico", "ladja": "ladjo"}.get(reservation.prostor, reservation.prostor)
-    log_audit(
-        db, current_user.id, user_name, "delete", "reservation", reservation.id,
-        f"Izbrisana rezervacija: {prostor_label}, {reservation.date}, {reservation.hour}. ura"
-    )
-    
-    db.delete(reservation)
-    db.commit()
-    log_audit(db, user_id=current_user.id, username=f"{current_user.first_name} {current_user.last_name}".strip() or current_user.username,
+
+    # Audit log pred brisanjem (v isti transakciji)
+    log_audit(db, user_id=current_user.id, username=user_name,
               action="delete_rezervacija",
               details=f"id={id}, prostor={reservation.prostor}, date={reservation.date}, hour={reservation.hour}, teacher_id={reservation.teacher_id}")
+
+    db.delete(reservation)
+    db.commit()
     return {"message": "Rezervacija izbrisana"}
 
 

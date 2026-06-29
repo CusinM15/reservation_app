@@ -308,33 +308,13 @@ The report includes:
 
 ### How do I access the audit log?
 
-**Easiest — via the app menu:**
-
 1. Log in as **admin**
 2. In the top menu, click **"📋 Audit log"**
 
-**Via URL in browser (if already logged in as admin):**
-
-```
-https://ostc-app.org/history
-```
-
-**Via URL with token (if not logged in — opens in browser without login):**
-
-Set `AUDIT_TOKEN` in the `.env` file, then open:
-
-```
-https://ostc-app.org/history?token=SECRET_PASSWORD
-```
-
-Set the token by adding `AUDIT_TOKEN=your-secret` to `.env` and restarting the app. You can then always access the audit log via this link — even without being logged in.
-
-> **Security note:** Keep the token private. If someone finds it out, change it in `.env` and restart the app.
-
 **Who can see the audit log?**
-- **Admin** — yes (via menu, URL, or URL with token)
-- **Management** — **no** (even if they click the link, they cannot access)
-- **Teachers** — **no** (they don't even know the audit log exists)
+- **Admin** — yes (via menu)
+- **Management** — **no**
+- **Teachers** — **no**
 
 
 **What is logged:**

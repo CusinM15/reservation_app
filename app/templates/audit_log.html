@@ -42,7 +42,7 @@
     <h1>📋 Audit log — dnevnik sprememb</h1>
 
     <div class="controls">
-        <select id="actionFilter">
+        <select id="actionFilter" onchange="loadLog()">
             <option value="">Vse akcije</option>
             <option value="create_rezervacija">create_rezervacija</option>
             <option value="delete_rezervacija">delete_rezervacija</option>
