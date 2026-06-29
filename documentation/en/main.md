@@ -251,7 +251,7 @@ kubectl get volumes.longhorn.io -n longhorn-system
 
 ## 📅 **Daily Backup and Reports**
 
-> **In a nutshell:** Every night at 4:00 AM, the system automatically sends a database backup to `BACKUP_EMAIL` and a daily status report to `STANJE_MAIL` (both variables in the Kubernetes Secret, currently both set to the same address). Nothing is sent to Discord automatically — Discord is only used when you explicitly ask Hermes Agent for something.
+> **In a nutshell:** Every night at 4:00 AM, the system automatically sends a database backup to `BACKUP_EMAIL` and a daily status report to `STANJE_MAIL` (both variables from the `.env` file, currently both set to the same address). Nothing is sent to Discord automatically — Discord is only used when you explicitly ask Hermes Agent for something.
 
 > **ELI5:** Imagine you have a **night guard** who every morning at 4:00:
 > 1. **Photocopies the entire school register** and puts it in your mailbox (email).
@@ -302,7 +302,8 @@ The report includes:
 
 > **ELI5:** Imagine you have a **sign-in book** at school. Every time someone changes something (adds a reservation, deletes an assessment, creates a user), it gets written in the book — with the time and name. You can go back anytime and check what happened. No guessing, no "who deleted this."
 
-**Access:** Only **admin and management** (via the app menu → "📋 Audit log" or at `/api/audit-log/page`).
+**Access:** Only **admin** (via the app menu → "📋 Audit log", at `ostc-app.org/history`, or at `/api/audit-log/page`).  
+Opening `ostc-app.org/history` in your browser redirects you to the audit log — if you're not an admin, you'll get an error.
 
 **What is logged:**
 
@@ -536,8 +537,9 @@ git pull                                    # Pull the latest code
 | **LoadBalancer** | **Reception desk in a building** — directs visitors (users) to the right application. In our case, MetalLB at IP {{LB_IP}}. |
 | **Longhorn** | **A system that ensures you have 2 copies of data on 2 different computers** — distributed storage for Kubernetes, made for smaller clusters. |
 | **MetalLB** | **LoadBalancer for on-premise environments** — an alternative to cloud LoadBalancers (AWS, Google). Runs right on your computers. |
-| **Node** | **Physical computer in the cluster** — in our case k3s-1 (HP ProBook 455 G5) and k3s-2 (HP ProBook 450 G5). |
-| **Pod** | **Container with an application** — the smallest unit in Kubernetes. Each pod runs separately: one for the app itself (`sola-app`), another for the database (`sola-db`). Each pod has its own private IP address. |
+|| **Node** | **Physical computer in the cluster** — in our case k3s-1 (HP ProBook 455 G5) and k3s-2 (HP ProBook 450 G5). |
+|| **PCI-DSS** | **Payment card security standard** — *Payment Card Industry Data Security Standard*. Defines how companies must protect credit card data (Visa, Mastercard). If the school ever collected payments through the app (e.g., meals, field trips), it would need to comply. For the current use (reservations and grades), **it's not relevant**. |
+|| **Pod** | **Container with an application** — the smallest unit in Kubernetes. Each pod runs separately: one for the app itself (`sola-app`), another for the database (`sola-db`). Each pod has its own private IP address. |
 | **Primary (database)** | **Main database** — the only one that can be written to. All changes go through it. |
 | **PVC (PersistentVolumeClaim)** | **Virtual hard drive** — a request for disk space in Kubernetes. Data persists even if the application moves to another computer. |
 | **Replica** | **A copy that vigilantly watches the original** — a second database that constantly copies all changes from the primary. Ready to take over if the original crashes. |

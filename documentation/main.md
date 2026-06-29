@@ -251,7 +251,7 @@ kubectl get volumes.longhorn.io -n longhorn-system
 
 ## 📅 **Dnevni backup in reporti**
 
-> **V enem stavku:** Vsako noč ob 4:00 zjutraj sistem samodejno pošlje varnostno kopijo baze na `BACKUP_EMAIL` in dnevno poročilo o stanju na `STANJE_MAIL` (obe spremenljivki v Kubernetes Secretu, obe trenutno na isti naslov). Na Discord ne pošilja ničesar samodejno — tja gre samo, kar ti izrecno zahtevaš preko Hermes agenta.
+> **V enem stavku:** Vsako noč ob 4:00 zjutraj sistem samodejno pošlje varnostno kopijo baze na `BACKUP_EMAIL` in dnevno poročilo o stanju na `STANJE_MAIL` (obe spremenljivki iz `.env` datoteke, obe trenutno na isti naslov). Na Discord ne pošilja ničesar samodejno — tja gre samo, kar ti izrecno zahtevaš preko Hermes agenta.
 
 > **ELI5:** Predstavljaj si, da imaš **nočnega čuvaja**, ki vsako jutro ob 4:00:
 > 1. **Fotokopira celotno šolsko matično knjigo** in ti jo pošlje v nabiralnik (email).
@@ -302,7 +302,8 @@ Poročilo vključuje:
 
 > **ELI5:** Predstavljaj si, da imaš **knjigo prihodov in odhodov** v šoli. Vsakič, ko nekdo nekaj spremeni (doda rezervacijo, zbriše ocenjevanje, ustvari uporabnika), se to zapiše v knjigo — s časom in imenom. Lahko greš kadarkoli nazaj in preveriš, kaj se je dogajalo. Brez ugibanj, brez "kdo je to zbrisal".
 
-**Dostop:** Samo **admin in vodstvo** (prek menija v aplikaciji → "📋 Audit log" ali na `/api/audit-log/page`).
+**Dostop:** Samo **admin** (prek menija v aplikaciji → "📋 Audit log", na `ostc-app.org/history` ali na `/api/audit-log/page`).  
+Če odpreš `ostc-app.org/history` v brskalniku, te preusmeri na audit log — če nisi admin, dobiš napako.
 
 **Kaj se beleži:**
 
@@ -536,8 +537,9 @@ git pull                                    # Potegni zadnjo kodo
 | **LoadBalancer** | **Recepcija v stavbi** — usmerja obiskovalce (uporabnike) na pravo aplikacijo. V našem primeru MetalLB na IP {{LB_IP}}. |
 | **Longhorn** | **Sistem, ki poskrbi, da imaš 2 kopiji podatkov na 2 različnih računalnikih** — distribuirano shranjevanje za Kubernetes, narejeno za manjše clustre. |
 | **MetalLB** | **LoadBalancer za domače (on-premise) okolje** — alternativa oblačnim LoadBalancerjem (AWS, Google). Teče kar na tvojih računalnikih. |
-| **Node** | **Fizični računalnik v gruči** — v našem primeru k3s-1 (HP ProBook 455 G5) in k3s-2 (HP ProBook 450 G5). |
-| **Pod** | **Zabojnik z aplikacijo** — najmanjša enota v Kubernetesu. Vsak pod teče ločeno: eden za samo aplikacijo (`sola-app`), drugi za bazo (`sola-db`). Vsak pod ima svoj zasebni IP naslov. |
+|| **Node** | **Fizični računalnik v gruči** — v našem primeru k3s-1 (HP ProBook 455 G5) in k3s-2 (HP ProBook 450 G5). |
+|| **PCI-DSS** | **Varnostni standard za plačilne kartice** — *Payment Card Industry Data Security Standard*. Določa, kako morajo podjetja varovati podatke kreditnih kartic (Visa, Mastercard). Če bi šola kdaj pobirala plačila prek aplikacije (npr. prehrana, izleti), bi ga morala upoštevati. Za trenutno uporabo (rezervacije in ocene) **ni relevanten**. |
+|| **Pod** | **Zabojnik z aplikacijo** — najmanjša enota v Kubernetesu. Vsak pod teče ločeno: eden za samo aplikacijo (`sola-app`), drugi za bazo (`sola-db`). Vsak pod ima svoj zasebni IP naslov. |
 | **Primary (baza)** | **Glavna baza** — edina, v katero se lahko zapisuje. Vse spremembe gredo skozi njo. |
 | **PV (PersistentVolume)** | **Pravi disk na pravem računalniku** — Longhorn ga samodejno ustvari, ko narediš PVC. Za razliko od PVC-ja (zahtevek) je PV dejanski kos diska na enem od nodov. Preveriš ga z `kubectl get pv`. |
 | **PVC (PersistentVolumeClaim)** | **Virtualni trdi disk** — zahtevek za prostor na disku v Kubernetesu. Podatki ostanejo tudi, če se aplikacija preseli na drug računalnik. |

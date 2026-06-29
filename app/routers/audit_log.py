@@ -10,15 +10,15 @@ router = APIRouter(prefix="/api/audit-log", tags=["audit-log"])
 templates = Jinja2Templates(directory="app/templates")
 
 
-def _require_admin_or_vodstvo(request: Request, db: Session):
+def _require_admin(request: Request, db: Session):
     user_id = request.cookies.get("user_id")
     if not user_id:
         raise HTTPException(status_code=401, detail="Niste prijavljeni")
     user = db.query(User).filter(User.id == int(user_id)).first()
     if not user:
         raise HTTPException(status_code=401, detail="Uporabnik ne obstaja")
-    if user.role not in (RoleEnum.admin, RoleEnum.vodstvo):
-        raise HTTPException(status_code=403, detail="Samo admin ali vodstvo lahko vidi audit log")
+    if user.role != RoleEnum.admin:
+        raise HTTPException(status_code=403, detail="Samo admin lahko vidi audit log")
     return user
 
 
@@ -31,7 +31,7 @@ def list_audit_log(
     db: Session = Depends(get_db),
 ):
     """JSON endpoint — vrni zadnje vnose v audit logu."""
-    _require_admin_or_vodstvo(request, db)
+    _require_admin(request, db)
 
     query = db.query(AuditLog).options(joinedload(AuditLog.user))
     if action:
@@ -58,6 +58,6 @@ def audit_log_page(
     request: Request,
     db: Session = Depends(get_db),
 ):
-    """HTML stran za ogled audit loga (samo admin/vodstvo)."""
-    _require_admin_or_vodstvo(request, db)
+    """HTML stran za ogled audit loga (samo admin)."""
+    _require_admin(request, db)
     return templates.TemplateResponse("audit_log.html", {"request": request})

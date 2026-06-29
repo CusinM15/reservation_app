@@ -7,6 +7,7 @@ from sqlalchemy.orm import Session
 from app.config import settings
 from app.database import init_db, get_db
 from app.routers import rezervacije, ocenjevanja, auth, blocked_dates, audit_log
+from app.audit import log_audit
 from app.models import User, RoleEnum
 from passlib.context import CryptContext
 
@@ -86,6 +87,12 @@ def get_prostori():
 @app.get("/api/schedule")
 def get_schedule():
     return settings.SCHEDULE
+
+# Shortcut URLs
+@app.get("/history")
+def history_redirect():
+    """Enostaven URL za dostop do audit loga — preusmeri na /api/audit-log/page."""
+    return RedirectResponse(url="/api/audit-log/page")
 
 # Include routers
 app.include_router(rezervacije.router)
