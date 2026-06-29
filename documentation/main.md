@@ -298,10 +298,6 @@ Poročilo vključuje:
 
 ## 📋 **Audit log — dnevnik sprememb**
 
-> 🆕 **Zadnja posodobitev:** Audit log gumba na prejšnjih slikah domače strani še ni — dodan je bil naknadno. Na domači strani (Home page) se prikaže **desno od gumba "Admin panel"**.
-
-![Audit log pregled — filter, tabela, iskanje po akcijah](diagrams/audit-log-zgodovina.png)
-
 > **V enem stavku:** Vsaka pomembna akcija (ustvarjanje/brisanje rezervacij, ocenjevanj, uporabnikov, blokiranje datumov) se samodejno zapiše v bazo skupaj s podatki o tem, **kdo** je to naredil in **kdaj**.
 
 > **ELI5:** Predstavljaj si, da imaš **knjigo prihodov in odhodov** v šoli. Vsakič, ko nekdo nekaj spremeni (doda rezervacijo, zbriše ocenjevanje, ustvari uporabnika), se to zapiše v knjigo — s časom in imenom. Lahko greš kadarkoli nazaj in preveriš, kaj se je dogajalo. Brez ugibanj, brez "kdo je to zbrisal".

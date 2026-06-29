@@ -298,10 +298,6 @@ The report includes:
 
 ## 📋 **Audit log — change log**
 
-> 🆕 **Latest update:** The Audit log button was not present in earlier Home page screenshots — it was added later. On the Home page, it appears **to the right of the "Admin panel" button**.
-
-![Audit log view — filter, table, search by action](../diagrams/audit-log-zgodovina.png)
-
 > **In a nutshell:** Every important action (creating/deleting reservations, assessments, users, blocking dates) is automatically recorded in the database with information about **who** did it and **when**.
 
 > **ELI5:** Imagine you have a **sign-in book** at school. Every time someone changes something (adds a reservation, deletes an assessment, creates a user), it gets written in the book — with the time and name. You can go back anytime and check what happened. No guessing, no "who deleted this."
