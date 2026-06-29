@@ -185,8 +185,17 @@ def reset_password(
     token: str = Form(...),
     email: str = Form(...),
     new_password: str = Form(...),
+    confirm_password: str = Form(...),
     db: Session = Depends(get_db),
 ):
+    if new_password != confirm_password:
+        return templates.TemplateResponse("login.html", {
+            "request": request,
+            "error": "Gesli se ne ujemata.",
+            "show_reset": True,
+            "reset_token": token,
+            "reset_email": email,
+        })
     user = db.query(User).filter(User.email == email, User.reset_token == token).first()
     if not user or _decode_reset_token(user.reset_token) is None:
         return templates.TemplateResponse("login.html", {
