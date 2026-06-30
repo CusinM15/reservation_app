@@ -25,6 +25,7 @@ Trenutna domena: **`{{DOMAIN}}`** (Cloudflare proxied — oranžni oblak prižga
 | Tip | Ime | Vrednost | Proxy | Namen |
 |-----|-----|----------|-------|-------|
 | A | `{{DOMAIN}}` | `{{LB_IP}}` | ✅ Proxied (oranžni oblak 🟠) | Aplikacija — uporabniki pridejo sem |
+| CNAME | `www` | `{{DOMAIN}}` | ✅ Proxied (oranžni oblak 🟠) | Preusmeritev www na domeno |
 
 ---
 

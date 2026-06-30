@@ -19,6 +19,7 @@ Current domain: **`{{DOMAIN}}`** (Cloudflare proxied)
 | Type | Name | Value | Proxy | Purpose |
 |---|---|---|---|---|
 | A | `{{DOMAIN}}` | `{{K3S_2_IP}}` | ✅ Proxied (orange cloud) | Application |
+| CNAME | `www` | `{{DOMAIN}}` | ✅ Proxied (orange cloud) | Redirect www to domain |
 
 Cloudflare proxy means:
 - Public DNS resolves to Cloudflare IPs

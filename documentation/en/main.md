@@ -177,7 +177,11 @@ Cloudflare DNS settings (check at [dash.cloudflare.com](https://dash.cloudflare.
 | Type | Name | Value | Proxy status |
 |------|------|-------|-------------|
 | A | `@` ({{DOMAIN}}) | {{LB_IP}} | ✅ Cloudflare proxy (LoadBalancer) |
+<<<<<<< HEAD
 | A | `www` | {{LB_IP}} | ✅ Cloudflare proxy (redirects www to the app) |
+=======
+| CNAME | `www` | `@` ({{DOMAIN}}) | ✅ Cloudflare proxy (redirect to domain) |
+>>>>>>> bbd1e75 (docs: add www CNAME record to DNS tables in main.md and domena.md)
 
 > **Cloudflare proxy** is like a security guard in front of the door — hides your real IP, encrypts traffic (SSL), blocks attacks. **Always turn on the orange cloud** ☁️🟠
 
