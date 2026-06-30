@@ -177,6 +177,7 @@ Cloudflare DNS nastavitve (preveri na [dash.cloudflare.com](https://dash.cloudfl
 | Tip | Ime | Vrednost | Proxy status |
 |-----|-----|---------|-------------|
 | A | `@` ({{DOMAIN}}) | {{LB_IP}} | ✅ Cloudflare proxy (LoadBalancer) |
+| A | `www` | {{LB_IP}} | ✅ Cloudflare proxy (preusmeri www na aplikacijo) |
 
 > **Cloudflare proxy** je kot varnostnik pred vrati — skrije tvoj pravi IP, šifrira promet (SSL), blokira napade. **Vedno prižgi oranžni oblak** ☁️🟠
 
