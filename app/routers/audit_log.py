@@ -29,7 +29,6 @@ def list_audit_log(
     limit: int = Query(100, ge=1, le=500),
     offset: int = Query(0, ge=0),
     action: str | None = Query(None),
-    user_id: int | None = Query(None, description="Filter po uporabniku (ID)"),
     db: Session = Depends(get_db),
 ):
     """JSON endpoint — vrni zadnje vnose v audit logu."""
@@ -38,8 +37,6 @@ def list_audit_log(
     query = db.query(AuditLog).options(joinedload(AuditLog.user))
     if action:
         query = query.filter(AuditLog.action == action)
-    if user_id is not None:
-        query = query.filter(AuditLog.user_id == user_id)
     total = query.count()
     rows = query.order_by(AuditLog.id.desc()).offset(offset).limit(limit).all()
 
@@ -64,5 +61,4 @@ def audit_log_page(
 ):
     """HTML stran za ogled audit loga (samo admin)."""
     _require_admin(request, db)
-    users = db.query(User.id, User.username, User.first_name, User.last_name).order_by(User.first_name).all()
-    return templates.TemplateResponse("audit_log.html", {"request": request, "users": users})
+    return templates.TemplateResponse("audit_log.html", {"request": request})
