@@ -18,7 +18,7 @@ Sistem, ki ga ugašamo:
 | **2 noda** (prenosnika): `k3s-1` in `k3s-2` | Oba delujeta kot krmilnika (control-plane) in hranita podatke (etcd). Fizično: stara prenosnika. |
 | **CloudNativePG (CNPG)** | Baza podatkov (PostgreSQL). Teče v 2 izvodih (repliki) za varnost. |
 | **Longhorn** | Shramba diskov — kot "omara za podatke". Poskrbi, da se podatki ne izgubijo, tudi če en disk crkne. |
-| **MetalLB** | Daje zunanje IP naslove aplikacijam (npr. 193.2.171.10 za dostop s spleta). |
+| **MetalLB** | Daje zunanje IP naslove aplikacijam (npr. {{LB_IP}} za dostop s spleta). |
 | **Aplikacija** | Sama šolska spletna aplikacija (namespace: sola-app). |
 
 ---
@@ -62,8 +62,8 @@ Preden karkoli naredimo, poglejmo, kako sistem izgleda zdaj.
 
 | Node | IP | Vloga | Stanje |
 |---|---|---|---|
-| k3s-1 | 193.2.171.250 | control-plane, etcd | Ready |
-| k3s-2 | 193.2.171.249 | control-plane, etcd | Ready |
+| k3s-1 | {{K3S_1_IP}} | control-plane, etcd | Ready |
+| k3s-2 | {{K3S_2_IP}} | control-plane, etcd | Ready |
 
 Poglej, kaj vse teče:
 
@@ -344,11 +344,11 @@ Zdaj je čas za končni pregled:
 
 ```bash
 # 1. Health check aplikacije — vprašamo sistem "si živ?"
-curl -s http://193.2.171.10:8002/health
+curl -s http://{{LB_IP}}:8002/health
 # Odgovor: {"status":"ok","version":"0.1.0"}
 
 # 2. Preveri, da domena deluje (spletna stran)
-curl -sI https://ostc-app.org
+curl -sI https://{{DOMAIN}}
 # Odgovor: HTTP/2 307 → preusmeritev na /auth/login (normalno!)
 
 # 3. Preveri podatke v bazi — so vsi uporabniki in rezervacije še tu?
@@ -375,7 +375,7 @@ kubectl exec -n sola sola-db-1 -- psql -U postgres -d sola -c \
    ```
    To je kot: ne meči knjige skozi okno, ampak jo zapri in lepo odloži na polico.
 
-4. **Domena med pavzo ne bo dosegljiva.** Cloudflare proxy kaže na LoadBalancer (193.2.171.10), ki bo med pavzo ugasnjen. Ko se aplikacija jeseni zažene, se LoadBalancer samodejno zažene z njo. Domena bo spet delovala v nekaj minutah po vklopu.
+4. **Domena med pavzo ne bo dosegljiva.** Cloudflare proxy kaže na LoadBalancer ({{LB_IP}}), ki bo med pavzo ugasnjen. Ko se aplikacija jeseni zažene, se LoadBalancer samodejno zažene z njo. Domena bo spet delovala v nekaj minutah po vklopu.
 
 5. **Po vklopu preveri cronjob-e.** Sistem ima nastavljene redne naloge (backup baze, dnevna poročila). Preveri, da so se zagnali:
    ```bash

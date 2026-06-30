@@ -82,7 +82,7 @@ curl -sfL https://get.k3s.io | sh -s - server \
   --write-kubeconfig-mode=644 \  # Dovoli branje kubeconfig datoteke navadnemu uporabniku (ni treba vsakič sudo).
   --cluster-cidr=10.42.0.0/16 \ # Razred IP-jev za pode (notranje omrežje znotraj clustra).
   --service-cidr=10.43.0.0/16 \ # Razred IP-jev za servise (drugo notranje omrežje za servise).
-  --node-ip=193.2.171.250        # Kateri IP naj uporablja ta node. Vstavi notranji IP prvega laptopa (npr. 192.168.1.10).
+  --node-ip={{K3S_1_IP}}        # Kateri IP naj uporablja ta node. Vstavi notranji IP prvega laptopa (npr. 192.168.1.10).
 ```
 
 **Kaj se zgodi zdaj?** curl prenesi skripto z get.k3s.io, skripta pa namesti k3s v `server` načinu (kot control-plane). Vse `--disable` zastavice izklapljajo stvari, ki jih ne rabimo. `--node-ip` pove k3s-u "glej, tvoj IP je ta", kar je pomembno, če ima mašina več omrežnih kartic.
@@ -98,15 +98,15 @@ To je kot **geslo za vstop v cluster**. Drugi node ga rabi, da se lahko pridruž
 
 ```bash
 curl -sfL https://get.k3s.io | sh -s - server \
-  --server https://193.2.171.250:6443 \  # Poveži se na prvi node (k3s-1) na vratih 6443 — to so privzeta Kubernetes API vrata.
+  --server https://{{K3S_1_IP}}:6443 \  # Poveži se na prvi node (k3s-1) na vratih 6443 — to so privzeta Kubernetes API vrata.
   --token <TOKEN> \                     # Token iz prejšnjega koraka — dokazilo, da smeš vstopiti v cluster.
   --disable=traefik \                   # Isti razlog kot na prvem nodu — ne rabimo Traefika.
   --disable=servicelb \                 # Tudi Servicelb ne rabimo.
   --write-kubeconfig-mode=644 \
-  --node-ip=193.2.171.249               # IP drugega laptopa.
+  --node-ip={{K3S_2_IP}}               # IP drugega laptopa.
 ```
 
-**Pomembno:** `--server https://193.2.171.250:6443` pomeni "ne zaženi novega clustra, ampak se pridruži obstoječemu". Brez tega bi drugi node poskusil postati svoj lasten cluster — in imel bi 2 ločena clustra namesto enega.
+**Pomembno:** `--server https://{{K3S_1_IP}}:6443` pomeni "ne zaženi novega clustra, ampak se pridruži obstoječemu". Brez tega bi drugi node poskusil postati svoj lasten cluster — in imel bi 2 ločena clustra namesto enega.
 
 ### 1.4 Preveri
 
@@ -341,7 +341,7 @@ sudo systemctl enable --now iscsid
 Če ne izklopiš k3s-ovega vgrajenega ServiceLB, se bosta MetalLB in k3s kregala za iste servise. MetalLB ne bo dobil IP-ja, ker ga bo k3s ServiceLB prej pobral. **Rešitev:** vedno uporabi oba: `--disable=traefik --disable=servicelb`.
 
 ### ❌ 2. Zamenjani IP-ji nodov
-`--node-ip=193.2.171.250` na prvem nodu in `--node-ip=193.2.171.249` na drugem — pomešati ju pomeni, da bo k3s mislil, da je prvi node na naslovu drugega. Podi se ne bodo mogli povezati. **Rešitev:** pred namestitvijo zaženi `ip a` in prepiši točen IP vsake mašine.
+`--node-ip={{K3S_1_IP}}` na prvem nodu in `--node-ip={{K3S_2_IP}}` na drugem — pomešati ju pomeni, da bo k3s mislil, da je prvi node na naslovu drugega. Podi se ne bodo mogli povezati. **Rešitev:** pred namestitvijo zaženi `ip a` in prepiši točen IP vsake mašine.
 
 ### ❌ 3. Nepotrpežljivost — ne počakaš, da so podi `Ready`
 MetalLB, Longhorn in CNPG rabijo čas, da se zaženejo. Če greš naprej brez `kubectl wait --for=condition=ready pod --all`, bo naslednji ukaz padel, ker storitev še ne obstaja. **Rešitev:** po vsaki namestitvi zaženi `kubectl get pods -n <namespace>` in počakaj na `Running`/`Ready`.

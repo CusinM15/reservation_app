@@ -8,7 +8,7 @@
         <mxCell id="d5-2" value="🌐 Internet=" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#E3F2FD;strokeColor=#1E88E5;fontSize=12;" vertex="1" parent="1">
           <mxGeometry x="250" y="10" width="100" height="50" as="geometry" />
         </mxCell>
-        <mxCell id="d5-3" value="Cloudflare DNS&#xa;ostc-app.org" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F5F5F5;strokeColor=#616161;fontSize=12;" vertex="1" parent="1">
+        <mxCell id="d5-3" value="Cloudflare DNS&#xa;{{DOMAIN}}" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F5F5F5;strokeColor=#616161;fontSize=12;" vertex="1" parent="1">
           <mxGeometry x="220" y="90" width="160" height="60" as="geometry" />
         </mxCell>
         <mxCell id="d5-4" value="MetalLB LoadBalancer&#xa;{{LB_IP}}:{{LB_PORT}}" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFF9C4;strokeColor=#F57F17;fontSize=12;" vertex="1" parent="1">

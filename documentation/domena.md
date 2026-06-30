@@ -10,21 +10,21 @@
 
 # Domena — kako nas najde internet?
 
-Trenutna domena: **`ostc-app.org`** (Cloudflare proxied — oranžni oblak prižgan 🟠)
+Trenutna domena: **`{{DOMAIN}}`** (Cloudflare proxied — oranžni oblak prižgan 🟠)
 
 ---
 
 ## 📋 Kaj sploh je DNS? (ELI5)
 
-> DNS je **telefonski imenik interneta**. Ko vtipkaš `ostc-app.org`, DNS pove brskalniku
-> na kateri IP naj gre. Namesto da bi si zapomnil `193.2.171.10` (kar je grda številka),
-> si zapomniš `ostc-app.org`. To je vse.
+> DNS je **telefonski imenik interneta**. Ko vtipkaš `{{DOMAIN}}`, DNS pove brskalniku
+> na kateri IP naj gre. Namesto da bi si zapomnil `{{LB_IP}}` (kar je grda številka),
+> si zapomniš `{{DOMAIN}}`. To je vse.
 
 ### Trenutne DNS nastavitve
 
 | Tip | Ime | Vrednost | Proxy | Namen |
 |-----|-----|----------|-------|-------|
-| A | `ostc-app.org` | `193.2.171.10` | ✅ Proxied (oranžni oblak 🟠) | Aplikacija — uporabniki pridejo sem |
+| A | `{{DOMAIN}}` | `{{LB_IP}}` | ✅ Proxied (oranžni oblak 🟠) | Aplikacija — uporabniki pridejo sem |
 
 ---
 
@@ -36,16 +36,16 @@ Trenutna domena: **`ostc-app.org`** (Cloudflare proxied — oranžni oblak priž
 > Vidiš samo varnostnika.
 
 **Oranžni oblak (Proxied) 🟠** — Cloudflare aktivno posreduje promet. Uporabnik
-pokliče `ostc-app.org`, Cloudflare pogleda, ali je zahteva varna, in jo pošlje
-naprej na `193.2.171.10`. Vse gre skozi Cloudflare.
+pokliče `{{DOMAIN}}`, Cloudflare pogleda, ali je zahteva varna, in jo pošlje
+naprej na `{{LB_IP}}`. Vse gre skozi Cloudflare.
 
-**Siv oblak (DNS only) ⚪** — Cloudflare samo pove "hej, IP je `193.2.171.10`",
+**Siv oblak (DNS only) ⚪** — Cloudflare samo pove "hej, IP je `{{LB_IP}}`",
 promet pa gre direktno od uporabnika do tvojega strežnika. Cloudflare ne vidi ničesar,
 ne ščiti ničesar. Pri nas imamo oranžnega.
 
 Cloudflare proxy v praksi pomeni:
-- Javni DNS resolve-a na Cloudflare IP-je (ne na naš `193.2.171.10`)
-- Cloudflare posreduje promet na `193.2.171.10` (LoadBalancer, port 80, Flexible SSL)
+- Javni DNS resolve-a na Cloudflare IP-je (ne na naš `{{LB_IP}}`)
+- Cloudflare posreduje promet na `{{LB_IP}}` (LoadBalancer, port 80, Flexible SSL)
 - Cloudflare skrbi za SSL
 - V HTTP headerjih se pojavi `server: cloudflare`
 
@@ -58,7 +58,7 @@ Cloudflare proxy v praksi pomeni:
 > V šolskem omrežju je to OK, ker je promet znotraj zaupanja vrednega omrežja.
 >
 > Če bi aplikacija tekla na javnem WiFi-ju v kavarni, bi to bil problem.
-> Ampak promet med Cloudflarom in `193.2.171.10` nikoli ne zapusti šolskega omrežja.
+> Ampak promet med Cloudflarom in `{{LB_IP}}` nikoli ne zapusti šolskega omrežja.
 > Za šolo je to čisto dovolj dobro.
 
 ---
@@ -77,13 +77,13 @@ Cloudflare proxy v praksi pomeni:
 > svoj naslov) in za preusmeritve (ko te pošlje iz ene strani na drugo).
 >
 > Če bi BASE_URL manjkal ali bil napačen, bi aplikacija pošiljala email povezave
-> kot `http://localhost:3000/...» namesto `https://ostc-app.org/...» — in to ne
+> kot `http://localhost:3000/...» namesto `https://{{DOMAIN}}/...» — in to ne
 > deluje.
 
 Konfiguracija v ConfigMap (`sola-config`, namespace `sola-app`):
 
 ```yaml
-BASE_URL: "https://ostc-app.org"
+BASE_URL: "https://{{DOMAIN}}"
 ```
 
 ---
@@ -93,7 +93,7 @@ BASE_URL: "https://ostc-app.org"
 | Obdobje       | Domena           | Opis                              |
 |---------------|------------------|-----------------------------------|
 | Maj 2026      | sola-app.local   | Začetna lokalna domena (mDNS)     |
-| Junij 2026    | ostc-app.org     | Trenutna produkcijska domena 🏆   |
+| Junij 2026    | {{DOMAIN}}     | Trenutna produkcijska domena 🏆   |
 
 ---
 
@@ -104,7 +104,7 @@ BASE_URL: "https://ostc-app.org"
 ### 1. Cloudflare — dodaj novo domeno in A zapis
 
 1. Odpri Cloudflare dashboard
-2. Dodaj A zapis: `@` → `193.2.171.10` (Proxied — oranžni oblak, LoadBalancer)
+2. Dodaj A zapis: `@` → `{{LB_IP}}` (Proxied — oranžni oblak, LoadBalancer)
 3. Počakaj, da se DNS propagira (lahko traja od nekaj minut do 48 ur, ponavadi ~5 min)
 
 ### 2. Posodobi BASE_URL v Kubernetes
@@ -119,7 +119,7 @@ kubectl -n sola-app rollout restart deployment/sola-app
 
 ## 📖 Pogoste zmede (FAQ za nestrpne)
 
-### ❓ Zakaj ne vidim svojega strežnika ko pingam `ostc-app.org`?
+### ❓ Zakaj ne vidim svojega strežnika ko pingam `{{DOMAIN}}`?
 
 > Ker imamo **oranžni oblak (Proxied)**. Ping gre na Cloudflare edge, ne na tvoj
 > strežnik. Cloudflare se ne pusta pingat — vrže timeout. To je **normalno**.
@@ -127,7 +127,7 @@ kubectl -n sola-app rollout restart deployment/sola-app
 > dati DNS v **siv oblak (DNS only)** — ampak tega nočemo, ker potem izgubimo
 > Cloudflare zaščito.
 >
-> Za preverjanje strežnika uporabi `curl -v http://193.2.171.10:8002`
+> Za preverjanje strežnika uporabi `curl -v http://{{LB_IP}}:8002`
 > direktno, ne ping.
 
 ### ❓ Ali rabim svoj SSL certifikat?
@@ -140,7 +140,7 @@ kubectl -n sola-app rollout restart deployment/sola-app
 
 ### ❓ Kaj če spremenim LoadBalancer IP?
 
-> Če spremeniš `193.2.171.10` (na primer MetalLB restart ali sprememba konfiguracije),
+> Če spremeniš `{{LB_IP}}` (na primer MetalLB restart ali sprememba konfiguracije),
 > moraš **posodobiti DNS A zapis** v Cloudflare dashboardu na nov IP. Dokler
 > ne posodobiš, Cloudflare pošilja promet na star (neobstoječ) IP in aplikacija
 > ne bo dostopna. Svetujem:
@@ -152,8 +152,8 @@ kubectl -n sola-app rollout restart deployment/sola-app
 
 ## 📌 Opombe za staro dušo (DevOps)
 
-- **LoadBalancer IP** `193.2.171.10` je fiksen — ne spreminja se ob restartu (hvala MetalLB za to)
-- **Cloudflare SSL** je "Flexible" — HTTPS med uporabnikom in Cloudflarom, HTTP med Cloudflarom in `193.2.171.10` (znotraj šolskega omrežja — v redu)
+- **LoadBalancer IP** `{{LB_IP}}` je fiksen — ne spreminja se ob restartu (hvala MetalLB za to)
+- **Cloudflare SSL** je "Flexible" — HTTPS med uporabnikom in Cloudflarom, HTTP med Cloudflarom in `{{LB_IP}}` (znotraj šolskega omrežja — v redu)
 - **server: cloudflare** se pojavi v HTTP headerjih — to je dokaz da Cloudflare posreduje
 - Če bi želeli **end-to-end HTTPS**, bi potrebovali certifikat na aplikaciji (trenutno ni potrebe — ne kompliciraj)
-- DNS propagacija lahko traja. Če si ravno spremenil DNS in ne dela — počakaj. Ne paničari. Skoči na `dig ostc-app.org` po 5 minutah.
+- DNS propagacija lahko traja. Če si ravno spremenil DNS in ne dela — počakaj. Ne paničari. Skoči na `dig {{DOMAIN}}` po 5 minutah.

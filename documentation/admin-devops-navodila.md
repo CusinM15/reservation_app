@@ -95,13 +95,13 @@ network:
   ethernets:
     eth0:
       addresses:
-        - 193.2.171.10/24
+        - {{LB_IP}}/24
       routes:
         - to: default
-          via: 193.2.171.250
+          via: {{K3S_1_IP}}
       nameservers:
         addresses:
-          - 193.2.171.10
+          - {{LB_IP}}
           - 8.8.8.8
   version: 2
 ```
