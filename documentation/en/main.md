@@ -127,14 +127,14 @@ This file is **the main entry point** — like the reception desk at school that
 
 ### **Network Settings**
 
-> **ELI5:** Every computer on the network has its own house address (IP). k3s-1 is at address {{K3S_1_IP}}, k3s-2 is at {{K3S_2_IP}}. Together with other devices in the school they form a neighborhood (/24 means up to 254 devices in the same neighborhood). The gateway (192.168.1.254) is the main door of the school, through which all traffic goes to the internet.
+> **ELI5:** Every computer on the network has its own house address (IP). k3s-1 is at address {{K3S_1_IP}}, k3s-2 is at {{K3S_2_IP}}. Together with other devices in the school they form a neighborhood (/24 means up to 254 devices in the same neighborhood). The gateway ({{GATEWAY_IP}}) is the main door of the school, through which all traffic goes to the internet.
 
 ```bash
 # Local network (Arnes)
 k3s-1: {{K3S_1_IP}}/24
 k3s-2: {{K3S_2_IP}}/24
-Gateway: 192.168.1.254
-DNS: 192.168.1.253
+Gateway: {{GATEWAY_IP}}
+DNS: {{DNS_IP}}
 
 # Kubernetes Pod CIDR — private addresses within the cluster
 # (applications in Kubernetes get these addresses, not visible from outside)
@@ -144,7 +144,7 @@ DNS: 192.168.1.253
 10.43.0.0/16
 
 # LoadBalancer IP pool (MetalLB) — public addresses visible on the network
-192.168.1.10 - 192.168.1.20
+{{METALLB_RANGE_START}} - {{METALLB_RANGE_END}}
 ```
 
 > **Common mistake:** Pod CIDR (10.42.0.0/16) and Service CIDR (10.43.0.0/16) must not overlap with the local network ({{K3S_1_IP}}/24). If they do, Kubernetes won't be able to route traffic correctly. Always check with `ip route` on the nodes before setting up k3s.

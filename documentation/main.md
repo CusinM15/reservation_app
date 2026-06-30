@@ -127,14 +127,14 @@ Ta datoteka je **glavni vstopni dokument** — kot recepcija v šoli, ki ti pove
 
 ### **Omrežne nastavitve**
 
-> **ELI5:** Vsak računalnik v omrežju ima svoj hišni naslov (IP). k3s-1 je na naslovu {{K3S_1_IP}}, k3s-2 pa na {{K3S_2_IP}}. Skupaj z drugimi napravami v šoli tvorijo sosesko (/24 pomeni, da je v isti soseski do 254 naprav). Gateway (192.168.1.254) je glavna vrata v šoli, skozi katera gre ves promet proti internetu.
+> **ELI5:** Vsak računalnik v omrežju ima svoj hišni naslov (IP). k3s-1 je na naslovu {{K3S_1_IP}}, k3s-2 pa na {{K3S_2_IP}}. Skupaj z drugimi napravami v šoli tvorijo sosesko (/24 pomeni, da je v isti soseski do 254 naprav). Gateway ({{GATEWAY_IP}}) je glavna vrata v šoli, skozi katera gre ves promet proti internetu.
 
 ```bash
 # Lokalno omrežje (Arnes)
 k3s-1: {{K3S_1_IP}}/24
 k3s-2: {{K3S_2_IP}}/24
-Gateway: 192.168.1.254
-DNS: 192.168.1.253
+Gateway: {{GATEWAY_IP}}
+DNS: {{DNS_IP}}
 
 # Kubernetes Pod CIDR — zasebni naslovi znotraj clustra
 # (aplikacije v Kubernetesu dobijo te naslove, niso vidni od zunaj)
@@ -144,7 +144,7 @@ DNS: 192.168.1.253
 10.43.0.0/16
 
 # LoadBalancer IP pool (MetalLB) — javni naslovi, ki so vidni v omrežju
-192.168.1.10 - 192.168.1.20
+{{METALLB_RANGE_START}} - {{METALLB_RANGE_END}}
 ```
 
 > **Pogosta napaka:** Pod CIDR (10.42.0.0/16) in Service CIDR (10.43.0.0/16) se ne smeta prekrivati z lokalnim omrežjem ({{K3S_1_IP}}/24). Če se, Kubernetes ne bo mogel pravilno usmerjati prometa. Vedno preveri z `ip route` na nodih, preden nastaviš k3s.
