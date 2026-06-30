@@ -47,7 +47,6 @@ This file is **the main entry point** — like the reception desk at school that
 | [👑 **Management instructions**](../navodila-vodstvo.md) | Managing via browser (series, blocked dates) |
 | [📱 **App description**](../aplikacija-rezervacije.md) | What the app offers, purpose, features |
 | [📖 **User instructions**](../navodila-uporabnika.md) | Login, passwords, daily use |
-| [📋 **Audit log**](main.md#audit-log) | Change log — who did what and when |
 
 ---
 
@@ -177,7 +176,7 @@ Cloudflare DNS settings (check at [dash.cloudflare.com](https://dash.cloudflare.
 | Type | Name | Value | Proxy status |
 |------|------|-------|-------------|
 | A | `@` ({{DOMAIN}}) | {{LB_IP}} | ✅ Cloudflare proxy (LoadBalancer) |
-| A | `www` | {{LB_IP}} | ✅ Cloudflare proxy (redirects www to the app) |
+| CNAME | `www` | {{LB_IP}} | ✅ Cloudflare proxy (redirects www to the app) |
 
 
 > **Cloudflare proxy** is like a security guard in front of the door — hides your real IP, encrypts traffic (SSL), blocks attacks. **Always turn on the orange cloud** ☁️🟠
@@ -253,13 +252,12 @@ kubectl get volumes.longhorn.io -n longhorn-system
 
 ## 📅 **Daily Backup and Reports**
 
-> **In a nutshell:** Every night at 4:00 AM, the system automatically sends a database backup to `BACKUP_EMAIL` and a daily status report to `STANJE_MAIL` (both variables from the `.env` file, currently both set to the same address). Nothing is sent to Discord automatically — Discord is only used when you explicitly ask Hermes Agent for something.
+> **In a nutshell:** Every night at 4:00 AM, the system automatically sends a database backup to `BACKUP_EMAIL` and a daily status report to `STANJE_MAIL` (both variables from the `.env` file). 
 
 > **ELI5:** Imagine you have a **night guard** who every morning at 4:00:
 > 1. **Photocopies the entire school register** and puts it in your mailbox (email).
 > 2. **Checks if all computers are running** and sends a report to your email.
 >
-> He leaves the Discord (school chat) alone, unless you call him: "Hey, what's up with the server?" — then he answers right in the chat. Think of him as a **silent assistant who doesn't disturb until you call**.
 
 ### **Daily database backup (`sola-db-backup`)**
 
@@ -300,7 +298,7 @@ The report includes:
 
 ## 📋 **Audit log — change log**
 
-> 🆕 **Latest update:** The Audit log button was not present in earlier Home page screenshots — it was added later. On the Home page, it appears **to the right of the "Admin panel" button**.
+
 
 ![Audit log view — filter, table, search by action](../diagrams/audit-log-zgodovina.png)
 
@@ -308,7 +306,7 @@ The report includes:
 
 > **ELI5:** Imagine you have a **sign-in book** at school. Every time someone changes something (adds a reservation, deletes an assessment, creates a user), it gets written in the book — with the time and name. You can go back anytime and check what happened. No guessing, no "who deleted this."
 
-**Access:** Only **admin** — in the Admin panel, click **"Dnevnik dogodkov"** (links to `/history`). Management does not have direct access — they receive a secret token link from the admin.
+**Access:** Only **admin** — in the Admin panel, click **"Dnevnik dogodkov"** (links to `/history`). Management does not have direct access.
 
 > **Tip:** The audit log is **append-only** — entries can only be added, never deleted. Even if admin deletes a user, the audit trail remains. This is intentional — the audit trail must be immutable.
 
@@ -320,7 +318,7 @@ The report includes:
 
 **Who can see the audit log?**
 - **Admin** — yes (via Admin panel → Dnevnik dogodkov)
-- **Management** — via secret token link
+- **Management** — **no**
 - **Teachers** — **no**
 
 
@@ -341,7 +339,6 @@ The report includes:
 | `delete_user` | User deleted (admin) |
 | `activate_user` | User activated (admin) |
 | `deactivate_user` | User deactivated (admin) |
-| `change_password` | User changed their own password |
 
 **Not logged:** data reads (who viewed what), failed login attempts — only actual changes.
 
@@ -511,7 +508,7 @@ kubectl exec -it -n sola-app deploy/sola-app -- psql $SOLA_DATABASE_URL         
 kubectl exec -it -n sola-app deploy/sola-app -- psql $SOLA_DATABASE_URL -c "SELECT * FROM users;"  # Run a query
 
 # === Longhorn ===
-kubectl get volumes.longhorn.io -n longhorn-system               # Disk status
+kubectl get volumes.longhorn.io -n longhorn-system                # Disk status
 kubectl get engineimages.longhorn.io -n longhorn-system           # Longhorn engine version
 kubectl get nodes.longhorn.io -n longhorn-system                  # Longhorn status on each node
 
@@ -524,8 +521,7 @@ git pull                                    # Pull the latest code
 
 ## 📖 **Glossary**
 
-*Explanation of technical terms for non-technical readers — if something in the documentation isn't clear, look here.*
-*💡 **ELI5** = *Explain Like I'm 5* — means the explanation is written as simply as possible, without professional jargon.*
+*Explanation of technical terms for non-technical readers — if something in the documentation isn't clear, look here. *
 
 | Term | Explanation |
 |---|---|
@@ -570,4 +566,4 @@ git pull                                    # Pull the latest code
 
 ---
 
-*Documentation for ostc-app — OŠ Toneta Čufarja Jesenice*
+*Documentation for sola-app*

@@ -177,7 +177,7 @@ Cloudflare DNS nastavitve (preveri na [dash.cloudflare.com](https://dash.cloudfl
 | Tip | Ime | Vrednost | Proxy status |
 |-----|-----|---------|-------------|
 | A | `@` ({{DOMAIN}}) | {{LB_IP}} | ✅ Cloudflare proxy (LoadBalancer) |
-| A | `www` | {{LB_IP}} | ✅ Cloudflare proxy (preusmeri www na aplikacijo) |
+| CNAME | `www` | {{LB_IP}} | ✅ Cloudflare proxy (preusmeri www na aplikacijo) |
 
 
 > **Cloudflare proxy** je kot varnostnik pred vrati — skrije tvoj pravi IP, šifrira promet (SSL), blokira napade. **Vedno prižgi oranžni oblak** ☁️🟠
@@ -253,13 +253,12 @@ kubectl get volumes.longhorn.io -n longhorn-system
 
 ## 📅 **Dnevni backup in reporti**
 
-> **V enem stavku:** Vsako noč ob 4:00 zjutraj sistem samodejno pošlje varnostno kopijo baze na `BACKUP_EMAIL` in dnevno poročilo o stanju na `STANJE_MAIL` (obe spremenljivki iz `.env` datoteke, obe trenutno na isti naslov). Na Discord ne pošilja ničesar samodejno — tja gre samo, kar ti izrecno zahtevaš preko Hermes agenta.
+> **V enem stavku:** Vsako noč ob 4:00 zjutraj sistem samodejno pošlje varnostno kopijo baze na `BACKUP_EMAIL` in dnevno poročilo o stanju na `STANJE_MAIL` (obe spremenljivki iz `.env` datoteke). 
 
 > **ELI5:** Predstavljaj si, da imaš **nočnega čuvaja**, ki vsako jutro ob 4:00:
 > 1. **Fotokopira celotno šolsko matično knjigo** in ti jo pošlje v nabiralnik (email).
 > 2. **Preveri ali vsi računalniki v šoli delujejo** in ti pošlje poročilo na email.
 >
-> Discord (šolski chat) pusti pri miru, razen če mu ti rečeš: "Hej, kaj se dogaja s strežnikom?" — takrat ti odgovori kar v chatu. Zamisli si ga kot **tihega pomočnika, ki ne moti, dokler ga ne pokličeš**.
 
 ### **Dnevni backup baze (`sola-db-backup`)**
 
@@ -300,7 +299,6 @@ Poročilo vključuje:
 
 ## 📋 **Audit log — dnevnik sprememb**
 
-> 🆕 **Zadnja posodobitev:** Audit log gumba na prejšnjih slikah domače strani še ni — dodan je bil naknadno. Na domači strani (Home page) se prikaže **desno od gumba "Admin panel"**.
 
 ![Audit log pregled — filter, tabela, iskanje po akcijah](diagrams/audit-log-zgodovina.png)
 
@@ -308,7 +306,7 @@ Poročilo vključuje:
 
 > **ELI5:** Predstavljaj si, da imaš **knjigo prihodov in odhodov** v šoli. Vsakič, ko nekdo nekaj spremeni (doda rezervacijo, zbriše ocenjevanje, ustvari uporabnika), se to zapiše v knjigo — s časom in imenom. Lahko greš kadarkoli nazaj in preveriš, kaj se je dogajalo. Brez ugibanj, brez "kdo je to zbrisal".
 
-**Dostop:** Samo **admin** — v Admin panelu klikni **"Dnevnik dogodkov"** (poveže na `/history`). Vodstvo audit loga ne vidi — dobi skrivno povezavo s tokenom.
+**Dostop:** Samo **admin** — v Admin panelu klikni **"Dnevnik dogodkov"** (poveže na `/history`). Vodstvo audit loga ne vidi.
 
 > **Nasvet:** Audit log je **append-only** — vanj se samo dodaja, nikoli ne briše. Tudi če admin zbriše uporabnika, ostane zapis o tem v audit logu. To je namerno — revizijska sled mora biti nespremenljiva.
 
@@ -320,7 +318,7 @@ Poročilo vključuje:
 
 **Kdo lahko vidi audit log?**
 - **Admin** — ja (prek Admin panel → Dnevnik dogodkov)
-- **Vodstvo** — prek skrivne povezave s tokenom
+- **Vodstvo** — **ne**
 - **Učitelji** — **ne**
 
 
@@ -341,7 +339,6 @@ Poročilo vključuje:
 | `delete_user` | Izbrisan uporabnik (admin) |
 | `activate_user` | Aktiviran uporabnik (admin) |
 | `deactivate_user` | Deaktiviran uporabnik (admin) |
-| `change_password` | Uporabnik spremenil svoje geslo |
 
 **Ne beleži se:** branje podatkov (kdo si je kaj ogledal), neuspeli poskusi prijave — samo dejanske spremembe.
 
@@ -504,18 +501,18 @@ kubectl rollout restart deployment -n sola-app sola-app          # Ponovni zagon
 kubectl rollout status deployment -n sola-app sola-app           # Spremljaj posodobitev
 kubectl logs -n sola-app deployment/sola-app --tail=50           # Zadnjih 50 vrstic loga
 kubectl logs -n sola-app deployment/sola-app --previous          # Log prejšnjega (crknjenega) Pod-a
-kubectl exec -it -n sola-app deploy/sola-app -- /bin/sh          # Poveži se v terminal (lupino) zabojnika
+kubectl exec -it -n sola-app deploy/sola-app -- /bin/sh          # Poveži se v terminal zabojnika
 
 # === Upravljanje baze ===
 kubectl exec -it -n sola-app deploy/sola-app -- psql $SOLA_DATABASE_URL                    # Poveži se na bazo
 kubectl exec -it -n sola-app deploy/sola-app -- psql $SOLA_DATABASE_URL -c "SELECT * FROM users;"  # Poženi poizvedbo
 
 # === Longhorn ===
-kubectl get volumes.longhorn.io -n longhorn-system               # Stanje diskov
+kubectl get volumes.longhorn.io -n longhorn-system                # Stanje diskov
 kubectl get engineimages.longhorn.io -n longhorn-system           # Različica Longhorn engine
 kubectl get nodes.longhorn.io -n longhorn-system                  # Longhorn status na vsakem nodu
 
-# === Git (na k3s-2) ===
+# === Git (na katerem koli nod-u v terminalu) ===
 cd /home/admin/reservation_app
 git pull                                    # Potegni zadnjo kodo
 ```
@@ -524,8 +521,7 @@ git pull                                    # Potegni zadnjo kodo
 
 ## 📖 **Razlaga pojmov**
 
-*Razlaga tehničnih izrazov za ne-tehnične bralce — če ti kaj v dokumentaciji ni jasno, poglej tukaj.*
-*💡 **ELI5** = *Explain Like I'm 5* (razloži kot petletniku) — pomeni, da je razlaga napisana čim bolj preprosto, brez strokovnega žargona.*
+*Razlaga tehničnih izrazov za ne-tehnične bralce — če ti kaj v dokumentaciji ni jasno, poglej tukaj — pomeni, da je razlaga napisana čim bolj preprosto, brez strokovnega žargona.*
 
 | Pojem | Razlaga |
 |---|---|
@@ -535,13 +531,12 @@ git pull                                    # Potegni zadnjo kodo
 | **Cluster** | **Gruča računalnikov, ki delajo kot eno** — dva HP ProBooka, povezana v isto Kubernetes gručo. Kubernetes skrbi, da aplikacije tečejo na kateremkoli računalniku je na voljo. |
 | **ConfigMap / Secret** | **Kubernetes objekti za shranjevanje nastavitev** — ConfigMap za javne nastavitve (npr. BASE_URL), Secret za občutljive podatke (gesla, ključi). Secret je zakodiran, ConfigMap je berljiv. |
 | **Control-plane** | **"Možgani" clustra** — nadzorni del, ki sprejema vse odločitve. Na obeh HP ProBookih imamo control-plane, kar pomeni, da imamo dva "možgana" — če en crkne, drugi prevzame. |
-| **Discord webhook** | **Samodejno pošiljanje sporočil na Discord** — uporabljamo ga za komunikacijo s Hermes agentom: ti poveš kaj, Hermes ti odgovori. Avtomatskih obvestil (nočni report, backup) ni — vse gre prek emaila. |
 | **DNS** | **Telefonski imenik interneta** — pretvori ime `{{DOMAIN}}` v IP naslov {{LB_IP}} (npr.). |
 | **Docker Image** | **Recept za aplikacijo** — vsebuje program, knjižnice, nastavitve. Iz enega recepta lahko narediš več identičnih zabojnikov (Podov). |
 | **ELI5** | *Explain Like I'm 5* (razloži kot petletniku) — način razlage, kjer se izogneš strokovnim izrazom in uporabiš vsakdanje analogije. Npr. Kubernetes ni "sistem za orkestracijo kontejnerjev", ampak "dirigent orkestra za aplikacije". |
 | **etcd** | **Spominska knjiga clustra** — shranjuje vse podatke o tem, kaj kje teče, kakšne so nastavitve, kdo je živ in kdo mrtev. Je možgani Kubernetesa. |
 | **Failover** | **Samodejna menjava straže** — ko primarni sistem crkne, pomožni samodejno prevzame njegovo vlogo. V našem primeru CNPG promovira replica v primary. |
-| **FastAPI** | **Ogrodje za spletne aplikacije v Pythonu** — v njem je napisana sola-app. Hitro, moderno, podpira samodejno dokumentacijo. |
+| **FastAPI** | **Ogrodje za spletne aplikacije v Pythonu** — v njem je napisana sola-app. Hitro, moderno, itd..|
 | **Git** | **Sistem za sledenje spremembam kode** — kot "Track Changes" v Wordu, ampak za programsko kodo. |
 | **GitHub Actions** | **Samodejno testiranje in gradnja ob vsaki spremembi** — ko nekdo naloži novo kodo na GitHub, se avtomatsko zgradi nov Docker Image. |
 | **Helm** | **"App Store" za Kubernetes** — orodje za nameščanje pripravljenih paketov (npr. Longhorn, CNPG) v Kubernetes. Namesto da ročno pišeš YAML, samo poveš "namesti Longhorn". |
@@ -554,9 +549,6 @@ git pull                                    # Potegni zadnjo kodo
 | **LoadBalancer** | **Recepcija v stavbi** — usmerja obiskovalce (uporabnike) na pravo aplikacijo. V našem primeru MetalLB na IP {{LB_IP}}. |
 | **Longhorn** | **Sistem, ki poskrbi, da imaš 2 kopiji podatkov na 2 različnih računalnikih** — distribuirano shranjevanje za Kubernetes, narejeno za manjše clustre. |
 | **MetalLB** | **LoadBalancer za domače (on-premise) okolje** — alternativa oblačnim LoadBalancerjem (AWS, Google). Teče kar na tvojih računalnikih. |
-|| **Node** | **Fizični računalnik v gruči** — v našem primeru k3s-1 (HP ProBook 455 G5) in k3s-2 (HP ProBook 450 G5). |
-|| **PCI-DSS** | **Varnostni standard za plačilne kartice** — *Payment Card Industry Data Security Standard*. Določa, kako morajo podjetja varovati podatke kreditnih kartic (Visa, Mastercard). Če bi šola kdaj pobirala plačila prek aplikacije (npr. prehrana, izleti), bi ga morala upoštevati. Za trenutno uporabo (rezervacije in ocene) **ni relevanten**. |
-|| **Pod** | **Zabojnik z aplikacijo** — najmanjša enota v Kubernetesu. Vsak pod teče ločeno: eden za samo aplikacijo (`sola-app`), drugi za bazo (`sola-db`). Vsak pod ima svoj zasebni IP naslov. |
 | **Primary (baza)** | **Glavna baza** — edina, v katero se lahko zapisuje. Vse spremembe gredo skozi njo. |
 | **PV (PersistentVolume)** | **Pravi disk na pravem računalniku** — Longhorn ga samodejno ustvari, ko narediš PVC. Za razliko od PVC-ja (zahtevek) je PV dejanski kos diska na enem od nodov. Preveriš ga z `kubectl get pv`. |
 | **PVC (PersistentVolumeClaim)** | **Virtualni trdi disk** — zahtevek za prostor na disku v Kubernetesu. Podatki ostanejo tudi, če se aplikacija preseli na drug računalnik. |
@@ -571,4 +563,4 @@ git pull                                    # Potegni zadnjo kodo
 
 ---
 
-*Dokumentacija za ostc-app — OŠ Toneta Čufarja Jesenice*
+*Dokumentacija za sola-app*
