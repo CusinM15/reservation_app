@@ -156,12 +156,12 @@ Ker audit log ni viden v običajnem meniju (vidljiv je samo adminu), lahko do nj
 
 | Vrsta izvoza | Kam kliknete | Kateri podatki |
 |---|---|---|
-| **Rezervacije prostorov** | 📥 Export rezervacij (v meniju) | Datum, ura, prostor, razred, učitelj |
-| **Ocenjevanja** | 📥 Export ocenjevanj (v meniju) | Datum, razred, tip ocenjevanja, učitelj |
+| **Rezervacije prostorov** | 📥 Izvoz rezervacij (v meniju) | Datum, ura, prostor, razred, učitelj |
+| **Ocenjevanja** | 📥 Izvoz ocenjevanj (v meniju) | Datum, razred, tip ocenjevanja, učitelj |
 
 ### Kako to naredite?
 
-1. V zgornjem meniju kliknite **📥 Export rezervacij** ali **📥 Export ocenjevanj**
+1. V zgornjem meniju kliknite **📥 Izvoz rezervacij** ali **📥 Izvoz ocenjevanj**
 2. Izberite **obdobje** (privzeto zadnji mesec):
    - **Od datuma** — začetek obdobja
    - **Do datuma** — konec obdobja

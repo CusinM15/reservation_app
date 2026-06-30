@@ -79,12 +79,12 @@ When management cancels a reservation or assessment, the application automatical
 
 | Export type | How to access | What data |
 |---|---|---|
-| **Room reservations** | 📥 Export rezervacij (in the menu) | Date, period, room, class, teacher |
-| **Assessments** | 📥 Export ocenjevanj (in the menu) | Date, class, assessment type, teacher |
+| **Room reservations** | 📥 Izvoz rezervacij (in the menu) | Date, period, room, class, teacher |
+| **Assessments** | 📥 Izvoz ocenjevanj (in the menu) | Date, class, assessment type, teacher |
 
 ### How to do it?
 
-1. In the top menu click **📥 Export rezervacij** or **📥 Export ocenjevanj**
+1. In the top menu click **📥 Izvoz rezervacij** or **📥 Izvoz ocenjevanj**
 2. Choose the **date range** (default: last month):
    - **From date** — start of the range
    - **To date** — end of the range

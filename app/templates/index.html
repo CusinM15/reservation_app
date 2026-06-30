@@ -109,8 +109,8 @@
     <a href="#" data-tab="ocenjevanja">Ocenjevanje</a>
     <a href="/auth/admin/users" id="admin-link" style="display:none;">Admin panel</a>
     <a href="/history" id="audit-link" style="display:none;">📋 Audit log</a>
-    <a href="#" id="export-rez-link" style="display:none;" onclick="openExportRezModal(); return false;">📥 Export rezervacij</a>
-    <a href="#" id="export-oc-link" style="display:none;" onclick="openExportOcModal(); return false;">📥 Export ocenjevanj</a>
+    <a href="#" id="export-rez-link" style="display:none;" onclick="openExportRezModal(); return false;">📥 Izvoz rezervacij</a>
+    <a href="#" id="export-oc-link" style="display:none;" onclick="openExportOcModal(); return false;">📥 Izvoz ocenjevanj</a>
     <span class="spacer"></span>
     <span class="user-info" id="userInfo"></span>
     <a href="#" onclick="openChangePasswordModal(); return false;">Spremeni geslo</a>
@@ -139,25 +139,6 @@
         <div class="prostor-tabs" id="prostor-tabs"></div>
         <div id="rez-views-container"></div>
       </div>
-      <!-- CSV izvoz rezervacij (samo admin/vodstvo) -->
-      <div class="card" id="csv-rezervacije-section" style="display:none;">
-        <h2>📥 Izvozi rezervacije (CSV)</h2>
-        <div class="filters">
-          <div>
-            <label>Od datuma</label>
-            <input type="date" id="csv-rez-from">
-          </div>
-          <div>
-            <label>Do datuma</label>
-            <input type="date" id="csv-rez-to">
-          </div>
-          <div>
-            <label>Prostor</label>
-            <select id="csv-rez-prostor"><option value="">Vsi prostori</option></select>
-          </div>
-          <button class="btn btn-success" onclick="downloadRezervacijeCSV()">⬇ Prenesi CSV</button>
-        </div>
-      </div>
     </div>
 
     <!-- OCENJEVANJA -->
@@ -175,17 +156,6 @@
         </div>
         <div id="oc-calendar-container">
           <p style="text-align:center;color:#999;padding:2rem;">Nalaganje ...</p>
-        </div>
-      </div>
-      <!-- CSV izvoz ocenjevanj (samo admin/vodstvo) -->
-      <div class="card" id="csv-ocenjevanja-section" style="display:none;">
-        <h2>📥 Izvozi ocenjevanja (CSV)</h2>
-        <div class="filters">
-          <div>
-            <label>Razred</label>
-            <select id="csv-oc-razred"><option value="">Vsi razredi</option></select>
-          </div>
-          <button class="btn btn-success" onclick="downloadOcenjevanjaCSV()">⬇ Prenesi CSV</button>
         </div>
       </div>
     </div>
@@ -398,10 +368,10 @@
     </div>
   </div>
 
-  <!-- Modal - Export rezervacij -->
+  <!-- Modal - Izvoz rezervacij -->
   <div class="modal-overlay" id="export-rez-modal">
     <div class="modal" style="max-width:450px;">
-      <h3>📥 Export rezervacij</h3>
+      <h3>📥 Izvoz rezervacij</h3>
       <p style="font-size:0.85rem;color:#666;margin-bottom:1rem;">Izberi obdobje in prostor za izvoz v CSV.</p>
       <div class="form-group">
         <label>Od datuma</label>
@@ -423,10 +393,10 @@
     </div>
   </div>
 
-  <!-- Modal - Export ocenjevanj -->
+  <!-- Modal - Izvoz ocenjevanj -->
   <div class="modal-overlay" id="export-oc-modal">
     <div class="modal" style="max-width:450px;">
-      <h3>📥 Export ocenjevanj</h3>
+      <h3>📥 Izvoz ocenjevanj</h3>
       <p style="font-size:0.85rem;color:#666;margin-bottom:1rem;">Izberi obdobje in razred za izvoz v CSV.</p>
       <div class="form-group">
         <label>Od datuma</label>
@@ -1093,13 +1063,6 @@
             document.getElementById('export-rez-link').style.display = 'inline';
             document.getElementById('export-oc-link').style.display = 'inline';
         }
-        // CSV izvoz — admin in vodstvo
-        if (currentUser.role === 'admin' || currentUser.role === 'vodstvo') {
-            const csvRez = document.getElementById('csv-rezervacije-section');
-            const csvOc = document.getElementById('csv-ocenjevanja-section');
-            if (csvRez) csvRez.style.display = 'block';
-            if (csvOc) csvOc.style.display = 'block';
-        }
         const allowedIds = [1,2,3,4]; const allowedRoles = ['admin','vodstvo'];
         const btnContainer = document.getElementById('block-btn-container');
         if (allowedIds.includes(currentUser.id) || allowedRoles.includes(currentUser.role)) btnContainer.style.display = 'inline';
@@ -1111,12 +1074,6 @@
       populateSelect('rez-form-prostor', prostori);
       populateSelect('weekly-prostor', prostori);
       populateSelect('fullday-prostor', prostori);
-      // Populate CSV dropdowns
-      const csvProstor = document.getElementById('csv-rez-prostor');
-      if (csvProstor) {
-        csvProstor.innerHTML = '<option value="">Vsi prostori</option>' + prostori.map(p => `<option value="${p}">${prostorLabel(p)}</option>`).join('');
-      }
-      populateOcRazredi('csv-oc-razred', razredi, true);
       populateOcRazredi('oc-razred', razredi, true);
       populateOcRazredi('oc-form-razred', razredi);
       populateHours('rez-form-hour');
@@ -1151,36 +1108,7 @@
       currentOcMonth = new Date().getFullYear() + '-' + String(new Date().getMonth() + 1).padStart(2, '0');
       loadAllBlockedDates();
       loadAssessments();
-
-      // Default CSV dates: prejsnji mesec do danes
-      const csvRezFrom = document.getElementById('csv-rez-from');
-      const csvRezTo = document.getElementById('csv-rez-to');
-      if (csvRezFrom && csvRezTo) {
-        const now = new Date();
-        const oneMonthAgo = new Date(now);
-        oneMonthAgo.setMonth(oneMonthAgo.getMonth() - 1);
-        csvRezFrom.value = formatDate(oneMonthAgo);
-        csvRezTo.value = formatDate(now);
-      }
     });
-
-    // ── CSV izvoz ──────────────────────────────────────────
-    function downloadRezervacijeCSV() {
-      const from = document.getElementById('csv-rez-from').value;
-      const to = document.getElementById('csv-rez-to').value;
-      const prostor = document.getElementById('csv-rez-prostor').value;
-      let url = '/api/rezervacije/export/csv?';
-      if (from) url += 'date_from=' + from + '&';
-      if (to) url += 'date_to=' + to + '&';
-      if (prostor) url += 'prostor=' + prostor;
-      window.location.href = url;
-    }
-    function downloadOcenjevanjaCSV() {
-      const razred = document.getElementById('csv-oc-razred').value;
-      let url = '/api/ocenjevanja/export/csv?';
-      if (razred) url += 'razred=' + razred;
-      window.location.href = url;
-    }
 
     // ── Popravek za date pickerje: klik kjerkoli na input odpre koledar ──
     document.querySelectorAll('input[type=date]').forEach(el => {
