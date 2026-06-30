@@ -16,7 +16,7 @@ Kratek vodnik po aplikaciji **ostc-app**: kako se prijaviti, rezervirati prostor
 
 ## 🚪 1. Prvi dostop — kako sploh pridem noter?
 
-Obiščite [aplikacijo](https://{{DOMAIN}}). Ker še nimate gesla (ali ste ga pozabili — se dogaja 😅), sledite tem korakom:
+Obiščite [aplikacijo](https://ostc-app.org). Ker še nimate gesla (ali ste ga pozabili — se dogaja 😅), sledite tem korakom:
 
 1. Na prijavni strani kliknite **"Pozabljeno geslo?"**
 2. Vnesite svoj **šolski e-poštni naslov** (tistega @*, ki ga uporabljate v službi)

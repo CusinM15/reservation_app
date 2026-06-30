@@ -44,7 +44,7 @@ kubectl get hpa -n sola-app
 ![HA omrežni tok: Internet → Cloudflare → LoadBalancer → app poda](diagrams/ha-network.png)
 
 
-- **Cloudflare** kaže na fiksni IP `{{LB_IP}}` — to je javna vstopna točka
+- **Cloudflare** kaže na fiksni IP `193.2.171.10` — to je javna vstopna točka
 - **MetalLB** (Layer2 način) ta IP oglašuje na enem od nodov
 - Če tisti node crkne, **se IP samodejno preseli na drugega**, kot da bi selili telefonsko številko na drugo centralo — klicatelji (uporabniki) ne vedo in jih ne briga, kje fizično stoji telefon
 
@@ -129,7 +129,7 @@ Etcd deluje na principu **kvoruma**. Za 2 noda to pomeni:
 
 **App povezava na bazo:**
 ```
-DATABASE_URL=postgresql://sola:***@sola-db-rw.sola:{{K8S_DB_PORT}}/sola
+DATABASE_URL=postgresql://sola:***@sola-db-rw.sola:5432/sola
 ```
 Service `sola-db-rw` vedno kaže na trenutni primary. App se nikoli ne rabi ukvarjati s tem, kateri node je primary.
 
@@ -161,7 +161,7 @@ Service `sola-db-rw` vedno kaže na trenutni primary. App se nikoli ne rabi ukva
 ssh k3s-1 "sudo poweroff"
 
 # Preveri, da app ostane dostopen
-curl -I https://{{DOMAIN}}
+curl -I https://ostc-app.org
 
 # Po ~2 min preveri stanje
 kubectl get pods -n sola -o wide      # sola-db-2 naj bo primary
@@ -175,7 +175,7 @@ kubectl get cluster -n sola sola-db    # CNPG naj ima 2 ready instance
 
 ## 7. Pomembne opombe
 
-- **Cloudflare** kaže na LoadBalancer IP `{{LB_IP}}` — če se ta IP spremeni, je treba posodobiti Cloudflare DNS
+- **Cloudflare** kaže na LoadBalancer IP `193.2.171.10` — če se ta IP spremeni, je treba posodobiti Cloudflare DNS
 - **Longhorn** poskrbi za PVC-je — podatki so varni tudi ob izgubi enega noda
 - **Ni custom failover skript** — vse upravlja CNPG operator (pusti ga pri miru, dela kar mora)
 - **Failover je popolnoma avtomatski** — ni potrebno ročno posredovanje

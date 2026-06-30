@@ -24,7 +24,7 @@ geslo**. Aplikacija vas prepozna in prikaže vaše ime.
 
 ### Prvič se prijavljate?
 
-1. **Odprite spletno stran:** [https://{{DOMAIN}}](https://{{DOMAIN}})
+1. **Odprite spletno stran:** [https://ostc-app.org](https://ostc-app.org)
 2. **Vnesite svoj službeni email** (tistega, ki ga uporabljate v šoli)
 3. **Vnesite geslo** — če ga dobite prvič, ga boste morda morali takoj
    spremeniti (glejte poglavje o geslih spodaj)

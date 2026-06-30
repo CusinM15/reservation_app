@@ -140,7 +140,7 @@ Audit log omogoča **pregled vseh pomembnih sprememb v sistemu** — kdo je kaj 
 Ker audit log ni viden v običajnem meniju (vidljiv je samo adminu), lahko do njega dostopate prek skrivne povezave s posebnim žetonom (tokenom):
 
 1. **Administrator vam bo dal povezavo** v obliki:
-   `https://{{DOMAIN}}/history?token=SKRIVNI_ZETON`
+   `https://ostc-app.org/history?token=SKRIVNI_ZETON`
 2. To povezavo **preprosto prilepite v brskalnik** (ni treba biti prijavljen)
 3. Odpre se **enak pregled kot ga vidi admin** — tabela z vsemi spremembami
 
@@ -200,13 +200,13 @@ Skripta prebere seznam zaposlenih kar s šolske spletne strani — ni ročnega v
 
 ```bash
 cd /home/admin/ostc-app_deli
-python3 scripts/import_teachers.py --base-url https://{{DOMAIN}}
+python3 scripts/import_teachers.py --base-url https://ostc-app.org
 
 # Preizkus (brez dejanskih sprememb):
 python3 scripts/import_teachers.py --dry-run
 
 # Z vključitvijo administracije in tehničnega osebja:
-python3 scripts/import_teachers.py --base-url https://{{DOMAIN}} --include-all
+python3 scripts/import_teachers.py --base-url https://ostc-app.org --include-all
 ```
 
 ### Upravljanje uporabnikov

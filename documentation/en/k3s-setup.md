@@ -19,11 +19,11 @@ Instructions for setting up a k3s Kubernetes cluster on **two nodes** (both cont
 ## 📋 Architecture (current)
 
 ```
-Internet → Cloudflare → {{DOMAIN}}
+Internet → Cloudflare → ostc-app.org
                             │
                             ▼
                     MetalLB LoadBalancer
-                    ({{LB_IP}}:{{LB_PORT}})
+                    (193.2.171.10:8002)
                             │
                ┌────────────┴────────────┐
                │                         │
@@ -64,7 +64,7 @@ curl -sfL https://get.k3s.io | sh -s - server \
   --write-kubeconfig-mode=644 \
   --cluster-cidr=10.42.0.0/16 \
   --service-cidr=10.43.0.0/16 \
-  --node-ip={{K3S_1_IP}}
+  --node-ip=193.2.171.250
 ```
 
 ### 1.2 Get the token
@@ -77,12 +77,12 @@ sudo cat /var/lib/rancher/k3s/server/node-token
 
 ```bash
 curl -sfL https://get.k3s.io | sh -s - server \
-  --server https://{{K3S_1_IP}}:6443 \
+  --server https://193.2.171.250:6443 \
   --token <TOKEN> \
   --disable=traefik `# using MetalLB LoadBalancer instead of Traefik` \
   --disable=servicelb \
   --write-kubeconfig-mode=644 \
-  --node-ip={{K3S_2_IP}}
+  --node-ip=193.2.171.249
 ```
 
 ### 1.4 Verify
@@ -211,7 +211,7 @@ kubectl create secret generic sola-secrets \
   --from-literal=MAIL_PORT=587 \
   --from-literal=MAIL_FROM=sola@example.com \
   --from-literal=BACKUP_EMAIL=admin@sola.si \
-  --from-literal=DATABASE_URL=postgresql://sola:***@sola-db-rw.sola:{{K8S_DB_PORT}}/sola
+  --from-literal=DATABASE_URL=postgresql://sola:***@sola-db-rw.sola:5432/sola
 ```
 
 ### 5.3 Deploy with overlays

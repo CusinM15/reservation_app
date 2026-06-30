@@ -10,7 +10,7 @@
 
 # Domain
 
-Current domain: **`{{DOMAIN}}`** (Cloudflare proxied)
+Current domain: **`ostc-app.org`** (Cloudflare proxied)
 
 ---
 
@@ -18,7 +18,7 @@ Current domain: **`{{DOMAIN}}`** (Cloudflare proxied)
 
 | Type | Name | Value | Proxy | Purpose |
 |---|---|---|---|---|
-| A | `{{DOMAIN}}` | `{{K3S_2_IP}}` | ✅ Proxied (orange cloud) | Application |
+| A | `ostc-app.org` | `193.2.171.249` | ✅ Proxied (orange cloud) | Application |
 
 Cloudflare proxy means:
 - Public DNS resolves to Cloudflare IPs
@@ -31,7 +31,7 @@ Cloudflare proxy means:
 ## 🔄 Traffic flow
 
 ```
-🌐 User → https://{{DOMAIN}}
+🌐 User → https://ostc-app.org
   → Cloudflare DNS → Cloudflare edge
     → Cloudflare proxy → 192.168.1.2:80 (k3s-2)
       → Service LoadBalancer (MetalLB, 192.168.1.10:8002)
@@ -49,7 +49,7 @@ http://192.168.1.10 → direct to LoadBalancer
 |---|---|---|
 | May 2026 | `sola-app.local` | Initial local domain (mDNS) |
 | June 2026 | `sola-app.ostc.si` | Temporary test URL |
-| **June 2026** | **`{{DOMAIN}}`** | **Current production domain** |
+| **June 2026** | **`ostc-app.org`** | **Current production domain** |
 
 ---
 
@@ -58,7 +58,7 @@ http://192.168.1.10 → direct to LoadBalancer
 `BASE_URL` in ConfigMap (`sola-config`, namespace `sola-app`):
 
 ```yaml
-BASE_URL: "https://{{DOMAIN}}"
+BASE_URL: "https://ostc-app.org"
 ```
 
 ---

@@ -20,9 +20,9 @@
 > ```
 >
 > Skripta zamenja vse IP-je v `.md` datotekah. Po zagonu lahko komande
-> neposredno kopiraš in prilepiš v terminal — delujejo brez spreminjanja.
->
-> > 💡 **Opomba:** Placeholderji ({{LB_IP}}, {{K3S_1_IP}}, itd.) ostanejo tudi v `.drawio` diagramih — skripta `replace-ips.sh` jih pusti nedotaknjene, ker so del slik.
+> neposredno kopiraš in prilepiš v terminal.
+>           
+> > 💡 **Opomba:** Placeholderji (193.2.171.10, 193.2.171.250, itd.) ostanejo tudi v `.drawio` diagramih — skripta `replace-ips.sh` jih pusti nedotaknjene, ker so del slik.
 
 ---
 
@@ -72,12 +72,12 @@ Ta datoteka je **glavni vstopni dokument** — kot recepcija v šoli, ki ti pove
 
 > **ELI5:** Predstavljaj si **dva učitelja, ki imata enak dnevnik** (aplikacijo) in **ista dva pomočnika** (baza) — eden je glavni, drugi budno spremlja vse, kar glavni naredi. Če glavni zboli (crkne), pomočnik takoj prevzame njegovo mesto. Učenci (uporabniki) tega sploh ne opazijo. Vse skupaj je shranjeno v **dveh sefih** (Longhorn), tako da tudi če en sef crkne, podatki niso izgubljeni.
 
-> **Simple explanation of the diagram below:**
-> - Two computers (k3s-1 and k3s-2) are connected in a cluster — like two desks in the same office.
-> - On each computer runs **one copy of the application (sola-app Pod)** and **one copy of the database (sola-db)**.
-> - The database has one **primary (PRIMARY)** and one **replica (REPLICA)**, which constantly copies everything the primary does.
-> - All data is stored in **Longhorn** — a system that ensures you have 2 copies on 2 different computers, so even if one computer crashes, no data is lost.
-> - When a user opens a browser, traffic goes through **Cloudflare** (security filter + SSL) to **MetalLB LoadBalancer** (reception desk), which sends it to one of the two application copies.
+> **Razlaga diagrama:**
+> - Dva računalnika (k3s-1 in k3s-2) skupaj v gruči — kot dve mizi  pisarni.
+> - Na vsakem računalniku tečeta **ena kopija aplikacije (sola-app Pod)** in **ena kopija podatkovne baze (sola-db)**.
+> - Podatkovna baza ima eno **primarno (PRIMARY)** in eno **replikacijsko (REPLICA)** instanco, ki nenehno kopira vse, kar primarna izvede.
+> - Vsi podatki so shranjeni v **Longhornu** – sistemu, ki zagotavlja, da imate 2 kopiji na 2 različnih računalnikih, tako da tudi če en računalnik odpove, ne pride do izgube podatkov.
+> - Ko uporabnik odpre brskalnik, promet poteka prek **Cloudflara** (varnostni filter + SSL) do **MetalLB LoadBalancerja** (recepcija), ki ga usmeri na eno od obeh kopij aplikacije.
 
 ### **Strojna in omrežna shema**
 
@@ -90,24 +90,24 @@ Ta datoteka je **glavni vstopni dokument** — kot recepcija v šoli, ki ti pove
 
 ### **Prometni tok**
 
-> **Preprosta razlaga:** Ko učitelj vnese `https://{{DOMAIN}}` v brskalnik, se zgodi tole: brskalnik najprej vpraša Cloudflare (telefonski imenik interneta), kje je ta stran. Cloudflare pogleda v svoj imenik, vidi IP {{LB_IP}}, in pošlje uporabnika tja. Tam ga pričaka **MetalLB** (recepcija), ki ga preusmeri na eno od dveh kopij aplikacije — katerakoli je trenutno prosta.
+> **Preprosta razlaga:** Ko učitelj vnese `https://ostc-app.org` v brskalnik, se zgodi tole: brskalnik najprej vpraša Cloudflare (telefonski imenik interneta), kje je ta stran. Cloudflare pogleda v svoj imenik, vidi IP 193.2.171.10, in pošlje uporabnika tja. Tam ga pričaka **MetalLB** (recepcija), ki ga preusmeri na eno od dveh kopij aplikacije — katerakoli je trenutno prosta.
 
 ![Prometni tok: uporabnik → Cloudflare → LoadBalancer → app pod](diagrams/prometni-tok.png)
 
 
-> **Cloudflare proxy** kaže direktno na **LoadBalancer (`{{LB_IP}}`, port 80)** — promet gre direktno na MetalLB, HA deluje samodejno — če en node crkne, MetalLB premakne IP na drugega.
+> **Cloudflare proxy** kaže direktno na **LoadBalancer (`193.2.171.10`, port 80)** — promet gre direktno na MetalLB, HA deluje samodejno — če en node crkne, MetalLB premakne IP na drugega.
 
-> **Nasvet:** Vedno uporabljaj Cloudflare proxy (oranžni oblak) — ne samo DNS-only (sivi oblak). Proxy ti da brezplačen SSL, DDoS zaščito, in skrije tvoj pravi IP pred hekerji. Če daš samo DNS, tvoj IP {{LB_IP}} javno razkriješ in vsak ga lahko direktno napade.
+> **Nasvet:** Vedno uporabljaj Cloudflare proxy (oranžni oblak) — ne samo DNS-only (sivi oblak). Proxy ti da brezplačen SSL, DDoS zaščito, in skrije tvoj pravi IP pred hekerji. Če daš samo DNS, tvoj IP 193.2.171.10 javno razkriješ in vsak ga lahko direktno napade.
 
 ### **Pregled komponent**
 
 |  | Komponenta | Lokacija | Namen |
 |---|---|---|---|
-| | **k3s-1** | HP ProBook 455 G5 ({{K3S_1_IP}}) | Control-plane, app pod, PG primary (glavni računalnik) |
-| | **k3s-2** | HP ProBook 450 G5 ({{K3S_2_IP}}) | Control-plane, app pod, PG replica (pomožni računalnik) |
+| | **k3s-1** | HP ProBook 455 G5 (193.2.171.250) | Control-plane, app pod, PG primary (glavni računalnik) |
+| | **k3s-2** | HP ProBook 450 G5 (193.2.171.249) | Control-plane, app pod, PG replica (pomožni računalnik) |
 | | **Sola App (FastAPI)** | 2 poda (oba noda) | Rezervacije, ocenjevanja, prijava |
 | | **Longhorn** | Oba noda | Distribuirano shranjevanje (PVC-ji) — podatki v 2 kopijah |
-| | **MetalLB** | Oba noda | LoadBalancer IP ({{LB_IP}}) — vhodna vrata |
+| | **MetalLB** | Oba noda | LoadBalancer IP (193.2.171.10) — vhodna vrata |
 | | **Cloudflare** | Zunanji | DNS, SSL, proxy — varnost na internetu |
 
 ---
@@ -127,14 +127,14 @@ Ta datoteka je **glavni vstopni dokument** — kot recepcija v šoli, ki ti pove
 
 ### **Omrežne nastavitve**
 
-> **ELI5:** Vsak računalnik v omrežju ima svoj hišni naslov (IP). k3s-1 je na naslovu {{K3S_1_IP}}, k3s-2 pa na {{K3S_2_IP}}. Skupaj z drugimi napravami v šoli tvorijo sosesko (/24 pomeni, da je v isti soseski do 254 naprav). Gateway ({{GATEWAY_IP}}) je glavna vrata v šoli, skozi katera gre ves promet proti internetu.
+> **ELI5:** Vsak računalnik v omrežju ima svoj hišni naslov (IP). k3s-1 je na naslovu 193.2.171.250, k3s-2 pa na 193.2.171.249. Skupaj z drugimi napravami v šoli tvorijo sosesko (/24 pomeni, da je v isti soseski do 254 naprav). Gateway (192.168.1.254) je glavna vrata v šoli, skozi katera gre ves promet proti internetu.
 
 ```bash
 # Lokalno omrežje (Arnes)
-k3s-1: {{K3S_1_IP}}/24
-k3s-2: {{K3S_2_IP}}/24
-Gateway: {{GATEWAY_IP}}
-DNS: {{DNS_IP}}
+k3s-1: 193.2.171.250/24
+k3s-2: 193.2.171.249/24
+Gateway: 192.168.1.254
+DNS: 192.168.1.253
 
 # Kubernetes Pod CIDR — zasebni naslovi znotraj clustra
 # (aplikacije v Kubernetesu dobijo te naslove, niso vidni od zunaj)
@@ -144,19 +144,19 @@ DNS: {{DNS_IP}}
 10.43.0.0/16
 
 # LoadBalancer IP pool (MetalLB) — javni naslovi, ki so vidni v omrežju
-{{METALLB_RANGE_START}} - {{METALLB_RANGE_END}}
+192.168.1.10 - 192.168.1.20
 ```
 
-> **Pogosta napaka:** Pod CIDR (10.42.0.0/16) in Service CIDR (10.43.0.0/16) se ne smeta prekrivati z lokalnim omrežjem ({{K3S_1_IP}}/24). Če se, Kubernetes ne bo mogel pravilno usmerjati prometa. Vedno preveri z `ip route` na nodih, preden nastaviš k3s.
+> **Pogosta napaka:** Pod CIDR (10.42.0.0/16) in Service CIDR (10.43.0.0/16) se ne smeta prekrivati z lokalnim omrežjem (193.2.171.250/24). Če se, Kubernetes ne bo mogel pravilno usmerjati prometa. Vedno preveri z `ip route` na nodih, preden nastaviš k3s.
 
 ### **Dostop**
 
 ```bash
 # SSH na k3s-1 (glavni)
-ssh {{SSH_USER}}@{{K3S_1_IP}}
+ssh admin_os@193.2.171.250
 
 # SSH na k3s-2 (pomožni)
-ssh {{SSH_USER}}@{{K3S_2_IP}}
+ssh admin_os@193.2.171.249
 
 # Preveri, ali vsi poganjajo
 kubectl get nodes
@@ -168,15 +168,15 @@ kubectl get nodes
 
 ## ☁️ **Domena in Cloudflare**
 
-> **V enem stavku:** Cloudflare je **telefonski imenik interneta** — ko nekdo vnese `{{DOMAIN}}` v brskalnik, Cloudflare pove, kje (na katerem IP-ju) to aplikacijo najde, in poskrbi za varnostno povezavo (SSL).
+> **V enem stavku:** Cloudflare je **telefonski imenik interneta** — ko nekdo vnese `ostc-app.org` v brskalnik, Cloudflare pove, kje (na katerem IP-ju) to aplikacijo najde, in poskrbi za varnostno povezavo (SSL).
 
-> **ELI5 — DNS:** DNS (Domain Name System) je kot telefonski imenik za internet. Ti vpišeš ime (`{{DOMAIN}}`), DNS vrne številko (IP naslov). Namesto da se spomniš številke {{LB_IP}}, se spomniš imena `{{DOMAIN}}`. Veliko lažje, kajne?
+> **ELI5 — DNS:** DNS (Domain Name System) je kot telefonski imenik za internet. Ti vpišeš ime (`ostc-app.org`), DNS vrne številko (IP naslov). Namesto da se spomniš številke 193.2.171.10, se spomniš imena `ostc-app.org`. Veliko lažje, kajne?
 
 Cloudflare DNS nastavitve (preveri na [dash.cloudflare.com](https://dash.cloudflare.com)):
 
 | Tip | Ime | Vrednost | Proxy status |
 |-----|-----|---------|-------------|
-| A | `@` ({{DOMAIN}}) | {{LB_IP}} | ✅ Cloudflare proxy (LoadBalancer) |
+| A | `@` (ostc-app.org) | 193.2.171.10 | ✅ Cloudflare proxy (LoadBalancer) |
 
 > **Cloudflare proxy** je kot varnostnik pred vrati — skrije tvoj pravi IP, šifrira promet (SSL), blokira napade. **Vedno prižgi oranžni oblak** ☁️🟠
 
@@ -534,7 +534,7 @@ git pull                                    # Potegni zadnjo kodo
 | **ConfigMap / Secret** | **Kubernetes objekti za shranjevanje nastavitev** — ConfigMap za javne nastavitve (npr. BASE_URL), Secret za občutljive podatke (gesla, ključi). Secret je zakodiran, ConfigMap je berljiv. |
 | **Control-plane** | **"Možgani" clustra** — nadzorni del, ki sprejema vse odločitve. Na obeh HP ProBookih imamo control-plane, kar pomeni, da imamo dva "možgana" — če en crkne, drugi prevzame. |
 | **Discord webhook** | **Samodejno pošiljanje sporočil na Discord** — uporabljamo ga za komunikacijo s Hermes agentom: ti poveš kaj, Hermes ti odgovori. Avtomatskih obvestil (nočni report, backup) ni — vse gre prek emaila. |
-| **DNS** | **Telefonski imenik interneta** — pretvori ime `{{DOMAIN}}` v IP naslov {{LB_IP}} (npr.). |
+| **DNS** | **Telefonski imenik interneta** — pretvori ime `ostc-app.org` v IP naslov 193.2.171.10 (npr.). |
 | **Docker Image** | **Recept za aplikacijo** — vsebuje program, knjižnice, nastavitve. Iz enega recepta lahko narediš več identičnih zabojnikov (Podov). |
 | **ELI5** | *Explain Like I'm 5* (razloži kot petletniku) — način razlage, kjer se izogneš strokovnim izrazom in uporabiš vsakdanje analogije. Npr. Kubernetes ni "sistem za orkestracijo kontejnerjev", ampak "dirigent orkestra za aplikacije". |
 | **etcd** | **Spominska knjiga clustra** — shranjuje vse podatke o tem, kaj kje teče, kakšne so nastavitve, kdo je živ in kdo mrtev. Je možgani Kubernetesa. |
@@ -549,7 +549,7 @@ git pull                                    # Potegni zadnjo kodo
 | **IoT (Internet of Things)** | **Pametne naprave, povezane v internet** — npr. pametni termostati, kamere, senzorji. k3s je posebej narejen za take naprave (malo porabijo, niso zmogljivi), ampak deluje tudi na prenosnikih — kot gorilnik za kampiranje, ki ga lahko uporabiš tudi doma v kuhinji. |
 | **k3s** | **Lažja različica Kubernetesa** — posebej narejena za manjše računalnike in IoT naprave. Uporabljamo jo na HP ProBookih, ker je polni Kubernetes pretežak za prenosnike. Isti `kubectl` ukazi delujejo za oboje. |
 | **Kubernetes (k8s)** | **Dirigent orkestra za aplikacije** — sistem, ki avtomatsko upravlja, kje in kako tečejo tvoje aplikacije. Če ena crkne, jo samodejno zažene drugje. |
-| **LoadBalancer** | **Recepcija v stavbi** — usmerja obiskovalce (uporabnike) na pravo aplikacijo. V našem primeru MetalLB na IP {{LB_IP}}. |
+| **LoadBalancer** | **Recepcija v stavbi** — usmerja obiskovalce (uporabnike) na pravo aplikacijo. V našem primeru MetalLB na IP 193.2.171.10. |
 | **Longhorn** | **Sistem, ki poskrbi, da imaš 2 kopiji podatkov na 2 različnih računalnikih** — distribuirano shranjevanje za Kubernetes, narejeno za manjše clustre. |
 | **MetalLB** | **LoadBalancer za domače (on-premise) okolje** — alternativa oblačnim LoadBalancerjem (AWS, Google). Teče kar na tvojih računalnikih. |
 || **Node** | **Fizični računalnik v gruči** — v našem primeru k3s-1 (HP ProBook 455 G5) in k3s-2 (HP ProBook 450 G5). |

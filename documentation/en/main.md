@@ -22,7 +22,7 @@
 > The script replaces all IPs in `.md` files. After running, you can copy and
 > paste the commands directly into the terminal — they work without modification.
 >
-> > 💡 **Note:** Placeholders ({{LB_IP}}, {{K3S_1_IP}}, etc.) remain in `.drawio` diagrams — the `replace-ips.sh` script leaves them untouched as they are part of the image.
+> > 💡 **Note:** Placeholders (193.2.171.10, 193.2.171.250, etc.) remain in `.drawio` diagrams — the `replace-ips.sh` script leaves them untouched as they are part of the image.
 
 ---
 
@@ -89,23 +89,23 @@ This file is **the main entry point** — like the reception desk at school that
 
 ### **Traffic Flow**
 
-> **Simple explanation:** When a teacher enters `https://{{DOMAIN}}` in a browser, this happens: the browser first asks Cloudflare (the internet's phonebook) where this page is. Cloudflare checks its directory, sees IP {{LB_IP}}, and sends the user there. There they are greeted by **MetalLB** (reception desk), which redirects them to one of the two application copies — whichever is currently free.
+> **Simple explanation:** When a teacher enters `https://ostc-app.org` in a browser, this happens: the browser first asks Cloudflare (the internet's phonebook) where this page is. Cloudflare checks its directory, sees IP 193.2.171.10, and sends the user there. There they are greeted by **MetalLB** (reception desk), which redirects them to one of the two application copies — whichever is currently free.
 
-> **Cloudflare proxy** points directly to the **LoadBalancer (`{{LB_IP}}`, port 80)** — traffic goes directly to MetalLB, HA works automatically — if one node crashes, MetalLB moves the IP to the other.
+> **Cloudflare proxy** points directly to the **LoadBalancer (`193.2.171.10`, port 80)** — traffic goes directly to MetalLB, HA works automatically — if one node crashes, MetalLB moves the IP to the other.
 
 ![Traffic flow: user → Cloudflare → LoadBalancer → app pod](../diagrams/prometni-tok.png)
 
-> **Tip:** Always use Cloudflare proxy (orange cloud) — not just DNS-only (gray cloud). Proxy gives you free SSL, DDoS protection, and hides your real IP from hackers. If you use only DNS, you publicly expose your IP {{LB_IP}} and anyone can attack it directly.
+> **Tip:** Always use Cloudflare proxy (orange cloud) — not just DNS-only (gray cloud). Proxy gives you free SSL, DDoS protection, and hides your real IP from hackers. If you use only DNS, you publicly expose your IP 193.2.171.10 and anyone can attack it directly.
 
 ### **Component Overview**
 
 |  | Component | Location | Purpose |
 |---|---|---|---|
-| | **k3s-1** | HP ProBook 455 G5 ({{K3S_1_IP}}) | Control-plane, app pod, PG primary (main computer) |
-| | **k3s-2** | HP ProBook 450 G5 ({{K3S_2_IP}}) | Control-plane, app pod, PG replica (backup computer) |
+| | **k3s-1** | HP ProBook 455 G5 (193.2.171.250) | Control-plane, app pod, PG primary (main computer) |
+| | **k3s-2** | HP ProBook 450 G5 (193.2.171.249) | Control-plane, app pod, PG replica (backup computer) |
 | | **Sola App (FastAPI)** | 2 pods (both nodes) | Reservations, assessments, login |
 | | **Longhorn** | Both nodes | Distributed storage (PVCs) — data in 2 copies |
-| | **MetalLB** | Both nodes | LoadBalancer IP ({{LB_IP}}) — entry gate |
+| | **MetalLB** | Both nodes | LoadBalancer IP (193.2.171.10) — entry gate |
 | | **Cloudflare** | External | DNS, SSL, proxy — security on the internet |
 
 ---
@@ -127,14 +127,14 @@ This file is **the main entry point** — like the reception desk at school that
 
 ### **Network Settings**
 
-> **ELI5:** Every computer on the network has its own house address (IP). k3s-1 is at address {{K3S_1_IP}}, k3s-2 is at {{K3S_2_IP}}. Together with other devices in the school they form a neighborhood (/24 means up to 254 devices in the same neighborhood). The gateway ({{GATEWAY_IP}}) is the main door of the school, through which all traffic goes to the internet.
+> **ELI5:** Every computer on the network has its own house address (IP). k3s-1 is at address 193.2.171.250, k3s-2 is at 193.2.171.249. Together with other devices in the school they form a neighborhood (/24 means up to 254 devices in the same neighborhood). The gateway (192.168.1.254) is the main door of the school, through which all traffic goes to the internet.
 
 ```bash
 # Local network (Arnes)
-k3s-1: {{K3S_1_IP}}/24
-k3s-2: {{K3S_2_IP}}/24
-Gateway: {{GATEWAY_IP}}
-DNS: {{DNS_IP}}
+k3s-1: 193.2.171.250/24
+k3s-2: 193.2.171.249/24
+Gateway: 192.168.1.254
+DNS: 192.168.1.253
 
 # Kubernetes Pod CIDR — private addresses within the cluster
 # (applications in Kubernetes get these addresses, not visible from outside)
@@ -144,19 +144,19 @@ DNS: {{DNS_IP}}
 10.43.0.0/16
 
 # LoadBalancer IP pool (MetalLB) — public addresses visible on the network
-{{METALLB_RANGE_START}} - {{METALLB_RANGE_END}}
+192.168.1.10 - 192.168.1.20
 ```
 
-> **Common mistake:** Pod CIDR (10.42.0.0/16) and Service CIDR (10.43.0.0/16) must not overlap with the local network ({{K3S_1_IP}}/24). If they do, Kubernetes won't be able to route traffic correctly. Always check with `ip route` on the nodes before setting up k3s.
+> **Common mistake:** Pod CIDR (10.42.0.0/16) and Service CIDR (10.43.0.0/16) must not overlap with the local network (193.2.171.250/24). If they do, Kubernetes won't be able to route traffic correctly. Always check with `ip route` on the nodes before setting up k3s.
 
 ### **Access**
 
 ```bash
 # SSH to k3s-1 (main)
-ssh {{SSH_USER}}@{{K3S_1_IP}}
+ssh admin_os@193.2.171.250
 
 # SSH to k3s-2 (backup)
-ssh {{SSH_USER}}@{{K3S_2_IP}}
+ssh admin_os@193.2.171.249
 
 # Check if everyone is running
 kubectl get nodes
@@ -168,15 +168,15 @@ kubectl get nodes
 
 ## ☁️ **Domain and Cloudflare**
 
-> **In a nutshell:** Cloudflare is the **internet's phonebook** — when someone enters `{{DOMAIN}}` in a browser, Cloudflare tells them where (at which IP) to find this application, and handles the secure connection (SSL).
+> **In a nutshell:** Cloudflare is the **internet's phonebook** — when someone enters `ostc-app.org` in a browser, Cloudflare tells them where (at which IP) to find this application, and handles the secure connection (SSL).
 
-> **ELI5 — DNS:** DNS (Domain Name System) is like a phonebook for the internet. You type in a name (`{{DOMAIN}}`), DNS returns a number (IP address). Instead of remembering the number {{LB_IP}}, you remember the name `{{DOMAIN}}`. Much easier, right?
+> **ELI5 — DNS:** DNS (Domain Name System) is like a phonebook for the internet. You type in a name (`ostc-app.org`), DNS returns a number (IP address). Instead of remembering the number 193.2.171.10, you remember the name `ostc-app.org`. Much easier, right?
 
 Cloudflare DNS settings (check at [dash.cloudflare.com](https://dash.cloudflare.com)):
 
 | Type | Name | Value | Proxy status |
 |------|------|-------|-------------|
-| A | `@` ({{DOMAIN}}) | {{LB_IP}} | ✅ Cloudflare proxy (LoadBalancer) |
+| A | `@` (ostc-app.org) | 193.2.171.10 | ✅ Cloudflare proxy (LoadBalancer) |
 
 > **Cloudflare proxy** is like a security guard in front of the door — hides your real IP, encrypts traffic (SSL), blocks attacks. **Always turn on the orange cloud** ☁️🟠
 
@@ -534,7 +534,7 @@ git pull                                    # Pull the latest code
 | **ConfigMap / Secret** | **Kubernetes objects for storing settings** — ConfigMap for public settings (e.g. BASE_URL), Secret for sensitive data (passwords, keys). Secret is encoded, ConfigMap is readable. |
 | **Control-plane** | **The "brain" of the cluster** — the control part that makes all decisions. Both HP ProBooks have control-plane, meaning we have two "brains" — if one crashes, the other takes over. |
 | **Discord webhook** | **Automatic message sending to Discord** — used for communication with Hermes Agent: you say something, Hermes replies. No automatic notifications (nightly report, backup) — everything goes via email. |
-| **DNS** | **Internet phonebook** — converts the name `{{DOMAIN}}` into an IP address {{LB_IP}} (for example). |
+| **DNS** | **Internet phonebook** — converts the name `ostc-app.org` into an IP address 193.2.171.10 (for example). |
 | **Docker Image** | **Recipe for an application** — contains the program, libraries, settings. From one recipe you can make multiple identical containers (Pods). |
 | **ELI5** | *Explain Like I'm 5* — an explanation style where you avoid technical terms and use everyday analogies. E.g. Kubernetes is not "a container orchestration system" but "an orchestra conductor for applications." |
 | **etcd** | **The cluster's memory book** — stores all data about what runs where, what the settings are, who is alive and who is dead. It is the brain of Kubernetes. |
@@ -549,7 +549,7 @@ git pull                                    # Pull the latest code
 | **IoT (Internet of Things)** | **Smart devices connected to the internet** — e.g. smart thermostats, cameras, sensors. k3s is specifically made for these kinds of devices (low power, low specs), but it also runs on laptops — like a camping stove that you can also use in your home kitchen. |
 | **k3s** | **Lightweight version of Kubernetes** — specifically made for smaller computers and IoT devices. We use it on HP ProBooks because full Kubernetes is too heavy for laptops. The same `kubectl` commands work for both. |
 | **Kubernetes (k8s)** | **Orchestra conductor for applications** — a system that automatically manages where and how your applications run. If one crashes, it automatically starts it elsewhere. |
-| **LoadBalancer** | **Reception desk in a building** — directs visitors (users) to the right application. In our case, MetalLB at IP {{LB_IP}}. |
+| **LoadBalancer** | **Reception desk in a building** — directs visitors (users) to the right application. In our case, MetalLB at IP 193.2.171.10. |
 | **Longhorn** | **A system that ensures you have 2 copies of data on 2 different computers** — distributed storage for Kubernetes, made for smaller clusters. |
 | **MetalLB** | **LoadBalancer for on-premise environments** — an alternative to cloud LoadBalancers (AWS, Google). Runs right on your computers. |
 || **Node** | **Physical computer in the cluster** — in our case k3s-1 (HP ProBook 455 G5) and k3s-2 (HP ProBook 450 G5). |

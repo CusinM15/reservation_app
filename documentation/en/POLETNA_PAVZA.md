@@ -211,7 +211,7 @@ curl -s http://192.168.1.10:8002/health
 # {"status":"ok","version":"0.1.0"}
 
 # Website
-curl -sI https://{{DOMAIN}}
+curl -sI https://ostc-app.org
 # HTTP/2 307 → redirect to /auth/login
 
 # Check data in database
