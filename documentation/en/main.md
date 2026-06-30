@@ -1,4 +1,4 @@
-🌐 **Language / Jezik:** [🇬🇧 English](en/main.md) | [🇸🇮 Slovenščina](main.md)
+🌐 **Language / Jezik:**   [🇸🇮 Slovenščina](main.md) | [🇬🇧 English](en/main.md)
 
 ---
 
