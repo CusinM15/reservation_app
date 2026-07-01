@@ -8,7 +8,7 @@
 
 # 👑 Navodila za vodstvo
 
-> Namenjeno **ravnatelju, pomočnikom ravnatelja in svetovalnim delavcem**.  
+> Namenjeno **ravnatelju, in pomočnikom ravnatelja**.  
 > Vodstvo ima več moči kot učitelji — lahko brišete tudi tuje rezervacije, upravljate zasedene
 > datume in nadzorujete ocenjevanje. S tem pride tudi **odgovornost**.
 >
@@ -39,8 +39,7 @@ poskrbi za vse.
 
 ### Celodnevna serija
 
-Zasede cel dan (vse ure) za več dni zapored. Uporabno za zaključene izpite,
-tekmovanja ali intenzivne programe.
+Zasede cel dan (vse ure) za več dni zapored.
 
 | Polje | Opis |
 |---|---|
@@ -87,7 +86,7 @@ To uporabite za:
 
 1. Sistem **samodejno izbriše** vsa obstoječa ocenjevanja izbranih razredov v tem
    obdobju
-2. Prizadeti učitelji **avtomatsko prejmejo email obvestilo**
+2. "Prizadeti" učitelji **avtomatsko prejmejo email obvestilo**
 3. Vse skupaj se zabeleži v dnevniku
 
 Ni vam treba ničesar najavljati posebej — sistem obvesti namesto vas.
@@ -95,18 +94,15 @@ Ni vam treba ničesar najavljati posebej — sistem obvesti namesto vas.
 ### Obvestila po e-pošti
 
 Vsakič, ko vodstvo:
-- prekliče rezervacijo,
-- izbriše ocenjevanje,
-- ali označi datum kot zaseden,
+- označi datum kot zaseden,
+- in serijske rezervacije
+- priporočam prekinitev rezervacij in pisnega ocenjevanja s serijskimi rezervacijami/zasedeni dnevi, ker na ta način učitelji dobijo mail, zgolj s klikom na `x` se zgolj izbriše in nihče ne dobi obvestila
 
-…aplikacija **samodejno pošlje email** prizadetemu učitelju. Ročno obveščanje ni
-potrebno.
 
 ---
 
 ## 📋 Audit log — dnevnik sprememb
 
-> ⚠️ **Zadnja posodobitev:** Audit log je zdaj na voljo tudi vodstvu.
 
 ![Audit log pregled — filter, tabela, iskanje po akcijah](diagrams/audit-log-zgodovina.png)
 
@@ -127,11 +123,7 @@ Audit log omogoča **pregled vseh pomembnih sprememb v sistemu** — kdo je kaj 
 | `create_user` | Ustvarjen nov uporabnik |
 | `update_user` | Posodobljen uporabnik |
 | `delete_user` | Izbrisan uporabnik |
-| `change_password` | Sprememba gesla |
 
-**Kaj se NE beleži:**
-- ❌ Branje podatkov (kdo si je kaj ogledal)
-- ❌ Neuspeli poskusi prijave
 
 ### Kako dostopa vodstvo do audit loga?
 
