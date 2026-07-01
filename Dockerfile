@@ -25,6 +25,12 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     tzdata \
     fonts-dejavu-core \
     fonts-dejavu-extra \
+    libpango-1.0-0 \
+    libpangocairo-1.0-0 \
+    libcairo2 \
+    libgdk-pixbuf-2.0-0 \
+    shared-mime-info \
+    libthai0 \
     && rm -rf /var/lib/apt/lists/*
 
 # PostgreSQL official repo (za pg_dump 18 — server je 18.4)
@@ -43,14 +49,16 @@ COPY . .
 RUN chown -R appuser:appuser /app
 USER appuser
 
-# /tmp kot volume (rešuje tmpfs polnjenje)
-VOLUME /tmp
-
-EXPOSE 8002
-
 ENV PATH=/home/appuser/.local/bin:$PATH \
     PYTHONUNBUFFERED=1 \
     PYTHONDONTWRITEBYTECODE=1\
     PASSLIB_BCRYPT_AVOID_WRAP_BUG=1
+
+# Pre-build test: dokumentacija in PDF generacija
+RUN python tests/test_docs.py
+
+VOLUME /tmp
+
+EXPOSE 8002
 
 CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8002", "--workers", "2"]

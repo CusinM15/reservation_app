@@ -152,6 +152,12 @@
         onclick="downloadDoc('navodila-ucitelji')">
         👩‍🏫 Učitelji
       </button>
+      <button class="side-doc-btn" id="sideBtnEnglish" style="display:none;"
+        onmouseenter="showDocPreviewHTML('navodila-ucitelji-en', 'Teacher Instructions (English)')"
+        onmouseleave="scheduleHidePreview()"
+        onclick="downloadDoc('navodila-ucitelji-en')">
+        🌍 English
+      </button>
       <button class="side-doc-btn" id="sideBtnVodstvo" style="display:none;"
         onmouseenter="showDocPreviewHTML('navodila-vodstvo', 'Navodila za vodstvo')"
         onmouseleave="scheduleHidePreview()"
@@ -1164,8 +1170,9 @@
         else btnContainer.style.display = 'none';
         const seriesDiv = document.getElementById('series-buttons');
         if (currentUser.role === 'admin' || currentUser.role === 'vodstvo') { seriesDiv.style.display = 'inline-flex'; seriesDiv.style.gap = '0.5rem'; }
-        // Navodila — vsi vidijo učitelje, vodstvo+admin vidijo tudi vodstvo
+        // Navodila — vsi vidijo učitelje in angleščino, vodstvo+admin vidijo tudi vodstvo
         document.getElementById('navodilaSidebar').style.display = 'flex';
+        document.getElementById('sideBtnEnglish').style.display = 'block';
         if (currentUser.role === 'vodstvo' || currentUser.role === 'admin') {
           document.getElementById('sideBtnVodstvo').style.display = 'block';
         }
