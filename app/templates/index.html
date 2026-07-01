@@ -93,12 +93,36 @@
     .msg.error { display: block; background: #fee; color: #c00; }
     .msg.success { display: block; background: #e8f5e9; color: #2e7d32; }
     .quick-add { display: inline-block; margin-top: 2px; }
+    /* === Navodila dropdown === */
+    .navodila-wrapper { position: relative; display: inline-block; }
+    .navodila-trigger { color: #ccc; text-decoration: none; cursor: default; font-size: 0.95rem; padding: 0.3rem 0.5rem; }
+    .navodila-menu { display: none; position: absolute; top: 100%; left: 0; background: #fff; border: 1px solid #ddd; border-radius: 8px; box-shadow: 0 4px 16px rgba(0,0,0,0.15); min-width: 200px; z-index: 1000; padding: 0.3rem 0; }
+    .navodila-wrapper:hover .navodila-menu { display: block; }
+    .navodila-item { padding: 0.5rem 1rem; cursor: pointer; font-size: 0.88rem; color: #333; white-space: nowrap; }
+    .navodila-item:hover { background: #f0f2f5; }
+    /* Preview popup */
+    .navodila-preview { display: none; position: fixed; top: 55px; right: 20px; width: 500px; max-height: 70vh; background: #fff; border: 1px solid #ddd; border-radius: 10px; box-shadow: 0 8px 32px rgba(0,0,0,0.2); z-index: 2000; overflow: hidden; flex-direction: column; }
+    .navodila-preview.show { display: flex; }
+    .navodila-preview-header { padding: 0.8rem 1rem; font-weight: 700; font-size: 0.9rem; border-bottom: 1px solid #eee; background: #f8f9fa; display: flex; justify-content: space-between; align-items: center; }
+    .navodila-preview-close { cursor: pointer; color: #999; font-size: 1.2rem; line-height: 1; }
+    .navodila-preview-close:hover { color: #333; }
+    .navodila-preview-body { padding: 1rem; overflow-y: auto; flex: 1; font-size: 0.82rem; line-height: 1.6; color: #333; }
+    .navodila-preview-body h1 { font-size: 1.1rem; margin: 0.8rem 0 0.3rem; }
+    .navodila-preview-body h2 { font-size: 1rem; margin: 0.6rem 0 0.2rem; }
+    .navodila-preview-body h3 { font-size: 0.92rem; margin: 0.5rem 0 0.2rem; }
+    .navodila-preview-body p { margin: 0.3rem 0; }
+    .navodila-preview-body code { background: #f4f4f4; padding: 0.1rem 0.3rem; border-radius: 3px; font-size: 0.8rem; }
+    .navodila-preview-body pre { background: #f4f4f4; padding: 0.6rem; border-radius: 5px; overflow-x: auto; font-size: 0.78rem; }
+    .navodila-preview-body ul { margin: 0.3rem 0; padding-left: 1.5rem; }
+    .navodila-preview-body li { margin: 0.15rem 0; }
+    .navodila-preview-body hr { margin: 0.6rem 0; border: none; border-top: 1px solid #eee; }
+    .navodila-preview-body strong { font-weight: 700; }
+    @media (max-width: 580px) { .navodila-preview { width: 90vw; right: 5vw; top: 50px; max-height: 60vh; } }
     @media (max-width: 768px) {
       .calendar-grid { grid-template-columns: repeat(7, 1fr); font-size: 0.75rem; }
       .calendar-day { min-height: 60px; padding: 0.2rem; }
       .filters { flex-direction: column; }
       .filters select, .filters input { width: 100%; }
-      .prostor-tabs { flex-wrap: wrap; }
     }
   </style>
 </head>
@@ -112,6 +136,23 @@
     <a href="#" id="export-rez-link" style="display:none;" onclick="openExportRezModal(); return false;">📥 Izvoz rezervacij</a>
     <a href="#" id="export-oc-link" style="display:none;" onclick="openExportOcModal(); return false;">📥 Izvoz ocenjevanj</a>
     <span class="spacer"></span>
+    <!-- Navodila dropdown -->
+    <span class="navodila-wrapper" id="navodilaWrapper" style="display:none;">
+      <a href="#" class="navodila-trigger" onclick="return false;">📖 Navodila</a>
+      <div class="navodila-menu" id="navodilaMenu">
+        <div class="navodila-item" data-doc="navodila-ucitelji" onclick="downloadDoc('navodila-ucitelji')" onmouseenter="showDocPreview('navodila-ucitelji', this)" onmouseleave="scheduleHidePreview()">Navodila za učitelje</div>
+        <div class="navodila-item" data-doc="navodila-vodstvo" id="navodilaVodstvoItem" style="display:none;" onclick="downloadDoc('navodila-vodstvo')" onmouseenter="showDocPreview('navodila-vodstvo', this)" onmouseleave="scheduleHidePreview()">Navodila za vodstvo</div>
+        <div class="navodila-item" data-doc="admin-devops-navodila" id="navodilaAdminItem" style="display:none;" onclick="downloadDoc('admin-devops-navodila')" onmouseenter="showDocPreview('admin-devops-navodila', this)" onmouseleave="scheduleHidePreview()">Admin navodila</div>
+      </div>
+    </span>
+    <!-- Preview popup -->
+    <div class="navodila-preview" id="navodilaPreview" onmouseenter="keepPreview()" onmouseleave="scheduleHidePreview()">
+      <div class="navodila-preview-header">
+        <span id="navodilaPreviewTitle">Navodila</span>
+        <span class="navodila-preview-close" onclick="hidePreview()">✕</span>
+      </div>
+      <div class="navodila-preview-body" id="navodilaPreviewBody">Nalagam ...</div>
+    </div>
     <span class="user-info" id="userInfo"></span>
     <a href="#" onclick="openChangePasswordModal(); return false;">Spremeni geslo</a>
     <a href="/auth/logout">Odjava</a>
@@ -455,6 +496,75 @@
     let allBlocked = [];
     let inactivityTimer = null;
     const INACTIVITY_TIMEOUT_MS = {{ inactivity_timeout_ms }};
+
+    // === Navodila preview & download ===
+    let previewTimer = null;
+    let currentPreviewDoc = null;
+
+    function simpleMdToHtml(md) {
+      let h = md
+        .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+        .replace(/^### (.+)$/gm, '<h3>$1</h3>')
+        .replace(/^## (.+)$/gm, '<h2>$1</h2>')
+        .replace(/^# (.+)$/gm, '<h1>$1</h1>')
+        .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+        .replace(/\*(.+?)\*/g, '<em>$1</em>')
+        .replace(/`([^`]+)`/g, '<code>$1</code>')
+        .replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2" target="_blank">$1</a>')
+        .replace(/^---$/gm, '<hr>')
+        .replace(/^- (.+)$/gm, '<li>$1</li>')
+        .replace(/^(\d+)\. (.+)$/gm, '<li>$2</li>');
+      h = h.replace(/(<li>.*<\/li>\n?)+/g, '<ul>$&</ul>');
+      h = h.replace(/\n\n/g, '</p><p>');
+      return '<p>' + h + '</p>';
+    }
+
+    async function showDocPreview(name, el) {
+      clearTimeout(previewTimer);
+      if (currentPreviewDoc === name) { keepPreview(); return; }
+      const preview = document.getElementById('navodilaPreview');
+      const body = document.getElementById('navodilaPreviewBody');
+      const title = document.getElementById('navodilaPreviewTitle');
+      title.textContent = el ? el.textContent.trim() : name;
+      body.textContent = 'Nalagam ...';
+      preview.classList.add('show');
+      document.body.style.overflow = 'hidden';
+      currentPreviewDoc = name;
+      try {
+        const resp = await fetch('/docs/' + name);
+        if (!resp.ok) { body.textContent = 'Napaka pri nalaganju.'; return; }
+        const data = await resp.json();
+        body.innerHTML = simpleMdToHtml(data.content || '');
+      } catch (e) {
+        body.textContent = 'Napaka: ' + e.message;
+      }
+    }
+
+    function scheduleHidePreview() {
+      previewTimer = setTimeout(() => {
+        hidePreview();
+      }, 300);
+    }
+
+    function keepPreview() {
+      clearTimeout(previewTimer);
+    }
+
+    function hidePreview() {
+      clearTimeout(previewTimer);
+      document.getElementById('navodilaPreview').classList.remove('show');
+      currentPreviewDoc = null;
+      document.body.style.overflow = '';
+    }
+
+    function downloadDoc(name) {
+      hidePreview();
+      const a = document.createElement('a');
+      a.href = '/docs/download/' + name;
+      a.download = name + '.md';
+      a.click();
+    }
+    // === Konec navodil ===
 
     function resetInactivityTimer() {
       if (inactivityTimer) clearTimeout(inactivityTimer);
@@ -1069,6 +1179,14 @@
         else btnContainer.style.display = 'none';
         const seriesDiv = document.getElementById('series-buttons');
         if (currentUser.role === 'admin' || currentUser.role === 'vodstvo') { seriesDiv.style.display = 'inline-flex'; seriesDiv.style.gap = '0.5rem'; }
+        // Navodila glede na vlogo
+        document.getElementById('navodilaWrapper').style.display = 'inline-block';
+        if (currentUser.role === 'vodstvo' || currentUser.role === 'admin') {
+          document.getElementById('navodilaVodstvoItem').style.display = 'block';
+        }
+        if (currentUser.role === 'admin') {
+          document.getElementById('navodilaAdminItem').style.display = 'block';
+        }
       }
 
       populateSelect('rez-form-prostor', prostori);

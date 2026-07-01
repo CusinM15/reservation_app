@@ -6,7 +6,7 @@ from sqlalchemy.orm import Session
 
 from app.config import settings
 from app.database import init_db, get_db
-from app.routers import rezervacije, ocenjevanja, auth, blocked_dates, audit_log, export
+from app.routers import rezervacije, ocenjevanja, auth, blocked_dates, audit_log, export, docs
 from app.audit import log_audit
 from app.models import User, RoleEnum
 from passlib.context import CryptContext
@@ -19,7 +19,7 @@ class AuthMiddleware(BaseHTTPMiddleware):
     async def dispatch(self, request: Request, call_next):
         path = request.url.path
         public = ["/auth/login", "/auth/forgot-password", "/auth/reset-password", "/health", "/", "/history", "/api/razredi", "/api/prostori", "/api/schedule"]
-        is_public = any(path == p for p in public) or path.startswith("/static")
+        is_public = any(path == p for p in public) or path.startswith("/static") or path.startswith("/docs/")
         if not is_public and not request.cookies.get("user_id"):
             return RedirectResponse(url="/auth/login")
         return await call_next(request)
@@ -114,3 +114,4 @@ app.include_router(auth.router)
 app.include_router(blocked_dates.router)
 app.include_router(audit_log.router)
 app.include_router(export.router)
+app.include_router(docs.router)
