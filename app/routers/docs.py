@@ -199,7 +199,14 @@ async def get_doc_html(name: str):
   {body_html}
 </body>
 </html>"""
-    return HTMLResponse(full_html)
+    return HTMLResponse(
+        content=full_html,
+        headers={
+            "Cache-Control": "no-cache, no-store, must-revalidate",
+            "Pragma": "no-cache",
+            "Expires": "0",
+        },
+    )
 
 
 @router.get("/docs/download/{name}")

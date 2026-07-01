@@ -547,7 +547,7 @@
       const body = document.getElementById('navodilaPreviewBody');
       const name = docLangName(currentPreviewDoc, currentPreviewLang);
       try {
-        const resp = await fetch('/docs/html/' + name);
+        const resp = await fetch('/docs/html/' + name + '?_=' + Date.now());
         if (!resp.ok) { body.textContent = 'Napaka pri nalaganju.'; return; }
         const html = await resp.text();
         body.innerHTML = html;
