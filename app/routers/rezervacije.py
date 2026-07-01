@@ -240,7 +240,7 @@ def _resolve_conflicts_and_notify(
                         to_email=teacher.email,
                         subject=f"Rezervacija za tablice preklicana — {date_str} {hour_label}",
                         body=f"Pozdravljeni,\n\n"
-                             f"vaša rezervacija za **tablice** na dan {date_str} ob {hour_label} "
+                             f"vaša rezervacija za tablice na dan {date_str} ob {hour_label} "
                              f"je bila preklicana, ker je {creator_name} ustvaril(a) serijsko "
                              f"rezervacijo, ki pokriva ta termin.\n\n"
                              f"Lep pozdrav,\nŠolski App"
