@@ -1210,8 +1210,10 @@
 
       if (currentUser) {
         document.getElementById('userInfo').textContent = `${currentUser.full_name || currentUser.username} (${currentUser.role === 'admin' ? 'admin' : currentUser.role === 'vodstvo' ? 'vodstvo' : 'učitelj'})`;
-        if (currentUser.role === 'admin' || currentUser.role === 'vodstvo') {
+        if (currentUser.role === 'admin') {
             document.getElementById('admin-link').style.display = 'inline';
+        }
+        if (currentUser.role === 'admin' || currentUser.role === 'vodstvo') {
             document.getElementById('export-rez-link').style.display = 'inline';
             document.getElementById('export-oc-link').style.display = 'inline';
         }
