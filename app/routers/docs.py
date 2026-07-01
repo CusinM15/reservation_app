@@ -60,6 +60,16 @@ def _doc_to_html(content: str, label: str) -> str:
     html = re.sub(r'src="\.\./slike/([^"]+)"', r'src="/slike/\1"', html)
     # Popravi jezikovne povezave v HTML preview
     html = re.sub(
+        r'href="\.\./navodila-ucitelji\.md"',
+        r'href="/docs/html/navodila-ucitelji"',
+        html,
+    )
+    html = re.sub(
+        r'href="\.\./navodila-vodstvo\.md"',
+        r'href="/docs/html/navodila-vodstvo"',
+        html,
+    )
+    html = re.sub(
         r'href="en/navodila-ucitelji\.md"',
         r'href="/docs/html/navodila-ucitelji-en"',
         html,
