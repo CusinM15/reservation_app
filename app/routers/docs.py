@@ -65,8 +65,18 @@ def _doc_to_html(content: str, label: str) -> str:
         html,
     )
     html = re.sub(
+        r'href="en/navodila-vodstvo\.md"',
+        r'href="/docs/html/navodila-vodstvo-en"',
+        html,
+    )
+    html = re.sub(
         r'href="navodila-ucitelji\.md"',
         r'href="/docs/html/navodila-ucitelji"',
+        html,
+    )
+    html = re.sub(
+        r'href="navodila-vodstvo\.md"',
+        r'href="/docs/html/navodila-vodstvo"',
         html,
     )
     return html

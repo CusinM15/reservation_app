@@ -152,12 +152,6 @@
         onclick="downloadDoc('navodila-ucitelji')">
         👩‍🏫 Učitelji
       </button>
-      <button class="side-doc-btn" id="sideBtnEnglish" style="display:none;"
-        onmouseenter="showDocPreviewHTML('navodila-ucitelji-en', 'Teacher Instructions (English)')"
-        onmouseleave="scheduleHidePreview()"
-        onclick="downloadDoc('navodila-ucitelji-en')">
-        🌍 English
-      </button>
       <button class="side-doc-btn" id="sideBtnVodstvo" style="display:none;"
         onmouseenter="showDocPreviewHTML('navodila-vodstvo', 'Navodila za vodstvo')"
         onmouseleave="scheduleHidePreview()"
@@ -525,7 +519,20 @@
       try {
         const resp = await fetch('/docs/html/' + name);
         if (!resp.ok) { body.textContent = 'Napaka pri nalaganju.'; return; }
-        const html = await resp.text();
+        let html = await resp.text();
+        // Popravi jezikovne povezave: href → onclick, da delajo v istem oknu
+        html = html.replace(
+          /<a\s+href=["']\/docs\/html\/([^"']+)["'][^>]*>([^<]+)<\/a>/g,
+          (match, docName, linkText) => {
+            const labels = {
+              'navodila-ucitelji': 'Navodila za učitelje',
+              'navodila-ucitelji-en': 'Teacher Instructions (English)',
+              'navodila-vodstvo': 'Navodila za vodstvo'
+            };
+            const docLabel = labels[docName] || docName;
+            return `<a href="#" onclick="showDocPreviewHTML('${docName}','${docLabel}');return false;">${linkText}</a>`;
+          }
+        );
         body.innerHTML = html;
       } catch (e) {
         body.textContent = 'Napaka: ' + e.message;
@@ -1170,9 +1177,8 @@
         else btnContainer.style.display = 'none';
         const seriesDiv = document.getElementById('series-buttons');
         if (currentUser.role === 'admin' || currentUser.role === 'vodstvo') { seriesDiv.style.display = 'inline-flex'; seriesDiv.style.gap = '0.5rem'; }
-        // Navodila — vsi vidijo učitelje in angleščino, vodstvo+admin vidijo tudi vodstvo
+        // Navodila — vsi vidijo učitelje, vodstvo+admin vidijo tudi vodstvo
         document.getElementById('navodilaSidebar').style.display = 'flex';
-        document.getElementById('sideBtnEnglish').style.display = 'block';
         if (currentUser.role === 'vodstvo' || currentUser.role === 'admin') {
           document.getElementById('sideBtnVodstvo').style.display = 'block';
         }
