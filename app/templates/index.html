@@ -93,13 +93,11 @@
     .msg.error { display: block; background: #fee; color: #c00; }
     .msg.success { display: block; background: #e8f5e9; color: #2e7d32; }
     .quick-add { display: inline-block; margin-top: 2px; }
-    /* === Navodila dropdown === */
-    .navodila-wrapper { position: relative; display: inline-block; }
-    .navodila-trigger { color: #ccc; text-decoration: none; cursor: default; font-size: 0.95rem; padding: 0.3rem 0.5rem; }
-    .navodila-menu { display: none; position: absolute; top: 100%; left: 0; background: #fff; border: 1px solid #ddd; border-radius: 8px; box-shadow: 0 4px 16px rgba(0,0,0,0.15); min-width: 200px; z-index: 1000; padding: 0.3rem 0; }
-    .navodila-wrapper:hover .navodila-menu { display: block; }
-    .navodila-item { padding: 0.5rem 1rem; cursor: pointer; font-size: 0.88rem; color: #333; white-space: nowrap; }
-    .navodila-item:hover { background: #f0f2f5; }
+    /* === Navodila gumbi === */
+    .navodila-btn { color: #ccc; text-decoration: none; cursor: default; font-size: 0.95rem; padding: 0.3rem 0.5rem; }
+    .navodila-btn:hover { color: #fff; }
+    .navodila-btn-preview { color: #ccc; text-decoration: none; cursor: pointer; font-size: 0.95rem; padding: 0.3rem 0.5rem; border-bottom: 1px dashed #555; }
+    .navodila-btn-preview:hover { color: #fff; border-bottom-color: #fff; }
     /* Preview popup */
     .navodila-preview { display: none; position: fixed; top: 55px; right: 20px; width: 500px; max-height: 70vh; background: #fff; border: 1px solid #ddd; border-radius: 10px; box-shadow: 0 8px 32px rgba(0,0,0,0.2); z-index: 2000; overflow: hidden; flex-direction: column; }
     .navodila-preview.show { display: flex; }
@@ -136,14 +134,12 @@
     <a href="#" id="export-rez-link" style="display:none;" onclick="openExportRezModal(); return false;">📥 Izvoz rezervacij</a>
     <a href="#" id="export-oc-link" style="display:none;" onclick="openExportOcModal(); return false;">📥 Izvoz ocenjevanj</a>
     <span class="spacer"></span>
-    <!-- Navodila dropdown -->
-    <span class="navodila-wrapper" id="navodilaWrapper" style="display:none;">
-      <a href="#" class="navodila-trigger" onclick="return false;">📖 Navodila</a>
-      <div class="navodila-menu" id="navodilaMenu">
-        <div class="navodila-item" data-doc="navodila-ucitelji" onclick="downloadDoc('navodila-ucitelji')" onmouseenter="showDocPreview('navodila-ucitelji', this)" onmouseleave="scheduleHidePreview()">Navodila za učitelje</div>
-        <div class="navodila-item" data-doc="navodila-vodstvo" id="navodilaVodstvoItem" style="display:none;" onclick="downloadDoc('navodila-vodstvo')" onmouseenter="showDocPreview('navodila-vodstvo', this)" onmouseleave="scheduleHidePreview()">Navodila za vodstvo</div>
-        <div class="navodila-item" data-doc="admin-devops-navodila" id="navodilaAdminItem" style="display:none;" onclick="downloadDoc('admin-devops-navodila')" onmouseenter="showDocPreview('admin-devops-navodila', this)" onmouseleave="scheduleHidePreview()">Admin navodila</div>
-      </div>
+    <!-- Navodila gumbi -->
+    <span id="navodilaUciteljWrap" style="display:none;">
+      <span class="navodila-btn-preview" onmouseenter="showDocPreview('navodila-ucitelji', this)" onmouseleave="scheduleHidePreview()" onclick="downloadDoc('navodila-ucitelji')">📖 Učitelji</span>
+    </span>
+    <span id="navodilaVodstvoWrap" style="display:none;">
+      <span class="navodila-btn-preview" onmouseenter="showDocPreview('navodila-vodstvo', this)" onmouseleave="scheduleHidePreview()" onclick="downloadDoc('navodila-vodstvo')">📖 Vodstvo</span>
     </span>
     <!-- Preview popup -->
     <div class="navodila-preview" id="navodilaPreview" onmouseenter="keepPreview()" onmouseleave="scheduleHidePreview()">
@@ -1179,11 +1175,10 @@
         else btnContainer.style.display = 'none';
         const seriesDiv = document.getElementById('series-buttons');
         if (currentUser.role === 'admin' || currentUser.role === 'vodstvo') { seriesDiv.style.display = 'inline-flex'; seriesDiv.style.gap = '0.5rem'; }
-        // Navodila — vsi vidijo učitelje in vodstvo, admin navodila samo admin
-        document.getElementById('navodilaWrapper').style.display = 'inline-block';
-        document.getElementById('navodilaVodstvoItem').style.display = 'block';
-        if (currentUser.role === 'admin') {
-          document.getElementById('navodilaAdminItem').style.display = 'block';
+        // Navodila — vsi vidijo učitelje, vodstvo+admin vidijo tudi vodstvo
+        document.getElementById('navodilaUciteljWrap').style.display = 'inline';
+        if (currentUser.role === 'vodstvo' || currentUser.role === 'admin') {
+          document.getElementById('navodilaVodstvoWrap').style.display = 'inline';
         }
       }
 
