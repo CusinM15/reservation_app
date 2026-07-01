@@ -61,33 +61,17 @@ class DocPDF(FPDF):
 
 def _make_pdf(md_content: str, title: str) -> bytes:
     """Pretvori markdown v PDF z uporabo markdown → HTML → fpdf2 write_html."""
-    # Odstrani YAML frontmatter in jezikovne povezave
-    lines = md_content.split("\n")
-    cleaned = []
-    skip_frontmatter = False
-    in_frontmatter = False
-    for line in lines:
-        if line.strip() == "---" and not in_frontmatter:
-            in_frontmatter = True
-            skip_frontmatter = True
-            continue
-        if in_frontmatter and line.strip() == "---":
-            in_frontmatter = False
-            continue
-        if in_frontmatter:
-            continue
-        # Preskoci jezikovne povezave (🌐 ...)
-        if line.strip().startswith("🌐"):
-            skip_frontmatter = True
-            continue
-        if skip_frontmatter and line.strip() == "---":
-            skip_frontmatter = False
-            continue
-        if skip_frontmatter:
-            continue
-        cleaned.append(line)
+    # Odstrani jezikovne povezave (🌐 ...) in prvi --- za njimi
+    content = re.sub(r'^🌐.*?\n---\s*\n', '', md_content, count=1, flags=re.DOTALL)
 
-    content = "\n".join(cleaned)
+    # Odstrani YAML frontmatter (--- ... ---) če se začne na samem začetku
+    content = re.sub(r'^---\s*\n.*?\n---\s*\n', '', content, count=1, flags=re.DOTALL)
+    # Odstrani warning disclaimer bloke
+    content = re.sub(r'^> ⚠️.*?\n---\s*\n', '', content, count=0, flags=re.DOTALL)
+
+    # Odstrani morebitne dodatne ---- čisto na začetku
+    while content.startswith('---'):
+        content = content[4:]
 
     # Markdown → HTML
     html = markdown.markdown(
