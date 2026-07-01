@@ -1,4 +1,3 @@
-🌐 **Jezik / Language:** [🇸🇮 Slovenščina](aplikacija-rezervacije.md) | [🇬🇧 English](en/aplikacija-rezervacije.md)
 
 ---
 

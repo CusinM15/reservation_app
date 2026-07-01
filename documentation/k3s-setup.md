@@ -1,4 +1,3 @@
-🌐 **Jezik / Language:** [🇸🇮 Slovenščina](k3s-setup.md) | [🇬🇧 English](en/k3s-setup.md)
 
 ---
 

@@ -1,3 +1,6 @@
+
+---
+
 > 👋 **Pozdravljeni, kolegice in kolegi!**
 >
 > Aplikacija za rezervacijo prostorov (računalnice, ladje in tablic) in za napoved pisnih testov. Tale vodnik je kratek in jedrnat — skozi slike boste v trenutku ugotovili, kako vse deluje. 😊

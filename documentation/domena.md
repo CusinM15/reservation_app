@@ -1,4 +1,3 @@
-🌐 **Jezik / Language:** [🇸🇮 Slovenščina](domena.md) | [🇬🇧 English](en/domena.md)
 
 ---
 

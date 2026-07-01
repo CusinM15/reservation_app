@@ -63,10 +63,8 @@ def _doc_to_html(content: str, label: str) -> str:
 
 def _make_pdf(md_content: str, title: str) -> bytes:
     """Pretvori markdown v lep PDF s pomočjo weasyprint (HTML+CSS → PDF)."""
-    # Odstrani jezikovni izbirnik iz vsebine PDF
-    md_clean = re.sub(r'^🌐.*?\n---\s*\n', '', md_content, count=1, flags=re.DOTALL)
     # Odstrani morebitni frontmatter
-    md_clean = re.sub(r'^---\s*\n.*?\n---\s*\n', '', md_clean, count=1, flags=re.DOTALL)
+    md_clean = re.sub(r'^---\s*\n.*?\n---\s*\n', '', md_content, count=1, flags=re.DOTALL)
 
     # Pretvori v HTML
     body_html = markdown.markdown(md_clean, extensions=["fenced_code", "tables"])

@@ -1,4 +1,3 @@
-🌐 **Jezik / Language:** [🇸🇮 Slovenščina](navodila-uporabnika.md) | [🇬🇧 English](en/navodila-uporabnika.md)
 
 ---
 

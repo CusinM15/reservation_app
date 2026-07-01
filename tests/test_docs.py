@@ -65,8 +65,7 @@ try:
     si_path = DOCS_DIR / "navodila-ucitelji.md"
     if si_path.exists():
         md = si_path.read_text(encoding="utf-8")
-        md_clean = __import__("re").sub(r'^🌐.*?\n---\s*\n', '', md, count=1, flags=__import__("re").DOTALL)
-        md_clean = __import__("re").sub(r'^---\s*\n.*?\n---\s*\n', '', md_clean, count=1, flags=__import__("re").DOTALL)
+        md_clean = __import__("re").sub(r'^---\s*\n.*?\n---\s*\n', '', md, count=1, flags=__import__("re").DOTALL)
         import markdown
         body = markdown.markdown(md_clean, extensions=["fenced_code", "tables"])
         css = """
@@ -100,8 +99,7 @@ try:
     en_path = DOCS_DIR / "en" / "navodila-ucitelji.md"
     if en_path.exists():
         md = en_path.read_text(encoding="utf-8")
-        md_clean = __import__("re").sub(r'^🌐.*?\n---\s*\n', '', md, count=1, flags=__import__("re").DOTALL)
-        md_clean = __import__("re").sub(r'^---\s*\n.*?\n---\s*\n', '', md_clean, count=1, flags=__import__("re").DOTALL)
+        md_clean = __import__("re").sub(r'^---\s*\n.*?\n---\s*\n', '', md, count=1, flags=__import__("re").DOTALL)
         import markdown
         body = markdown.markdown(md_clean, extensions=["fenced_code", "tables"])
         full = f"""
@@ -127,9 +125,8 @@ try:
     v_path = DOCS_DIR / "navodila-vodstvo.md"
     if v_path.exists():
         md = v_path.read_text(encoding="utf-8")
-        md_clean = __import__("re").sub(r'^🌐.*?\n---\s*\n', '', md, count=1, flags=__import__("re").DOTALL)
         import markdown
-        body = markdown.markdown(md_clean, extensions=["fenced_code", "tables"])
+        body = markdown.markdown(md, extensions=["fenced_code", "tables"])
         full = f"""
         <!DOCTYPE html>
         <html><head><meta charset="utf-8"><style>{css}</style></head><body>

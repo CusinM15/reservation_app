@@ -1,4 +1,3 @@
-🌐 **Jezik / Language:** [🇸🇮 Slovenščina](POLETNA_PAVZA.md) | [🇬🇧 English](en/POLETNA_PAVZA.md)
 
 ---
 

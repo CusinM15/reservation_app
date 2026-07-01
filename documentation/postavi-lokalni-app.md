@@ -1,4 +1,3 @@
-🌐 **Jezik / Language:** [🇸🇮 Slovenščina](postavi-lokalni-app.md) | [🇬🇧 English](en/postavi-lokalni-app.md)
 
 ---
 
