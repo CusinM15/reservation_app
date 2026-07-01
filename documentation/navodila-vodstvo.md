@@ -186,13 +186,22 @@ Na začetku šolskega leta je bolje:
 
 ### Uvoz zaposlenih s skripto
 
-Skripta prebere seznam zaposlenih kar s šolske spletne strani — ni ročnega vnašanja.
+Skripta **samodejno prebere seznam zaposlenih kar s šolske spletne strani** —
+ni ročnega vnašanja, ni Excel tabel, ni prepisovanja.
+
+**Od kod vzame podatke?**
+Skripta gre na `https://www.tonecufar.si/o-soli/zaposleni/` in
+samodejno prebere vse tabele z zaposlenimi — vodstvo, učitelje,
+administracijo, tehnično osebje. Vse kar morate vedeti je, da
+**podatki prihajajo neposredno s šolske spletne strani**.
+
+**(Ne skrbite — skripta samo bere, ne spreminja ničesar na spletni strani.)**
 
 ```bash
 cd /home/admin/ostc-app_deli
 python3 scripts/import_teachers.py --base-url https://{{DOMAIN}}
 
-# Preizkus (brez dejanskih sprememb):
+# Preizkus (brez dejanskih sprememb) — pokaže koga bi uvozilo:
 python3 scripts/import_teachers.py --dry-run
 
 # Z vključitvijo administracije in tehničnega osebja:
