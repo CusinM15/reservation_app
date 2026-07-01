@@ -52,9 +52,37 @@ li { margin-bottom: 2pt; }
 """
 
 
+def _decode_cf_email(html: str) -> str:
+    """Povrne Cloudflare email obfuscation (data-cfemail) nazaj v berljiv email.
+    Cloudflare pretvori vsak email v <a href='/cdn-cgi/l/email-protection' class='__cf_email__' data-cfemail='HEX'>
+    v popupu (innerHTML) se JS ne izvede, zato email ostane zakrit."""
+
+    def _decode(match):
+        data_cfemail = match.group(1)
+        try:
+            encoded = bytes.fromhex(data_cfemail)
+        except ValueError:
+            return match.group(0)
+        if len(encoded) < 2:
+            return match.group(0)
+        key = encoded[0]
+        # Cloudflare uporablja fiksni XOR ključ (ne rotirajoč)
+        email = "".join(chr(b ^ key) for b in encoded[1:])
+        return html_mod.escape(email)
+
+    return re.sub(
+        r'<a\s+href="/cdn-cgi/l/email-protection"[^>]*data-cfemail="([^"]+)"[^>]*>.*?</a>',
+        _decode,
+        html,
+        flags=re.IGNORECASE | re.DOTALL,
+    )
+
+
 def _doc_to_html(content: str, label: str) -> str:
     """Pretvori markdown v lep HTML (brez ovoja <html><body> — samo vsebina)."""
     html = markdown.markdown(content, extensions=["fenced_code", "tables"])
+    # Povrni Cloudflare email obfuscation (popup ne poganja JS)
+    html = _decode_cf_email(html)
     # Popravi relativne poti slik za browser/slike/
     html = re.sub(r'src="slike/([^"]+)"', r'src="/slike/\1"', html)
     html = re.sub(r'src="\.\./slike/([^"]+)"', r'src="/slike/\1"', html)
