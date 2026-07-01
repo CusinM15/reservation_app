@@ -93,13 +93,15 @@
     .msg.error { display: block; background: #fee; color: #c00; }
     .msg.success { display: block; background: #e8f5e9; color: #2e7d32; }
     .quick-add { display: inline-block; margin-top: 2px; }
-    /* === Navodila gumbi === */
-    .navodila-btn { color: #ccc; text-decoration: none; cursor: default; font-size: 0.95rem; padding: 0.3rem 0.5rem; }
-    .navodila-btn:hover { color: #fff; }
-    .navodila-btn-preview { color: #ccc; text-decoration: none; cursor: pointer; font-size: 0.95rem; padding: 0.3rem 0.5rem; border-bottom: 1px dashed #555; }
-    .navodila-btn-preview:hover { color: #fff; border-bottom-color: #fff; }
-    /* Preview popup */
-    .navodila-preview { display: none; position: fixed; top: 55px; right: 20px; width: 500px; max-height: 70vh; background: #fff; border: 1px solid #ddd; border-radius: 10px; box-shadow: 0 8px 32px rgba(0,0,0,0.2); z-index: 2000; overflow: hidden; flex-direction: column; }
+    /* === Navodila gumbi — desno zgoraj === */
+    #navodilaSidebar { position: fixed; top: 60px; right: 0; z-index: 500; display: flex; flex-direction: column; gap: 3px; }
+    .side-doc-btn {
+      display: block; width: 110px; padding: 10px 8px; border: none; border-radius: 8px 0 0 8px;
+      background: #1a1a2e; color: #fff; font-size: 0.82rem; font-weight: 600; cursor: pointer;
+      text-align: center; transition: all 0.15s; box-shadow: -2px 2px 8px rgba(0,0,0,0.15);
+    }
+    .side-doc-btn:hover { background: #4a6cf7; width: 130px; }
+    .navodila-preview { display: none; position: fixed; top: 60px; right: 115px; width: 520px; max-height: 75vh; background: #fff; border: 1px solid #ddd; border-radius: 10px; box-shadow: 0 8px 32px rgba(0,0,0,0.2); z-index: 2000; overflow: hidden; flex-direction: column; }
     .navodila-preview.show { display: flex; }
     .navodila-preview-header { padding: 0.8rem 1rem; font-weight: 700; font-size: 0.9rem; border-bottom: 1px solid #eee; background: #f8f9fa; display: flex; justify-content: space-between; align-items: center; }
     .navodila-preview-close { cursor: pointer; color: #999; font-size: 1.2rem; line-height: 1; }
@@ -134,13 +136,6 @@
     <a href="#" id="export-rez-link" style="display:none;" onclick="openExportRezModal(); return false;">📥 Izvoz rezervacij</a>
     <a href="#" id="export-oc-link" style="display:none;" onclick="openExportOcModal(); return false;">📥 Izvoz ocenjevanj</a>
     <span class="spacer"></span>
-    <!-- Navodila gumbi -->
-    <span id="navodilaUciteljWrap" style="display:none;">
-      <span class="navodila-btn-preview" onmouseenter="showDocPreview('navodila-ucitelji', this)" onmouseleave="scheduleHidePreview()" onclick="downloadDoc('navodila-ucitelji')">📖 Učitelji</span>
-    </span>
-    <span id="navodilaVodstvoWrap" style="display:none;">
-      <span class="navodila-btn-preview" onmouseenter="showDocPreview('navodila-vodstvo', this)" onmouseleave="scheduleHidePreview()" onclick="downloadDoc('navodila-vodstvo')">📖 Vodstvo</span>
-    </span>
     <!-- Preview popup -->
     <div class="navodila-preview" id="navodilaPreview" onmouseenter="keepPreview()" onmouseleave="scheduleHidePreview()">
       <div class="navodila-preview-header">
@@ -148,6 +143,21 @@
         <span class="navodila-preview-close" onclick="hidePreview()">✕</span>
       </div>
       <div class="navodila-preview-body" id="navodilaPreviewBody">Nalagam ...</div>
+    </div>
+    <!-- Navodila gumbi — desno zgoraj, en nad drugim -->
+    <div id="navodilaSidebar" style="display:none;">
+      <button class="side-doc-btn" id="sideBtnUcitelji"
+        onmouseenter="showDocPreviewHTML('navodila-ucitelji', 'Navodila za učitelje')"
+        onmouseleave="scheduleHidePreview()"
+        onclick="downloadDoc('navodila-ucitelji')">
+        👩‍🏫 Učitelji
+      </button>
+      <button class="side-doc-btn" id="sideBtnVodstvo" style="display:none;"
+        onmouseenter="showDocPreviewHTML('navodila-vodstvo', 'Navodila za vodstvo')"
+        onmouseleave="scheduleHidePreview()"
+        onclick="downloadDoc('navodila-vodstvo')">
+        👑 Vodstvo
+      </button>
     </div>
     <span class="user-info" id="userInfo"></span>
     <a href="#" onclick="openChangePasswordModal(); return false;">Spremeni geslo</a>
@@ -497,40 +507,20 @@
     let previewTimer = null;
     let currentPreviewDoc = null;
 
-    function simpleMdToHtml(md) {
-      let h = md
-        .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
-        .replace(/^### (.+)$/gm, '<h3>$1</h3>')
-        .replace(/^## (.+)$/gm, '<h2>$1</h2>')
-        .replace(/^# (.+)$/gm, '<h1>$1</h1>')
-        .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
-        .replace(/\*(.+?)\*/g, '<em>$1</em>')
-        .replace(/`([^`]+)`/g, '<code>$1</code>')
-        .replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2" target="_blank">$1</a>')
-        .replace(/^---$/gm, '<hr>')
-        .replace(/^- (.+)$/gm, '<li>$1</li>')
-        .replace(/^(\d+)\. (.+)$/gm, '<li>$2</li>');
-      h = h.replace(/(<li>.*<\/li>\n?)+/g, '<ul>$&</ul>');
-      h = h.replace(/\n\n/g, '</p><p>');
-      return '<p>' + h + '</p>';
-    }
-
-    async function showDocPreview(name, el) {
+    async function showDocPreviewHTML(name, label) {
       clearTimeout(previewTimer);
-      if (currentPreviewDoc === name) { keepPreview(); return; }
       const preview = document.getElementById('navodilaPreview');
       const body = document.getElementById('navodilaPreviewBody');
       const title = document.getElementById('navodilaPreviewTitle');
-      title.textContent = el ? el.textContent.trim() : name;
+      title.textContent = label || name;
       body.textContent = 'Nalagam ...';
       preview.classList.add('show');
-      document.body.style.overflow = 'hidden';
       currentPreviewDoc = name;
       try {
-        const resp = await fetch('/docs/' + name);
+        const resp = await fetch('/docs/html/' + name);
         if (!resp.ok) { body.textContent = 'Napaka pri nalaganju.'; return; }
-        const data = await resp.json();
-        body.innerHTML = simpleMdToHtml(data.content || '');
+        const html = await resp.text();
+        body.innerHTML = html;
       } catch (e) {
         body.textContent = 'Napaka: ' + e.message;
       }
@@ -550,7 +540,6 @@
       clearTimeout(previewTimer);
       document.getElementById('navodilaPreview').classList.remove('show');
       currentPreviewDoc = null;
-      document.body.style.overflow = '';
     }
 
     function downloadDoc(name) {
@@ -1176,9 +1165,9 @@
         const seriesDiv = document.getElementById('series-buttons');
         if (currentUser.role === 'admin' || currentUser.role === 'vodstvo') { seriesDiv.style.display = 'inline-flex'; seriesDiv.style.gap = '0.5rem'; }
         // Navodila — vsi vidijo učitelje, vodstvo+admin vidijo tudi vodstvo
-        document.getElementById('navodilaUciteljWrap').style.display = 'inline';
+        document.getElementById('navodilaSidebar').style.display = 'flex';
         if (currentUser.role === 'vodstvo' || currentUser.role === 'admin') {
-          document.getElementById('navodilaVodstvoWrap').style.display = 'inline';
+          document.getElementById('sideBtnVodstvo').style.display = 'block';
         }
       }
 

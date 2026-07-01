@@ -4,168 +4,143 @@
 
 > 👋 **Pozdravljeni, kolegice in kolegi!**
 >
-> Tale dokument je napisan tako, da ga razumemo vsi — tudi če se s tehniko ne ukvarjate vsak dan. Nič hudega, če česa ne veste — aplikacija vas bo vodila skozi vsak korak. Berite po svoje, preskakujte poglavja, vse je v redu. 😊
+> Aplikacija za rezervacijo prostorov (računalnice, ladje in tablic) in za napoved pisnih testov. Tale vodnik je kratek in jedrnat — skozi slike boste v trenutku ugotovili, kako vse deluje. 😊
 
 ---
 
 # 👩‍🏫 Navodila za učitelje — OŠ Toneta Čufarja Jesenice
 
-Kratek vodnik po aplikaciji **ostc-app**: kako se prijaviti, rezervirati prostore in napovedati ocenjevanja. Brez panike, brez zapletov. 👍
+---
+
+## 1. Kako vstopiti v aplikacijo?
+
+Obiščite [aplikacijo](https://{{DOMAIN}}). Da dobite geslo, pritisnite gumb **Pozabljeno geslo?** in vnesite svoj **šolski e-poštni naslov**. V kratkem boste prejeli e-pošto od `os-toneta.cufarja-jesenice@guest.arnes.si`.
+
+Če sporočila ne prejmete, javite administratorju, naj preveri, ali je vaš e-poštni naslov pravilno vnesen v bazo (vaše sporočilo naj vsebuje vaš pravilen poštni naslov).
+
+![Prijavna stran](slike/ucitelji_img_1.png)
 
 ---
 
-## 🚪 1. Prvi dostop — kako sploh pridem noter?
+## 2. Nastavitev gesla
 
-Obiščite [aplikacijo](https://{{DOMAIN}}). Ker še nimate gesla (ali ste ga pozabili — se dogaja 😅), sledite tem korakom:
+V prejetem e-sporočilu kliknite na povezavo in nastavite novo geslo.
 
-1. Na prijavni strani kliknite **"Pozabljeno geslo?"**
-2. Vnesite svoj **šolski e-poštni naslov** (tistega @*, ki ga uporabljate v službi)
-3. V kratkem vam bo na ta naslov prišlo sporočilo od `sola@example.com`
+Geslo mora biti:
+- ✅ Vsaj **5 znakov**
+- ✅ Vsaj **ena mala črka**
+- ✅ Vsaj **ena VELIKA črka**
+- ✅ Vsaj **ena številka**
 
-> ℹ️ **Če sporočila ni v mapi »Prejeto«**, preverite še mapo z vsiljeno pošto (»Spam« / »Junk«). Včasih se pošta tja skrije. Če ga tudi tam ni, pokličite ali pišite administratorju — morda vaš e-poštni naslov še ni v sistemu.
-
----
-
-## 🔐 2. Nastavitev gesla — kaj vse mora vsebovati?
-
-Ko prejmete e-pošto, kliknite na povezavo v njej. Odprl se vam bo obrazec, kjer si nastavite geslo.
-
-> 🛡️ **Zakaj taka pravila?** Zato, da kdo ne ugane vašega gesla in ne brska po vaših rezervacijah. Sistem je varen, ampak varnost se začne pri vas.
-
-Geslo mora vsebovati:
-- ✅ Vsaj **5 znakov** (ni veliko, kajne?)
-- ✅ Vsaj **eno malo črko** (a, b, c … ž)
-- ✅ Vsaj **eno VELIKO črko** (A, B, C … Ž)
-- ✅ Vsaj **eno številko** (0–9)
-
-Primer dobrega gesla: `Sola2025` — lahko si zapomnite, pa vseeno dovolj varno.
-
-> 😌 **Ne skrbite, če ga pozabite.** To se zgodi vsem. Potem samo ponovite korak »Pozabljeno geslo?« in si nastavite novega.
+> 💡 **Primer:** `Sola2025` — lahko si zapomnite, vseeno dovolj varno.
 
 ---
 
-## 🔑 3. Prijava — zdaj pa noter!
+## 3. Prijava
 
-Ko imate geslo, se prijavite:
+Ko ste geslo nastavili, se prijavite:
 
 | Polje | Vnesite |
 |---|---|
-| **Uporabniško ime** | Vaš šolski e-poštni naslov (celoten, npr. `ime.priimek@...`) |
-| **Geslo** | Geslo, ki ste ga pravkar nastavili |
+| **Uporabniško ime** | Vaš šolski e-poštni naslov |
+| **Geslo** | Geslo, ki ste ga nastavili |
 
-Po uspešni prijavi vas aplikacija sama popelje na stran **Rezervacije**.
+> 🛡️ Če prijava ne deluje, najprej sami še nekajkrat poskusite spremeniti geslo. Administratorja kontaktirajte šele, ko se težava ne reši.
 
-> 💡 **Nasvet:** Če se ne morete prijaviti, preverite, ali ste vklopili **Caps Lock** — velike črke so pomembne! In pika v e-poštnem naslovu tudi.
+Po uspešni prijavi se odpre stran **Rezervacije**.
 
 ---
 
-## 📅 4. Rezervacije — kdo, kdaj, kje?
+## 4. Rezervacije
 
-Na voljo imamo te prostore:
+Na voljo so **4 različni prostori**:
 
-| Prostor | Omejitev |
+| Prostor | Kako deluje? |
 |---|---|
-| 🖥️ **Računalnica** | Samo **en** učitelj na termin — kdor prvi pride, prvi melje |
-| 🚢 **Ladja** | Prav tako samo **ena** rezervacija na termin |
-| 📱 **Tablice** | Več učiteljev **lahko** rezervira sočasno, skupaj ne sme preseči **28 tablic** (vnesete, koliko jih potrebujete) |
+| 🖥️ **Računalnica** | Samo **ena** rezervacija na termin |
+| 🚢 **Ladja** | Samo **ena** rezervacija na termin |
+| 📱 **Tablice** | Več učiteljev **lahko** sočasno — skupaj največ **28 tablic** |
 | 🍳 **Gospodinjska učilnica** | Samo **ena** rezervacija na termin |
 
-### Kako rezervirati?
+![Stran z rezervacijami](slike/ucitelji_img_2.png)
 
-**Način 1 — klik na `+` v tabeli:**
-Najhitreje! V tabeli poiščite želen termin in kliknite gumb `+`. Datum se nastavi samodejno — priročno, kajne? 😊
+Rezerviramo lahko na **2 načina**:
 
-**Način 2 — klik na `Nova rezervacija`:**
-Odpre se obrazec, kjer sami izpolnite datum, uro, prostor in morebitno število tablic.
+**Način 1 — klik na gumb `+` v tabeli:**
+Datum se samodejno nastavi na datum, pri katerem ste pritisnili `+` (datum lahko tudi ročno spremenite).
 
-> ⚠️ **Pomembno pri tablicah:** Če rezervirate tablice, **obvezno vnesite število**, koliko jih potrebujete. Če jih potrebujete 15, napišite 15. Sistem vas ne bo ugriznil, če se zmotite — vedno lahko uredite.
+**Način 2 — klik na gumb `Nova rezervacija`:**
+Vse podatke nastavite v oknu, ki se odpre.
 
-### Kako zbrisati rezervacijo?
+![Okno za novo rezervacijo](slike/ucitelji_img_4.png)
 
-- Vsak učitelj lahko briše **samo svoje** rezervacije (tujih se ne morete dotakniti — tako je prav)
-- V tabeli poiščite svojo rezervacijo in kliknite rdeč **✕** gumb poleg nje
+V tem oknu izberete **Prostor** iz spustnega menija. Ure so po urniku zadnje triade. Pri **Računalnici** in **Ladji** je to vse, pri **Tablicah** pa morate izbrati tudi **število tablic**. V vsakem polju je prikazano, koliko tablic je še prostih (oblika `x/28`).
 
-> ✅ **Lahko mirno spite:** ničesar ne morete pokvariti. Če zbrišete kaj narobe, preprosto naredite novo rezervacijo. Sistem ima zaščite, tako da ne morete narediti škode.
+![Podrobnosti rezervacije](slike/ucitelji_img_5.png)
+
+> ⚠️ **Opomba:** Če so tablice za posamezen termin že delno rezervirane, rezervacije prek gumba `+` ni mogoče izvesti — uporabite gumb **Nova rezervacija**.
+
+**Brisanje rezervacije:**
+Vodstvo ima pravico do brisanja **katerekoli** rezervacije, kolegi učitelji pa lahko brišejo **samo lastne**. Vodstvo ima poleg tega na voljo še 2 dodatna načina za ustvarjanje rezervacij. Če imate vi za ta termin že rezerviran prostor, se vaša rezervacija ob tem prekliče (razen pri tablicah, kadar skupna vsota ni presežena).
+
+![Pregled rezervacij](slike/ucitelji_img_3.png)
 
 ---
 
-## 📝 5. Ocenjevanje — napovedovanje pisnih nalog in testov
+## 5. Ocenjevanje
 
-### Kako napovedati ocenjevanje?
+Ocenjevanje lahko napoveste na **2 načina**:
 
-1. Kliknite na zavihek **Ocenjevanje**
-2. Izberite **razred** (npr. 7. a) in kliknite **Osveži**
-3. Prikaže se koledar — kliknite na **datum**, ko želite izvesti ocenjevanje
-4. Izpolnite kratek obrazec (predmet, tip ocenjevanja …)
-5. Kliknite **Shrani** — in to je to! 🎉
+**Način 1 — s pritiskom na polje pri želenem datumu:**
+Deluje samo, kadar datum za noben razred ni označen kot **Zaseden**. Datum se nastavi skladno s poljem, na katerega ste pritisnili.
 
-### Omejitve — zakaj jih sploh imamo?
+**Način 2 — z gumbom `Novo ocenjevanje`:**
+Ročno izberete razred in datum.
 
-Tule so pravila, ki jih nastavlja sistem. **Niso zato, da bi vas omejevala**, ampak zato, **da se učencem ne naloži preveč pisnih v enem tednu**. Verjamemo, da se vsi trudimo po najboljših močeh — ampak včasih se trije testi v petek kar znajdejo. 🫣
+![Okno za ocenjevanje](slike/ucitelji_img_7.png)
 
-| Pravilo | Kaj to pomeni? |
+**Pravila, ki jih sistem samodejno preverja (za razrede od 1. do 7.):**
+
+| Pravilo | Opis |
 |---|---|
-| 📊 **Največ 3 ocenjevanja na teden** | V enem koledarskem tednu (pon–ned) lahko vsak razred dobi največ **3 ocenjevanja** skupaj (od vseh učiteljev). Ne skrbite, sistem vas bo opozoril, če je preveč. |
-| ✏️ **Največ 2 običajni na teden** | Od tistih treh sta lahko največ **2 običajni ocenjevanji**. Ponavljanja se v to omejitev ne štejejo. |
-| 🚫 **Prepoved istega dne** | Ne morete imeti **dveh ocenjevanj na isti dan** za isti razred. Malo zraka pa že morajo imeti, kajne? 😊 |
-| 🗓️ **Prepoved 3 zaporednih dni** | Ocenjevanja ne smejo biti na **3 zaporedne dni** (npr. pon–tor–sre). To bi bilo za učence preveč naporno. |
+| 📊 **Največ 1 test na dan** | Noben razred ne more pisati več kot en test na isti dan |
+| ✏️ **Največ 2 običajna testa na teden** | Ponavljanje se ne šteje v to omejitev |
+| 🗓️ **Največ 3 ocenjevanja skupaj na teden** | Vključno s ponavljanji |
+| 🔄 **Ponavljanje dovoli 3. test v tednu** | Vendar trije zaporedni dnevi s testom niso dovoljeni |
 
-> 🤗 **Ne obremenjujte se s temi pravili.** Ko boste vnašali ocenjevanje, vam bo sistem sam povedal, ali je termin prost ali ne. Če je zaseden, preprosto izberite drug datum.
+![Pregled koledarja ocenjevanj](slike/ucitelji_img_8.png)
 
-### Legenda — barve v koledarju
+> ℹ️ Za **8. in 9. razred** (skupinsko-razredne oznake s črkami in številkami, kjer številke predstavljajo skupine) aplikacija teh pogojev ne preverja samodejno. Učitelji morate sami skrbeti za spoštovanje pravil glede na to, kdo je v kateri skupini in razredu.
 
-V koledarju za ocenjevanja si pomagajte z barvami:
-
-| Barva | Pomen |
-|---|---|
-| 🔵 **Modro** | Običajno ocenjevanje (test, pisna naloga …) |
-| 🔄 **Rdeče** | Ponavljanje (popravljanje, dopolnilno ocenjevanje …) |
-| 🟣 **Vijolično** | **Zaseden datum** — ta razred ima ta dan že neko dejavnost (športni dan, ekskurzija …) |
+V oknu je na voljo tudi **Ponavljanje** – ko ga obkljukate, se spremenijo pravila za preverjanje (3. test v tednu je dovoljen).
 
 ---
 
-## 🗓️ 6. Zasedeni datumi — zakaj je nek dan siv?
+## 6. Zasedeni datumi
 
-Vodstvo šole vnese v sistem dneve, ko ima posamezen razred **dejavnost**: športni dan, kulturni dan, ekskurzija, naravoslovni dan, tehniški dan … Na te dni **ne morete napovedati ocenjevanj** — in to je čisto prav, saj razred takrat ni v običajnem pouku.
+Vodstvo lahko določene datume označi kot **zasedene** (npr. športni dan). Če ste imeli na tak dan že napovedano ocenjevanje, boste prejeli samodejno e-poštno obvestilo.
 
-> 💬 **Kaj pa, če mislite, da je prišlo do napake?** Kontaktirajte vodstvo ali administratorja. Morda je prišlo do pomote in bodo datum popravili. Vsakomur se kaj zgodi. 😊
+![Stran z zasedenimi datumi](slike/ucitelji_img_9.png)
+
+Na strani za ocenjevanje je na voljo tudi **spustni meni za filtriranje**:
+Izberete posamezen razred ali — za 8. in 9. razred — celotno generacijo. S filtri lažje pregledate, kateri dan kdo še lahko piše.
+
+> 💡 **Opomba:** Po izboru filtra pritisnite gumb **Osveži**, da se prikažejo posodobljeni podatki.
 
 ---
 
-## 🔄 7. Sprememba gesla — redno, za vsak slučaj
-
-Priporočamo, da geslo občasno zamenjate — sploh če mislite, da ga je kdo videl.
+## 7. Spreminjanje gesla
 
 1. V meniju kliknite **Spremeni geslo**
-2. Vnesite **trenutno geslo** (tisto, ki ga uporabljate zdaj)
-3. Vnesite **novo geslo** (upoštevajte pravila zgoraj)
-4. Potrdite novo geslo (še enkrat ga napišite, da se izognete tipkarskim napakam)
+2. Vnesite **trenutno geslo**
+3. Vnesite **novo geslo** (upoštevajte pravila)
+4. Potrdite novo geslo
 5. Kliknite **Spremeni geslo**
 
-> ✅ Če je šlo vse v redu, vas bo aplikacija obvestila. Če ne, bo pisalo, kaj je narobe — samo sledite navodilom.
-
-### Pozabili geslo? — Ni panike! 🙃
-
-To se zgodi vsem. Sploh ko imamo milijon opravkov in si vsega ne moremo zapomniti.
-
-1. Na prijavni strani kliknite **"Pozabljeno geslo?"**
-2. Vnesite svoj službeni e-poštni naslov
-3. V e-pošti kliknite na povezavo in si nastavite novo geslo
-4. Prijavite se z novim geslom
+> Pozabili geslo? Na prijavni strani kliknite **Pozabljeno geslo?**, vnesite svoj e-poštni naslov in sledite navodilom v e-pošti.
 
 ---
 
-## 🎯 Še enkrat na kratko — kaj si zapomniti?
-
-| Korak | Ključno sporočilo |
-|---|---|
-| 🚪 **Prvi dostop** | Kliknite »Pozabljeno geslo?«, dobili boste e-pošto |
-| 🔐 **Geslo** | Vsaj 5 znakov, male + velike črke + številka |
-| 📅 **Rezervacije** | Klik na `+` ali »Nova rezervacija«, pri tablicah vnesite število |
-| 🗑️ **Brisanje** | Samo svoje rezervacije, klik na ✕ |
-| 📝 **Ocenjevanje** | Izberite razred, datum, shranite — sistem vas opozori na omejitve |
-| 🔄 **Geslo pozabljeno** | Vedno lahko ponovite postopek — nič tragičnega |
-
----
-
-> 🫶 **Hvala, ker berete tole do konca!** Če vam je še vedno kaj nejasno, kar vprašajte. Aplikacija je narejena tako, da vam pomaga — ne da vas obremenjuje. Klikajte, poskušajte, raziskujte. Ničesar ne morete uničiti, obljubimo. 😊
+> 🫶 **Upam, da vam bo aplikacija v pomoč. Želim vam vse dobro pri uporabi!**
+>
+> *Matej Čušin*
