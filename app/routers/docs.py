@@ -58,37 +58,6 @@ def _doc_to_html(content: str, label: str) -> str:
     # Popravi relativne poti slik za browser/slike/
     html = re.sub(r'src="slike/([^"]+)"', r'src="/slike/\1"', html)
     html = re.sub(r'src="\.\./slike/([^"]+)"', r'src="/slike/\1"', html)
-    # Popravi jezikovne povezave v HTML preview
-    html = re.sub(
-        r'href="\.\./navodila-ucitelji\.md"',
-        r'href="/docs/html/navodila-ucitelji"',
-        html,
-    )
-    html = re.sub(
-        r'href="\.\./navodila-vodstvo\.md"',
-        r'href="/docs/html/navodila-vodstvo"',
-        html,
-    )
-    html = re.sub(
-        r'href="en/navodila-ucitelji\.md"',
-        r'href="/docs/html/navodila-ucitelji-en"',
-        html,
-    )
-    html = re.sub(
-        r'href="en/navodila-vodstvo\.md"',
-        r'href="/docs/html/navodila-vodstvo-en"',
-        html,
-    )
-    html = re.sub(
-        r'href="navodila-ucitelji\.md"',
-        r'href="/docs/html/navodila-ucitelji"',
-        html,
-    )
-    html = re.sub(
-        r'href="navodila-vodstvo\.md"',
-        r'href="/docs/html/navodila-vodstvo"',
-        html,
-    )
     return html
 
 

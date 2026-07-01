@@ -1,7 +1,3 @@
-🌐 **Jezik / Language:** [🇸🇮 Slovenščina](../navodila-ucitelji.md) | [🇬🇧 English](navodila-ucitelji.md)
-
----
-
 > 👋 **Hello, colleagues!**
 >
 > This app lets you reserve rooms (computer lab, ship, tablets) and schedule written tests. This guide is short and to the point — the screenshots will help you figure everything out in no time. 😊
