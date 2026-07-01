@@ -13,7 +13,7 @@ DOCS_DIR = Path(__file__).resolve().parent.parent.parent / "documentation"
 ALLOWED = {
     "navodila-ucitelji": ["navodila-ucitelji.md"],
     "navodila-ucitelji-en": ["en/navodila-ucitelji.md"],
-    "navodila-vodstvo": ["navodila-vodstvo.md", "admin-devops-navodila.md"],
+    "navodila-vodstvo": ["navodila-vodstvo.md"],
 }
 
 DOC_LABELS = {
