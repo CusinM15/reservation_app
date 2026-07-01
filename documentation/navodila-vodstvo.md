@@ -8,7 +8,7 @@
 
 # 👑 Navodila za vodstvo
 
-> Namenjeno **ravnatelju, in pomočnikom ravnatelja**.  
+> Namenjeno **ravnatelju in pomočnikom ravnatelja**.  
 > Vodstvo ima več moči kot učitelji — lahko brišete tudi tuje rezervacije, upravljate zasedene
 > datume in nadzorujete ocenjevanje. S tem pride tudi **odgovornost**.
 >
@@ -86,23 +86,28 @@ To uporabite za:
 
 1. Sistem **samodejno izbriše** vsa obstoječa ocenjevanja izbranih razredov v tem
    obdobju
-2. "Prizadeti" učitelji **avtomatsko prejmejo email obvestilo**
+2. Prizadeti učitelji **avtomatsko prejmejo email obvestilo**
 3. Vse skupaj se zabeleži v dnevniku
 
 Ni vam treba ničesar najavljati posebej — sistem obvesti namesto vas.
 
 ### Obvestila po e-pošti
 
-Vsakič, ko vodstvo:
-- označi datum kot zaseden,
-- in serijske rezervacije
-- priporočam prekinitev rezervacij in pisnega ocenjevanja s serijskimi rezervacijami/zasedeni dnevi, ker na ta način učitelji dobijo mail, zgolj s klikom na `x` se zgolj izbriše in nihče ne dobi obvestila
+Sistem **samodejno pošilja email obvestila** vedno, ko vodstvo:
 
+| Akcija | Kdo dobi email | Zakaj? |
+|--------|---------------|--------|
+| ✅ Označi datum kot **zaseden** | Vsi učitelji prizadetih razredov | Vedeli naj, da ta dan ni ocenjevanja |
+| ✅ Ustvari **serijsko rezervacijo** | Učitelji s konfliktnimi rezervacijami | Dobijo obvestilo, da je njihova rezervacija prestavljena/odpovedana |
+| ✅ Izbriše **serijsko rezervacijo** | Učitelji s konfliktnimi rezervacijami | Enako kot zgoraj |
+
+> **⚠️ Pomembno:** Če samo kliknete `✕` (brišete) posamezno rezervacijo, **nihče ne dobi obvestila**. Za avtomatska obvestila vedno uporabite **serijske rezervacije** ali **zasedene datume** — sistem sam obvesti vse prizadete.
+
+**ELI5:** Serijske rezervacije in zasedeni datumi so kot javni razglas na tabli — vsi vidijo in vsi so obveščeni. Brisanje posamezne rezervacije je kot da tiho zbrišeš nekaj s table — nihče ne ve, zakaj je izginilo.
 
 ---
 
 ## 📋 Audit log — dnevnik sprememb
-
 
 ![Audit log pregled — filter, tabela, iskanje po akcijah](diagrams/audit-log-zgodovina.png)
 
@@ -123,7 +128,7 @@ Audit log omogoča **pregled vseh pomembnih sprememb v sistemu** — kdo je kaj 
 | `create_user` | Ustvarjen nov uporabnik |
 | `update_user` | Posodobljen uporabnik |
 | `delete_user` | Izbrisan uporabnik |
-
+| `change_password` | Sprememba gesla |
 
 ### Kako dostopa vodstvo do audit loga?
 
