@@ -1,3 +1,4 @@
+🌐 **Jezik / Language:** [🇸🇮 Slovenščina](HA.md) | [🇬🇧 English](en/HA.md)
 
 ---
 
