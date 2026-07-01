@@ -16,7 +16,7 @@
 
 Obiščite [aplikacijo](https://ostc-app.org). Da dobite geslo, pritisnite gumb **Pozabljeno geslo?** in vnesite svoj **šolski e-poštni naslov** (@guest.arnes.si). V kratkem boste prejeli e-pošto od `os-toneta.cufarja-jesenice@guest.arnes.si`.
 
-Če sporočila ne prejmete, javite administratorju, naj preveri, ali je vaš e-poštni naslov pravilno vnesen v bazo (vaše sporočilo naj vsebuje vaš pravilen poštni naslov).
+Če sporočila ne prejmete, javite administratorju, naj preveri, ali je vaš e-poštni naslov pravilno vnesen v bazo (v sporočilu navedite svoj pravilni e-poštni naslov).
 
 ![Prijavna stran](slike/ucitelji_img_1.png)
 
@@ -45,7 +45,7 @@ Ko ste geslo nastavili, se prijavite:
 | **Uporabniško ime** | Vaš šolski e-poštni naslov |
 | **Geslo** | Geslo, ki ste ga nastavili |
 
-> 🛡️ Če prijava ne deluje, najprej sami še nekajkrat poskusite spremeniti geslo. Administratorja kontaktirajte šele, ko se težava ne reši.
+> ⚠️ Če prijava ne deluje, najprej sami še nekajkrat poskusite spremeniti geslo. Administratorja kontaktirajte šele, ko se težava ne reši.
 
 Po uspešni prijavi se odpre stran **Rezervacije**.
 
@@ -59,7 +59,7 @@ Na voljo so **4 različni prostori**:
 |---|---|
 | 🖥️ **Računalnica** | Samo **ena** rezervacija na termin |
 | 🚢 **Ladja** | Samo **ena** rezervacija na termin |
-| 📱 **Tablice** | Več učiteljev **lahko** sočasno — skupaj največ **28 tablic** |
+| 📱 **Tablice** | Več učiteljev **lahko rezervira** sočasno — skupaj največ **28 tablic** |
 | 🍳 **Gospodinjska učilnica** | Samo **ena** rezervacija na termin |
 
 ![Stran z rezervacijami](slike/ucitelji_img_2.png)
@@ -106,7 +106,7 @@ Ročno izberete razred in datum.
 | 📊 **Največ 1 test na dan** | Noben razred ne more pisati več kot en test na isti dan |
 | ✏️ **Največ 2 običajna testa na teden** | Ponavljanje se ne šteje v to omejitev |
 | 🗓️ **Največ 3 ocenjevanja skupaj na teden** | Vključno s ponavljanji |
-| 🔄 **Ponavljanje dovoli 3. test v tednu** | Vendar trije zaporedni dnevi s testom niso dovoljeni |
+| 🔄 **Ponavljanje dovoljuje 3. test v tednu** | Vendar trije zaporedni dnevi s testom niso dovoljeni |
 
 ![Pregled koledarja ocenjevanj](slike/ucitelji_img_8.png)
 
@@ -137,7 +137,7 @@ Izberete posamezen razred ali — za 8. in 9. razred — celotno generacijo. S f
 4. Potrdite novo geslo
 5. Kliknite **Spremeni geslo**
 
-> Pozabili geslo? Na prijavni strani kliknite **Pozabljeno geslo?**, vnesite svoj e-poštni naslov in sledite navodilom v e-pošti.
+> Ste pozabili geslo? Na prijavni strani kliknite **Pozabljeno geslo?**, vnesite svoj e-poštni naslov in sledite navodilom v e-pošti.
 
 ---
 
