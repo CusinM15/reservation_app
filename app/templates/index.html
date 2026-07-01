@@ -104,6 +104,11 @@
     .navodila-preview { display: none; position: fixed; top: 60px; right: 115px; width: 520px; max-height: 75vh; background: #fff; border: 1px solid #ddd; border-radius: 10px; box-shadow: 0 8px 32px rgba(0,0,0,0.2); z-index: 2000; overflow: hidden; flex-direction: column; }
     .navodila-preview.show { display: flex; }
     .navodila-preview-header { padding: 0.8rem 1rem; font-weight: 700; font-size: 0.9rem; border-bottom: 1px solid #eee; background: #f8f9fa; display: flex; justify-content: space-between; align-items: center; }
+    .navodila-lang-toggle { display: flex; gap: 2px; }
+    .lang-btn { cursor: pointer; padding: 2px 6px; border-radius: 4px; font-size: 1.1rem; opacity: 0.5; transition: all 0.15s; }
+    .lang-btn:hover { opacity: 0.8; background: #e0e0e0; }
+    .lang-btn.lang-btn-active { opacity: 1; background: #4a6cf7; }
+    .navodila-preview-footer { padding: 0.5rem 1rem; border-top: 1px solid #eee; background: #f8f9fa; text-align: center; }
     .navodila-preview-close { cursor: pointer; color: #999; font-size: 1.2rem; line-height: 1; }
     .navodila-preview-close:hover { color: #333; }
     .navodila-preview-body { padding: 1rem; overflow-y: auto; flex: 1; font-size: 0.82rem; line-height: 1.6; color: #333; }
@@ -136,24 +141,31 @@
     <a href="#" id="export-rez-link" style="display:none;" onclick="openExportRezModal(); return false;">📥 Izvoz rezervacij</a>
     <a href="#" id="export-oc-link" style="display:none;" onclick="openExportOcModal(); return false;">📥 Izvoz ocenjevanj</a>
     <span class="spacer"></span>
-    <!-- Preview popup -->
+    <!-- Preview popup z jezikovnim preklopom -->
     <div class="navodila-preview" id="navodilaPreview" onmouseenter="keepPreview()" onmouseleave="scheduleHidePreview()">
       <div class="navodila-preview-header">
         <span id="navodilaPreviewTitle">Navodila</span>
+        <div class="navodila-lang-toggle" id="navodilaLangToggle">
+          <span class="lang-btn lang-btn-active" data-lang="sl" onclick="switchPreviewLang('sl')">🇸🇮</span>
+          <span class="lang-btn" data-lang="en" onclick="switchPreviewLang('en')">🇬🇧</span>
+        </div>
         <span class="navodila-preview-close" onclick="hidePreview()">✕</span>
       </div>
       <div class="navodila-preview-body" id="navodilaPreviewBody">Nalagam ...</div>
+      <div class="navodila-preview-footer">
+        <button class="btn btn-sm btn-primary" onclick="downloadPreviewDoc()">📥 Prenesi PDF</button>
+      </div>
     </div>
-    <!-- Navodila gumbi — desno zgoraj, en nad drugim -->
+    <!-- Navodila gumbi — desno zgoraj -->
     <div id="navodilaSidebar" style="display:none;">
       <button class="side-doc-btn" id="sideBtnUcitelji"
-        onmouseenter="showDocPreviewHTML('navodila-ucitelji', 'Navodila za učitelje')"
+        onmouseenter="showDocPreview('navodila-ucitelji', 'Navodila za učitelje')"
         onmouseleave="scheduleHidePreview()"
         onclick="downloadDoc('navodila-ucitelji')">
         👩‍🏫 Učitelji
       </button>
       <button class="side-doc-btn" id="sideBtnVodstvo" style="display:none;"
-        onmouseenter="showDocPreviewHTML('navodila-vodstvo', 'Navodila za vodstvo')"
+        onmouseenter="showDocPreview('navodila-vodstvo', 'Navodila za vodstvo')"
         onmouseleave="scheduleHidePreview()"
         onclick="downloadDoc('navodila-vodstvo')">
         👑 Vodstvo
@@ -503,40 +515,70 @@
     let inactivityTimer = null;
     const INACTIVITY_TIMEOUT_MS = {{ inactivity_timeout_ms }};
 
-    // === Navodila preview & download ===
+    // === Navodila preview & download z jezikovnim preklopom ===
     let previewTimer = null;
     let currentPreviewDoc = null;
+    let currentPreviewLang = 'sl';
 
-    async function showDocPreviewHTML(name, label) {
+    function docLangName(baseName, lang) {
+      // Za angleščino doda '-en', sicer vrne osnovno ime
+      return lang === 'en' ? baseName + '-en' : baseName;
+    }
+
+    async function showDocPreview(baseName, label) {
       clearTimeout(previewTimer);
       const preview = document.getElementById('navodilaPreview');
       const body = document.getElementById('navodilaPreviewBody');
       const title = document.getElementById('navodilaPreviewTitle');
-      title.textContent = label || name;
+      currentPreviewDoc = baseName;
+      title.textContent = label;
       body.textContent = 'Nalagam ...';
       preview.classList.add('show');
-      currentPreviewDoc = name;
+      // Nastavi aktiven jezikovni gumb
+      document.querySelectorAll('.lang-btn').forEach(b => b.classList.remove('lang-btn-active'));
+      const activeBtn = document.querySelector('.lang-btn[data-lang="' + currentPreviewLang + '"]');
+      if (activeBtn) activeBtn.classList.add('lang-btn-active');
+      await loadPreviewContent();
+    }
+
+    async function loadPreviewContent() {
+      if (!currentPreviewDoc) return;
+      const body = document.getElementById('navodilaPreviewBody');
+      const name = docLangName(currentPreviewDoc, currentPreviewLang);
       try {
         const resp = await fetch('/docs/html/' + name);
         if (!resp.ok) { body.textContent = 'Napaka pri nalaganju.'; return; }
-        let html = await resp.text();
-        // Popravi jezikovne povezave: href → onclick, da delajo v istem oknu
-        html = html.replace(
-          /<a\s+href=["']\/docs\/html\/([^"']+)["'][^>]*>([^<]+)<\/a>/g,
-          (match, docName, linkText) => {
-            const labels = {
-              'navodila-ucitelji': 'Navodila za učitelje',
-              'navodila-ucitelji-en': 'Teacher Instructions (English)',
-              'navodila-vodstvo': 'Navodila za vodstvo'
-            };
-            const docLabel = labels[docName] || docName;
-            return `<a href="#" onclick="showDocPreviewHTML('${docName}','${docLabel}');return false;">${linkText}</a>`;
-          }
-        );
+        const html = await resp.text();
         body.innerHTML = html;
+        // Scroll na vrh ob zamenjavi jezika
+        body.scrollTop = 0;
       } catch (e) {
         body.textContent = 'Napaka: ' + e.message;
       }
+    }
+
+    function switchPreviewLang(lang) {
+      if (lang === currentPreviewLang) return; // že aktiven
+      currentPreviewLang = lang;
+      // Posodobi vizualno
+      document.querySelectorAll('.lang-btn').forEach(b => b.classList.remove('lang-btn-active'));
+      const activeBtn = document.querySelector('.lang-btn[data-lang="' + lang + '"]');
+      if (activeBtn) activeBtn.classList.add('lang-btn-active');
+      // Posodobi naslov
+      const title = document.getElementById('navodilaPreviewTitle');
+      if (currentPreviewDoc === 'navodila-ucitelji') {
+        title.textContent = lang === 'sl' ? 'Navodila za učitelje' : 'Teacher Instructions';
+      } else if (currentPreviewDoc === 'navodila-vodstvo') {
+        title.textContent = lang === 'sl' ? 'Navodila za vodstvo' : 'Management & Admin Guide';
+      }
+      const body = document.getElementById('navodilaPreviewBody');
+      body.textContent = 'Nalagam ...';
+      loadPreviewContent();
+    }
+
+    function downloadPreviewDoc() {
+      if (!currentPreviewDoc) return;
+      downloadDoc(currentPreviewDoc);
     }
 
     function scheduleHidePreview() {
@@ -552,11 +594,12 @@
     function hidePreview() {
       clearTimeout(previewTimer);
       document.getElementById('navodilaPreview').classList.remove('show');
-      currentPreviewDoc = null;
+      // Ne resetiraj currentPreviewLang — ohrani zadnji jezik
     }
 
-    function downloadDoc(name) {
+    function downloadDoc(baseName) {
       hidePreview();
+      const name = docLangName(baseName, currentPreviewLang);
       const a = document.createElement('a');
       a.href = '/docs/download/' + name;
       a.download = name + '.pdf';
@@ -1177,10 +1220,11 @@
         else btnContainer.style.display = 'none';
         const seriesDiv = document.getElementById('series-buttons');
         if (currentUser.role === 'admin' || currentUser.role === 'vodstvo') { seriesDiv.style.display = 'inline-flex'; seriesDiv.style.gap = '0.5rem'; }
-        // Navodila — vsi vidijo učitelje, vodstvo+admin vidijo tudi vodstvo
-        document.getElementById('navodilaSidebar').style.display = 'flex';
-        if (currentUser.role === 'vodstvo' || currentUser.role === 'admin') {
-          document.getElementById('sideBtnVodstvo').style.display = 'block';
+        if (currentUser.role) {
+          document.getElementById('navodilaSidebar').style.display = 'flex';
+          if (currentUser.role === 'vodstvo' || currentUser.role === 'admin') {
+            document.getElementById('sideBtnVodstvo').style.display = 'block';
+          }
         }
       }
 
