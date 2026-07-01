@@ -23,6 +23,8 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     ca-certificates \
     gnupg \
     tzdata \
+    fonts-dejavu-core \
+    fonts-dejavu-extra \
     && rm -rf /var/lib/apt/lists/*
 
 # PostgreSQL official repo (za pg_dump 18 — server je 18.4)

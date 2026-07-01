@@ -2,11 +2,11 @@ from fastapi import APIRouter
 from fastapi.responses import JSONResponse, Response
 from pathlib import Path
 import markdown
-import weasyprint
+from fpdf import FPDF, FontFace
+import re
 
 router = APIRouter(tags=["docs"])
 
-# Map logical names to actual files
 DOCS_DIR = Path(__file__).resolve().parent.parent.parent / "documentation"
 
 ALLOWED = {
@@ -21,42 +21,71 @@ DOC_LABELS = {
     "admin-devops-navodila": "Admin navodila",
 }
 
-PDF_STYLES = """
-<style>
-  body { font-family: sans-serif; font-size: 11pt; line-height: 1.6; color: #333; padding: 1.5cm; }
-  h1 { font-size: 16pt; color: #1a1a2e; margin-top: 1em; }
-  h2 { font-size: 14pt; color: #1a1a2e; margin-top: 1em; }
-  h3 { font-size: 12pt; color: #1a1a2e; }
-  code { background: #f0f0f0; padding: 1px 4px; font-size: 10pt; border-radius: 3px; }
-  pre { background: #f4f4f4; padding: 8px; border-radius: 4px; font-size: 9pt; overflow-x: auto; white-space: pre-wrap; }
-  blockquote { border-left: 3px solid #4a6cf7; padding-left: 10px; margin: 0.5em 0; color: #555; }
-  table { border-collapse: collapse; width: 100%; margin: 0.5em 0; }
-  th, td { border: 1px solid #bbb; padding: 4px 8px; font-size: 10pt; text-align: left; }
-  th { background: #f0f2f5; }
-  img { max-width: 100%; height: auto; }
-  hr { border: none; border-top: 1px solid #ddd; margin: 1em 0; }
-  p { margin: 0.3em 0; }
-  ul, ol { margin: 0.3em 0; padding-left: 1.5em; }
-  li { margin: 0.1em 0; }
-  a { color: #4a6cf7; }
-  strong { color: #1a1a2e; }
-</style>
-"""
+
+class DocPDF(FPDF):
+    def header(self):
+        if self.page_no() > 1:
+            self.set_font("DejaVu", "B", 8)
+            self.set_text_color(120, 120, 120)
+            self.cell(0, 5, "ostc-app — Dokumentacija", align="C")
+            self.ln(8)
+
+    def footer(self):
+        self.set_y(-15)
+        self.set_font("DejaVu", "", 8)
+        self.set_text_color(150, 150, 150)
+        self.cell(0, 10, f"Stran {self.page_no()}/{{nb}}", align="C")
 
 
-def _md_to_pdf_bytes(md_content: str) -> bytes:
-    """Convert markdown content to PDF bytes."""
-    html_body = markdown.markdown(md_content, extensions=["extra"])
-    html_doc = (
-        f"<!DOCTYPE html><html><head><meta charset=\"utf-8\">{PDF_STYLES}</head>"
-        f"<body>{html_body}</body></html>"
+def _make_pdf(content: str, title: str) -> bytes:
+    html = markdown.markdown(
+        content,
+        extensions=["fenced_code", "tables", "nl2br"],
     )
-    return weasyprint.HTML(string=html_doc).write_pdf()
+
+    # fpdf2 write_html ne podpira gnezdenih tagov v <td> — počistimo jih
+    def _strip_nested_in_td(m):
+        inner = m.group(1)
+        inner = re.sub(r'<[^>]+>', '', inner)
+        return f'<td>{inner}</td>'
+    html = re.sub(r'<td>(.*?)</td>', _strip_nested_in_td, html, flags=re.DOTALL)
+    html = re.sub(r'<th>(.*?)</th>', lambda m: f'<th>{re.sub(r"<[^>]+>", "", m.group(1))}</th>', html, flags=re.DOTALL)
+
+    # Popravi relativne poti slik
+    docs_dir_abs = str(DOCS_DIR.resolve())
+    html = re.sub(r'src="(?!https?://)([^"]+)"', lambda m: f'src="{docs_dir_abs}/{m.group(1)}"', html)
+
+    pdf = DocPDF()
+    pdf.alias_nb_pages()
+    pdf.add_font("DejaVu", "", "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf", uni=True)
+    pdf.add_font("DejaVu", "B", "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf", uni=True)
+    pdf.add_font("DejaVu", "I", "/usr/share/fonts/truetype/dejavu/DejaVuSans-Oblique.ttf", uni=True)
+    pdf.add_font("DejaVu", "BI", "/usr/share/fonts/truetype/dejavu/DejaVuSans-BoldOblique.ttf", uni=True)
+    pdf.add_font("DejaVuMono", "", "/usr/share/fonts/truetype/dejavu/DejaVuSansMono.ttf", uni=True)
+    pdf.add_font("DejaVuMono", "B", "/usr/share/fonts/truetype/dejavu/DejaVuSansMono-Bold.ttf", uni=True)
+    pdf.add_font("DejaVuMono", "I", "/usr/share/fonts/truetype/dejavu/DejaVuSansMono-Oblique.ttf", uni=True)
+    pdf.add_font("DejaVuMono", "BI", "/usr/share/fonts/truetype/dejavu/DejaVuSansMono-BoldOblique.ttf", uni=True)
+    pdf.set_auto_page_break(auto=True, margin=20)
+    pdf.add_page()
+
+    pdf.set_font("DejaVu", "B", 16)
+    pdf.set_text_color(26, 26, 46)
+    pdf.multi_cell(0, 8, title)
+    pdf.set_draw_color(74, 108, 247)
+    pdf.line(10, pdf.get_y(), 200, pdf.get_y())
+    pdf.ln(4)
+
+    pdf.set_text_color(34, 34, 34)
+    pdf.write_html(html, tag_styles={
+        "code": FontFace(family="DejaVuMono", size_pt=8),
+        "pre": FontFace(family="DejaVuMono", size_pt=8),
+    })
+
+    return bytes(pdf.output(dest="S"))
 
 
 @router.get("/docs/{name}")
 async def get_doc(name: str):
-    """Return markdown content as JSON (used for hover preview)."""
     if name not in ALLOWED:
         return JSONResponse({"error": "Dokument ne obstaja"}, status_code=404)
     filepath = DOCS_DIR / ALLOWED[name]
@@ -72,17 +101,23 @@ async def get_doc(name: str):
 
 @router.get("/docs/download/{name}")
 async def download_doc(name: str):
-    """Download instructions as PDF."""
     if name not in ALLOWED:
         return JSONResponse({"error": "Dokument ne obstaja"}, status_code=404)
     filepath = DOCS_DIR / ALLOWED[name]
     if not filepath.exists():
         return JSONResponse({"error": "Datoteka ne obstaja"}, status_code=404)
-    md_content = filepath.read_text(encoding="utf-8")
-    pdf_bytes = _md_to_pdf_bytes(md_content)
-    pdf_name = ALLOWED[name].replace(".md", ".pdf")
+
+    content = filepath.read_text(encoding="utf-8")
+    title = DOC_LABELS.get(name, name)
+    try:
+        pdf_bytes = _make_pdf(content, title)
+    except Exception as e:
+        return JSONResponse({"error": f"Napaka pri generiranju PDF: {str(e)}"}, status_code=500)
+
+    safe_name = ALLOWED[name].replace(".md", ".pdf")
+
     return Response(
         content=pdf_bytes,
         media_type="application/pdf",
-        headers={"Content-Disposition": f"attachment; filename={pdf_name}"},
+        headers={"Content-Disposition": f'attachment; filename="{safe_name}"'},
     )

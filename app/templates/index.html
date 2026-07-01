@@ -1179,11 +1179,9 @@
         else btnContainer.style.display = 'none';
         const seriesDiv = document.getElementById('series-buttons');
         if (currentUser.role === 'admin' || currentUser.role === 'vodstvo') { seriesDiv.style.display = 'inline-flex'; seriesDiv.style.gap = '0.5rem'; }
-        // Navodila glede na vlogo
+        // Navodila — vsi vidijo učitelje in vodstvo, admin navodila samo admin
         document.getElementById('navodilaWrapper').style.display = 'inline-block';
-        if (currentUser.role === 'vodstvo' || currentUser.role === 'admin') {
-          document.getElementById('navodilaVodstvoItem').style.display = 'block';
-        }
+        document.getElementById('navodilaVodstvoItem').style.display = 'block';
         if (currentUser.role === 'admin') {
           document.getElementById('navodilaAdminItem').style.display = 'block';
         }
