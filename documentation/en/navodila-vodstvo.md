@@ -9,7 +9,7 @@
 
 > Intended for the **principal and assistant principals**.  
 > Management has more power than teachers — you can delete other people's reservations,
-> manage blocked dates, and oversee assessments. With this comes **responsibility**.
+> manage blocked dates, and oversee assessments. 
 >
 > ⚡ **Quick start:** Go to the app, log in with your school account and
 > use the menu at the top. Anything not mentioned below works the same as for teachers.
@@ -94,7 +94,6 @@ The system **automatically sends email notifications** whenever management:
 |---|---|---|
 | ✅ Marks a date as **blocked** | All teachers of affected classes | They need to know no assessments that day |
 | ✅ Creates a **series reservation** | Teachers with conflicting reservations | They're notified their reservation was moved/cancelled |
-| ✅ Deletes a **series reservation** | Teachers with conflicting reservations | Same as above |
 
 > **⚠️ Important:** If you just click `✕` (delete) an individual reservation, **no one gets notified**. For automatic notifications, always use **series reservations** or **blocked dates** — the system notifies all affected teachers automatically.
 
@@ -120,20 +119,8 @@ The audit log provides an **overview of all important changes in the system** �
 | `delete_ocenjevanje` | Assessment deleted |
 | `create_blocked_dates` | Blocked dates added |
 | `delete_blocked_date` | Blocked date removed |
-| `create_user` | New user created |
-| `update_user` | User updated |
-| `delete_user` | User deleted |
 
-### How does management access the audit log?
-
-Since the audit log isn't visible in the regular menu (only admins can see it), you can access it via a secret link with a special token:
-
-1. **The administrator will give you a link** in the format:
-   `https://ostc-app.org/history?token=SECRET_TOKEN`
-2. **Simply paste this link into your browser** (no login required)
-3. You'll see the **same view as the admin** — a table with all changes
-
-> 💡 **ELI5:** It's like having a special key that opens the archive door. This key doesn't open anything else — just the change archive. If you lose the key or it gets stolen, ask the administrator to create a new one.
+**Admin** is only on who can see it, go under **Admin panel** - **Dnevni dogodki**
 
 ---
 
