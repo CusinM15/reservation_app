@@ -139,9 +139,12 @@ def create_blocked_dates(
                     _send_email(
                         to_email=teacher.email,
                         subject=f"Ocenjevanje za {razred} na dan {date_str} prestavljeno",
-                        body=f"Pozdravljeni,\n\ndne {date_str} ima razred {razred} dejavnost, "
-                             f"zato boste morali izbrati nov datum.\n\n"
-                             f"Aplikacija za ocenjevanje."
+                        body=f"Pozdravljeni,\n\n"
+                             f"vaše ocenjevanje za razred {razred} na dan {date_str} "
+                             f"je bilo preklicano, ker je {creator_name} ta dan "
+                             f"označil(a) kot zasedenega.\n\n"
+                             f"Prosimo, izberite nov datum.\n\n"
+                             f"Lep pozdrav,\nŠolski App"
                     )
                     emails_sent += 1
 
