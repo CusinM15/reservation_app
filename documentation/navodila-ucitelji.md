@@ -1,3 +1,6 @@
+🌐 **Jezik / Language:** [🇸🇮 Slovenščina](navodila-ucitelji.md) | [🇬🇧 English](en/navodila-ucitelji.md)
+
+---
 
 > 👋 **Pozdravljeni, kolegice in kolegi!**
 >
@@ -71,14 +74,14 @@ Vse podatke nastavite v oknu, ki se odpre.
 
 ![Okno za novo rezervacijo](slike/ucitelji_img_4.png)
 
-V tem oknu izberete **Prostor** iz spustnega menija. Ure so po urniku zadnje triade. Pri **Računalnici**, **Gospodinjska učilnica** in **Ladji** je to vse, pri **Tablicah** pa morate izbrati tudi **število tablic**. V vsakem polju je prikazano, koliko tablic je še prostih (oblika `x/28`).
+V tem oknu izberete **Prostor** iz spustnega menija. Ure so po urniku zadnje triade. Pri **Računalnici**, **Gospodinjski učilnici** in **Ladji** je to vse, pri **Tablicah** pa morate izbrati tudi **število tablic**. V vsakem polju je prikazano, koliko tablic je še prostih (oblika `x/28`).
 
 ![Podrobnosti rezervacije](slike/ucitelji_img_5.png)
 
 > ⚠️ **Opomba:** Če so tablice za posamezen termin že delno rezervirane, rezervacije prek gumba `+` ni mogoče izvesti — uporabite gumb **Nova rezervacija**.
 
 **Brisanje rezervacije:**
-Vodstvo ima pravico do brisanja **katerekoli** rezervacije, učitelji pa lahko brišejo **samo lastne**. Vodstvo ima poleg tega na voljo še 2 dodatna načina za ustvarjanje rezervacij. Če imate vi za ta termin že rezerviran prostor, se vaša rezervacija ob tem prekliče (razen pri tablicah, kadar skupna vsota ni presežena).
+Vodstvo ima pravico do brisanja **kakršne koli** rezervacije, učitelji pa lahko brišejo **samo lastne**. Vodstvo ima poleg tega na voljo še 2 dodatna načina za ustvarjanje rezervacij. Če imate vi za ta termin že rezerviran prostor, se vaša rezervacija ob tem prekliče (razen pri tablicah, kadar skupna vsota ni presežena).
 
 ![Pregled rezervacij](slike/ucitelji_img_3.png)
 
@@ -115,7 +118,7 @@ V oknu je na voljo tudi **Ponavljanje** – ko ga obkljukate, se spremenijo prav
 
 ## 6. Zasedeni datumi
 
-Vodstvo lahko določene datume označi kot **zasedene** (npr. športni dan). Če ste imeli na tak dan že napovedano ocenjevanje, boste prejeli samodejno e-poštno obvestilo.
+Vodstvo lahko določene datume označi kot **zasedene** (npr. športni dan). Če ste imeli za ta dan že napovedano ocenjevanje, boste prejeli samodejno e-poštno obvestilo.
 
 ![Stran z zasedenimi datumi](slike/ucitelji_img_9.png)
 
