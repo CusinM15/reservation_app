@@ -40,6 +40,9 @@ RUN useradd -m -u 1000 appuser
 COPY --from=builder /root/.local /home/appuser/.local
 COPY . .
 
+# Pre-build test: validiraj PDF generacijo pred končnim buildom
+RUN PYTHONPATH=/home/appuser/.local/lib/python3.11/site-packages python3 tests/test_pdf.py
+
 RUN chown -R appuser:appuser /app
 USER appuser
 

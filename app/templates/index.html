@@ -101,6 +101,12 @@
       text-align: center; transition: all 0.15s; box-shadow: -2px 2px 8px rgba(0,0,0,0.15);
     }
     .side-doc-btn:hover { background: #4a6cf7; width: 130px; }
+    .side-doc-btn-en {
+      display: block; width: 110px; padding: 6px 8px; border: none; border-radius: 8px 0 0 8px;
+      background: #2a2a4e; color: #aac; font-size: 0.75rem; font-weight: 400; cursor: pointer;
+      text-align: center; transition: all 0.15s; box-shadow: -2px 1px 4px rgba(0,0,0,0.1);
+    }
+    .side-doc-btn-en:hover { background: #4a6cf7; color: #fff; width: 130px; }
     .navodila-preview { display: none; position: fixed; top: 60px; right: 115px; width: 520px; max-height: 75vh; background: #fff; border: 1px solid #ddd; border-radius: 10px; box-shadow: 0 8px 32px rgba(0,0,0,0.2); z-index: 2000; overflow: hidden; flex-direction: column; }
     .navodila-preview.show { display: flex; }
     .navodila-preview-header { padding: 0.8rem 1rem; font-weight: 700; font-size: 0.9rem; border-bottom: 1px solid #eee; background: #f8f9fa; display: flex; justify-content: space-between; align-items: center; }
@@ -144,19 +150,31 @@
       </div>
       <div class="navodila-preview-body" id="navodilaPreviewBody">Nalagam ...</div>
     </div>
-    <!-- Navodila gumbi — desno zgoraj, en nad drugim -->
+    <!-- Navodila gumbi — desno zgoraj, SLO | EN v parih -->
     <div id="navodilaSidebar" style="display:none;">
-      <button class="side-doc-btn" id="sideBtnUcitelji"
-        onmouseenter="showDocPreviewHTML('navodila-ucitelji', 'Navodila za učitelje')"
+      <button class="side-doc-btn side-doc-btn-sm" id="sideBtnUcitelji"
+        onmouseenter="showDocPreviewHTML('navodila-ucitelji', 'Navodila za učitelje', 'sl')"
         onmouseleave="scheduleHidePreview()"
-        onclick="downloadDoc('navodila-ucitelji')">
+        onclick="downloadDoc('navodila-ucitelji', 'sl')">
         👩‍🏫 Učitelji
       </button>
-      <button class="side-doc-btn" id="sideBtnVodstvo" style="display:none;"
-        onmouseenter="showDocPreviewHTML('navodila-vodstvo', 'Navodila za vodstvo')"
+      <button class="side-doc-btn side-doc-btn-en" id="sideBtnUciteljiEn"
+        onmouseenter="showDocPreviewHTML('navodila-ucitelji', 'Teacher Instructions', 'en')"
         onmouseleave="scheduleHidePreview()"
-        onclick="downloadDoc('navodila-vodstvo')">
+        onclick="downloadDoc('navodila-ucitelji', 'en')">
+        🇬🇧 Teachers
+      </button>
+      <button class="side-doc-btn side-doc-btn-sm" id="sideBtnVodstvo" style="display:none;"
+        onmouseenter="showDocPreviewHTML('navodila-vodstvo', 'Navodila za vodstvo', 'sl')"
+        onmouseleave="scheduleHidePreview()"
+        onclick="downloadDoc('navodila-vodstvo', 'sl')">
         👑 Vodstvo
+      </button>
+      <button class="side-doc-btn side-doc-btn-en" id="sideBtnVodstvoEn" style="display:none;"
+        onmouseenter="showDocPreviewHTML('navodila-vodstvo', 'Management Guide', 'en')"
+        onmouseleave="scheduleHidePreview()"
+        onclick="downloadDoc('navodila-vodstvo', 'en')">
+        🇬🇧 Management
       </button>
     </div>
     <span class="user-info" id="userInfo"></span>
@@ -507,7 +525,7 @@
     let previewTimer = null;
     let currentPreviewDoc = null;
 
-    async function showDocPreviewHTML(name, label) {
+    async function showDocPreviewHTML(name, label, lang) {
       clearTimeout(previewTimer);
       const preview = document.getElementById('navodilaPreview');
       const body = document.getElementById('navodilaPreviewBody');
@@ -517,7 +535,7 @@
       preview.classList.add('show');
       currentPreviewDoc = name;
       try {
-        const resp = await fetch('/docs/html/' + name);
+        const resp = await fetch('/docs/html/' + name + '?lang=' + (lang || 'sl'));
         if (!resp.ok) { body.textContent = 'Napaka pri nalaganju.'; return; }
         const html = await resp.text();
         body.innerHTML = html;
@@ -542,11 +560,11 @@
       currentPreviewDoc = null;
     }
 
-    function downloadDoc(name) {
+    function downloadDoc(name, lang) {
       hidePreview();
       const a = document.createElement('a');
-      a.href = '/docs/download/' + name;
-      a.download = name + '.pdf';
+      a.href = '/docs/download/' + name + '?lang=' + (lang || 'sl');
+      a.download = name + '_' + (lang || 'sl') + '.pdf';
       a.click();
     }
     // === Konec navodil ===

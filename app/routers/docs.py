@@ -17,8 +17,8 @@ ALLOWED = {
 }
 
 DOC_LABELS = {
-    "navodila-ucitelji": "Navodila za učitelje",
-    "navodila-vodstvo": "Navodila za vodstvo in admin",
+    "navodila-ucitelji": {"sl": "Navodila za učitelje", "en": "Teacher Instructions"},
+    "navodila-vodstvo": {"sl": "Navodila za vodstvo in admin", "en": "Management & Admin Guide"},
 }
 
 
@@ -379,17 +379,23 @@ def _make_pdf(md_content: str, title: str) -> bytes:
 # Bralnik dokumentov
 # ═══════════════════════════════════════════════════════════════════════════
 
-def _read_docs(name: str) -> tuple[str, str]:
+def _read_docs(name: str, lang: str = "sl") -> tuple[str, str]:
     """Prebere dokumentacijo. Vrne (vsebina, naslov)."""
     if name not in ALLOWED:
         raise ValueError(f"Dokument '{name}' ne obstaja")
 
     files = ALLOWED[name]
     content_parts = []
-    for i, fname in enumerate(files):
-        filepath = DOCS_DIR / fname
-        if not filepath.exists():
+    for fname in files:
+        if lang == "en":
             filepath = DOCS_DIR / "en" / fname
+            if not filepath.exists():
+                filepath = DOCS_DIR / fname  # fallback na SLO
+        else:
+            filepath = DOCS_DIR / fname
+            if not filepath.exists():
+                filepath = DOCS_DIR / "en" / fname  # fallback na EN
+
         if not filepath.exists():
             raise ValueError(f"Datoteka '{fname}' ne obstaja")
 
@@ -401,7 +407,9 @@ def _read_docs(name: str) -> tuple[str, str]:
     for part in content_parts[1:]:
         full_content += "\n\n---\n\n" + part
 
-    return full_content, DOC_LABELS.get(name, name)
+    label_map = DOC_LABELS.get(name, {})
+    title = label_map.get(lang, label_map.get("sl", name))
+    return full_content, title
 
 
 # ═══════════════════════════════════════════════════════════════════════════
@@ -409,20 +417,20 @@ def _read_docs(name: str) -> tuple[str, str]:
 # ═══════════════════════════════════════════════════════════════════════════
 
 @router.get("/docs/{name}")
-async def get_doc(name: str):
+async def get_doc(name: str, lang: str = "sl"):
     """JSON preview (za klice iz appa)."""
     try:
-        content, label = _read_docs(name)
+        content, label = _read_docs(name, lang)
     except ValueError as e:
         return JSONResponse({"error": str(e)}, status_code=404)
-    return {"content": content, "label": label, "name": name}
+    return {"content": content, "label": label, "name": name, "lang": lang}
 
 
 @router.get("/docs/html/{name}", response_class=HTMLResponse)
-async def get_doc_html(name: str):
+async def get_doc_html(name: str, lang: str = "sl"):
     """HTML preview s slikami (za hover popup v appu)."""
     try:
-        content, label = _read_docs(name)
+        content, label = _read_docs(name, lang)
     except ValueError as e:
         return HTMLResponse(f"<p style='color:red;'>{e}</p>")
 
@@ -461,10 +469,10 @@ async def get_doc_html(name: str):
 
 
 @router.get("/docs/download/{name}")
-async def download_doc(name: str):
+async def download_doc(name: str, lang: str = "sl"):
     """PDF download."""
     try:
-        content, title = _read_docs(name)
+        content, title = _read_docs(name, lang)
     except ValueError as e:
         return JSONResponse({"error": str(e)}, status_code=404)
 
