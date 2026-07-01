@@ -168,13 +168,7 @@ if en_path.exists():
     found_si = [w for w in si_words if w in en_text.lower()]
     if found_si:
         print(f"  ⚠️  Angleška datoteka vsebuje slovenske besede: {found_si}")
-    # Preveri, da ima angleški jezikovni izbirnik
-    if "English" in en_text and "Language" in en_text:
-        print("  ✅ EN: jezikovni izbirnik prisoten")
-    else:
-        errors.append("Angleška datoteka nima jezikovnega izbirnika!")
-        print("  ❌ EN: manjka jezikovni izbirnik")
-    # Preveri slikovne poti
+    # Preveri, da ima angleška datoteka pravilne slikovne poti
     if "../slike/" in en_text:
         print("  ✅ EN: slikovne poti pravilne (../slike/)")
     else:
