@@ -13,7 +13,7 @@
 
 ## 1. How to access the app?
 
-Go to [the app](https://ostc-app.org). To get a password, click **Forgot password?** and enter your **school email address** (@guest.arnes.si). You will shortly receive an email from `os-toneta.cufarja-jesenice@guest.arnes.si`.
+Go to [the app](https://ostc-app.org). To get a password, click **Pozabljeno geslo** and enter your **school email address** (@guest.arnes.si). You will shortly receive an email from `os-toneta.cufarja-jesenice@guest.arnes.si`.
 
 If the email doesn't arrive, let the administrator know — they will check if your email address is correctly entered in the database (your message should include your correct email address).
 
@@ -124,13 +124,13 @@ Management can mark certain dates as **blocked** (e.g. sports day). If you alrea
 The assessment page also has a **filter dropdown**:
 Select a specific class or — for grades 8 and 9 — an entire cohort. Filters help you see which days are still available for testing.
 
-> 💡 **Note:** After selecting a filter, click the **Refresh** button to see the updated data.
+> 💡 **Note:** After selecting a filter, click the **Osveži** button to see the updated data.
 
 ---
 
 ## 7. Changing your password
 
-1. In the menu, click **Change password**
+1. In the menu, click **Spremeni geslo**
 2. Enter your **current password**
 3. Enter your **new password** (follow the rules above)
 4. Confirm your new password
