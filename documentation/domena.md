@@ -157,4 +157,9 @@ kubectl -n sola-app rollout restart deployment/sola-app
 - **Cloudflare SSL** je "Flexible" — HTTPS med uporabnikom in Cloudflarom, HTTP med Cloudflarom in `{{LB_IP}}` (znotraj šolskega omrežja — v redu)
 - **server: cloudflare** se pojavi v HTTP headerjih — to je dokaz da Cloudflare posreduje
 - Če bi želeli **end-to-end HTTPS**, bi potrebovali certifikat na aplikaciji (trenutno ni potrebe — ne kompliciraj)
-- DNS propagacija lahko traja. Če si ravno spremenil DNS in ne dela — počakaj. Ne paničari. Skoči na `dig {{DOMAIN}}` po 5 minutah.
+- DNS propagacija lahko traja. Če si ravno spremenil DNS in ne dela — počakaj. Ne paničari. Skoči na `dig {DOMAIN}` po 5 minutah.
+
+---
+
+> **Avtor:** Matej Čušin  
+> **Šola:** OŠ Toneta Čufarja, Jesenice

@@ -40,10 +40,10 @@ Aplikacija rešuje eno glavno težavo: **kdo je kdaj v katerem prostoru in kdaj 
 
 ### Ostale funkcionalnosti
 
-- **📝 Ocenjevanja** — Učitelji napovejo pisna ocenjevanja. Aplikacija pazi, da jih ni več kot **3 na teden** in **največ 2 običajni** (tretji je lahko samo ponavlanje). **Zakaj?** Da nimajo učenci 5 testov v enem dnevu.
-- **🚫 Zasedeni datumi** — Vodstvo/admin označi dneve, ko nič ne gre (ekskurzije, športni dnevi ...). **Zakaj?** Da se kdo ne muči z rezervacijo na dan, ko tega ne more.
+| **📝 Ocenjevanja** — Učitelji napovejo pisna ocenjevanja. Aplikacija pazi, da jih ni več kot **3 na teden** in **največ 2 običajni** (tretji je lahko samo lažje ocenjevanje). **Zakaj?** Da nimajo učenci 5 testov v enem dnevu.
+| **🚫 Zasedeni datumi** — Vodstvo/admin označi dneve, ko nič ne gre (ekskurzije, športni dnevi ...). **Zakaj?** Da se nihče ne muči z rezervacijo na dan, ko pouka ni.
 - **👥 Admin panel** — Dodaš/brišeš učitelje, nastavljaš vloge. **Zakaj?** Nekdo mora imeti ključe od vrat.
-- **🔑 Pozabljeno geslo** — Pošlje mail za ponastavitev. **Zakaj?** Ker vsak kfaj pozabi geslo  
+| **🔑 Pozabljeno geslo** — Pošlje email za ponastavitev. **Zakaj?** Ker vsak kdaj pozabi geslo in kričanje »miha.ne.veš.gesla« čez hodnik ni profesionalno.
 
 ---
 
@@ -77,7 +77,7 @@ Aplikacija rešuje eno glavno težavo: **kdo je kdaj v katerem prostoru in kdaj 
 Če med namestitvijo nisi nastavil statičnega IP-ja (ali če ga rabiš spremeniti):
 
 
-**Namesto nano lahko uporabiš vim, če javi da tega ne pozna sudo install nano oz vim**
+**Če `nano` ni nameščen, ga namesti s `sudo apt install nano` (ali uporabi `vim`).**
 
 ```bash
 sudo nano /etc/netplan/00-installer-config.yaml
@@ -210,7 +210,7 @@ kubectl get hpa -n sola-app
 
 HPA uporablja **CPU (60%) in pomnilnik (70%)** kot merilo:
 - **2 repliki** — nizka obremenitev (počitnice, popoldne, vikend)
-- **3 replike** — normalen pouk (ena kopija na vsakem nodu, na enemu sta pa dva)
+| **3 replike** — normalen pouk (ena kopija na vsakem nodu, na enem pa dve)
 - **4 replike** — visoka obremenitev (ocene, začetek šolskega leta)
 
 ### **Dnevna varnostna kopija baze (`sola-db-backup`)**
@@ -237,7 +237,7 @@ HPA uporablja **CPU (60%) in pomnilnik (70%)** kot merilo:
 
 ## AI agenti za pomoč
 
-*"Ko česa nznaš rabiš pomoč vprašaš ai-agenta (priporočam Hermes, tudi plačljiv model, ne porabi veliko) on je stalno dostopen in tudi on vidi kodo oz arhitektro kadarkoli -  24/7."*
+*"Ko česa ne veš, za pomoč vprašaj AI agenta (priporočam Hermes — tudi plačljiv model ne porabi veliko). Vedno je na voljo, pozna kodo in arhitekturo — 24/7."*
 
 ### Kaj je AI agent?
 
@@ -264,7 +264,7 @@ In on sam pogleda, analizira in pove kaj je narobe. **Kot bi vzel avto na servis
 **Primeri uporabe:**
 
 ```bash
-# V pimeru da je alies dodan in imate nastavljen default model in se odpre ai chat v terminalu (tako, kot preko interneta, s tem da lahko vidi tudi datotek na strežniku)
+# Če je dodan alias in imate nastavljen privzet model — odpre se AI chat v terminalu (enako kot prek spleta, le da vidi tudi datoteke na strežniku)
 hermes 
 
 # "Preveri stanje klustra"

@@ -263,3 +263,8 @@ sudo systemctl enable --now iscsid
 | DB won't connect | Check `sola-db-rw` endpoint: `kubectl get endpoints -n sola sola-db-rw` |
 | MetalLB won't assign IP | `kubectl -n metallb-system get ipaddresspool` |
 | Longhorn volume stuck | Check in Longhorn UI: `kubectl port-forward -n longhorn-system svc/longhorn-frontend 8080:80` |
+
+---
+
+> **Author:** Matej Čušin  
+> **School:** OŠ Toneta Čufarja, Jesenice

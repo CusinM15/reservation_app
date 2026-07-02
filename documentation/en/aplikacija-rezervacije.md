@@ -106,3 +106,8 @@ User management — adding, editing, deleting, deactivation.
 | Schedule assessment | ✅ | ✅ | ✅ |
 | Manage blocked dates | ❌ | ✅ | ✅ |
 | Admin panel (users) | ❌ | ❌ | ✅ |
+
+---
+
+> **Author:** Matej Čušin  
+> **School:** OŠ Toneta Čufarja, Jesenice

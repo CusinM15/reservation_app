@@ -565,4 +565,5 @@ git pull                                    # Pull the latest code
 
 ---
 
-*Documentation for sola-app*
+> **Author:** Matej Čušin  
+> **School:** OŠ Toneta Čufarja, Jesenice

@@ -233,4 +233,10 @@ kubectl exec -n sola sola-db-1 -- psql -U postgres -d sola -c \
 
 5. **Check cronjobs after powering on** — backup and report will start automatically per schedule.
 
-6. **CNPG automatically establishes replication** — no manual command needed.
+6. **CNPG automatically establishes replication
+
+---
+
+> **Author:** Matej Čušin  
+> **School:** OŠ Toneta Čufarja, Jesenice
+** — no manual command needed.

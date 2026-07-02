@@ -561,4 +561,5 @@ git pull                                    # Potegni zadnjo kodo
 
 ---
 
-*Dokumentacija za sola-app*
+> **Avtor:** Matej Čušin  
+> **Šola:** OŠ Toneta Čufarja, Jesenice

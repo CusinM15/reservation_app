@@ -381,3 +381,8 @@ open-iscsi in nfs-common je treba namestiti na **vsakem** nodu posebej. Če poza
 | **ServiceCIDR** | Razred IP-jev za servise — drugo notranje omrežje |
 | **Kubeconfig** | Datoteka z nastavitvami za dostop do clustra — kot osebna izkaznica |
 | **Token** | Geslo za pridružitev clustra — brez njega ne moreš noter |
+
+---
+
+> **Avtor:** Matej Čušin  
+> **Šola:** OŠ Toneta Čufarja, Jesenice

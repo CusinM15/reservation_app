@@ -168,3 +168,8 @@ Avtor aplikacije se zaveda, da ne bo večno na šoli. Zato je vsaka odločitev p
 3. **Preglednost** — vsak, ki zna odpreti datoteko `.env` in brati dokumentacijo, mora razumeti, kako stvari delujejo
 
 Zato so tehnologije izbrane premišljeno in dokumentacija napisana v čim bolj razumljivem jeziku. Če vam je kaj nejasno, vprašajte administratorja — in če tudi on ne ve, imate vsaj točno vedenje, kje iskati.
+
+---
+
+> **Avtor:** Matej Čušin  
+> **Šola:** OŠ Toneta Čufarja, Jesenice

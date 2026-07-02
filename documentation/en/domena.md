@@ -89,3 +89,8 @@ kubectl -n sola-app rollout restart deployment/sola-app
 - **LoadBalancer IP** `192.168.1.10` is fixed — it does not change on restart
 - **Cloudflare SSL** is "Flexible" — HTTPS between user and Cloudflare, HTTP between Cloudflare and k3s-2 (within school network only)
 - If you wanted **end-to-end HTTPS**, you would need certbot/letsencrypt on k3s-2
+
+---
+
+> **Author:** Matej Čušin  
+> **School:** OŠ Toneta Čufarja, Jesenice

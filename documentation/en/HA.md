@@ -154,3 +154,8 @@ kubectl get cluster -n sola sola-db    # CNPG should have 2 ready instances
 - **No custom failover scripts** — everything is managed by the CNPG operator
 - **Failover is fully automatic** — no manual intervention required
 - **Old Bitnami PostgreSQL** was removed after the migration to CNPG
+
+---
+
+> **Author:** Matej Čušin  
+> **School:** OŠ Toneta Čufarja, Jesenice
