@@ -392,7 +392,6 @@ journalctl -u k3s --tail=50
 
 ---
 
-> *"Če lahko to razložiš petletniku, ga res razumeš." — vsak dober DevOps inženir*
 
 > **Avtor:** Matej Čušin  
 > **Šola:** OŠ Toneta Čufarja, Jesenice
