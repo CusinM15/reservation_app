@@ -16,7 +16,7 @@ Preden je nastala ta aplikacija, je na šoli potekalo vse po starem: učitelji s
 
 **Aplikacija rešuje dva ključna problema:**
 
-1. **Mrežni diagram ocenjevanj** — učitelji vnesejo, kdaj bodo pisali test, aplikacija pa sama poskrbi, da ne pride do prekrivanj in kršitev pravilnik (največ 3 ocenjevanja na teden, največ 2 običajni, prepoved treh zaporednih dni ...). Namesto listkov na tabli — en klik.
+1. **Mrežni diagram ocenjevanj** — učitelji vnesejo, kdaj bodo pisali test, aplikacija pa sama poskrbi, da ne pride do prekrivanj in kršitev pravilnika (največ 3 ocenjevanja na teden, največ 2 običajni, prepoved treh zaporednih dni ...). Namesto listkov na tabli — en klik.
 2. **Rezervacija prostorov** — tablice, računalnica, ladja in gospodinjska učilnica. Vsak učitelj vidi v realnem času, kaj je prosto in kaj zasedeno.
 
 Aplikacija je razvita za **OŠ Toneta Čufarja Jesenice**. Namenoma je narejena čim bolj preprosto — ker avtor ne bo večno na šoli. Ko bo nekega dne odšel, naj bi jo lahko vzdrževal in uporabljal vsak, ki mu ni tuje delo z računalnikom. Nič zapletenega, nič skrivnostnega.
@@ -44,7 +44,7 @@ Ko vi odprete aplikacijo v brskalniku, se zgodi tole:
 | **Podatkovna baza** | PostgreSQL (produkcija) / SQLite (razvoj) | **PostgreSQL** je digitalni arhiv — tja se shranjujejo vsi podatki: kdo je kaj rezerviral, kdaj je ocenjevanje, katera gesla ... V produkciji (ko aplikacija res deluje v živo) uporabljamo PostgreSQL, ker je zanesljiv in zmogljiv. Med razvojem (ko avtor kaj popravlja in testira) pa zadošča **SQLite**, ki je lažji in ne potrebuje strežnika. |
 | **Frontend (vidni del)** | Jinja2 predloge, HTML/CSS/JS | Ko aplikacija pripravi odgovor, ga zavije v **HTML** (spletna stran), olepša z **CSS** (barve, pisave, postavitev) in poživi z **JavaScriptom** (gumbi, pojavna okna). **Jinja2** pa je predloga — kot šablona za dokument, kamor aplikacija samo vstavi podatke (ime učitelja, seznam rezervacij ...). |
 | **Avtentikacija (prijava)** | piškotki (cookies) z bcrypt | Ko se prijavite, aplikacija v vaš brskalnik shrani **piškotek** — majhen košček podatka, s katerim vas prepozna ob naslednjem kliku. Gesla so zakodirana z **bcrypt** (matematični mlinček, ki iz gesla naredi nepovratno kodo — tudi če nekdo ukrade bazo, ne more prebrati gesel). |
-| **Email** | SMTP prek Arnesa (mail.arnes.si) | Kadar aplikacija pošilja obvestila (npr. »Vaše ocenjevanje je bilo odpovedano.<<), uporablja Arnesov poštni strežnik — enako, kot če bi poslali email iz šolskega računa. |
+| **Email** | SMTP prek Arnesa (mail.arnes.si) | Kadar aplikacija pošilja obvestila (npr. »Vaše ocenjevanje je bilo odpovedano.«), uporablja Arnesov poštni strežnik — enako, kot če bi poslali email iz šolskega računa. |
 | **Orkestracija (povezovanje)** | Kubernetes — natančneje **k3s** | Predstavljajte si, da imate zabojnik (container) z aplikacijo, ki živi v virtualnem svetu. **Kubernetes** (k3s) je dirigent, ki poskrbi, da ti zabojniki delujejo usklajeno: če eden crkne, ga zažene na novo; če prihaja preveč obiskovalcev, jih razporedi med več zabojnikov. **k3s** je lažja različica Kubernetes, narejena prav za take manjše sisteme. |
 | **Shramba (disk)** | **Longhorn** | **Longhorn** je distribuiran blokovni storage — oziroma po domače: pameten virtualni disk. Podatki so shranjeni na **obeh** računalnikih hkrati, tako da če eden crkne (se sesuje ali izklopi), drugi še vedno ima vse podatke. Brez izgube, brez panike. |
 | **Omrežni naslov** | **MetalLB** | **MetalLB** skrbi, da ima aplikacija **fiksni naslov v omrežju**. Tako kot ima šolska knjižnica vedno isti prostor v stavbi, ima aplikacija vedno isti IP-naslov — tudi če se strežniki zamenjajo ali prestavijo. Učitelji vedno odprejo isti naslov in aplikacija je tam. |
@@ -121,7 +121,7 @@ Ko vodstvo označi zasedeno obdobje:
 
 1. **Sistem samodejno pobriše** vsa obstoječa ocenjevanja, ki so padla v to obdobje
 2. **Pošlje email obvestila** vsem prizadetim učiteljem — natančno pove, katero ocenjevanje je bilo preklicano
-3. V koledarju se obdobje prikaže kot **vijolično** (zasedeno) za tiste razrede ki so zasedeni na tisti termin.
+3. V koledarju se obdobje prikaže kot **vijolično** (zasedeno) za tiste razrede, ki so zasedeni na tisti termin.
 
 Ni več potrebe, da ravnatelj pošilja okrožnice in prosi učitelje, naj ročno brišejo termine. Vse naredi aplikacija.
 
@@ -153,9 +153,9 @@ Admin panel je preprost in pregleden — nobenih skritih menijev ali zapletenih 
 
 **Učitelj** — lahko rezervira prostore, napoveduje ocenjevanja in briše samo svoje vnose. Ne more posegati v delo drugih.
 
-**Vodstvo** (ravnatelj, pomočnik) — lahko počne vse, kar učitelj, **poleg tega** pa lahko briše tuje rezervacije (če je treba kaj nujno prestaviti) in označuje zasedene datume in serijske rezervacije. Edino česar ne more: upravljati uporabnikov nin Audit log (zhodovina vsseh dogodkov v app-u).
+**Vodstvo** (ravnatelj, pomočnik) — lahko počne vse, kar učitelj, **poleg tega** pa lahko briše tuje rezervacije (če je treba kaj nujno prestaviti) in označuje zasedene datume in serijske rezervacije. Edino česar ne more: upravljati uporabnikov niti Audit log (zgodovina vseh dogodkov v app-u).
 
-**Admin** — najvišja raven dostopa. Lahko počne čisto vse, vključno z dodajanjem in brisanjem uporabnikov. Običajno je to ena do dve osebi na šoli (računalnikar, skrbnik informacijskega sistema).
+**Admin** — najvišja raven dostopa. Lahko počne čisto vse, vključno z dodajanjem in brisanjem uporabnikov. Običajno je to ena do dve osebi na šoli (računalničar, skrbnik informacijskega sistema).
 
 ---
 
