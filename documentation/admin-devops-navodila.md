@@ -210,7 +210,7 @@ kubectl get hpa -n sola-app
 
 HPA uporablja **CPU (60%) in pomnilnik (70%)** kot merilo:
 - **2 repliki** — nizka obremenitev (počitnice, popoldne, vikend)
-- **3 replike** — normalen pouk (ena kopija na vsakem nodu)
+- **3 replike** — normalen pouk (ena kopija na vsakem nodu, na enemu sta pa dva)
 - **4 replike** — visoka obremenitev (ocene, začetek šolskega leta)
 
 ### **Dnevna varnostna kopija baze (`sola-db-backup`)**
@@ -231,13 +231,13 @@ HPA uporablja **CPU (60%) in pomnilnik (70%)** kot merilo:
 | **Schedule** | `0 4 * * *` | Isto kot backup — ob 4:00 |
 | **Kaj naredi** | Poročilo o stanju nodov, Longhorn replik in aplikacij | Preveri, ali vsi strežniki dihajo in ali so podatki pravilno podvojeni |
 
-**Zakaj to potrebujemo?** Če eden od treh strežnikov crkne, aplikacija še vedno deluje — ampak ti tega ne veš. Poročilo ti pove: "Hej, node 2 je crknil. Popravi ga, preden crkne še node 3."
+**Zakaj to potrebujemo?** Če eden od dveh strežnikov crkne, aplikacija še vedno deluje — ampak ti tega ne veš. Poročilo ti pove: "Hej, node 2 je crknil. Popravi ga, preden crkne še 1."
 
 ---
 
 ## AI agenti za pomoč
 
-*"Kot pripravnik, ki ne sprašuje neumnih vprašanj — in dela 24/7."*
+*"Ko česa nznaš rabiš pomoč vprašaš ai-agenta (priporočam Hermes, tudi plačljiv model, ne porabi veliko) on je stalno dostopen in tudi on vidi kodo oz arhitektro kadarkoli -  24/7."*
 
 ### Kaj je AI agent?
 
@@ -264,6 +264,9 @@ In on sam pogleda, analizira in pove kaj je narobe. **Kot bi vzel avto na servis
 **Primeri uporabe:**
 
 ```bash
+# V pimeru da je alies dodan in imate nastavljen default model in se odpre ai chat v terminalu (tako, kot preko interneta, s tem da lahko vidi tudi datotek na strežniku)
+hermes 
+
 # "Preveri stanje klustra"
 hermes "kubectl get nodes, preveri longhorn in povej stanje"
 
@@ -291,11 +294,10 @@ curl -fsSL https://hermes-agent.io/install.sh | sh
 
 ## Dodajanje novega računalnika v k3s cluster
 
-*"Kmetija raste — dodajamo novo živino."*
 
 ### 1. Priprava novega računalnika
 
-Preden nov računalnik sploh pomisli na k3s, mora imeti osnovno namestitev:
+Preden nov računalnik sploh dodati v k3s, mora imeti osnovno namestitev:
 
 1. **Namesti Ubuntu Server 24.04** na nov računalnik  
    *(enak postopek kot v poglavju 0 — uporabi isti USB ključek)*
@@ -305,18 +307,18 @@ Preden nov računalnik sploh pomisli na k3s, mora imeti osnovno namestitev:
    **Zakaj?** Če dobi dinamični IP, ga bo k3s izgubil ob naslednjem vklopu in cluster ga ne bo več prepoznal.
 
 3. **Omogoči SSH**  
-   **Zakaj?** Ker boš vse nadaljnje korake delal prek SSH — ne nosi monitorja v drugo nadstropje.
+   **Zakaj?** Ker boš vse nadaljnje korake delal prek SSH.
 
 ### 2. Pridobitev tokena — "vstopnica" v cluster
 
 Token je kot **geslo za vstop v cluster**. Vsak nov računalnik ga rabi, da se dokaže: "Hej, jaz sem dober fant, spusti me noter."
 
 ```bash
-# Poženi na kateremkoli MASTER nodu (obstoječem)
+# Poženi na kateremkoli MASTER nodu (načeloma so to vsi)
 sudo cat /var/lib/rancher/k3s/server/token
 ```
 
-**Dobiš nekaj takega:** `K107f8a7b6c5d4e3f2a1b0c9d8e7f6a5b4c3d2e1f::server:token`
+**Dobiš nekaj takega:** `K107f8a7b6c5d4e3fereref1b0c9d8e7f6a5b4c3d2e1f::server:token`
 
 **Nasvet:** Token je **občutljiv podatek**. Z njim lahko kdorkoli priključi svoj računalnik v tvoj cluster. Ne shranjuj ga v javnih repozitorijih ali na listkih na monitorju.
 
@@ -338,7 +340,7 @@ curl -sfL https://get.k3s.io | sh -s - server \
 
 ### 4. Kar mora vsebovati vozlišče — vse v enem
 
-Vsako vozlišče **lahko** vsebuje vse. To je lepota k3s — ni ločenih "master" in "worker" računalnikov, vsak je lahko vse:
+Vsako vozlišče **lahko** vsebuje vse. To je lepota k3s — ni ločenih "master" in "worker" računalnikov, vsak je vse:
 
 | Vloga | Kaj dela | Ali nujno? |
 |-------|---------|-----------|
