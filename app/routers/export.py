@@ -1,7 +1,15 @@
-"""CSV export endpoints for reservations and assessments.
+# ─────────────────────────────────────────────────────────────────────────
+# app/routers/export.py — CSV izvoz rezervacij in ocenjevanj
+#
+# Namen: Nudi bogatejše možnosti izvoza v CSV kot tisti v rezervacije.py.
+# Samo admin in vodstvo lahko izvažata.
+#
+# Zakaj ločen modul od inline CSV izvoza v rezervacijah?
+# Ta modul je novejši in omogoča boljše filtriranje (obvezno datumsko
+# obdobje, prostor/razred opcijsko). Starejši CSV izvoz v rezervacije.py
+# ostaja zaradi združljivosti nazaj.
+# ─────────────────────────────────────────────────────────────────────────
 
-Only accessible to admin and vodstvo roles.
-"""
 import csv
 import io
 from datetime import date, timedelta
@@ -37,7 +45,11 @@ def export_rezervacije(
     prostor: str | None = Query(None, description="Filter po prostoru (prazen = vsi)"),
     db: Session = Depends(get_db),
 ):
-    """Izvozi rezervacije v CSV za izbrano obdobje in prostor."""
+    """Izvozi rezervacije v CSV za izbrano obdobje in prostor.
+    
+    CSV vsebuje: Datum, Ura, Prostor, Razred, Učitelj, Število tablic, Serija ID.
+    Uporablja UTF-8 BOM (charset=utf-8-sig) za pravilen prikaz šumnikov v Excelu.
+    """
     _require_admin_or_vodstvo(request, db)
 
     try:
@@ -102,7 +114,10 @@ def export_ocenjevanja(
     date_to: str = Query(..., description="Končni datum (YYYY-MM-DD)"),
     db: Session = Depends(get_db),
 ):
-    """Izvozi ocenjevanja v CSV za izbrani razred in obdobje."""
+    """Izvozi ocenjevanja v CSV za izbrani razred in obdobje.
+    
+    CSV vsebuje: Datum, Razred, Tip (Ponavljanje/Običajno), Učitelj.
+    """
     _require_admin_or_vodstvo(request, db)
 
     try:

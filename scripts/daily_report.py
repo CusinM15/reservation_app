@@ -1,12 +1,29 @@
-"""Daily k3s/Longhorn health report.
-
-Runs as a Kubernetes CronJob and sends a read-only cluster health report by email.
-The report is intentionally split into small "agent-style" collectors so the same
-structure can later be reused by the Pi 3 Hermes agent.
-
-Usage:
-  python -m scripts.daily_report
-"""
+# ─────────────────────────────────────────────────────────────────────────
+# scripts/daily_report.py — Dnevno poročilo o zdravju k3s/Longhorn
+#
+# Namen: Tekne kot Kubernetes CronJob in pošlje dnevno poročilo o zdravju
+# k3s gruče, Longhorn shrambe in celovitosti podatkov aplikacije.
+#
+# Zakaj ta skripta?
+# 1. k3s gruča teče na Raspberry Pi 4 (2GB RAM) in ima omejene vire.
+#    Redno spremljanje preprečuje, da bi zmanjkalo diska ali pomnilnika.
+# 2. Longhorn (distribuirana shramba) potrebuje spremljanje, ker so
+#    diski na SD karticah in USB ključih, ki niso zanesljivi.
+# 3. Preverja celovitost podatkov (ocenjevanja, rezervacije) — ali so
+#    kakšni podatki ušli mimo validacije.
+#
+# Struktura:
+# - collect_k3s_agent(): Zbira podatke o k3s (nodi, podi, jobi, eventi).
+# - collect_longhorn_agent(): Zbira podatke o Longhorn (volumni, replike).
+# - collect_app_data_agent(): Preverja celovitost aplikacijskih podatkov.
+# - estimate_node_lifetime(): Hevristična ocena življenjske dobe vozlišča.
+# - render_report(): Sestavi lepo oblikovano besedilno poročilo.
+#
+# Poročilo se pošlje na BACKUP_EMAIL preko _send_email().
+#
+# Uporaba:
+#   python -m scripts.daily_report
+# ─────────────────────────────────────────────────────────────────────────
 
 import os
 import sys
@@ -30,11 +47,15 @@ LONGHORN_VERSIONS = ("v1beta2", "v1beta1")
 LONGHORN_NAMESPACE = "longhorn-system"
 
 
+# ── Pomožne funkcije za čas in oblikovanje ────────────────────────────
+
 def now_ljubljana() -> datetime:
+    """Vrne trenutni čas v ljubljanskem časovnem pasu."""
     return datetime.now(ZoneInfo("Europe/Ljubljana"))
 
 
 def fmt_dt(value) -> str:
+    """Oblikuj datetime v 'YYYY-MM-DD HH:MM UTC'."""
     if not value:
         return "unknown"
     try:
@@ -46,6 +67,7 @@ def fmt_dt(value) -> str:
 
 
 def fmt_age(value) -> str:
+    """Oblikuj starost (od creation_timestamp) v 'Xd' ali 'Xy Xd'."""
     if not value:
         return "unknown"
     try:
@@ -58,7 +80,15 @@ def fmt_age(value) -> str:
         return "unknown"
 
 
+# ── Povezava s Kubernetes API-jem ────────────────────────────────────
+
 def load_kube():
+    """Naloži Kubernetes konfiguracijo (in-cluster ali kubeconfig).
+    
+    V Dockerju poskuša najprej in-cluster config (nastavljen preko
+    service accounta). Če ni na voljo (lokalni razvoj), uporabi
+    kubeconfig iz okoljske spremenljivke KUBECONFIG.
+    """
     if client is None or config is None:
         return None, None, "Python package 'kubernetes' is not installed"
     try:
@@ -76,6 +106,7 @@ def load_kube():
 
 
 def safe_list(func, *args, **kwargs):
+    """Varno kliči Kubernetes API funkcijo, vrne (items, error)."""
     try:
         result = func(*args, **kwargs)
         return list(getattr(result, "items", []) or []), None
@@ -84,6 +115,7 @@ def safe_list(func, *args, **kwargs):
 
 
 def get_dict_path(data, path, default=None):
+    """Varno dostopa do gnezdenih ključev v dict/objektu."""
     current = data
     for part in path:
         if isinstance(current, dict):
@@ -96,6 +128,7 @@ def get_dict_path(data, path, default=None):
 
 
 def condition_map(obj) -> dict:
+    """Preslikaj Kubernetes pogoje v {'Type': condition_object}."""
     conditions = get_dict_path(obj, ["status", "conditions"], []) or []
     result = {}
     for condition in conditions:
@@ -108,6 +141,7 @@ def condition_map(obj) -> dict:
 
 
 def condition_status(obj, ctype: str) -> str:
+    """Preberi status določenega pogoja (npr. Ready, DiskPressure)."""
     condition = condition_map(obj).get(ctype, {})
     status = getattr(condition, "status", None)
     if status is None and isinstance(condition, dict):
@@ -116,6 +150,7 @@ def condition_status(obj, ctype: str) -> str:
 
 
 def pod_restart_count(pod) -> int:
+    """Seštej ponovne zagon vseh containerjev v podu."""
     total = 0
     statuses = getattr(getattr(pod, "status", None), "container_statuses", None) or []
     init_statuses = getattr(getattr(pod, "status", None), "init_container_statuses", None) or []
@@ -124,7 +159,12 @@ def pod_restart_count(pod) -> int:
     return total
 
 
+# ── Kolektor za k3s ──────────────────────────────────────────────────
+# Zbira vse relevantne podatke o k3s gruči: vozlišča, podi, eventi,
+# servisi, PVCI, deploymenti, statefulseti, daemonseti, jobi, cronjob.
+
 def collect_k3s_agent(core, apps, batch):
+    """Zbere vse k3s vire in vrne strukturiran dict s povzetki."""
     nodes, nodes_err = safe_list(core.list_node)
     pods, pods_err = safe_list(core.list_pod_for_all_namespaces)
     events, events_err = safe_list(core.list_event_for_all_namespaces, limit=300)
@@ -136,6 +176,7 @@ def collect_k3s_agent(core, apps, batch):
     jobs, jobs_err = safe_list(batch.list_job_for_all_namespaces)
     cronjobs, cronjobs_err = safe_list(batch.list_cron_job_for_all_namespaces)
 
+    # Povzetki — štetja in filtri za hitro oceno zdravja
     pod_phase_counts = Counter(getattr(pod.status, "phase", "Unknown") for pod in pods)
     total_restarts = sum(pod_restart_count(pod) for pod in pods)
     failed_jobs = [job for job in jobs if int(getattr(job.status, "failed", 0) or 0) > 0]
@@ -143,6 +184,7 @@ def collect_k3s_agent(core, apps, batch):
     suspended_cronjobs = [cj for cj in cronjobs if cj.spec.suspend]
     active_cronjobs = [cj for cj in cronjobs if getattr(cj.status, "active", [])]
 
+    # Warning eventi v zadnjih 24h — najpogostejši indikator težav
     warning_events = []
     cutoff = datetime.now(timezone.utc) - timedelta(hours=24)
     for event in events:
@@ -186,7 +228,12 @@ def collect_k3s_agent(core, apps, batch):
     }
 
 
+# ── Kolektor za Longhorn ─────────────────────────────────────────────
+# Longhorn CRD-ji so na voljo v dveh API verzijah (v1beta2, v1beta1).
+# Poskusimo najprej novejšo, nato starejšo.
+
 def collect_longhorn_agent(custom):
+    """Zbere Longhorn vire (volumni, vozlišča, replike, enginei, backupi)."""
     collected = {}
     errors = {}
     resources = {
@@ -218,11 +265,13 @@ def collect_longhorn_agent(custom):
         errors[name] = last_error
 
     volumes = collected.get("volumes", [])
+    # Robustnost: healthy, degraded, faulted — ključen indikator zdravja Longhorn
     volume_robustness = Counter(get_dict_path(v, ["status", "robustness"], "unknown") for v in volumes)
     volume_state = Counter(get_dict_path(v, ["status", "state"], "unknown") for v in volumes)
     degraded = [v for v in volumes if get_dict_path(v, ["status", "robustness"]) in ("degraded", "faulted")]
     rebuilding = [v for v in volumes if get_dict_path(v, ["status", "cloneStatus", "state"]) == "syncing"]
 
+    # Shramba po vozliščih — pomembno za zaznavanje polnih diskov
     lh_nodes = collected.get("nodes", [])
     storage_lines = []
     longhorn_node_ready = {}
@@ -254,7 +303,19 @@ def collect_longhorn_agent(custom):
     }
 
 
+# ── Ocena življenjske dobe vozlišča ──────────────────────────────────
+# Hevristična ocena, ki upošteva:
+# - DiskPressure, MemoryPressure, PIDPressure
+# - Ready status
+# - Starost vozlišča (>365 dni = večje tveganje)
+# - Ponovni zagoni podov na vozlišču
+# - Longhorn disk usage (>80% = opozorilo, >90% = kritično)
+# - Warning eventi in failed jobi
+#
+# Score: <20 = OK, 20-50 = WATCH, 50-80 = WARNING, >80 = CRITICAL
+
 def estimate_node_lifetime(node, k3s_summary, longhorn_summary):
+    """Oceni preostalo življenjsko dobo vozlišča glede na več dejavnikov."""
     name = getattr(getattr(node, "metadata", None), "name", "unknown")
     score = 0
     reasons = []
@@ -349,6 +410,10 @@ def estimate_node_lifetime(node, k3s_summary, longhorn_summary):
     }
 
 
+# ── Pomožne funkcije za preverjanje podatkov ─────────────────────────
+# Iste funkcije kot v ocenjevanja.py, podvojene zaradi neodvisnosti.
+# (Skripta se lahko zažene tudi brez celotnega aplikacijskega konteksta.)
+
 def _get_week_start(d: date) -> date:
     """Vrne ponedeljek tedna za dan d"""
     return d - timedelta(days=d.weekday())
@@ -369,6 +434,10 @@ def _check_consecutive_days(dates_list) -> bool:
             return True
     return False
 
+
+# ── Kolektor za aplikacijske podatke ──────────────────────────────────
+# Preveri celovitost podatkov (ocene, rezervacije) za naslednjih 30 dni.
+# Zaznava morebitne bug-e, ki so spustili neveljavne podatke mimo validacije.
 
 def collect_app_data_agent():
     """Preveri celovitost podatkov (ocene, rezervacije) za danes + 30 dni.
@@ -468,6 +537,9 @@ def collect_app_data_agent():
         db.close()
 
 
+# ── Oblikovanje poročila ─────────────────────────────────────────────
+# Sestavi lepo oblikovano besedilno poročilo iz vseh kolektorjev.
+
 def render_report(k3s, longhorn, app_data=None, kube_error=None):
     lines = []
     generated = now_ljubljana().strftime("%Y-%m-%d %H:%M %Z")
@@ -489,6 +561,7 @@ def render_report(k3s, longhorn, app_data=None, kube_error=None):
     long_summary = longhorn["summary"]
     long_errors = longhorn["errors"]
 
+    # Določitev splošnega statusa
     not_ready_nodes = [n for n in nodes if condition_status(n, "Ready") != "True"]
     pressure_nodes = []
     for node in nodes:
@@ -613,7 +686,10 @@ def render_report(k3s, longhorn, app_data=None, kube_error=None):
     return "\n".join(lines)
 
 
+# ── Glavna funkcija ──────────────────────────────────────────────────
+
 def run():
+    """Zberi podatke, sestavi poročilo in ga pošlji po emailu."""
     kube, _apis, kube_error = load_kube()
     if kube_error:
         app_data = {"period_start": "N/A", "period_end": "N/A",

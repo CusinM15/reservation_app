@@ -1,3 +1,24 @@
+# ─────────────────────────────────────────────────────────────────────────
+# app/routers/ocenjevanja.py — Endpointi za napovedovanje ocenjevanj
+#
+# Namen: CRUD za ocenjevanja s strogimi tedenskimi omejitvami.
+#
+# Pravila za ocenjevanja (določila šole):
+# - Max 3 ocenjevanja na teden na razred (katerakoli vrsta)
+# - Max 2 običajni (non-ponavljanje) na teden
+# - Največ 1 ocenjevanje na dan na razred
+# - Prepoved ocenjevanj na 3 zaporedne dni (npr. pon, tor, sre)
+# - Če je datum blokiran (BlockedDate), se pošlje email blokatorju
+#   (vendar ocenjevanje vseeno uspe — to je opozorilo, ne preprečitev)
+#
+# Zakaj so omejitve implementirane na nivoju API-ja in ne baze?
+# Ker pravila vključujejo tedenske izračune (3 zaporedni dnevi, max 3/teden),
+# kar je težko implementirati s SQL CHECK constraints. Poleg tega se
+# pravila lahko spremenijo (npr. šola lahko dovoli 4 ocenjevanja na teden).
+#
+# Race condition zaščita: enaka kot pri rezervacijah — uporablja app.race.
+# ─────────────────────────────────────────────────────────────────────────
+
 from fastapi import APIRouter, Depends, HTTPException, Query, Request
 from sqlalchemy.orm import Session, joinedload
 from sqlalchemy import and_
@@ -16,20 +37,27 @@ from email.mime.text import MIMEText
 
 router = APIRouter(prefix="/api/ocenjevanja", tags=["ocenjevanja"])
 
+
+# ── Pomožne validacijske funkcije ────────────────────────────────────
+
 def _validate_razred(razred: str):
+    """Preveri, ali razred obstaja v konfiguraciji."""
     if razred not in settings.RAZREDI:
         raise HTTPException(status_code=400, detail="Neveljaven razred.")
 
+
 def _get_week_start(d: date) -> date:
-    """Vrne ponedeljek tedna za dan d"""
+    """Vrne ponedeljek tedna za dan d (Python weekday(): 0=pon, 6=ned)."""
     return d - timedelta(days=d.weekday())
 
+
 def _get_week_end(week_start: date) -> date:
-    """Vrne nedeljo tedna"""
+    """Vrne nedeljo tedna."""
     return week_start + timedelta(days=6)
 
+
 def _get_assessments_in_week(db: Session, razred: str, week_start: date) -> List[Assessment]:
-    """Vrne vsa ocenjevanja za razred v danem tednu"""
+    """Vrne vsa ocenjevanja za razred v danem tednu (pon–ned)."""
     week_end = _get_week_end(week_start)
     return db.query(Assessment).filter(
         and_(
@@ -39,8 +67,13 @@ def _get_assessments_in_week(db: Session, razred: str, week_start: date) -> List
         )
     ).all()
 
+
 def _check_consecutive_days(dates: List[date]) -> bool:
-    """Preveri ali so 3 datumi zaporedni dnevi"""
+    """Preveri ali so 3 datumi zaporedni dnevi.
+    
+    Primer: [pon, tor, sre] → True (3 zaporedni).
+    Primer: [pon, sre, pet] → False (presledki).
+    """
     if len(dates) < 3:
         return False
     sorted_dates = sorted(dates)
@@ -50,8 +83,21 @@ def _check_consecutive_days(dates: List[date]) -> bool:
             return True
     return False
 
+
 def _check_weekly_limit(db: Session, razred: str, nova_date: date, je_ponavljanje: bool):
-    """Preveri tedenske omejitve za ocenjevanja"""
+    """Preveri vse tedenske omejitve za ocenjevanja.
+    
+    Preveri:
+    1. Dve ocenjevanji na isti dan v istem tednu → napaka
+    2. Skupaj 3 ocenjevanja na teden → napaka
+    3. 2 običajni (non-ponavljanje) na teden → napaka
+    4. 3 zaporedni dnevi → napaka
+    
+    Zakaj so ta pravila zakodirana v kodi?
+    Šolski pravilnik določa maksimalno število ocenjevanj na teden,
+    da bi preprečili preobremenitev učencev. Prav tako prepoveduje
+    ocenjevanja na tri zaporedne dni, da imajo učenci čas za učenje.
+    """
     week_start = _get_week_start(nova_date)
     week_end = _get_week_end(week_start)
     
@@ -85,12 +131,20 @@ def _check_weekly_limit(db: Session, razred: str, nova_date: date, je_ponavljanj
             detail="Ocenjevanja ne smejo biti na 3 zaporedne dni (npr. pon, tor, sre)."
         )
 
+
+# ── Seznam ocenjevanj ──────────────────────────────────────────────────
+
 @router.get("", response_model=List[AssessmentOut])
 def list_ocenjevanja(
     razred: Optional[str] = Query(None),
     month: Optional[str] = Query(None, description="Format: YYYY-MM"),
     db: Session = Depends(get_db)
 ):
+    """Vrni seznam ocenjevanj z opcijskimi filtri.
+    
+    Filtriranje po razredu in/ali mesecu (YYYY-MM).
+    Rezultati so urejeni po datumu.
+    """
     query = db.query(Assessment).options(joinedload(Assessment.teacher))
     
     if razred:
@@ -122,8 +176,26 @@ def list_ocenjevanja(
             a.teacher_name = None
     return results
 
+
+# ── Ustvarjanje ocenjevanja ───────────────────────────────────────────
+
 @router.post("", response_model=AssessmentOut, status_code=201)
 def create_ocenjevanje(data: AssessmentCreate, request: Request, db: Session = Depends(get_db)):
+    """Ustvari novo ocenjevanje.
+    
+    POST /api/ocenjevanja
+    
+    Postopek:
+    1. Validacija razreda
+    2. Race condition zaščita (enako kot rezervacije)
+    3. Preverjanje tedenskih omejitev
+    4. Shranjevanje
+    5. Če je datum blokiran → email blokatorju (best-effort)
+    
+    Zakaj obvestilo blokatorju namesto zavrnitve ocenjevanja?
+    Vodstvo lahko blokira datum, vendar se učitelj morda ne strinja.
+    Ocenjevanje uspe, vodstvo pa dobi obvestilo, da lahko ukrepa.
+    """
     _validate_razred(data.razred)
     
     # Get current user name
@@ -159,6 +231,8 @@ def create_ocenjevanje(data: AssessmentCreate, request: Request, db: Session = D
             raise HTTPException(status_code=500, detail="Napaka pri shranjevanju ocenjevanja")
         
         # Check if this date is blocked for this class → send email to blocker
+        # Zakaj pošiljamo email? Da vodstvo ve, da je učitelj kljub blokadi
+        # napovedal ocenjevanje. To je mehanizem za komunikacijo.
         try:
             blocked = db.query(BlockedDate).filter(
                 BlockedDate.razred == data.razred,
@@ -193,13 +267,18 @@ def create_ocenjevanje(data: AssessmentCreate, request: Request, db: Session = D
         return assessment
 
 
+# ── CSV izvoz ocenjevanj ─────────────────────────────────────────────
+
 @router.get("/export/csv")
 def export_ocenjevanja_csv(
     request: Request,
     razred: Optional[str] = Query(None),
     db: Session = Depends(get_db),
 ):
-    """Izvozi ocenjevanja v CSV. Samo admin in vodstvo."""
+    """Izvozi ocenjevanja v CSV. Samo admin in vodstvo.
+    
+    CSV vsebuje: Datum, Razred, Tip (Ponavljanje/Običajno), Učitelj, ID.
+    """
     user_id = request.cookies.get("user_id")
     if not user_id:
         raise HTTPException(status_code=401, detail="Niste prijavljeni")
@@ -234,8 +313,15 @@ def export_ocenjevanja_csv(
     )
 
 
+# ── Brisanje ocenjevanja ─────────────────────────────────────────────
+
 @router.delete("/{id}")
 def delete_ocenjevanje(id: int, request: Request, db: Session = Depends(get_db)):
+    """Izbriši ocenjevanje.
+    
+    Pravice: avtor, admin ali vodstvo.
+    Beležimo v audit log.
+    """
     user_id = request.cookies.get("user_id")
     if not user_id:
         raise HTTPException(status_code=401, detail="Niste prijavljeni")

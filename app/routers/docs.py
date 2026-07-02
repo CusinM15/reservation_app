@@ -1,3 +1,24 @@
+# ─────────────────────────────────────────────────────────────────────────
+# app/routers/docs.py — Bralnik dokumentacije (Markdown → HTML/PDF)
+#
+# Namen: Servira dokumentacijo v treh formatih:
+# - JSON (za API klic iz aplikacije)
+# - HTML (za hover popup v brskalniku)
+# - PDF (za prenos s weasyprint)
+#
+# Dokumentacija je shranjena v /documentation/ mapi kot Markdown (.md)
+# datoteke. Slike so v /documentation/slike/ in se servirajo kot
+# statične datoteke preko main.py.
+#
+# Zakaj lastni bralnik namesto zunanje storitve?
+# Dokumentacija je namenjena učiteljem, ki pogosto nimajo dostopa do
+# zunanjih storitev (omejen internet). Prav tako želimo, da je PDF
+# generiran z isto obliko (CSS) kot HTML predogled.
+#
+# Cloudflare workaround: '@' v emailih zakodiramo kot HTML entiteto,
+# da Cloudflare ne sproži email obfuscation, ki bi pokvaril popup okno.
+# ─────────────────────────────────────────────────────────────────────────
+
 from fastapi import APIRouter, Request
 from fastapi.responses import JSONResponse, Response, HTMLResponse
 from pathlib import Path
@@ -10,6 +31,8 @@ router = APIRouter(tags=["docs"])
 
 DOCS_DIR = Path(__file__).resolve().parent.parent.parent / "documentation"
 
+# Dovoljeni dokumenti — preslikava v datotečni sistem.
+# Zakaj whitelist? Preprečuje directory traversal napade.
 ALLOWED = {
     "navodila-ucitelji": ["navodila-ucitelji.md"],
     "navodila-ucitelji-en": ["en/navodila-ucitelji.md"],
@@ -24,9 +47,14 @@ DOC_LABELS = {
     "navodila-vodstvo-en": "Management Guide (English)",
 }
 
-# ═══════════════════════════════════════════════════════════════════════════
+
+# ═══════════════════════════════════════════════════════════════════════
 # PDF generator — weasyprint (HTML → lep PDF)
-# ═══════════════════════════════════════════════════════════════════════════
+# ═══════════════════════════════════════════════════════════════════════
+#
+# CSS je definiran inline za samostojen PDF — uporablja DejaVu Sans
+# font (univerzalno na voljo v Linuxu). Strani so formatirani A4 z
+# marginami 2cm, z nogo "OŠ Toneta Čufarja Jesenice".
 
 _PDF_CSS = """
 @page { margin: 2cm 2.2cm; @bottom-center { content: "OŠ Toneta Čufarja Jesenice"; font-size: 8pt; color: #999; } }
@@ -56,7 +84,10 @@ li { margin-bottom: 2pt; }
 
 
 def _doc_to_html(content: str, label: str) -> str:
-    """Pretvori markdown v lep HTML (brez ovoja <html><body> — samo vsebina)."""
+    """Pretvori markdown v lep HTML (brez ovoja <html><body> — samo vsebina).
+    
+    Popravi relativne poti slik za browser/slike/ in zakodira @ za Cloudflare.
+    """
     html = markdown.markdown(content, extensions=["fenced_code", "tables"])
     # Popravi relativne poti slik za browser/slike/
     html = re.sub(r'src="slike/([^"]+)"', r'src="/slike/\1"', html)
@@ -68,7 +99,12 @@ def _doc_to_html(content: str, label: str) -> str:
 
 
 def _make_pdf(md_content: str, title: str) -> bytes:
-    """Pretvori markdown v lep PDF s pomočjo weasyprint (HTML+CSS → PDF)."""
+    """Pretvori markdown v lep PDF s pomočjo weasyprint (HTML+CSS → PDF).
+    
+    Odstrani morebitni YAML frontmatter (--- ... ---) in doda naslovno
+    stran z imenom šole. Relativne poti slik pretvori v absolutne
+    (file://) za weasyprint.
+    """
     # Odstrani morebitni frontmatter
     md_clean = re.sub(r'^---\s*\n.*?\n---\s*\n', '', md_content, count=1, flags=re.DOTALL)
 
@@ -100,13 +136,17 @@ def _make_pdf(md_content: str, title: str) -> bytes:
     return pdf_bytes
 
 
-# ═══════════════════════════════════════════════════════════════════════════
+# ═══════════════════════════════════════════════════════════════════════
 # Bralnik dokumentov
-# ═══════════════════════════════════════════════════════════════════════════
+# ═══════════════════════════════════════════════════════════════════════
 
 
 def _read_docs(name: str) -> tuple[str, str]:
-    """Prebere dokumentacijo. Vrne (vsebina, naslov)."""
+    """Prebere dokumentacijo. Vrne (vsebina, naslov).
+    
+    Uporablja whitelist (ALLOWED) za preprečevanje directory traversal.
+    Če datoteka ne obstaja, vrne ValueError.
+    """
     if name not in ALLOWED:
         raise ValueError(f"Dokument '{name}' ne obstaja")
 
@@ -126,9 +166,9 @@ def _read_docs(name: str) -> tuple[str, str]:
     return full_content, DOC_LABELS.get(name, name)
 
 
-# ═══════════════════════════════════════════════════════════════════════════
+# ═══════════════════════════════════════════════════════════════════════
 # API endpoints
-# ═══════════════════════════════════════════════════════════════════════════
+# ═══════════════════════════════════════════════════════════════════════
 
 
 @router.get("/docs/{name}")
@@ -143,7 +183,12 @@ async def get_doc(name: str):
 
 @router.get("/docs/html/{name}", response_class=HTMLResponse)
 async def get_doc_html(name: str):
-    """HTML preview s slikami (za hover popup v appu)."""
+    """HTML preview s slikami (za hover popup v appu).
+    
+    Vključuje celoten HTML dokument s CSS oblikovanjem, primernim za
+    prikaz v popup oknu. Cache-Control: no-cache zagotavlja, da se
+    spremembe dokumentacije takoj pokažejo.
+    """
     try:
         content, label = _read_docs(name)
     except ValueError as e:
@@ -189,7 +234,11 @@ async def get_doc_html(name: str):
 
 @router.get("/docs/download/{name}")
 async def download_doc(name: str):
-    """PDF download z weasyprint."""
+    """PDF download z weasyprint.
+    
+    Generira PDF iz Markdown dokumentacije. Če weasyprint ni nameščen
+    (npr. v Docker sliki), vrne 500 napako.
+    """
     try:
         content, title = _read_docs(name)
     except ValueError as e:

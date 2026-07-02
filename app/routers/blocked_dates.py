@@ -1,3 +1,25 @@
+# ─────────────────────────────────────────────────────────────────────────
+# app/routers/blocked_dates.py — Upravljanje zasedenih datumov
+#
+# Namen: Omogoča admin/vodstvu, da označi določene datume kot "zasedene"
+# za posamezne razrede. To pomeni, da na ta dan ni možno napovedati
+# ocenjevanja (obstoječa se avtomatsko izbrišejo).
+#
+# Zakaj zasedeni datumi?
+# Šola ima pogosto dneve, ko so razredi zasedeni (ekskurzije, športni
+# dnevi, kulturni dnevi, naravoslovni dnevi, tekmovanja, itd.). Namesto
+# da vsak učitelj posebej išče te informacije, vodstvo označi datum
+# kot zaseden in vsa ocenjevanja se samodejno prestavijo.
+#
+# Kako deluje?
+# 1. Vodstvo/admin pošlje zahtevek z razredi in datumskim razponom.
+# 2. Za vsak dan v razponu (razen vikendov) se ustvari BlockedDate zapis.
+# 3. Če obstajajo ocenjevanja za te razrede na te datume, se izbrišejo.
+# 4. Učitelji dobijo email obvestilo o preklicu.
+#
+# Omejitev: Samo uporabniki z ID {1, 2, 3, 4} ali vloga admin/vodstvo.
+# ─────────────────────────────────────────────────────────────────────────
+
 from fastapi import APIRouter, Depends, HTTPException, Query, Request
 from sqlalchemy.orm import Session
 from datetime import date, timedelta
@@ -18,12 +40,14 @@ ALLOWED_USER_IDS = {1, 2, 3, 4}  # admin, Gaber, Mateja, Sanela
 
 
 class BlockedDatesCreate(BaseModel):
+    """Vhodni podatki za blokiranje datumov za več razredov v razponu."""
     razredi: List[str]
     date_from: date
     date_to: date
 
 
 class BlockedDateOut(BaseModel):
+    """Izhodni podatki za zaseden datum."""
     id: int
     razred: str
     date: date
@@ -32,6 +56,11 @@ class BlockedDateOut(BaseModel):
     model_config = {"from_attributes": True}
 
 
+# ── Preverjanje pravic ────────────────────────────────────────────────
+# Zakaj tudi ALLOWED_USER_IDS? Ker so bili nekateri uporabniki (Gaber,
+# Mateja, Sanela) dodani pred implementacijo vlog. Namesto migracije
+# podatkov, smo dodali ekspliciten set ID-jev. To je začasna rešitev
+# in bi jo morali zamenjati s preverjanjem vlog.
 def _check_allowed(user_id, db: Session):
     uid = int(user_id) if user_id is not None else -1
     if uid in ALLOWED_USER_IDS:
@@ -42,7 +71,12 @@ def _check_allowed(user_id, db: Session):
     raise HTTPException(status_code=403, detail="Nimate pravic za upravljanje zasedenih datumov")
 
 
+# ── Pošiljanje emailov ────────────────────────────────────────────────
+# Ločena funkcija za pošiljanje emailov, ker jo uporabljajo tudi drugi
+# routerji (auth, rezervacije). Če MAIL_PASSWORD ni nastavljen, se emaili
+# ne pošiljajo (tiho ignoriranje napak).
 def _send_email(to_email: str, subject: str, body: str):
+    """Pošlji email preko Arnes SMTP. Best-effort — napake se ignorirajo."""
     if not settings.MAIL_PASSWORD or not to_email:
         return
     try:
@@ -59,11 +93,14 @@ def _send_email(to_email: str, subject: str, body: str):
         pass  # best-effort
 
 
+# ── Seznam zasedenih datumov ─────────────────────────────────────────
+
 @router.get("", response_model=List[BlockedDateOut])
 def list_blocked_dates(
     month: Optional[str] = Query(None, description="Format: YYYY-MM"),
     db: Session = Depends(get_db)
 ):
+    """Vrni seznam zasedenih datumov za določen mesec (ali vse)."""
     query = db.query(BlockedDate)
     if month:
         try:
@@ -80,12 +117,24 @@ def list_blocked_dates(
     return query.order_by(BlockedDate.date).all()
 
 
+# ── Ustvarjanje zasedenih datumov ─────────────────────────────────────
+
 @router.post("", status_code=201)
 def create_blocked_dates(
     data: BlockedDatesCreate,
     request: Request,
     db: Session = Depends(get_db)
 ):
+    """Ustvari zasedene datume za več razredov v datumskem razponu.
+    
+    Za vsak dan v razponu (brez vikendov) in za vsak razred:
+    1. Preskoči, če že obstaja BlockedDate za ta (razred, datum).
+    2. Ustvari nov BlockedDate.
+    3. Poišči in izbriši vsa ocenjevanja za ta (razred, datum).
+    4. Pošlji email učitelju, če je obstajalo ocenjevanje.
+    
+    To je idempotentna operacija — če datum že obstaja, se preskoči.
+    """
     user_id = request.cookies.get("user_id")
     if not user_id:
         raise HTTPException(status_code=401, detail="Niste prijavljeni")
@@ -160,12 +209,20 @@ def create_blocked_dates(
     }
 
 
+# ── Brisanje zasedenega datuma ───────────────────────────────────────
+
 @router.delete("/{id}")
 def delete_blocked_date(
     id: int,
     request: Request,
     db: Session = Depends(get_db)
 ):
+    """Izbriši zaseden datum (samo admin/vodstvo).
+    
+    To omogoča, da se datum ponovno sprosti za ocenjevanja.
+    Ne obnovi avtomatsko prej pobrisanih ocenjevanj — to mora
+    učitelj storiti ročno.
+    """
     user_id = request.cookies.get("user_id")
     if not user_id:
         raise HTTPException(status_code=401, detail="Niste prijavljeni")

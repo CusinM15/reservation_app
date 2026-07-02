@@ -1,20 +1,47 @@
+# ─────────────────────────────────────────────────────────────────────────
+# app/database.py — Povezava s podatkovno bazo in upravljanje sej
+#
+# Namen: Ustvari SQLAlchemy engine, definira SessionLocal za delo z
+# bazo ter nudi pomožne funkcije: get_db (FastAPI dependency), init_db
+# (inicializacija tabel in migracij) ter log_audit (beleženje dogodkov).
+#
+# Zakaj lastna implementacija namesto Alembic migracij?
+# Aplikacija je majhna in ima stabilno shemo. Namesto polnega migracijskega
+# ogrodja uporabljamo idempotentne ALTER TABLE stavke v init_db(), ki so
+# dovolj za redke spremembe sheme.
+# ─────────────────────────────────────────────────────────────────────────
+
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker, declarative_base, Session
 
 from app.config import settings
 
+# ── Engine ────────────────────────────────────────────────────────────
+# Ustvari SQLAlchemy engine glede na DATABASE_URL.
+# Za SQLite moramo nastaviti check_same_thread=False, ker FastAPI
+# uporablja večnitnost. Za PostgreSQL tega ne potrebujemo.
 engine = create_engine(
     settings.DATABASE_URL,
     connect_args={} if "postgresql" in settings.DATABASE_URL else {"check_same_thread": False},
 )
 
+# ── SessionLocal ──────────────────────────────────────────────────────
+# Tovarna za ustvarjanje sej. autocommit=False pomeni, da moramo
+# eksplicitno klicati commit() — to je standardni SQLAlchemy 2.0 vzorec.
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
+# ── Base ──────────────────────────────────────────────────────────────
+# Deklarativni base za SQLAlchemy modele.
 Base = declarative_base()
 
 
 def get_db():
-    """FastAPI dependency that yields a DB session."""
+    """FastAPI dependency, ki ustvari in zapre DB sejo.
+    
+    Zakaj uporabljamo yield namesto return? Ker tako FastAPI zagotovi,
+    da se seja vedno zapre (tudi če pride do izjeme v handlerju).
+    try/finally blok je ključen za preprečevanje puščanja povezav.
+    """
     db = SessionLocal()
     try:
         yield db
@@ -23,7 +50,16 @@ def get_db():
 
 
 def init_db():
-    """Create all tables and apply small idempotent migrations."""
+    """Ustvari vse tabele in izvede lahke idempotentne migracije.
+    
+    Zakaj ne uporabljamo Alembic? Ker je shema majhna in stabilna.
+    Vsaka migracija je dodana kot 'ALTER TABLE ... ADD COLUMN IF NOT EXISTS'
+    stavek, kar je varno za večkratni zagon (idempotentno).
+    
+    Trenutne migracije:
+    - series_id v reservations: dodano za podporo serijskim rezervacijam
+      (tedenske in celodnevne serije za admin/vodstvo).
+    """
     import app.models  # noqa: F401 – ensure models are registered
     Base.metadata.create_all(bind=engine)
 
@@ -49,7 +85,13 @@ def init_db():
 def log_audit(db: Session, user_id: int, user_name: str, action: str,
               entity_type: str, entity_id: int | None = None,
               details: str | None = None) -> None:
-    """Zapiši dogodek v audit_log tabelo. Kličeš pred commitom."""
+    """Zapiši dogodek v audit_log tabelo. Kličeš pred commitom.
+    
+    Zakaj se ta funkcija podvaja z app/audit.py?
+    Zgodovinski razlog — ta verzija obstaja v database.py iz prejšnje
+    arhitekture in se še vedno uporablja na nekaterih mestih. Novejša
+    koda uporablja app.audit.log_audit, ki samostojno commit-a.
+    """
     from app.models import AuditLog
     log = AuditLog(
         user_id=user_id,

@@ -1,3 +1,14 @@
+# ─────────────────────────────────────────────────────────────────────────
+# app/routers/audit_log.py — Ogled audit loga (samo admin)
+#
+# Namen: JSON in HTML endpointa za pregledovanje audit log zapisov.
+# Dostopno samo uporabnikom z vlogo 'admin'.
+#
+# Zakaj JSON in HTML?
+# JSON endpoint (/api/audit-log) uporablja JavaScript v UI za dinamično
+# nalaganje. HTML endpoint (/api/audit-log/page) je za neposreden ogled.
+# ─────────────────────────────────────────────────────────────────────────
+
 from fastapi import APIRouter, Depends, HTTPException, Query, Request
 from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.templating import Jinja2Templates
@@ -12,6 +23,12 @@ templates = Jinja2Templates(directory="app/templates")
 
 
 def _require_admin(request: Request, db: Session):
+    """Preveri, da je uporabnik admin. Vrne uporabnika.
+    
+    Samo admin lahko vidi audit log — tudi vodstvo nima te pravice,
+    ker audit log vsebuje občutljive podatke o brisanju uporabnikov
+    in spremembah vlog.
+    """
     user_id = request.cookies.get("user_id")
     if not user_id:
         raise HTTPException(status_code=401, detail="Niste prijavljeni")
@@ -31,7 +48,13 @@ def list_audit_log(
     action: str | None = Query(None),
     db: Session = Depends(get_db),
 ):
-    """JSON endpoint — vrni zadnje vnose v audit logu."""
+    """JSON endpoint — vrni zadnje vnose v audit logu.
+    
+    Podpira paginacijo (offset/limit) in filtriranje po vrsti akcije.
+    Vrne tudi skupno število zadetkov (total) za potrebe UI.
+    
+    Rezultati so urejeni po ID-ju descending (najnovejši prvi).
+    """
     _require_admin(request, db)
 
     query = db.query(AuditLog).options(joinedload(AuditLog.user))

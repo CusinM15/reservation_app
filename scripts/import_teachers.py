@@ -1,4 +1,27 @@
 #!/usr/bin/env python3
+# ─────────────────────────────────────────────────────────────────────────
+# scripts/import_teachers.py — Uvoz učiteljev iz javne spletne strani šole
+#
+# Namen: Avtomatsko uvozi vse zaposlene (učitelje, vodstvo, administracijo)
+# iz javne strani OŠ Toneta Čufarja (https://www.tonecufar.si/o-soli/zaposleni/)
+# v Šolski App.
+#
+# Zakaj ta skripta?
+# Namesto ročnega vnašanja 50+ učiteljev, skripta prebere javno objavljene
+# podatke s šolske spletne strani in jih uvozi v aplikacijo preko API-ja.
+# To prihrani ure ročnega dela in zmanjša možnost tipkarskih napak.
+#
+# Kako deluje?
+# 1. Scraper: Prebere HTML s spletne strani, najde tabele z zaposlenimi.
+# 2. Parsing: Iz vsake vrstice izlušči email, ime in priimek.
+# 3. Dodelitev vlog: Glede na tab (VODSTVO → vodstvo, ostalo → teacher).
+# 4. API klici: Ustvari/posodobi uporabnike preko /auth/admin/users.
+# 5. Varnost: Gesla se generirajo samo v spominu (nikoli na disk).
+#
+# Pomembno: Učitelji naj po uvozu kliknejo "Pozabljeno geslo" na login
+# strani, da si nastavijo svoje geslo. Začasna gesla niso shranjena.
+# ─────────────────────────────────────────────────────────────────────────
+
 """
 import_teachers.py
 ==================
@@ -19,7 +42,7 @@ Pravila:
 
 Uporaba:
     pip install requests beautifulsoup4 lxml
-    python3 import_teachers.py \\
+    python3 import_teachers.py \
         --base-url https://ostc.si/solski-app
 
     # Dry-run (samo izpis, brez ustvarjanja):
@@ -42,7 +65,8 @@ from bs4 import BeautifulSoup
 
 SCRAPE_URL = "https://www.tonecufar.si/o-soli/zaposleni/"
 
-# Mapping naslovov tabov -> vloga v naši aplikaciji.
+# Preslikava naslovov tabov na vloge v naši aplikaciji.
+# VODSTVO dobi vlogo 'vodstvo', vsi ostali so 'teacher'.
 ROLE_MAP = {
     "VODSTVO": "vodstvo",
     "ADMINISTRACIJA": "teacher",          # uvozimo kot teacher; lahko preskočimo s flagom
@@ -61,6 +85,7 @@ EMAIL_RE = re.compile(r"[\w.\-]+@[\w.\-]+\.[A-Za-z]{2,}")
 
 @dataclass
 class Teacher:
+    """Podatki o učitelju, pridobljeni s scrapinga."""
     email: str
     first_name: str = ""
     last_name: str = ""
@@ -70,7 +95,10 @@ class Teacher:
     status: str = ""  # "created", "exists", "error: ...", "dry-run"
 
 
-# ── Geslo ─────────────────────────────────────────────────────────────
+# ── Generiranje gesla ─────────────────────────────────────────────────
+# Geslo je dolžine 7 znakov, vsebuje vsaj 1 malo, 1 veliko in 1 številko.
+# Izogibamo se zamenljivim znakom (0/O, 1/l/I), da je geslo enostavneje
+# izgovorljivo po telefonu.
 
 def generate_password(length: int = 7) -> str:
     """7 znakov, garantirano >=1 mala, >=1 velika, >=1 številka.
@@ -92,6 +120,10 @@ def generate_password(length: int = 7) -> str:
 
 
 # ── Scraping ──────────────────────────────────────────────────────────
+# Stran uporablja Divi theme, kjer so tabi organizirani kot
+# <li class="et_pb_tab_N"><a>...</a></li>. Vsak tab vsebuje eno tabelo
+# z zaposlenimi. Stolpci se razlikujejo glede na tab (VODSTVO ima
+# drugačne stolpce kot RAZREDNA STOPNJA).
 
 def scrape_employees(html: str) -> list[Teacher]:
     """Vsaka tabela na strani je en tab. Naslove tabov najdemo v gumbu/labelu Divi theme."""
@@ -209,6 +241,7 @@ def scrape_employees(html: str) -> list[Teacher]:
 
 
 # ── Klic v naš API ────────────────────────────────────────────────────
+# Uporablja session (requests.Session) za ohranjanje piškotkov med klici.
 
 def login(session: requests.Session, base_url: str, username: str, password: str, verify: bool = True) -> None:
     """Prijavi se kot admin. Naš /auth/login je form-based in nastavi cookie user_id."""
@@ -271,7 +304,10 @@ def update_user(session: requests.Session, base_url: str, t: Teacher, user_id: i
 
 
 def list_users(session: requests.Session, base_url: str, verify: bool = True) -> dict[str, int]:
-    """Vrni {email: id} za vse uporabnike iz admin strani."""
+    """Vrni {email: id} za vse uporabnike iz admin strani.
+    
+    Scrapa admin uporabniško stran in izlušči ID-je iz povezav za deaktivacijo.
+    """
     r = session.get(base_url.rstrip("/") + "/auth/admin/users", verify=verify)
     if r.status_code != 200:
         return {}

@@ -1,3 +1,21 @@
+# ─────────────────────────────────────────────────────────────────────────
+# app/routers/rezervacije.py — Endpointi za upravljanje rezervacij prostorov
+#
+# Namen: CRUD za rezervacije (posamične in serijske) ter CSV izvoz.
+# To je SRČNA datoteka aplikacije — večina prometa gre skozi te endpoint-e.
+#
+# Posamične rezervacije:
+#   - Ustvari jih lahko vsak prijavljen uporabnik (učitelj)
+#   - Za tablice: več učiteljev lahko sočasno uporablja tablice (omejitev kapacitete)
+#   - Za ostale prostore: ekskluzivna uporaba (samo en učitelj na uro)
+#   - Race condition zaščita preko app.race (sočasne rezervacije istega termina)
+#
+# Serijske rezervacije (samo admin/vodstvo):
+#   - Tedenska serija: ista ura vsak teden na isti dan (npr. vsak pon. 1. uro)
+#   - Celodnevna serija: vse ure za en ali več dni (npr. naravoslovni dan)
+#   - Konfliktne rezervacije se avtomatsko pobrišejo, lastnik dobi email
+# ─────────────────────────────────────────────────────────────────────────
+
 from fastapi import APIRouter, Depends, HTTPException, Query, Request
 from sqlalchemy.orm import Session, joinedload
 from typing import Optional
@@ -24,19 +42,39 @@ from app.audit import log_audit
 
 router = APIRouter(prefix="/api/rezervacije", tags=["rezervacije"])
 
+
+# ── Validacijske funkcije ─────────────────────────────────────────────
+# Ločene pomožne funkcije za preverjanje vnosov. Zakaj ločene?
+# Da so enostavno testabilne in ponovno uporabne v serijskih rezervacijah.
+
 def _validate_prostor(prostor: str):
+    """Preveri, ali prostor obstaja v konfiguraciji (settings.PROSTORI)."""
     if prostor not in settings.PROSTORI:
         raise HTTPException(status_code=400, detail=f"Neveljaven prostor: {prostor}")
 
+
 def _validate_razred(razred: str):
+    """Preveri, ali razred obstaja v konfiguraciji (settings.RAZREDI)."""
     if razred not in settings.RAZREDI:
         raise HTTPException(status_code=400, detail=f"Neveljaven razred: {razred}")
 
+
 def _validate_hour(hour: int):
+    """Preveri, ali je ura v veljavnem obsegu (0-7)."""
     if hour < 0 or hour > 7:
         raise HTTPException(status_code=400, detail="Ura mora biti med 0 in 7")
 
+
 def _check_tablice_capacity(db: Session, prostor: str, date: DateType, hour: int, qty: int):
+    """Preveri kapaciteto tablic za določeno uro.
+    
+    Zakaj posebno preverjanje za tablice? Ker tablice niso ekskluzivne
+    — več učiteljev lahko hkrati uporablja tablice v isti uri. Skupno
+    število ne sme preseči TABLICE_MAX (privzeto 28).
+    
+    Za ostale prostore (računalnica, ladja, gospodinjstvo) je prostor
+    ekskluziven — preverja _check_unique_space.
+    """
     if prostor != "tablice":
         return
     
@@ -53,7 +91,13 @@ def _check_tablice_capacity(db: Session, prostor: str, date: DateType, hour: int
             detail=f"Skupno število tablet ({total_used + qty}) presega kapaciteto ({settings.TABLICE_MAX})"
         )
 
+
 def _check_unique_space(db: Session, prostor: str, date: DateType, hour: int):
+    """Preveri, ali je prostor že zaseden v določeni uri.
+    
+    Za tablice preskočimo (lahko jih uporablja več učiteljev hkrati).
+    Za vse ostale prostore velja ekskluzivnost.
+    """
     if prostor == "tablice":
         return
     
@@ -66,6 +110,9 @@ def _check_unique_space(db: Session, prostor: str, date: DateType, hour: int):
     if existing:
         raise HTTPException(status_code=400, detail="Ta termin je že zaseden.")
 
+
+# ── Seznam rezervacij ──────────────────────────────────────────────────
+
 @router.get("", response_model=list[ReservationOut])
 def list_rezervacije(
     date: Optional[DateType] = Query(None),
@@ -74,6 +121,12 @@ def list_rezervacije(
     prostor: Optional[str] = Query(None),
     db: Session = Depends(get_db)
 ):
+    """Vrni seznam rezervacij z opcijskimi filtri.
+    
+    Podpira filtriranje po datumu (točen ali razpon) in prostoru.
+    Rezultati so urejeni po datumu in uri.
+    Poleg osnovnih podatkov vrne tudi ime učitelja (teacher_name).
+    """
     query = db.query(Reservation).options(joinedload(Reservation.teacher))
     if date:
         query = query.filter(Reservation.date == date)
@@ -94,13 +147,37 @@ def list_rezervacije(
             r.teacher_name = None
     return results
 
+
+# ── Ustvarjanje rezervacije ───────────────────────────────────────────
+
 @router.post("", response_model=ReservationOut, status_code=201)
 def create_rezervacija(data: ReservationCreate, request: Request, db: Session = Depends(get_db)):
+    """Ustvari novo enkratno rezervacijo.
+    
+    POST /api/rezervacije
+    
+    Postopek:
+    1. Validacija vnosov (prostor, razred, ura)
+    2. Preverjanje obveznega qty za tablice
+    3. Registracija intenca za race condition detection
+    4. Pridobitev per-resource lock-a
+    5. Znotraj lock-a: preveri race, kapaciteto in ekskluzivnost
+    6. Shrani rezervacijo in zapiše audit log
+    7. Počisti race tracking
+    
+    Zakaj race condition zaščita? Ker dva uporabnika lahko hkrati
+    rezervirata isti termin. Brez zaščite bi oba mislila, da jima je
+    uspelo, v resnici pa bi uspel samo eden (ali pa bi oba zapisala
+    v bazo pri tablicah). Z race zaščito oba dobita napako z imenom
+    sočasnega uporabnika.
+    """
     _validate_prostor(data.prostor)
     if data.razred:
         _validate_razred(data.razred)
     _validate_hour(data.hour)
     
+    # Za tablice je obvezno navesti število (qty), ker lahko več
+    # učiteljev sočasno uporablja tablice. Za ostale prostore qty ni smiseln.
     if data.prostor == "tablice" and data.qty is None:
         raise HTTPException(status_code=400, detail="Za tablice morate navesti število (qty)")
     
@@ -110,6 +187,9 @@ def create_rezervacija(data: ReservationCreate, request: Request, db: Session = 
     user_name = f"{current_user.first_name} {current_user.last_name}".strip() if current_user else "?"
     
     # Build a resource key for race detection
+    # Za tablice je ključ 'tablice:<date>:<hour>' (ker več učiteljev lahko
+    # sočasno rezervira tablice, vendar želimo še vedno detektirati race).
+    # Za ostale prostore je ključ 'rezervacija:<prostor>:<date>:<hour>'.
     resource_key = f"rezervacija:{data.prostor}:{data.date}:{data.hour}"
     if data.prostor == "tablice":
         resource_key = f"tablice:{data.date}:{data.hour}"
@@ -148,8 +228,21 @@ def create_rezervacija(data: ReservationCreate, request: Request, db: Session = 
         cleanup(resource_key)
         return reservation
 
+
+# ── Brisanje rezervacije ───────────────────────────────────────────────
+
 @router.delete("/{id}")
 def delete_rezervacija(id: int, request: Request, db: Session = Depends(get_db)):
+    """Izbriši rezervacijo.
+    
+    Pravice:
+    - Avtor rezervacije (teacher_id == current_user.id)
+    - Admin ali vodstvo (ne glede na avtorstvo)
+    - Drugi uporabniki ne morejo brisati
+    
+    Beležimo v audit log pred brisanjem (da ohranimo podatke o tem,
+    kaj je bilo pobrisano).
+    """
     user_id = request.cookies.get("user_id")
     if not user_id:
         raise HTTPException(status_code=401, detail="Niste prijavljeni")
@@ -178,12 +271,26 @@ def delete_rezervacija(id: int, request: Request, db: Session = Depends(get_db))
     return {"message": "Rezervacija izbrisana"}
 
 
-# ── Serijske rezervacije ────────────────────────────────────────────
+# ═══════════════════════════════════════════════════════════════════════
+# Serijske rezervacije
+# ═══════════════════════════════════════════════════════════════════════
 #
 # Samo admin in vodstvo lahko ustvarijo (ali zbrišejo) serijo. Učitelji
 # delajo enkratne rezervacije preko standardnega POST /api/rezervacije.
+#
+# Zakaj serijske rezervacije? Učitelji pogosto potrebujejo isti prostor
+# vsak teden (npr. vsak ponedeljek 1. uro računalnico). Namesto ročnega
+# vnašanja 40+ rezervacij za celo šolsko leto, admin/vodstvo ustvari
+# serijo z enim klikom.
+#
+# Kako deluje konflikt?
+# Če serija pokriva termin, ki ga že ima kdo drug rezerviran, se
+# obstoječa rezervacija avtomatsko pobriše in lastnik dobi email
+# obvestilo. To je hoteno obnašanje — admin/vodstvo ima prioriteto.
+# ───────────────────────────────────────────────────────────────────────
 
 def _require_admin_or_vodstvo(request: Request, db: Session) -> User:
+    """Preveri, da je uporabnik admin ali vodstvo. Vrne uporabnika."""
     user_id = request.cookies.get("user_id")
     if not user_id:
         raise HTTPException(status_code=401, detail="Niste prijavljeni")
@@ -208,7 +315,18 @@ def _resolve_conflicts_and_notify(
     qty: int | None,
 ) -> int:
     """Poišči konfliktne rezervacije, jih pobriši in pošlji email prvotnemu lastniku.
-    Vrne število pobrisanih konfliktnih rezervacij."""
+    Vrne število pobrisanih konfliktnih rezervacij.
+    
+    Logika za tablice:
+    - Ker tablice niso ekskluzivne, pobrišemo samo toliko rezervacij,
+      kolikor je potrebno, da sprostimo dovolj kapacitete.
+    - Brišemo od najstarejše do najnovejše (FIFO).
+    
+    Logika za ostale prostore:
+    - Prostor je ekskluziven, zato pobrišemo celotno obstoječo rezervacijo.
+    
+    V obeh primerih pošljemo email prvotnemu lastniku z obvestilom.
+    """
     removed = 0
     for d, h in planned:
         if prostor == "tablice":
@@ -287,7 +405,23 @@ def _commit_series(
     qty: Optional[int],
 ) -> SeriesResult:
     """Ustvari serijske rezervacije. Obstoječe konfliktne rezervacije se avtomatsko
-    pobrišejo, prvotni lastnik pa dobi email obvestilo."""
+    pobrišejo, prvotni lastnik pa dobi email obvestilo.
+    
+    Args:
+        planned: Seznam (datum, ura) parov za ustvarjanje.
+        prostor: Prostor (tablice, računalnica, ladja, gospodinjstvo).
+        teacher_id: ID učitelja, ki bo naveden kot rezervant.
+        creator_name: Ime ustvarjalca (za email obvestila).
+        qty: Število tablic (samo za tablice).
+    
+    Returns:
+        SeriesResult s podatki o ustvarjenih/pobrisanih zapisih.
+    
+    Zakaj se konfliktne rezervacije brišejo namesto da se serija zavrne?
+    Ker admin/vodstvo ustvarja serijo namerno in ima prioriteto pred
+    enkratnimi rezervacijami učiteljev. Učitelj dobi obvestilo, da
+    naj poišče drug termin.
+    """
     _validate_prostor(prostor)
     for _, h in planned:
         _validate_hour(h)
@@ -297,7 +431,7 @@ def _commit_series(
     # 1) Pobriši konfliktne rezervacije in pošlji obvestila
     removed = _resolve_conflicts_and_notify(db, planned, prostor=prostor, creator_name=creator_name, creator_id=creator_id, qty=qty)
 
-    # 2) Ustvari nove zapise
+    # 2) Ustvari nove zapise z unikatnim series_id (UUID)
     series_id = str(uuid.uuid4())
     for d, h in planned:
         db.add(Reservation(
@@ -321,13 +455,25 @@ def _commit_series(
     return SeriesResult(series_id=series_id, created=len(planned), skipped=[], removed=removed)
 
 
+# ── Tedenska serija ───────────────────────────────────────────────────
+
 @router.post("/series/weekly", response_model=SeriesResult, status_code=201)
 def create_weekly_series(
     data: WeeklySeriesCreate,
     request: Request,
     db: Session = Depends(get_db),
 ):
-    """Vsak teden isti dan, ista ura, med date_from in date_to. Samo admin/vodstvo."""
+    """Vsak teden isti dan, ista ura, med date_from in date_to. Samo admin/vodstvo.
+    
+    Primer: data.weekday=0 (ponedeljek), data.hour=0 (1. ura),
+    data.date_from=2024-09-01, data.date_to=2024-06-30
+    → ustvari rezervacije za vsak ponedeljek 1. uro v šolskem letu.
+    
+    Algoritem:
+    1. Poišče prvi datum >= date_from, ki ustreza weekday.
+    2. Generira datume v korakih po 7 dni do date_to.
+    3. Delegira _commit_series za dejansko ustvarjanje.
+    """
     user = _require_admin_or_vodstvo(request, db)
     creator_name = f"{user.first_name} {user.last_name}".strip() or user.username
 
@@ -358,13 +504,23 @@ def create_weekly_series(
     )
 
 
+# ── Celodnevna serija ──────────────────────────────────────────────────
+
 @router.post("/series/full-day", response_model=SeriesResult, status_code=201)
 def create_full_day_series(
     data: FullDaySeriesCreate,
     request: Request,
     db: Session = Depends(get_db),
 ):
-    """Vse ure (privzeto 0..7) za vsak dan v razponu. Samo admin/vodstvo."""
+    """Vse ure (privzeto 0..7) za vsak dan v razponu. Samo admin/vodstvo.
+    
+    Primer: naravoslovni dan za 5. a v gospodinjstvu, 15.10.2024.
+    data.date_from = data.date_to = 15.10.2024.
+    Ustvari 8 rezervacij (ure 0-7) v gospodinjstvu.
+    
+    Vikendi se samodejno preskočijo (šola ne dela).
+    hours lahko omejimo, npr. [0,1,2,3,4,5] za 6 ur (brez 6. in 7. ure).
+    """
     user = _require_admin_or_vodstvo(request, db)
     creator_name = f"{user.first_name} {user.last_name}".strip() or user.username
 
@@ -398,12 +554,22 @@ def create_full_day_series(
     )
 
 
+# ── Seznam serij ───────────────────────────────────────────────────────
+
 @router.get("/series", response_model=list[dict])
 def list_all_series(
     request: Request,
     db: Session = Depends(get_db),
 ):
-    """Vrne vse serije (bodoče) s povzetkom — prostor, termin, št. datumov, ustvarjalec."""
+    """Vrne vse serije (bodoče) s povzetkom — prostor, termin, št. datumov, ustvarjalec.
+    
+    Rezultati so združeni po series_id. Za vsako serijo vrne:
+    - series_id, prostor, hour (None za celodnevne)
+    - date_from, date_to, date_count, total_entries
+    - teacher_name, teacher_id
+    
+    Prikazuje samo bodoče serije (date >= danes).
+    """
     from datetime import date
     today = date.today()
     rows = db.query(Reservation).options(joinedload(Reservation.teacher)).filter(
@@ -461,7 +627,11 @@ def list_all_series(
     request: Request,
     db: Session = Depends(get_db),
 ):
-    """Vrni vse unikatne serije (z datumi >= danes). Samo admin/vodstvo."""
+    """Vrni vse unikatne serije (z datumi >= danes). Samo admin/vodstvo.
+    
+    Uporablja agregacijske funkcije (count, min, max) za učinkovit
+    prikaz. Ne nalaga vseh posameznih rezervacij v spomin.
+    """
     _require_admin_or_vodstvo(request, db)
 
     rows = db.query(
@@ -492,13 +662,20 @@ def list_all_series(
     ]
 
 
+# ── Brisanje serije ────────────────────────────────────────────────────
+
 @router.delete("/series/{series_id}")
 def delete_series(
     series_id: str,
     request: Request,
     db: Session = Depends(get_db),
 ):
-    """Izbriši vse rezervacije v seriji. Samo admin/vodstvo ali avtor."""
+    """Izbriši vse rezervacije v seriji. Samo admin/vodstvo ali avtor.
+    
+    Preveri, da ima uporabnik pravico (admin/vodstvo) ali da je avtor
+    vseh rezervacij v seriji. Če je serija mešana (več avtorjev),
+    lahko briše samo admin/vodstvo.
+    """
     user_id = request.cookies.get("user_id")
     if not user_id:
         raise HTTPException(status_code=401, detail="Niste prijavljeni")
@@ -524,11 +701,11 @@ def delete_series(
     log_audit(db, user_id=current.id, username=username, action="delete_series", details=details)
     return {"message": f"Serija izbrisana ({n} terminov)", "deleted": n}
 
-    log_audit(db, user_id=current.id, username=user_name,
-              action="delete_series",
-              details=f"series_id={series_id}, prostor={rows[0].prostor}, dates={n}")
-    return {"message": f"Serija izbrisana ({n} terminov).", "deleted": n}
 
+# ── CSV izvoz ──────────────────────────────────────────────────────────
+# Zakaj je CSV izvoz tudi tukaj, ko pa imamo ločen export.py?
+# Zgodovinski razlog — ta endpoint je bil napisan prej in se uporablja.
+# export.py je novejši in ima bogatejše možnosti filtriranja.
 
 @router.get("/export/csv")
 def export_rezervacije_csv(
@@ -538,7 +715,11 @@ def export_rezervacije_csv(
     prostor: Optional[str] = Query(None),
     db: Session = Depends(get_db),
 ):
-    """Izvozi rezervacije v CSV. Samo admin in vodstvo."""
+    """Izvozi rezervacije v CSV. Samo admin in vodstvo.
+    
+    CSV vsebuje stolpce: Datum, Ura, Prostor, Učitelj, Razred, Količina, ID.
+    Ura se prikaže v berljivi obliki (npr. "7.00 - 7.45") iz SCHEDULE konfiguracije.
+    """
     user_id = request.cookies.get("user_id")
     if not user_id:
         raise HTTPException(status_code=401, detail="Niste prijavljeni")
