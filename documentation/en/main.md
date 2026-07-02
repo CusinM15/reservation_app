@@ -46,7 +46,6 @@ This file is **the main entry point** — like the reception desk at school that
 | [👩‍🏫 **Teacher instructions**](../navodila-ucitelji.md) | Using the app — reservations and assessments |
 | [👑 **Management instructions**](../navodila-vodstvo.md) | Managing via browser (series, blocked dates) |
 | [📱 **App description**](../aplikacija-rezervacije.md) | What the app offers, purpose, features |
-| [📋 **Audit log**](main.md#audit-log) | Change history — who did what and when |
 
 ---
 

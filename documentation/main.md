@@ -46,7 +46,6 @@ Ta datoteka je **glavni vstopni dokument** — kot recepcija v šoli, ki ti pove
 | [👩‍🏫 **Navodila za učitelje**](navodila-ucitelji.md) | Uporaba aplikacije — rezervacije in ocenjevanja |
 | [👑 **Navodila za vodstvo**](navodila-vodstvo.md) | Upravljanje prek brskalnika (serije, zasedeni datumi) |
 | [📱 **Opis aplikacije**](aplikacija-rezervacije.md) | Kaj aplikacija omogoča, namen, funkcionalnosti |
-| [📋 **Audit log**](main.md#audit-log) | Dnevnik sprememb — kdo je kaj naredil in kdaj |
 
 ---
 
