@@ -346,10 +346,12 @@ Vsako vozlišče **lahko** vsebuje vse. To je lepota k3s — ni ločenih "master
 |-------|---------|-----------|
 | **Control-plane** | Upravlja cluster — odloča kje bodo tekli zabojniki | ✅ Ja, vsaj 1 v clusterju |
 | **Worker** | Poganja zabojnike — dejansko izvaja kodo aplikacije | ✅ Ja |
-| **Longhorn** | Shranjuje podatke — diskovni prostor za bazo | ⚠️ Potrebuje dodaten disk (ne sistemskega) |
-| **MetalLB speaker** | Omogoča LoadBalancer IP — zunanji naslov za aplikacijo | ⚠️ Potreben samo na 1 nodu v omrežju |
+| **Longhorn** | Shranjuje podatke — diskovni prostor za bazo | ✅ **Ja, na vsakem nodu** — potrebuje dodaten disk (ne sistemskega) |
+| **MetalLB speaker** | Omogoča LoadBalancer IP — zunanji naslov za aplikacijo | ✅ **Ja, na vsakem nodu** — vsak node mora samostojno streči IP |
 
-**V praksi:** Dodaten disk za Longhorn pomeni, da ne smeš uporabiti sistemskega diska (/dev/sda) za shranjevanje podatkov. Če ima drugi disk (/dev/sdb ali /dev/nvme1n1), ga dodeli Longhornu. Sicer bo ob polnjenju sistemskega diska crknil celoten OS in s tem tudi Longhorn.
+**Zakaj vse na vsakem nodu?** Ker če en node crkne, mora drugi prevzeti **vse** njegove vloge — tudi Longhorn (da podatki ostanejo dostopni) in MetalLB (da aplikacija dobi IP). Brez tega bi izpad enega noda povzročil več kot le upočasnitev.
+
+**V praksi — diski:** Dodaten disk za Longhorn pomeni, da ne smeš uporabiti sistemskega diska (/dev/sda) za shranjevanje podatkov. Vsak node rabi svoj ločen disk (/dev/sdb ali /dev/nvme1n1). Če nima dodatnega diska, Longhorn na tistem nodu ne more shranjevati — in tisti node ne more samostojno delovati.
 
 ### 5. Po dodajanju — preverjanje in priprava diska
 

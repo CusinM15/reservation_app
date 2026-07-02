@@ -186,13 +186,18 @@ curl -sfL https://get.k3s.io | sh -s - server \
   --disable traefik --disable=servicelb
 ```
 
-### What a node should contain
+### What a node should contain — everything in one
 
-Each node **can** contain everything:
-- **Control-plane role** – manages the cluster
-- **Worker role** – runs containers
-- **Longhorn** – stores data (requires an additional disk)
-- **MetalLB speaker** – enables LoadBalancer IP
+Each node **can** contain everything. That's the beauty of k3s — there are no separate "master" and "worker" machines, each one is everything:
+
+- **Control-plane** — manages the cluster, decides where containers run
+- **Worker** — runs containers
+- **Longhorn** — stores data (requires an additional, non-system disk) — **yes, on every node**
+- **MetalLB speaker** — provides LoadBalancer IP — **yes, on every node**
+
+**Why everything on every node?** If one node fails, another has to take over **all** its roles — including Longhorn (so data stays accessible) and MetalLB (so the app keeps its IP). Without this, a single node outage causes more than just slowdown.
+
+**In practice — disks:** Never use the system disk (/dev/sda) for Longhorn storage. Each node needs its own dedicated disk (/dev/sdb or /dev/nvme1n1). If a node has no extra disk, Longhorn can't store data on it — and that node can't run independently.
 
 ### After adding
 
