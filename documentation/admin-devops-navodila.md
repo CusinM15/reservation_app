@@ -43,7 +43,7 @@ Aplikacija rešuje eno glavno težavo: **kdo je kdaj v katerem prostoru in kdaj 
 | **📝 Ocenjevanja** — Učitelji napovejo pisna ocenjevanja. Aplikacija pazi, da jih ni več kot **3 na teden** in **največ 2 običajni** (tretji je lahko samo lažje ocenjevanje). **Zakaj?** Da nimajo učenci 5 testov v enem dnevu.
 | **🚫 Zasedeni datumi** — Vodstvo/admin označi dneve, ko nič ne gre (ekskurzije, športni dnevi ...). **Zakaj?** Da se nihče ne muči z rezervacijo na dan, ko pouka ni.
 - **👥 Admin panel** — Dodaš/brišeš učitelje, nastavljaš vloge. **Zakaj?** Nekdo mora imeti ključe od vrat.
-| **🔑 Pozabljeno geslo** — Pošlje email za ponastavitev. **Zakaj?** Ker vsak kdaj pozabi geslo in kričanje »miha.ne.veš.gesla« čez hodnik ni profesionalno.
+| **🔑 Pozabljeno geslo** — Pošlje email za ponastavitev. **Zakaj?** Ker vsak kdaj pozabi geslo.
 
 ---
 

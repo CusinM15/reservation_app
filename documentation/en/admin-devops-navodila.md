@@ -10,14 +10,6 @@
 
 # ⚙️ Admin & DevOps Guide
 
-*"Work like a senior, explained like you're five."*
-
-Comprehensive instructions for installation, maintenance, and troubleshooting —
-with an explanation of **why** each step exists in the first place.
-
-> **Author:** Matej Čušin  
-> **School:** OŠ Toneta Čufarja, Jesenice
-
 ---
 
 ## 📋 Table of Contents
@@ -54,15 +46,14 @@ rooms — you can't physically fit two classes in one room at the same time.
 
 - **📝 Assessments** — Teachers schedule written assessments. The app limits
   them to **max 3 per week** and **max 2 regular** (the third can only be a
-  light/simple assessment). **Why?** So students don't have 5 tests in a single day.
+  rewriting same exam, because there hav morethan 50% knowlage for nit positive). **Why?** The law.
 - **🚫 Blocked dates** — Management/Admin mark days when nothing is happening
   (field trips, sports days...). **Why?** So nobody wastes time trying to reserve
   a room on a day when there's no school.
 - **👥 Admin panel** — Add/remove teachers, set roles. **Why?** Someone has to
   hold the keys to the building.
 - **🔑 Forgot password** — Sends a password reset email. **Why?** Because
-  everyone forgets their password once a month, and shouting "miha.doesn't.know.
-  the.password" across the hallway isn't professional.
+  everyone forgets their password.l.
 
 ---
 
@@ -86,10 +77,10 @@ rooms — you can't physically fit two classes in one room at the same time.
 | Step | Choice | Why? |
 |------|--------|------|
 | **OS selection** | **Ubuntu Server** (NOT Desktop) | **Why Ubuntu Server?** No desktop environment (= fewer programs eating RAM → more RAM for the app). Fewer programs also means fewer security holes — Desktop has more doors that hackers can walk through. Server is an empty room with one door; Desktop is a room full of cabinets and windows. |
-| **Language** | English (Slovenian not supported) | Ubuntu Server doesn't have a Slovenian locale. The console will be in English anyway, and SSH works in any language. |
+| **Language** | English (Slovenian not supported) | Ubuntu Server doesn't have a Slovenian locale. |
 | **Network** | Set a **static IP** | **Why static IP?** The server must always be at the same address. If it got a dynamic IP (via DHCP), it could change tomorrow and the app would become unreachable. Like if your house moved to a different street every day — the mailman would never find you. |
 | **OpenSSH** | ✅ **Check "Install OpenSSH server"** | **Why OpenSSH?** The server will sit in a corner without a keyboard or monitor. The only way to reach it is over the network — SSH is your remote keyboard. If you skip this, you'll have to physically carry a monitor to the server every time you need something. |
-| **User** | Create a user with password | This will be your admin account. Write it down *(in your phone, on a sticky note, in a password manager — just don't lose it)*. |
+| **User** | Create a user with password | This will be your admin account. Write it down *(in your phone, on a note, in a password manager — just don't lose it)*. |
 
 ### Setting up a static IP
 
@@ -227,8 +218,6 @@ between simplicity and reliability. You can migrate to k3s later without data lo
 
 ## Maintenance and automation (cron jobs)
 
-*"The best server is the one you don't have to do anything for."*
-
 Cron jobs are like alarm clocks — every day at a specific time they wake up
 and do something. We've set up two:
 
@@ -334,7 +323,7 @@ hermes "check logs of sola-app pods and find out why they are restarting"
 
 **Why is this useful?** Instead of opening 5 terminal windows, typing kubectl
 commands, scrolling through logs, and Googling errors — just tell the agent
-what you need and it does it in seconds.
+what you need and it does it in minutes/seconds.
 
 **Installation:**
 
@@ -343,7 +332,7 @@ curl -fsSL https://hermes-agent.io/install.sh | sh
 ```
 
 *That's it. Configuration and settings are in the Hermes Agent documentation —
-we won't repeat them here since they change more often than the school schedule.*
+we won't repeat them here since they change more often.*
 
 ---
 
@@ -397,8 +386,7 @@ this computer. Connect me to the existing cluster at MASTER_IP. Here's the
 token so you know I'm allowed. My IP is this. And don't install traefik and
 servicelb — we already have those."
 
-**Why `--disable traefik --disable=servicelb`?** Because these components
-already run on the first master. If you install them again, they'll fight over
+**Why `--disable traefik --disable=servicelb`?** Because clouster is using MetalLB - Loadballancer. If you install them again, they'll fight over
 who's in charge. Like having two captains on the same ship.
 
 ### 4. What a node should contain — everything in one
@@ -462,7 +450,6 @@ journalctl -u k3s --tail=50
 
 ---
 
-> *"If you can't explain it to a six-year-old, you don't understand it yourself." — every good DevOps engineer*
 
 > **Author:** Matej Čušin  
 > **School:** OŠ Toneta Čufarja, Jesenice
