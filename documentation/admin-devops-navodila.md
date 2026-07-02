@@ -10,14 +10,6 @@
 
 # ⚙️ Admin & DevOps navodila
 
-*"Delaj kot senior, razloženo kot petletniku."*
-
-Celovita navodila za namestitev, vzdrževanje in odpravljanje težav — z razlago **zakaj** vsak korak sploh obstaja.
-
-> **Avtor:** Matej Čušin  
-> **Šola:** OŠ Toneta Čufarja, Jesenice
-
----
 
 ## 📋 Kazalo
 
@@ -26,32 +18,32 @@ Celovita navodila za namestitev, vzdrževanje in odpravljanje težav — z razla
 3. [Načini namestitve — kdaj kaj uporabiti](#načini-namestitve)
 4. [📖 Kdaj uporabiti kateri način? — odločitveni vodič](#-kdaj-uporabiti-kateri-način)
 5. [Vzdrževanje in avtomatizacija — cron jobi, ki skrbijo sami](#vzdrževanje-in-avtomatizacija-cron-jobi)
-6. [AI agenti za pomoč — kot pripravnik, ki ne sprašuje neumnih vprašanj](#ai-agenti-za-pomoč)
+6. [AI agenti za pomoč](#ai-agenti-za-pomoč)
 7. [Dodajanje novega računalnika v k3s cluster — korak za korakom](#dodajanje-novega-računalnika-v-k3s-cluster)
 
 ---
 
 ## Kaj aplikacija omogoča — in kaj to pomeni v praksi
 
-Aplikacija rešuje eno glavno težavo: **kdo je kdaj v katerem prostoru in kdaj so ocenjevanja.** Namesto da se učitelji lovijo po hodnikih in prepisujejo iz papirja v papir, vse lepo piše na enem mestu.
+Aplikacija rešuje eno glavno težavo: **kdo je kdaj v katerem prostoru in kdaj so ocenjevanja.** Namesto da se učitelji lovijo po hodnikih in prepisujejo iz papirja na papir, vse lepo piše na enem mestu.
 
 ### Prostori za rezervacije
 
 | Prostor | Kapaciteta | Kako deluje | V praksi pomeni... |
 |---------|-----------|-------------|-------------------|
 | **📱 Tablice** | 28 kosov | Lahko si jih deli več učiteljev v **isti uri** | Če Mateja vzame 14 tablic, jih lahko Ana še vedno vzame 14 — aplikacija pazi, da ne gre čez 28 |
-| **💻 Računalnica** | 1 rezervacija na uro | Rezerviraš cel prostor zase | Ko si ti notri, drugi ne morejo — kot da imaš ključ od vrat |
+| **💻 Računalnica** | 1 rezervacija na uro | Rezerviraš cel prostor zase | Ko si ti notri, drugi ne morejo  |
 | **🚢 Ladja** | 1 rezervacija na uro | Enako kot računalnica | Isti princip, drug prostor |
-| **🍳 Gospodinjska učilnica** | 1 rezervacija na uro | Enako kot zgoraj | Tretji prostor, ista logika |
+| **🍳 Gospodinjska učilnica** | 1 rezervacija na uro | Enako kot zgoraj | Isti princip, drug prostor |
 
 **Zakaj tako?** Tablice so fizični predmeti — lahko jih razdeliš. Prostori so sobe — vanje fizično ne moreš stlačiti dveh razredov hkrati.
 
 ### Ostale funkcionalnosti
 
-- **📝 Ocenjevanja** — Učitelji napovejo pisna ocenjevanja. Aplikacija pazi, da jih ni več kot **3 na teden** in **največ 2 običajni** (tretji je lahko samo "lažji"). **Zakaj?** Da nimajo mulci 5 testov v enem dnevu.
-- **🚫 Zasedeni datumi** — Ravnatelj/admin označi dneve, ko nič ne gre (prazniki, ekskurzije, športni dnevi). **Zakaj?** Da se kdo ne muči z rezervacijo na dan, ko šole sploh ni.
+- **📝 Ocenjevanja** — Učitelji napovejo pisna ocenjevanja. Aplikacija pazi, da jih ni več kot **3 na teden** in **največ 2 običajni** (tretji je lahko samo ponavlanje). **Zakaj?** Da nimajo učenci 5 testov v enem dnevu.
+- **🚫 Zasedeni datumi** — Vodstvo/admin označi dneve, ko nič ne gre (ekskurzije, športni dnevi ...). **Zakaj?** Da se kdo ne muči z rezervacijo na dan, ko tega ne more.
 - **👥 Admin panel** — Dodaš/brišeš učitelje, nastavljaš vloge. **Zakaj?** Nekdo mora imeti ključe od vrat.
-- **🔑 Pozabljeno geslo** — Pošlje mail za ponastavitev. **Zakaj?** Ker vsak pozabi geslo enkrat na mesec in kričanje "miha.ne.veš.gesla" čez hodnik ni profesionalno.
+- **🔑 Pozabljeno geslo** — Pošlje mail za ponastavitev. **Zakaj?** Ker vsak kfaj pozabi geslo  
 
 ---
 
@@ -75,14 +67,17 @@ Aplikacija rešuje eno glavno težavo: **kdo je kdaj v katerem prostoru in kdaj 
 | Korak | Izbira | Zakaj? |
 |-------|--------|--------|
 | **Izbira OS** | **Ubuntu Server** (NE Desktop) | **Zakaj Ubuntu Server?** Ker nima namizja (= manj programov, ki jedo RAM → več RAMa za aplikacijo). Manj programov pomeni tudi manj lukenj za hekerje — pri Desktop različici je več vrat, skozi katera lahko kdo vdre. Server je kot prazna soba z enimi vrati; Desktop je kot soba polna omar in oken. |
-| **Jezik** | English (slovenščina ni podprta) | Ubuntu Server nima slovenskega jezika. Konzola bo vseeno angleška, vendar to ni problem — SSH dela v vseh jezikih. |
+| **Jezik** | English (slovenščina ni podprta) | Ubuntu Server nima slovenskega jezika. |
 | **Omrežje** | Nastavi **statičen IP** | **Zakaj statični IP?** Strežnik mora biti vedno na istem naslovu. Če bi dobil dinamični IP (preko DHCP), bi se lahko jutri zamenjal in aplikacija bi bila nedosegljiva. Kot da bi se tvoja hiša vsak dan preselila na drugo ulico — poštar te ne bi našel. |
-| **OpenSSH** | ✅ **Obvezno označi "Install OpenSSH server"** | **Zakaj OpenSSH?** Strežnik bo stal brez tipkovnice in monitorja v kotu. Edina pot do njega je prek omrežja — SSH je tvoja daljinska tipkovnica. Če ga ne namestiš, moraš fizčno nosit monitor do strežnika vsakič, ko kaj rabiš. |
+| **OpenSSH** | ✅ **Obvezno označi "Install OpenSSH server"** | **Zakaj OpenSSH?** Strežnik bo stal brez tipkovnice in monitorja v kotu. Edina pot do njega je prek omrežja — SSH je tvoja daljinska tipkovnica.  |
 | **Uporabnik** | Ustvari uporabnika in geslo | To bo tvoj admin račun. Zapiši ga nekam *(v telefon, na listek, v password manager — samo ne izgubi)*. |
 
 ### Nastavitev statičnega IP-ja
 
 Če med namestitvijo nisi nastavil statičnega IP-ja (ali če ga rabiš spremeniti):
+
+
+**Namesto nano lahko uporabiš vim, če javi da tega ne pozna sudo install nano oz vim**
 
 ```bash
 sudo nano /etc/netplan/00-installer-config.yaml
@@ -138,7 +133,7 @@ sudo systemctl enable --now ssh
 **Preveri, da dela:**
 
 ```bash
-# S katerega drugega računalnika:
+# S katerega drugega računalnika (v omrežju):
 ssh tvoj_uporabnik@<IP_STREZNIKA>
 ```
 
@@ -174,7 +169,7 @@ Aplikacija teče na enem strežniku, do nje pa lahko dostopaš z drugih naprav p
 
 **☸️ Kubernetes (k3s)**
 Aplikacija teče na več računalnikih (nodih). Če eden crkne, drugi prevzamejo. Kubernetes sam poskrbi, da aplikacija vedno teče.
-- ✅ **Plus:** Visoka razpoložljivost, samodejno okrevanje, enostavno dodajanje novih nodov v prihodnosti.
+- ✅ **Plus:** Visoka razpoložljivost, samodejno okrevanje, enostavno dodajanje novih nodov (računalnikov) v prihodnosti.
 - ❌ **Minus:** Bolj zapleteno za postavitev. Rabiš vsaj 2 računalnika. Več znanja za vzdrževanje.
 - **Dobro za:** Večje šole, kritične sisteme, kjer izpad ni opcija.
 
@@ -394,3 +389,6 @@ journalctl -u k3s --tail=50
 ---
 
 > *"Če lahko to razložiš petletniku, ga res razumeš." — vsak dober DevOps inženir*
+
+> **Avtor:** Matej Čušin  
+> **Šola:** OŠ Toneta Čufarja, Jesenice
