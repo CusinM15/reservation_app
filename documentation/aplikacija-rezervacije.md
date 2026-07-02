@@ -149,6 +149,7 @@ Admin panel je preprost in pregleden — nobenih skritih menijev ali zapletenih 
 | **Brisanje tuje rezervacije** | ❌ Ne | ✅ Da | ✅ Da |
 | **Napoved ocenjevanja** | ✅ Da | ✅ Da | ✅ Da |
 | **Upravljanje zasedenih datumov** | ❌ Ne | ✅ Da | ✅ Da |
+| **Serijske rezervacije** | ❌ Ne | ✅ Da | ✅ Da |
 | **Admin panel (uporabniki)** | ❌ Ne | ❌ Ne | ✅ Da |
 
 **Učitelj** — lahko rezervira prostore, napoveduje ocenjevanja in briše samo svoje vnose. Ne more posegati v delo drugih.

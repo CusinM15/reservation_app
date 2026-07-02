@@ -26,14 +26,14 @@ and the law were furious.
    and the app automatically ensures there are no overlaps or policy violations
    (max 3 assessments per week, max 2 regular ones, no 3 consecutive days, etc.).
    Instead of sticky notes on a whiteboard — one click.
-2. **Room reservations** — tablets, computer room, ship (washing station), and
+2. **Room reservations** — tablets, computer room, ship and
    home economics classroom. Every teacher can see in real time what's free and
    what's taken.
 
 The application was developed for **OŠ Toneta Čufarja Jesenice** (a primary school
 in Jesenice, Slovenia). It is deliberately kept as simple as possible — because the
 author won't be at the school forever. When he eventually leaves, anyone reasonably
-comfortable with a computer should be able to maintain and use it. Nothing
+comfortable with a computer person should be able to maintain and use it. Nothing
 complicated, nothing mysterious.
 
 **Server:** The app runs on **Ubuntu Server** installed on old computers that are
@@ -121,7 +121,7 @@ The application supports reserving four types of rooms/items:
 |------|-------------|------|
 | **Tablets** | 28 portable tablets | Multiple teachers can share them in the same period — each gets their own slice |
 | **Computer room** | Classroom with computers | **One** reservation per period — first come, first served |
-| **Ship** (washing station) | Special tool for practical lessons | **One** reservation per period |
+| **Ship**  | Special tool for practical lessons | **One** reservation per period |
 | **Home economics classroom** | Classroom for home economics | **One** reservation per period |
 
 Reservations are displayed in a clear calendar view. Every teacher can see what's
@@ -135,7 +135,7 @@ Teachers enter a date and class, and the app **automatically checks all the rule
 **Rules enforced by the system:**
 
 - **Max 3 assessments per week** — regardless of type
-- **Max 2 regular (non-retake) assessments per week** — to avoid overloading students
+- **Max 2 regular (non-retake) assessments per week** — the lav
 - **No 3 consecutive days** — no class may take a test three days in a row
 - **Automatic rule checking for grades 1–7** — because of mixed-group scheduling,
   this is considerably harder to do for grades 8 and 9
@@ -188,6 +188,7 @@ cabinets.
 | **Delete others' reservations** | ❌ No | ✅ Yes | ✅ Yes |
 | **Schedule assessment** | ✅ Yes | ✅ Yes | ✅ Yes |
 | **Manage blocked dates** | ❌ No | ✅ Yes | ✅ Yes |
+| **Serial reservatopm** | ❌ No | ✅ Yes | ✅ Yes |
 | **Admin panel (users)** | ❌ No | ❌ No | ✅ Yes |
 
 **Teacher** — can reserve rooms, schedule assessments, and delete only their own
