@@ -38,7 +38,7 @@ This file is **the main entry point** — like the reception desk at school that
 | Document | Description |
 |---|---|
 | [🏗️ **HA Architecture**](../HA.md) | CloudNativePG, automatic failover, node failure procedure |
-| [🌞 **Summer Shutdown**](../POLETNA_PAVZA.md) | Safe shutdown of the k3s cluster over summer and restart in autumn |
+| [🌞 **Summer Shutdown**](../poletna-pavza.md) | Safe shutdown of the k3s cluster over summer and restart in autumn |
 | [☁️ **Domain and DNS**](../domena.md) | Domain setup, Cloudflare, DNS records |
 | [🐍 **Run app locally**](../postavi-lokalni-app.md) | Installation on a single computer (without Kubernetes) |
 | [☸️ **K3s setup**](../k3s-setup.md) | Installing the k3s cluster from scratch |
@@ -478,7 +478,7 @@ kubectl get pods -n sola -o wide
 
 ## 🌞 **Summer Shutdown**
 
-See [🌞 Summer Shutdown](../POLETNA_PAVZA.md).
+See [🌞 Summer Shutdown](../poletna-pavza.md).
 
 > **Btw:** The summer shutdown is often overlooked, but it is crucial for the longevity of the hardware. HP ProBooks in a cabinet without cooling can easily reach 50°C at idle during summer. Shutting down for 2 months extends the life of disks and batteries. Before shutdown, **mandatorily** take a snapshot of Longhorn volumes and dump the database — "better to have it and not need it, than need it and not have it."
 

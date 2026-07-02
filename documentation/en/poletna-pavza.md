@@ -1,4 +1,4 @@
-🌐 **Language / Jezik:** [🇸🇮 Slovenščina](../POLETNA_PAVZA.md) | [🇬🇧 English](POLETNA_PAVZA.md)
+🌐 **Language / Jezik:** [🇸🇮 Slovenščina](../poletna-pavza.md) | [🇬🇧 English](poletna-pavza.md)
 
 ---
 

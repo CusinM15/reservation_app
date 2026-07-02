@@ -38,7 +38,7 @@ Ta datoteka je **glavni vstopni dokument** — kot recepcija v šoli, ki ti pove
 | Dokument | Opis |
 |---|---|
 | [🏗️ **HA arhitektura**](HA.md) | CloudNativePG, avtomatski failover, potek ob izpadu noda |
-| [🌞 **Poletna pavza**](POLETNA_PAVZA.md) | Varen izklop k3s clustra čez poletje in ponoven vklop jeseni |
+| [🌞 **Poletna pavza**](poletna-pavza.md) | Varen izklop k3s clustra čez poletje in ponoven vklop jeseni |
 | [☁️ **Domena in DNS**](domena.md) | Nastavitev domene, Cloudflare, DNS zapisi |
 | [🐍 **Postavi lokalni app**](postavi-lokalni-app.md) | Namestitev na enem računalniku (brez Kubernetes) |
 | [☸️ **K3s setup**](k3s-setup.md) | Namestitev k3s clustra iz nič |
@@ -477,7 +477,7 @@ kubectl get pods -n sola -o wide
 
 ## 🌞 **Poletna pavza**
 
-Glej [🌞 Poletna pavza](POLETNA_PAVZA.md).
+Glej [🌞 Poletna pavza](poletna-pavza.md).
 
 > **Namig:** Poletna pavza je pogosto spregledana, ampak je ključna za dolgo življenjsko dobo strojne opreme. HP ProBooki v omari brez hlajenja čez poletje zlahka dosežejo 50°C v mirovanju. Izklop za 2 meseca podaljša življenjsko dobo diskov in baterij. Pred izklopom **obvezno** naredi snapshot Longhorn volumnov in dump baze — "bolje imeti in ne rabiti, kot rabiti in ne imeti."
 
