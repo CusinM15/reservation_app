@@ -1,9 +1,4 @@
 ---
-> ⚠️ **Note:** IP addresses, passwords, email addresses, and other sensitive data in this
-> documentation are replaced with examples. For actual values, check Kubernetes
-> Secrets or contact the administrator.
-
----
 
 # 👑 Instructions for School Management
 

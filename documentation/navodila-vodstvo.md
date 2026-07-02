@@ -1,11 +1,5 @@
 ---
 
-> ⚠️ **Opomba:** IP naslovi, gesla, email naslovi in drugi občutljivi podatki v tej
-> dokumentaciji so zamenjani z zgledi. Za dejanske vrednosti preverite Kubernetes
-> Secrets ali kontaktirajte administratorja.
-
----
-
 # 👑 Navodila za vodstvo
 
 > Namenjeno **ravnatelju in pomočnikom ravnatelja**.  
