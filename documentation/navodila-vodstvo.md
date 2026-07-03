@@ -1,5 +1,3 @@
----
-
 # 👑 Navodila za vodstvo
 
 > Namenjeno **ravnatelju in pomočnikom ravnatelja**.  
