@@ -56,6 +56,7 @@ Cloudflare proxy v praksi pomeni:
 
 > Flexible SSL je kot **polovično šifriranje**. Med uporabnikom in Cloudflarom je HTTPS
 > (zaklenjeno 🔒). Med Cloudflarom in našim strežnikom pa HTTP (odklenjeno 🔓).
+> Tako do njega nihče ne dostopa (za IP ve zgolj admin).
 > V šolskem omrežju je to OK, ker je promet znotraj zaupanja vrednega omrežja.
 >
 > Če bi aplikacija delovala na javnem WiFi-ju v kavarni, bi to bil problem.

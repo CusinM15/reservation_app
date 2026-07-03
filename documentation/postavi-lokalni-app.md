@@ -384,4 +384,7 @@ Uredi datoteko `scripts/import_teachers.py` v beležnici ali urejevalniku:
 
 ---
 
-> 📬 **Vprašanja?** Kontaktiraj Mateja Čušina na OŠ Toneta Čufarja Jesenice.
+
+> **Avtor:** Matej Čušin  
+> **Šola:** OŠ Toneta Čufarja, Jesenice
+
