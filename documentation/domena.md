@@ -55,11 +55,8 @@ Cloudflare proxy v praksi pomeni:
 ## 🔐 Flexible SSL — polovična šifra (ELI5)
 
 > Flexible SSL je kot **polovična šifra**. Med uporabnikom in Cloudflarom je HTTPS
-> (zaklenjeno 🔒). Med Cloudflarom in našim strežnikom pa HTTP (odklenjeno 🔓).
-> V šolskem omrežju je to OK, ker je promet znotraj zaupanja vrednega omrežja.
+> (zaklenjeno 🔒). Med Cloudflarom in našim strežnikom pa HTTP (odklenjeno 🔓), toda na ta način nihče ne dostopa (za IP ve zgolj admin).
 >
-> Če bi aplikacija tekla na javnem WiFi-ju v kavarni, bi to bil problem.
-> Ampak promet med Cloudflarom in `{{LB_IP}}` nikoli ne zapusti šolskega omrežja.
 > Za šolo je to čisto dovolj dobro.
 
 ---
@@ -123,7 +120,7 @@ kubectl -n sola-app rollout restart deployment/sola-app
 ### ❓ Zakaj ne vidim svojega strežnika ko pingam `{{DOMAIN}}`?
 
 > Ker imamo **oranžni oblak (Proxied)**. Ping gre na Cloudflare edge, ne na tvoj
-> strežnik. Cloudflare se ne pusta pingat — vrže timeout. To je **normalno**.
+> strežnik. Cloudflare se ne pusti pingat — vrže timeout. To je **normalno**.
 > Tvoj strežnik je še vedno živ in zdrav. Če bi želel videti pravi IP, bi moral
 > dati DNS v **siv oblak (DNS only)** — ampak tega nočemo, ker potem izgubimo
 > Cloudflare zaščito.
@@ -157,7 +154,7 @@ kubectl -n sola-app rollout restart deployment/sola-app
 - **Cloudflare SSL** je "Flexible" — HTTPS med uporabnikom in Cloudflarom, HTTP med Cloudflarom in `{{LB_IP}}` (znotraj šolskega omrežja — v redu)
 - **server: cloudflare** se pojavi v HTTP headerjih — to je dokaz da Cloudflare posreduje
 - Če bi želeli **end-to-end HTTPS**, bi potrebovali certifikat na aplikaciji (trenutno ni potrebe — ne kompliciraj)
-- DNS propagacija lahko traja. Če si ravno spremenil DNS in ne dela — počakaj. Ne paničari. Skoči na `dig {DOMAIN}` po 5 minutah.
+- DNS propagacija lahko traja. Če si ravno spremenil DNS in ne dela — počakaj. 
 
 ---
 
