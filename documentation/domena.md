@@ -14,7 +14,7 @@ Trenutna domena: **`{{DOMAIN}}`** (Cloudflare proxy — oranžni oblak prižgan 
 
 ---
 
-## 📋 Kaj sploh je DNS? (ELI5)
+## 📋 Kaj sploh je DNS? 
 
 > DNS je **telefonski imenik interneta**. Ko vtipkaš `{{DOMAIN}}`, DNS pove brskalniku
 > na kateri IP naj gre. Namesto da bi si zapomnil `{{LB_IP}}` (kar je grda številka),
