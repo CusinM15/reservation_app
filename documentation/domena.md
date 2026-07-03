@@ -29,7 +29,7 @@ Trenutna domena: **`{{DOMAIN}}`** (Cloudflare proxy — oranžni oblak prižgan 
 
 ---
 
-## ☁️ Cloudflare proxy — kaj to pomeni? (ELI5)
+## ☁️ Cloudflare proxy — kaj to pomeni? 
 
 > Cloudflare stoji pred aplikacijo kot **varnostnik**. Uporabnik vidi Cloudflare,
 > ne vidi direktno strežnika. Cloudflare filtrira napade, skrbi za SSL certifikat
@@ -52,7 +52,7 @@ Cloudflare proxy v praksi pomeni:
 
 ---
 
-## 🔐 Flexible SSL — polovično šifriranje (ELI5)
+## 🔐 Flexible SSL — polovično šifriranje 
 
 > Flexible SSL je kot **polovično šifriranje**. Med uporabnikom in Cloudflarom je HTTPS
 > (zaklenjeno 🔒). Med Cloudflarom in našim strežnikom pa HTTP (odklenjeno 🔓).
@@ -72,7 +72,7 @@ Cloudflare proxy v praksi pomeni:
 
 ---
 
-## ⚙️ BASE_URL — pove aplikaciji kakšen je njen polni spletni naslov (ELI5)
+## ⚙️ BASE_URL — pove aplikaciji kakšen je njen polni spletni naslov 
 
 > BASE_URL pove aplikaciji kakšen je njen **polni spletni naslov**. To potrebuje
 > za pošiljanje emailov (ko aplikacija reče "klikni na to povezavo", mora vedeti

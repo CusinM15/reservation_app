@@ -14,7 +14,7 @@ Current domain: **`{{DOMAIN}}`** (Cloudflare proxy — orange cloud enabled 🟠
 
 ---
 
-## 📋 What is DNS? (ELI5)
+## 📋 What is DNS?
 
 > DNS is the **phonebook of the internet**. When you type `{{DOMAIN}}`, DNS tells your
 > browser which IP to go to. Instead of remembering `{{LB_IP}}` (which is an ugly number),
@@ -52,15 +52,11 @@ In practice, Cloudflare proxy means:
 
 ---
 
-## 🔐 Flexible SSL — half encryption (ELI5)
+## 🔐 Flexible SSL — half encryption 
 
 > Flexible SSL is like **half encryption**. Between the user and Cloudflare it's HTTPS
 > (locked 🔒). Between Cloudflare and our server it's HTTP (unlocked 🔓).
 > On the school network this is OK, because traffic stays within the trusted network.
->
-> If the application were running on a public WiFi at a cafe, that would be a problem.
-> But traffic between Cloudflare and `{{LB_IP}}` never leaves the school network.
-> For a school, this is good enough.
 
 ---
 
@@ -71,7 +67,7 @@ In practice, Cloudflare proxy means:
 
 ---
 
-## ⚙️ BASE_URL — tells the application what its full web address is (ELI5)
+## ⚙️ BASE_URL — tells the application what its full web address is 
 
 > BASE_URL tells the application what its **full web address** is. It needs this
 > for sending emails (when the app says "click this link", it needs to know
