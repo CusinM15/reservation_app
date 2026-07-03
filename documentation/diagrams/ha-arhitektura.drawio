@@ -1,0 +1,47 @@
+<mxfile host="app.diagrams.net" modified="2026-06-28T12:00:00.000Z" agent="Mozilla/5.0" version="24.0.0">
+  <diagram id="arch" name="HA Architecture">
+    <mxGraphModel dx="0" dy="0" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="0" pageScale="1" pageWidth="1100" pageHeight="850" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="cf5" value="&#127760; Internet&#10;{{DOMAIN}} (Cloudflare proxy)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f6821f;fontColor=#000000;strokeColor=#d46914;arcSize=8;" vertex="1" parent="1">
+          <mxGeometry x="350" y="10" width="200" height="50" as="geometry" />
+        </mxCell>
+        <mxCell id="mlb5" value="MetalLB {{LB_IP}}:{{LB_PORT}}&#10;Service &quot;sola-app&quot;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e07c24;fontColor=#ffffff;strokeColor=#b8631d;arcSize=8;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="350" y="90" width="200" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="k1_5" value="k3s-1 ({{K3S_1_IP}})" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#0f3460;fontColor=#ffffff;strokeColor=#16213e;arcSize=8;" vertex="1" parent="1">
+          <mxGeometry x="50" y="200" width="350" height="280" as="geometry" />
+        </mxCell>
+        <mxCell id="k2_5" value="k3s-2 ({{K3S_2_IP}})" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#0f3460;fontColor=#ffffff;strokeColor=#16213e;arcSize=8;" vertex="1" parent="1">
+          <mxGeometry x="500" y="200" width="350" height="280" as="geometry" />
+        </mxCell>
+        <mxCell id="sa1_5" value="sola-app pod (app)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e94560;fontColor=#ffffff;strokeColor=#c23152;arcSize=8;" vertex="1" parent="1">
+          <mxGeometry x="80" y="230" width="290" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="sa2_5" value="sola-app pod (app)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e94560;fontColor=#ffffff;strokeColor=#c23152;arcSize=8;" vertex="1" parent="1">
+          <mxGeometry x="530" y="230" width="290" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="db1_5" value="sola-db-1&#10;&#128081; PRIMARNA baza" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#533483;fontColor=#ffffff;strokeColor=#3d2563;arcSize=8;" vertex="1" parent="1">
+          <mxGeometry x="80" y="300" width="290" height="50" as="geometry" />
+        </mxCell>
+        <mxCell id="db2_5" value="sola-db-2&#10;&#128260; REPLIKA baze" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#533483;fontColor=#ffffff;strokeColor=#3d2563;arcSize=8;" vertex="1" parent="1">
+          <mxGeometry x="530" y="300" width="290" height="50" as="geometry" />
+        </mxCell>
+        <mxCell id="rep5" value="streaming replikacija" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=doubleBlock;endFill=1;strokeColor=#f0c040;fontColor=#f0c040;fontSize=11;" edge="1" parent="1" source="db1_5" target="db2_5" />
+        <mxCell id="lh1_5" value="Longhorn disk (1Gi)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#0a8754;fontColor=#ffffff;strokeColor=#08643e;arcSize=8;" vertex="1" parent="1">
+          <mxGeometry x="80" y="380" width="290" height="50" as="geometry" />
+        </mxCell>
+        <mxCell id="lh2_5" value="Longhorn disk (1Gi)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#0a8754;fontColor=#ffffff;strokeColor=#08643e;arcSize=8;" vertex="1" parent="1">
+          <mxGeometry x="530" y="380" width="290" height="50" as="geometry" />
+        </mxCell>
+        <mxCell id="svcs" value="Service naslovi (dostopni iz kateregakoli noda):&#10;sola-db-rw &#8594; &#128081; PRIMARNA baza (trenutno sola-db-1)&#10;sola-db-ro &#8594; &#128214; Vse pripravljene baze&#10;sola-db-r  &#8594; &#128214; Vse baze (tudi nepripravljene)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#1a1a2e;fontColor=#cccccc;strokeColor=#333;arcSize=8;fontSize=11;" vertex="1" parent="1">
+          <mxGeometry x="50" y="510" width="800" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="a1_5" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#cccccc;" edge="1" parent="1" source="cf5" target="mlb5" />
+        <mxCell id="a2_5" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#cccccc;" edge="1" parent="1" source="mlb5" target="k1_5" />
+        <mxCell id="a3_5" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#cccccc;" edge="1" parent="1" source="mlb5" target="k2_5" />
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

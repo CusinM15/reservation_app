@@ -1,0 +1,50 @@
+<mxfile host="app.diagrams.net" modified="2026-06-28T12:00:00.000Z" agent="Mozilla/5.0" version="24.0.0">
+  <diagram id="k3s" name="K3s Setup">
+    <mxGraphModel dx="0" dy="0" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="0" pageScale="1" pageWidth="1100" pageHeight="850" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="cf6" value="Cloudflare {{DOMAIN}}" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f6821f;fontColor=#000000;strokeColor=#d46914;arcSize=8;" vertex="1" parent="1">
+          <mxGeometry x="350" y="10" width="200" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="mlb6" value="MetalLB LoadBalancer&#10;({{LB_IP}}:{{LB_PORT}})" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e07c24;fontColor=#ffffff;strokeColor=#b8631d;arcSize=8;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="350" y="80" width="200" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="k1_6" value="k3s-1 (cp, etcd)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#0f3460;fontColor=#ffffff;strokeColor=#16213e;arcSize=8;" vertex="1" parent="1">
+          <mxGeometry x="60" y="180" width="320" height="280" as="geometry" />
+        </mxCell>
+        <mxCell id="k2_6" value="k3s-2 (cp, etcd)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#0f3460;fontColor=#ffffff;strokeColor=#16213e;arcSize=8;" vertex="1" parent="1">
+          <mxGeometry x="520" y="180" width="320" height="280" as="geometry" />
+        </mxCell>
+        <mxCell id="sa1_6" value="sola-app" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e94560;fontColor=#ffffff;strokeColor=#c23152;arcSize=8;" vertex="1" parent="1">
+          <mxGeometry x="85" y="210" width="270" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="db1_6" value="sola-db-1 (PRIMARY)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#533483;fontColor=#ffffff;strokeColor=#3d2563;arcSize=8;" vertex="1" parent="1">
+          <mxGeometry x="85" y="275" width="270" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="lh1_6" value="Longhorn" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#0a8754;fontColor=#ffffff;strokeColor=#08643e;arcSize=8;" vertex="1" parent="1">
+          <mxGeometry x="85" y="340" width="270" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="mlb1_6" value="MetalLB" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e07c24;fontColor=#ffffff;strokeColor=#b8631d;arcSize=8;" vertex="1" parent="1">
+          <mxGeometry x="85" y="400" width="270" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="sa2_6" value="sola-app" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e94560;fontColor=#ffffff;strokeColor=#c23152;arcSize=8;" vertex="1" parent="1">
+          <mxGeometry x="545" y="210" width="270" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="db2_6" value="sola-db-2 (REPLICA)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#533483;fontColor=#ffffff;strokeColor=#3d2563;arcSize=8;" vertex="1" parent="1">
+          <mxGeometry x="545" y="275" width="270" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="lh2_6" value="Longhorn" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#0a8754;fontColor=#ffffff;strokeColor=#08643e;arcSize=8;" vertex="1" parent="1">
+          <mxGeometry x="545" y="340" width="270" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="mlb2_6" value="MetalLB" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e07c24;fontColor=#ffffff;strokeColor=#b8631d;arcSize=8;" vertex="1" parent="1">
+          <mxGeometry x="545" y="400" width="270" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="rep6" value="streaming replikacija" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=doubleBlock;endFill=1;strokeColor=#f0c040;fontColor=#f0c040;fontSize=11;" edge="1" parent="1" source="db1_6" target="db2_6" />
+        <mxCell id="a1_6" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#cccccc;" edge="1" parent="1" source="cf6" target="mlb6" />
+        <mxCell id="a2_6" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#cccccc;" edge="1" parent="1" source="mlb6" target="k1_6" />
+        <mxCell id="a3_6" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#cccccc;" edge="1" parent="1" source="mlb6" target="k2_6" />
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

@@ -5,24 +5,63 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Šolski App</title>
   <style>
+    /* ================================================================
+       VSEBOVANI CSS SLOG (angl. inline styles)
+       Celotna aplikacija uporablja CSS vgrajen neposredno v <style>.
+       Razlog: enostavna namestitev brez ločenih .css datotek;
+       vse je v eni HTML-datoteki za lažje vzdrževanje.
+       ================================================================ */
+
+    /* --- 1. RESET IN OSNOVNE NASTAVITVE --- */
+    /* Odstranimo privzete robove in padding, box-sizing na border-box
+       za predvidljivo obnašanje dimenzij vseh elementov. */
     * { box-sizing: border-box; margin: 0; padding: 0; }
+    /* Privzeta pisava sistema (sans-serif), svetlo ozadje, temna beseda.
+       Izbrana barvna shema je moderna in berljiva. */
     body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: #f0f2f5; color: #1a1a2e; }
+
+    /* --- 2. NAVIGACIJSKA VRSTICA (meni) --- */
+    /* Temna navigacija z belo besedo, elementi se prilagajajo na manjši
+       zaslon (flex-wrap). Uporabljena je temna barva #1a1a2e za vizualno
+       ločitev od svetle vsebine. */
     nav { background: #1a1a2e; color: #fff; padding: 0.8rem 1.5rem; display: flex; align-items: center; gap: 1.5rem; flex-wrap: wrap; }
     nav .brand { font-weight: 700; font-size: 1.1rem; }
     nav a, nav button { color: #ccc; text-decoration: none; cursor: pointer; background: none; border: none; font-size: 0.95rem; padding: 0.3rem 0.5rem; }
     nav a:hover, nav button:hover { color: #fff; }
+    /* Aktivni zavihek ima moder podčrtaj — uporabnik takoj vidi, kje je. */
     nav a.active { color: #fff; border-bottom: 2px solid #4a6cf7; }
     nav .spacer { flex: 1; }
     nav .user-info { font-size: 0.85rem; color: #aaa; }
+
+    /* --- 3. GLAVNI VSEBINSKI OVOJ --- */
+    /* Omejimo širino na 1200px za berljivost na velikih zaslonih,
+       centriramo z margin: auto. */
     .container { max-width: 1200px; margin: 1.5rem auto; padding: 0 1rem; }
+
+    /* --- 4. ZAVIHKI (sections) --- */
+    /* Skriti po privzetem; aktiven zavihek se prikaže — enostaven
+       mehanizem za SPM (single-page-app) obnašanje. */
     .section { display: none; }
     .section.active { display: block; }
+
+    /* --- 5. KARTICE (cards) --- */
+    /* Bela kartica z zaobljenimi robovi in senco za vizualno hierarhijo
+       in ločitev od ozadja. */
     .card { background: #fff; border-radius: 12px; padding: 1.5rem; box-shadow: 0 2px 8px rgba(0,0,0,0.08); margin-bottom: 1.5rem; }
     .card h2 { font-size: 1.2rem; margin-bottom: 1rem; }
+
+    /* --- 6. FILTRI IN ISKALNE VRSTICE --- */
+    /* Flex vrstica, ki se na mobilniku ovije — uporabnik lahko filtrira
+       po datumu/razredu, ne da bi zapustil stran. */
     .filters { display: flex; gap: 0.8rem; flex-wrap: wrap; align-items: end; margin-bottom: 1rem; }
     .filters label { font-size: 0.85rem; font-weight: 500; color: #555; display: block; margin-bottom: 0.2rem; }
     .filters select, .filters input { padding: 0.5rem 0.7rem; border: 1px solid #ddd; border-radius: 6px; font-size: 0.9rem; }
     .filters select:focus, .filters input:focus { outline: none; border-color: #4a6cf7; }
+
+    /* --- 7. GUMBI --- */
+    /* Enotni slog gumba z različnimi barvnimi variantami (primary,
+       danger, success, outline). Uporabljamo display: inline-flex za
+       poravnavo ikon ob besedilu. */
     .btn { padding: 0.5rem 1rem; border: none; border-radius: 6px; font-size: 0.9rem; font-weight: 600; cursor: pointer; display: inline-flex; align-items: center; gap: 0.3rem; }
     .btn-primary { background: #4a6cf7; color: #fff; }
     .btn-primary:hover { background: #3a5ce5; }
@@ -31,18 +70,31 @@
     .btn-sm { padding: 0.3rem 0.6rem; font-size: 0.8rem; }
     .btn-success { background: #28a745; color: #fff; }
     .btn-success:hover { background: #218838; }
+    /* Obrisni gumb se uporablja za sekundarne akcije — viden, a nevsiljiv. */
     .btn-outline { background: transparent; border: 1px solid #4a6cf7; color: #4a6cf7; }
     .btn-outline:hover { background: #4a6cf7; color: #fff; }
+
+    /* --- 8. TABELE (urnik rezervacij) --- */
+    /* Tabela brez dvojnih robov, celice centrirane — za jasen pregled
+       urnika po urah in dnevih. */
     table { width: 100%; border-collapse: collapse; font-size: 0.88rem; }
     th, td { padding: 0.5rem; text-align: center; border: 1px solid #e0e0e0; }
     th { background: #f8f9fa; font-weight: 600; color: #555; font-size: 0.82rem; }
     td { min-height: 40px; vertical-align: middle; }
+
+    /* --- 9. TERMINI V URINKU (prosto/zasedeno) --- */
+    /* Zeleno označimo proste termine, da učitelj hitro vidi, kam lahko
+       rezervira. Zasedeni termini imajo ime učitelja in razred. */
     .slot-free { color: #28a745; font-size: 0.8rem; }
     .slot-taken { font-size: 0.8rem; }
     .slot-taken .razred { font-weight: 600; }
     .slot-info { font-size: 0.75rem; color: #666; }
     .rez-label { font-weight: 600; font-size: 0.85rem; }
     .rez-teacher { font-size: 0.7rem; color: #666; }
+
+    /* --- 10. ZAVIHKI PROSTOROV (tablice, računalnica, ladja, ...) --- */
+    /* Horizontalni zavihki za preklapljanje med prostori — z enim klikom
+       preklopiš prikaz urnika. Prvi in zadnji imata zaobljene robove. */
     .prostor-tabs { display: flex; gap: 0; margin-bottom: 1rem; }
     .prostor-tab { padding: 0.5rem 1.2rem; border: 1px solid #ddd; background: #f8f9fa; cursor: pointer; font-weight: 600; font-size: 0.9rem; }
     .prostor-tab:first-child { border-radius: 8px 0 0 8px; }
@@ -51,88 +103,262 @@
     .prostor-tab:not(.active):hover { background: #e9ecef; }
     .prostor-view { display: none; }
     .prostor-view.active { display: block; }
+
+    /* --- 11. TEDENSKA IN MESEČNA NAVIGACIJA (prejšnji/naslednji) --- */
+    /* Centrirana vrstica s puščicami za premikanje po tednih/mesecih.
+       H3 ima minimalno širino, da se naslov ne premika ob kliku. */
     .week-nav { display: flex; align-items: center; gap: 1rem; margin-bottom: 1rem; justify-content: center; }
     .week-nav h3 { font-size: 1rem; min-width: 250px; text-align: center; }
-    /* Calendar */
     .calendar-nav { display: flex; align-items: center; gap: 1rem; margin-bottom: 1rem; justify-content: center; }
     .calendar-nav h3 { font-size: 1.1rem; min-width: 200px; text-align: center; }
+
+    /* --- 12. MESEČNI KOLEDAR (ocenjevanja) --- */
+    /* Grid 7 stolpcev (pon–ned) za prikaz ocenjevanj po dnevih.
+       Vsak dan je klikljiv za hitro dodajanje. */
     .calendar-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 2px; }
     .calendar-header { background: #f8f9fa; padding: 0.5rem; text-align: center; font-weight: 600; font-size: 0.82rem; color: #555; border-radius: 4px; }
     .calendar-day { background: #fff; border: 1px solid #eee; border-radius: 4px; min-height: 80px; padding: 0.4rem; position: relative; cursor: pointer; }
     .calendar-day .day-num { font-weight: 600; font-size: 0.85rem; margin-bottom: 0.3rem; }
+
+    /* Drug mesec — zamaknjen, da ne moti pozornosti. */
     .calendar-day.other-month { opacity: 0.4; }
+    /* Današnji dan — moder rob za hiter vizualni namig. */
     .calendar-day.today { border-color: #4a6cf7; }
+    /* Zasedeni datumi (blocked) — vijolična barva za takojšnje prepoznavanje. */
+    .calendar-day.blocked-date { background: #f3e8ff; border-color: #7c3aed; opacity: 0.85; }
+
+    /* --- 13. ZNAČKE OCENJEVANJ --- */
+    /* Majhne barvne nalepke za vsako ocenjevanje — normalno (modro) in
+       ponavljanje (rdeče). Tako učitelj na prvi pogled loči vrsto. */
     .assessment-badge { font-size: 0.72rem; padding: 0.15rem 0.3rem; border-radius: 3px; margin-bottom: 2px; display: flex; justify-content: space-between; align-items: center; gap: 2px; }
     .assessment-normal { background: #cce5ff; color: #004085; }
     .assessment-ponavljanje { background: #ffcccc; color: #8b0000; }
     .assessment-badge .del-asm { cursor: pointer; font-weight: 700; padding: 0 2px; opacity: 0.6; }
     .assessment-badge .del-asm:hover { opacity: 1; }
+
+    /* --- 14. GUMBI ZA BRISANJE --- */
+    /* Križec ob rezervaciji/ocenjevanju za hitro brisanje (samo če imaš
+       pravico). Manjša pisava, rdeča — opozorilna barva. */
+    .del-rez { cursor: pointer; font-weight: 700; padding: 0 4px; opacity: 0.5; font-size: 0.8rem; color: #c00; }
+    .del-rez:hover { opacity: 1; }
+
     .empty-calendar { text-align: center; padding: 2rem; color: #999; }
+    /* Gumb "dodaj ocenjevanje" na koledarju — neviden do hoverja, da ne
+       preobremeni pogleda. */
     .add-asm-btn { font-size: 0.7rem; color: #4a6cf7; cursor: pointer; opacity: 0.5; }
     .add-asm-btn:hover { opacity: 1; }
-    /* Forms */
+
+    /* --- 15. SEZNAM SERIJ (ponavljajočih rezervacij) --- */
+    .series-list .series-item { display: flex; justify-content: space-between; padding: 4px 0; border-bottom: 1px solid #eee; font-size: 0.85rem; }
+    .series-list .series-item .del-series { cursor: pointer; font-weight: 700; padding: 0 2px; opacity: 0.6; }
+    .series-list .series-item .del-series:hover { opacity: 1; color: #c00; }
+
+    /* --- 16. MODALNA OKNA (prekrivna okenca) --- */
+    /* Fiksno prekrivno ozadje s sredinsko poravnavo — uporabnik ne more
+       klikati pod modalom. Z-index 100+ za prikaz nad vsem. */
     .modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.4); z-index: 100; justify-content: center; align-items: center; }
     .modal-overlay.active { display: flex; }
-    .modal { background: #fff; border-radius: 12px; padding: 2rem; width: 100%; max-width: 450px; box-shadow: 0 4px 24px rgba(0,0,0,0.15); }
+    .modal { background: #fff; border-radius: 12px; padding: 2rem; width: 100%; max-width: 450px; box-shadow: 0 4px 24px rgba(0,0,0,0.15); position: relative; z-index: 101; }
     .modal h3 { margin-bottom: 1rem; }
     .modal .form-group { margin-bottom: 0.8rem; }
     .modal label { display: block; font-size: 0.85rem; font-weight: 500; color: #555; margin-bottom: 0.2rem; }
     .modal select, .modal input { width: 100%; padding: 0.5rem 0.7rem; border: 1px solid #ddd; border-radius: 6px; font-size: 0.9rem; }
+    .modal input[type=date] { cursor: pointer; min-height: 2.5rem; }
     .modal .form-actions { display: flex; gap: 0.5rem; justify-content: end; margin-top: 1rem; }
     .modal .btn-cancel { background: #6c757d; color: #fff; }
     .modal .btn-cancel:hover { background: #5a6268; }
     .modal .form-checkbox { display: flex; align-items: center; gap: 0.5rem; }
     .modal .form-checkbox input { width: auto; }
     .modal .form-checkbox label { margin: 0; }
+
+    /* --- 17. SPOROČILA (uspeh/napaka) --- */
+    /* Prikažejo se na vrhu vsebine za 5 sekund. Zeleno za uspeh,
+       rdeče za napako — uporabnik takoj dobi povratno informacijo. */
     .msg { padding: 0.7rem; border-radius: 8px; margin-bottom: 1rem; font-size: 0.9rem; display: none; }
     .msg.error { display: block; background: #fee; color: #c00; }
     .msg.success { display: block; background: #e8f5e9; color: #2e7d32; }
     .quick-add { display: inline-block; margin-top: 2px; }
+
+    /* --- 18. STRANSKI GUMBI ZA NAVODILA (desno zgoraj) --- */
+    /* Fiksni gumbi ob desnem robu za hiter dostop do navodil. Ob hoverju
+       se razširijo (width: 130px) za boljšo berljivost. To je UX rešitev,
+       da navodila niso v napoto, so pa vedno pri roki. */
+    #navodilaSidebar { position: fixed; top: 135px; right: 0; z-index: 500; display: flex; flex-direction: column; gap: 3px; }
+    .side-doc-btn {
+      display: block; width: 110px; padding: 10px 8px; border: none; border-radius: 8px 0 0 8px;
+      background: #1a1a2e; color: #fff; font-size: 0.82rem; font-weight: 600; cursor: pointer;
+      text-align: center; transition: all 0.15s; box-shadow: -2px 2px 8px rgba(0,0,0,0.15);
+    }
+    .side-doc-btn:hover { background: #4a6cf7; width: 130px; }
+
+    /* --- 19. PREDOGLED NAVODIL (preview popup) --- */
+    /* Pojavno okno, ki se prikaže ob hoverju na stranski gumb. Ima
+       jezikovni preklop (SL/EN) in gumb za prenos PDF. Postavitev:
+       fiksirano desno od gumba, da ne ovira vsebine. */
+    .navodila-preview { display: none; position: fixed; top: 135px; right: 115px; width: 520px; max-height: 75vh; background: #fff; border: 1px solid #ddd; border-radius: 10px; box-shadow: 0 8px 32px rgba(0,0,0,0.2); z-index: 2000; overflow: hidden; flex-direction: column; }
+    .navodila-preview.show { display: flex; }
+    .navodila-preview-header { padding: 0.8rem 1rem; font-weight: 700; font-size: 0.9rem; border-bottom: 1px solid #eee; background: #f8f9fa; display: flex; justify-content: space-between; align-items: center; }
+    #navodilaPreviewTitle { color: #000; }
+    .navodila-lang-toggle { display: flex; gap: 2px; }
+    .lang-btn { cursor: pointer; padding: 2px 6px; border-radius: 4px; font-size: 1.1rem; opacity: 0.5; transition: all 0.15s; }
+    .lang-btn:hover { opacity: 0.8; background: #e0e0e0; }
+    .lang-btn.lang-btn-active { opacity: 1; background: #4a6cf7; }
+    .navodila-preview-footer { padding: 0.5rem 1rem; border-top: 1px solid #eee; background: #f8f9fa; text-align: center; }
+    .navodila-preview-close { cursor: pointer; color: #999; font-size: 1.2rem; line-height: 1; }
+    .navodila-preview-close:hover { color: #333; }
+    .navodila-preview-body { padding: 1rem; overflow-y: auto; flex: 1; font-size: 0.82rem; line-height: 1.6; color: #333; }
+    .navodila-preview-body h1 { font-size: 1.1rem; margin: 0.8rem 0 0.3rem; }
+    .navodila-preview-body h2 { font-size: 1rem; margin: 0.6rem 0 0.2rem; }
+    .navodila-preview-body h3 { font-size: 0.92rem; margin: 0.5rem 0 0.2rem; }
+    .navodila-preview-body p { margin: 0.3rem 0; }
+    .navodila-preview-body code { background: #f4f4f4; padding: 0.1rem 0.3rem; border-radius: 3px; font-size: 0.8rem; }
+    .navodila-preview-body pre { background: #f4f4f4; padding: 0.6rem; border-radius: 5px; overflow-x: auto; font-size: 0.78rem; }
+    .navodila-preview-body ul { margin: 0.3rem 0; padding-left: 1.5rem; }
+    .navodila-preview-body li { margin: 0.15rem 0; }
+    .navodila-preview-body hr { margin: 0.6rem 0; border: none; border-top: 1px solid #eee; }
+    .navodila-preview-body strong { font-weight: 700; }
+
+    /* --- 20. ODZIVNO OBLIKOVANJE (responsive) --- */
+    /* Na majhnih zaslonih prilagodimo širino predogleda navodil,
+       koledar in filtre, da so uporabni tudi na telefonu. */
+    @media (max-width: 580px) { .navodila-preview { width: 90vw; right: 5vw; top: 50px; max-height: 60vh; } }
     @media (max-width: 768px) {
       .calendar-grid { grid-template-columns: repeat(7, 1fr); font-size: 0.75rem; }
       .calendar-day { min-height: 60px; padding: 0.2rem; }
       .filters { flex-direction: column; }
       .filters select, .filters input { width: 100%; }
-      .prostor-tabs { flex-wrap: wrap; }
     }
   </style>
 </head>
 <body>
+  <!-- ================================================================
+       NAVIGACIJSKA VRSTICA
+       Vsebuje: logotip, zavihke (Rezervacije, Ocenjevanje), admin/
+       audit/export povezave (prikazane le po potrebi), stranske gumbe
+       za navodila, uporabniške informacije in odjavo.
+       ================================================================ -->
   <nav>
     <span class="brand">Šolski App</span>
     <a href="#" class="active" data-tab="rezervacije">Rezervacije</a>
     <a href="#" data-tab="ocenjevanja">Ocenjevanje</a>
+    <!-- ADMIN IN AUDIT POVEZAVE — prikazane le za admin vlogo.
+         Skrijemo jih privzeto (style="display:none"), JS jih pokaže
+         glede na vlogo uporabnika. Tako učitelji in vodstvo ne vidijo
+         admin možnosti. -->
+    <a href="/auth/admin/users" id="admin-link" style="display:none;">Admin panel</a>
+    <a href="/history" id="audit-link" style="display:none;">📋 Audit log</a>
+    <!-- IZVOZNE POVEZAVE — prikazane za admin in vodstvo.
+         Vodstvo potrebuje izvoz podatkov za poročila, zato ima dostop,
+         čeprav nima admin pravice. -->
+    <a href="#" id="export-rez-link" style="display:none;" onclick="openExportRezModal(); return false;">📥 Izvoz rezervacij</a>
+    <a href="#" id="export-oc-link" style="display:none;" onclick="openExportOcModal(); return false;">📥 Izvoz ocenjevanj</a>
     <span class="spacer"></span>
+
+    <!-- PREDOGLED NAVODIL (popup) — prikaže se ob hoverju na stranski gumb.
+         Vsebuje HTML vsebino dokumentacije, jezikovni preklop (SL/EN)
+         in gumb za prenos PDF. To je UX izboljšava — učitelj ni prisiljen
+         odpirati novega okna za vsak dokument. -->
+    <div class="navodila-preview" id="navodilaPreview" onmouseenter="keepPreview()" onmouseleave="scheduleHidePreview()">
+      <div class="navodila-preview-header">
+        <span id="navodilaPreviewTitle">Navodila</span>
+        <div class="navodila-lang-toggle" id="navodilaLangToggle">
+          <span class="lang-btn lang-btn-active" data-lang="sl" onclick="switchPreviewLang('sl')">🇸🇮</span>
+          <span class="lang-btn" data-lang="en" onclick="switchPreviewLang('en')">🇬🇧</span>
+        </div>
+        <span class="navodila-preview-close" onclick="hidePreview()">✕</span>
+      </div>
+      <div class="navodila-preview-body" id="navodilaPreviewBody">Nalagam ...</div>
+      <div class="navodila-preview-footer">
+        <button class="btn btn-sm btn-primary" onclick="downloadPreviewDoc()">📥 Prenesi PDF</button>
+      </div>
+    </div>
+
+    <!-- STRANSKI GUMBI ZA NAVODILA — fiksirani ob desnem robu.
+         Gumb za vodstvo je skrit privzeto (style="display:none") in se
+         prikaže le, če je uporabnik vodstvo ali admin. Razlog: vodstvo
+         ima svoja navodila, ki za učitelje niso relevantna. -->
+    <div id="navodilaSidebar" style="display:none;">
+      <button class="side-doc-btn" id="sideBtnUcitelji"
+        onmouseenter="showDocPreview('navodila-ucitelji', 'Navodila za učitelje')"
+        onmouseleave="scheduleHidePreview()"
+        onclick="downloadDoc('navodila-ucitelji')">
+        👩‍🏫 Učitelji
+      </button>
+      <!-- GUMB ZA VODSTVO — skrit, dokler JS ne preveri vloge.
+           Vodstvo in admin ga vidita, učitelj ne. -->
+      <button class="side-doc-btn" id="sideBtnVodstvo" style="display:none;"
+        onmouseenter="showDocPreview('navodila-vodstvo', 'Navodila za vodstvo')"
+        onmouseleave="scheduleHidePreview()"
+        onclick="downloadDoc('navodila-vodstvo')">
+        👑 Vodstvo
+      </button>
+    </div>
+    <!-- UPORABNIŠKE INFORMACIJE — prikažejo ime in vlogo po prijavi.
+         Desno poravnano (spacer prej), vedno vidno. -->
     <span class="user-info" id="userInfo"></span>
+    <a href="#" onclick="openChangePasswordModal(); return false;">Spremeni geslo</a>
     <a href="/auth/logout">Odjava</a>
   </nav>
 
+  <!-- ================================================================
+       GLAVNA VSEBINA (container)
+       Vsebuje sporočila in dva glavna zavihka: Rezervacije in
+       Ocenjevanje. Aktiven je le en zavihek naenkrat.
+       ================================================================ -->
   <div class="container">
+    <!-- DINAMIČNO SPOROČILO — prikaže se ob uspehu/napaki.
+         Privzeto skrito, JS ga pokaže za 5 sekund. -->
     <div id="msg" class="msg"></div>
 
-    <!-- ===== REZERVACIJE ===== -->
+    <!-- ================================================================
+         ZAVIHEK: REZERVACIJE
+         Omogoča pregled in upravljanje rezervacij prostorov po tednih.
+         Vsebuje filtre, gumbe za akcije, zavihke prostorov in tabele
+         urnika za vsak prostor.
+         ================================================================ -->
     <div id="section-rezervacije" class="section active">
       <div class="card">
         <h2>Rezervacije prostorov</h2>
+        <!-- FILTRI — datumski picker za začetek tedna, osveži gumb,
+             gumb za novo rezervacijo in gumbi za serije (prikazani le
+             vodstvu/adminu prek JS). Omogočajo hiter dostop do vseh
+             akcij brez preusmeritev. -->
         <div class="filters">
           <div>
             <label>Začetek tedna</label>
-            <input type="date" id="rez-week-start">
+            <input type="date" id="rez-week-start" onchange="loadAllReservations()">
           </div>
           <button class="btn btn-primary" onclick="loadAllReservations()">Osveži</button>
           <button class="btn btn-outline" onclick="openRezModal()">+ Nova rezervacija</button>
+          <!-- GUMBI ZA SERIJE — skriti privzeto, prikažejo se le za
+               vodstvo in admin. Serije omogočajo množično ustvarjanje
+               ponavljajočih rezervacij (npr. vsak ponedeljek). -->
+          <div id="series-buttons" style="display:none;">
+            <button class="btn btn-outline" onclick="openWeeklySeriesModal()">📅 Tedenska serija</button>
+            <button class="btn btn-outline" onclick="openFullDaySeriesModal()">☀️ Celodnevna serija</button>
+          </div>
         </div>
-
+        <!-- ZAVIHKI PROSTOROV — dinamično generirani prek JS glede na
+             seznam prostorov s strežnika. -->
         <div class="prostor-tabs" id="prostor-tabs"></div>
-
+        <!-- PRIKAZI URnika ZA VSAK PROSTOR — vsak ima svoj div,
+             preklaplja se z aktivnim zavihkom. -->
         <div id="rez-views-container"></div>
       </div>
     </div>
 
-    <!-- ===== OCENJEVANJE ===== -->
+    <!-- ================================================================
+         ZAVIHEK: OCENJEVANJA
+         Prikazuje mesečni koledar ocenjevanj z možnostjo filtriranja
+         po razredu, dodajanja novih ocenjevanj in upravljanja zasedenih
+         datumov.
+         ================================================================ -->
     <div id="section-ocenjevanja" class="section">
       <div class="card">
         <h2>Ocenjevanja</h2>
+        <!-- FILTRI — izbira razreda, osveži, novo ocenjevanje in
+             upravljanje zasedenih datumov. Gumb "Zasedeni datumi" je
+             viden le pooblaščenim uporabnikom (prek JS). -->
         <div class="filters">
           <div>
             <label>Razred</label>
@@ -140,7 +366,13 @@
           </div>
           <button class="btn btn-primary" onclick="loadAssessments()">Osveži</button>
           <button class="btn btn-outline" onclick="openOcModal()">+ Novo ocenjevanje</button>
+          <!-- GUMB ZA ZASEDENE DATUME — prikazan le uporabnikom z
+               ID 1-4 ali vlogo admin/vodstvo. Omejitev zato, ker
+               blokiranje datumov vpliva na celoten urnik in zahteva
+               pooblastila. -->
+          <span id="block-btn-container"><button class="btn btn-outline" onclick="openBlockModal()">🚫 Zasedeni datumi</button></span>
         </div>
+        <!-- KOLEDAR — dinamično generiran mesečni pregled. -->
         <div id="oc-calendar-container">
           <p style="text-align:center;color:#999;padding:2rem;">Nalaganje ...</p>
         </div>
@@ -148,17 +380,17 @@
     </div>
   </div>
 
-  <!-- ===== MODAL - Rezervacija ===== -->
+  <!-- ================================================================
+       MODAL: NOVA REZERVACIJA
+       Obrazec za ustvarjanje nove rezervacije. Uporabnik izbere
+       prostor, datum, uro in (če so tablice) število kosov.
+       ================================================================ -->
   <div class="modal-overlay" id="rez-modal">
     <div class="modal">
       <h3>Nova rezervacija</h3>
       <div class="form-group">
         <label>Prostor</label>
         <select id="rez-form-prostor"></select>
-      </div>
-      <div class="form-group">
-        <label>Razred</label>
-        <select id="rez-form-razred"></select>
       </div>
       <div class="form-group">
         <label>Datum</label>
@@ -168,7 +400,10 @@
         <label>Ura</label>
         <select id="rez-form-hour"></select>
       </div>
-      <div class="form-group" id="rez-form-qty-group">
+      <!-- POLJE ZA ŠTEVILO TABLIC — prikazano le, ko je izbran prostor
+           "tablice". Tablice so omejene na 28 kosov, zato input
+           omogoča vnos od 1 do 28. -->
+      <div class="form-group" id="rez-form-qty-group" style="display:none;">
         <label>Število tablic</label>
         <input type="number" id="rez-form-qty" min="1" max="28" value="1">
       </div>
@@ -179,7 +414,160 @@
     </div>
   </div>
 
-  <!-- ===== MODAL - Ocenjevanje ===== -->
+  <!-- ================================================================
+       MODAL: TEDENSKA PONAVLJAJOČA SERIJA
+       Omogoča ustvarjanje serije rezervacij, ki se ponavlja vsak teden
+       na isti dan in uro v določenem obdobju. Na voljo le vodstvu/admin.
+       ================================================================ -->
+  <div class="modal-overlay" id="weekly-series-modal">
+    <div class="modal" style="max-width:500px;">
+      <h3>Tedenska ponavljajoča rezervacija</h3>
+      <div class="form-group">
+        <label>Prostor</label>
+        <select id="weekly-prostor"></select>
+      </div>
+      <div class="form-group">
+        <label>Ura (0-7)</label>
+        <input type="number" id="weekly-hour" min="0" max="7" step="1" value="0">
+      </div>
+      <div class="form-group">
+        <label>Dan v tednu (0=Pon, 6=Ned)</label>
+        <input type="number" id="weekly-weekday" min="0" max="6" step="1" value="0">
+      </div>
+      <div class="form-group">
+        <label>Od datuma</label>
+        <input type="date" id="weekly-date-from">
+      </div>
+      <div class="form-group">
+        <label>Do datuma</label>
+        <input type="date" id="weekly-date-to">
+      </div>
+      <!-- POLJE ZA ŠTEVILO TABLIC (tedenska serija) — prikazano le za
+           prostor "tablice". Vrednosti 1-28, izbirnik namesto vnosa
+           za preprečevanje napačnih vrednosti. -->
+      <div class="form-group" id="weekly-qty-group" style="display:none;">
+        <label>Število tablic (samo za tablice)</label>
+        <select id="weekly-qty">
+          <option value="1">1</option>
+          <option value="2">2</option>
+          <option value="3">3</option>
+          <option value="4">4</option>
+          <option value="5">5</option>
+          <option value="6">6</option>
+          <option value="7">7</option>
+          <option value="8">8</option>
+          <option value="9">9</option>
+          <option value="10">10</option>
+          <option value="11">11</option>
+          <option value="12">12</option>
+          <option value="13">13</option>
+          <option value="14">14</option>
+          <option value="15">15</option>
+          <option value="16">16</option>
+          <option value="17">17</option>
+          <option value="18">18</option>
+          <option value="19">19</option>
+          <option value="20">20</option>
+          <option value="21">21</option>
+          <option value="22">22</option>
+          <option value="23">23</option>
+          <option value="24">24</option>
+          <option value="25">25</option>
+          <option value="26">26</option>
+          <option value="27">27</option>
+          <option value="28">28</option>
+        </select>
+      </div>
+      <div class="form-actions">
+        <button class="btn btn-cancel" onclick="closeModal('weekly-series-modal')">Prekliči</button>
+        <button class="btn btn-primary" onclick="submitWeeklySeries()">Ustvari serijo</button>
+      </div>
+      <hr style="margin:1rem 0;border:none;border-top:1px solid #eee;">
+      <!-- SEZNAM OBSTOJEČIH SERIJ — prikaže vse aktivne serije z
+           možnostjo brisanja. Uporabnik lahko vidi, katere serije so
+           že nastavljene, preden doda novo. -->
+      <h4 style="margin-bottom:0.5rem;font-size:0.9rem;color:#555;">📋 Obstoječe serije</h4>
+      <div id="series-list" style="max-height:200px;overflow-y:auto;font-size:0.85rem;"></div>
+    </div>
+  </div>
+
+  <!-- ================================================================
+       MODAL: CELODNEVNA SERIJA
+       Omogoča ustvarjanje serije, ki rezervira vse ure v dnevu (ali
+       izbrane ure) za določen prostor v časovnem obdobju. Uporabno
+       za celodnevne dogodke.
+       ================================================================ -->
+  <div class="modal-overlay" id="fullday-series-modal">
+    <div class="modal" style="max-width:500px;">
+      <h3>Celodnevna serija (vse ure)</h3>
+      <div class="form-group">
+        <label>Prostor</label>
+        <select id="fullday-prostor"></select>
+      </div>
+      <div class="form-group">
+        <label>Od datuma</label>
+        <input type="date" id="fullday-date-from">
+      </div>
+      <div class="form-group">
+        <label>Do datuma</label>
+        <input type="date" id="fullday-date-to">
+      </div>
+      <!-- POLJE ZA ŠTEVILO TABLIC (celodnevna serija) — enako kot pri
+           tedenski, prikazano le za "tablice". -->
+      <div class="form-group" id="fullday-qty-group" style="display:none;">
+        <label>Število tablic (samo za tablice)</label>
+        <select id="fullday-qty">
+          <option value="1">1</option>
+          <option value="2">2</option>
+          <option value="3">3</option>
+          <option value="4">4</option>
+          <option value="5">5</option>
+          <option value="6">6</option>
+          <option value="7">7</option>
+          <option value="8">8</option>
+          <option value="9">9</option>
+          <option value="10">10</option>
+          <option value="11">11</option>
+          <option value="12">12</option>
+          <option value="13">13</option>
+          <option value="14">14</option>
+          <option value="15">15</option>
+          <option value="16">16</option>
+          <option value="17">17</option>
+          <option value="18">18</option>
+          <option value="19">19</option>
+          <option value="20">20</option>
+          <option value="21">21</option>
+          <option value="22">22</option>
+          <option value="23">23</option>
+          <option value="24">24</option>
+          <option value="25">25</option>
+          <option value="26">26</option>
+          <option value="27">27</option>
+          <option value="28">28</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Ure (prazno za vse, npr. 0,1,2)</label>
+        <input type="text" id="fullday-hours" placeholder="0,1,2">
+      </div>
+      <div class="form-actions">
+        <button class="btn btn-cancel" onclick="closeModal('fullday-series-modal')">Prekliči</button>
+        <button class="btn btn-primary" onclick="submitFullDaySeries()">Ustvari serijo</button>
+      </div>
+      <hr style="margin:1rem 0;border:none;border-top:1px solid #eee;">
+      <!-- SEZNAM OBSTOJEČIH CELODNEVNIH SERIJ -->
+      <h4 style="margin-bottom:0.5rem;font-size:0.9rem;color:#555;">📋 Obstoječe serije</h4>
+      <div id="fullday-series-list" style="max-height:200px;overflow-y:auto;font-size:0.85rem;"></div>
+    </div>
+  </div>
+
+  <!-- ================================================================
+       MODAL: NOVO OCENJEVANJE
+       Obrazec za dodajanje ocenjevanja. Uporabnik izbere razred,
+       datum in označi, ali gre za ponavljanje. Ponavljanje je vizualno
+       označeno z rdečo barvo na koledarju.
+       ================================================================ -->
   <div class="modal-overlay" id="oc-modal">
     <div class="modal">
       <h3>Novo ocenjevanje</h3>
@@ -202,16 +590,1067 @@
     </div>
   </div>
 
-  <script>
-    // ── Global state ──
-    let schedule = {};
-    let razredi = [];
-    let prostori = [];
-    let currentUser = null;
-    let currentOcMonth = '';
-    let currentOcRazred = '';
+  <!-- ================================================================
+       MODAL: ZASEDENI DATUMI
+       Omogoča blokiranje datumov za izbrane razrede (npr. kulturni dan,
+       športni dan). Ko je datum blokiran, učitelji ne morejo dodajati
+       ocenjevanj na ta dan. Prikaže tudi seznam obstoječih blokad.
+       ================================================================ -->
+  <div class="modal-overlay" id="block-modal">
+    <div class="modal" style="max-width:500px;">
+      <h3>🚫 Zasedeni datumi</h3>
+      <div class="form-group">
+        <label>Razredi (držite Ctrl za več)</label>
+        <select id="block-razredi" multiple style="height:180px;width:100%;"></select>
+      </div>
+      <div style="display:flex;gap:10px;">
+        <div class="form-group" style="flex:1;">
+          <label>Od datuma</label>
+          <input type="date" id="block-date-from">
+        </div>
+        <div class="form-group" style="flex:1;">
+          <label>Do datuma</label>
+          <input type="date" id="block-date-to">
+        </div>
+      </div>
+      <div class="form-actions">
+        <button class="btn btn-cancel" onclick="closeModal('block-modal')">Zapri</button>
+        <button class="btn btn-primary" onclick="addBlockedDates()">Dodaj zasedene datume</button>
+      </div>
+      <div id="block-msg" style="margin-top:10px;font-size:0.9rem;"></div>
+      <div id="block-list" style="margin-top:15px;max-height:250px;overflow-y:auto;"></div>
+    </div>
+  </div>
 
-    // ── Init ──
+  <!-- ================================================================
+       MODAL: IZVOZ REZERVACIJ
+       Omogoča izvoz rezervacij v CSV za izbrano obdobje in prostor.
+       Na voljo vodstvu in adminu za poročanje in analize.
+       ================================================================ -->
+  <div class="modal-overlay" id="export-rez-modal">
+    <div class="modal" style="max-width:450px;">
+      <h3>📥 Izvoz rezervacij</h3>
+      <p style="font-size:0.85rem;color:#666;margin-bottom:1rem;">Izberi obdobje in prostor za izvoz v CSV.</p>
+      <div class="form-group">
+        <label>Od datuma</label>
+        <input type="date" id="export-rez-from">
+      </div>
+      <div class="form-group">
+        <label>Do datuma</label>
+        <input type="date" id="export-rez-to">
+      </div>
+      <div class="form-group">
+        <label>Prostor</label>
+        <select id="export-rez-prostor"></select>
+      </div>
+      <div class="form-actions">
+        <button class="btn btn-cancel" onclick="closeModal('export-rez-modal')">Prekliči</button>
+        <button class="btn btn-primary" onclick="exportRezervacije()">📥 Prenesi CSV</button>
+      </div>
+      <div id="export-rez-msg" style="margin-top:10px;font-size:0.9rem;"></div>
+    </div>
+  </div>
+
+  <!-- ================================================================
+       MODAL: IZVOZ OCENJEVANJ
+       Omogoča izvoz ocenjevanj v CSV za izbrano obdobje in razred.
+       Na voljo vodstvu in adminu.
+       ================================================================ -->
+  <div class="modal-overlay" id="export-oc-modal">
+    <div class="modal" style="max-width:450px;">
+      <h3>📥 Izvoz ocenjevanj</h3>
+      <p style="font-size:0.85rem;color:#666;margin-bottom:1rem;">Izberi obdobje in razred za izvoz v CSV.</p>
+      <div class="form-group">
+        <label>Od datuma</label>
+        <input type="date" id="export-oc-from">
+      </div>
+      <div class="form-group">
+        <label>Do datuma</label>
+        <input type="date" id="export-oc-to">
+      </div>
+      <div class="form-group">
+        <label>Razred</label>
+        <select id="export-oc-razred"></select>
+      </div>
+      <div class="form-actions">
+        <button class="btn btn-cancel" onclick="closeModal('export-oc-modal')">Prekliči</button>
+        <button class="btn btn-primary" onclick="exportOcenjevanja()">📥 Prenesi CSV</button>
+      </div>
+      <div id="export-oc-msg" style="margin-top:10px;font-size:0.9rem;"></div>
+    </div>
+  </div>
+
+  <!-- ================================================================
+       MODAL: SPREMEMBA GESLA
+       Obrazec za spremembo gesla — zahteva trenutno geslo, novo geslo
+       in potrditev. Prikaže tudi zahteve za geslo (min. 5 znakov,
+       mala/velika črka, številka).
+       ================================================================ -->
+  <div class="modal-overlay" id="pw-modal">
+    <div class="modal" style="max-width:400px;">
+      <h3>Sprememba gesla</h3>
+      <div class="form-group">
+        <label>Trenutno geslo</label>
+        <input type="password" id="pw-old" placeholder="Vnesite trenutno geslo">
+      </div>
+      <div class="form-group">
+        <label>Novo geslo</label>
+        <input type="password" id="pw-new1" placeholder="Vnesite novo geslo">
+        <small style="display:block;font-size:0.75rem;color:#666;margin-top:-5px;">Vsaj 5 znakov, mala/velika črka, številka</small>
+      </div>
+      <div class="form-group">
+        <label>Novo geslo (ponovno)</label>
+        <input type="password" id="pw-new2" placeholder="Ponovite novo geslo">
+      </div>
+      <div class="form-actions">
+        <button class="btn btn-cancel" onclick="closeModal('pw-modal')">Prekliči</button>
+        <button class="btn btn-primary" onclick="submitChangePassword()">Spremeni geslo</button>
+      </div>
+      <div id="pw-msg" style="margin-top:10px;font-size:0.9rem;"></div>
+    </div>
+  </div>
+
+  <script>
+    // ================================================================
+    // JAVASCRIPT — STRANSKA LOGIKA (angl. client-side logic)
+    // Vse funkcionalnosti so v enem <script> bloku v HTML-datoteki,
+    // ker ni ločene .js datoteke. To poenostavi namestitev.
+    //
+    // STRUKTURA:
+    //   1. Globalno stanje (spremenljivke)
+    //   2. Navodila — predogled, prenos, jezikovni preklop
+    //   3. Timer za neaktivnost (samodejna odjava)
+    //   4. Pomožne funkcije (helperji)
+    //   5. Spreminjanje gesla
+    //   6. Izvozi (rezervacije, ocenjevanja)
+    //   7. Zasedeni datumi (blocked dates)
+    //   8. Serije (tedenske, celodnevne)
+    //   9. Rezervacije (prikaz, dodajanje, brisanje)
+    //  10. Ocenjevanja (koledar, dodajanje, brisanje)
+    //  11. Inicializacija ob nalaganju strani
+    // ================================================================
+
+    // --- 1. GLOBALNO STANJE ---
+    // Te spremenljivke se napolnijo ob zagonu (DOMContentLoaded)
+    // in so dostopne vsem funkcijam v tem bloku.
+    let schedule = {};       // Urnik (ure → oznake)
+    let razredi = [];        // Seznam razredov
+    let prostori = [];       // Seznam prostorov
+    let currentUser = null;  // Trenutno prijavljeni uporabnik
+    let currentOcMonth = ''; // Trenutni mesec na koledarju ocenjevanj
+    let currentOcRazred = '';// Trenutno izbran razred za ocenjevanja
+    let blockedDates = {};   // Zemljevid: razred → {datum: true}
+    let allBlocked = [];     // Seznam vseh blokad s strežnika
+    let inactivityTimer = null;
+    const INACTIVITY_TIMEOUT_MS = {{ inactivity_timeout_ms }};
+
+    // --- 2. NAVODILA — predogled, prenos, jezikovni preklop ---
+    // UX: Uporabnik lahko s hoverjem na stranski gumb vidi predogled
+    // navodil brez odpiranja novega okna. Podprta sta slovenščina in
+    // angleščina. Ob kliku na gumb se zažene prenos PDF.
+    let previewTimer = null;
+    let currentPreviewDoc = null;
+    let currentPreviewLang = 'sl';
+
+    // Pomožna funkcija za pridobitev imena dokumenta glede na jezik.
+    // V angleščini doda pripono '-en' k imenu datoteke.
+    function docLangName(baseName, lang) {
+      // Za angleščino doda '-en', sicer vrne osnovno ime
+      return lang === 'en' ? baseName + '-en' : baseName;
+    }
+
+    // Prikaže predogled navodil ob hoverju. Naloži HTML s strežnika
+    // in prikaže pojavno okno. CurrentPreviewDoc si zapomni, kateri
+    // dokument je odprt, za morebitno preklop jezika.
+    async function showDocPreview(baseName, label) {
+      clearTimeout(previewTimer);
+      const preview = document.getElementById('navodilaPreview');
+      const body = document.getElementById('navodilaPreviewBody');
+      const title = document.getElementById('navodilaPreviewTitle');
+      currentPreviewDoc = baseName;
+      title.textContent = label;
+      body.textContent = 'Nalagam ...';
+      preview.classList.add('show');
+      // Nastavi aktiven jezikovni gumb
+      document.querySelectorAll('.lang-btn').forEach(b => b.classList.remove('lang-btn-active'));
+      const activeBtn = document.querySelector('.lang-btn[data-lang="' + currentPreviewLang + '"]');
+      if (activeBtn) activeBtn.classList.add('lang-btn-active');
+      await loadPreviewContent();
+    }
+
+    // Naloži vsebino predogleda s strežnika (/docs/html/...) in jo
+    // vstavi v pojavno okno. Uporabi Date.now() za preprečevanje
+    // predpomnjenja (cache busting).
+    async function loadPreviewContent() {
+      if (!currentPreviewDoc) return;
+      const body = document.getElementById('navodilaPreviewBody');
+      const name = docLangName(currentPreviewDoc, currentPreviewLang);
+      try {
+        const resp = await fetch('/docs/html/' + name + '?_=' + Date.now());
+        if (!resp.ok) { body.textContent = 'Napaka pri nalaganju.'; return; }
+        const html = await resp.text();
+        body.innerHTML = html;
+        // Scroll na vrh ob zamenjavi jezika
+        body.scrollTop = 0;
+      } catch (e) {
+        body.textContent = 'Napaka: ' + e.message;
+      }
+    }
+
+    // Preklopi jezik predogleda (SL ↔ EN). Posodobi naslov, gumbe in
+    // ponovno naloži vsebino. Jezik se ohrani med odpiranji zapiranji.
+    function switchPreviewLang(lang) {
+      if (lang === currentPreviewLang) return; // že aktiven
+      currentPreviewLang = lang;
+      // Posodobi vizualno
+      document.querySelectorAll('.lang-btn').forEach(b => b.classList.remove('lang-btn-active'));
+      const activeBtn = document.querySelector('.lang-btn[data-lang="' + lang + '"]');
+      if (activeBtn) activeBtn.classList.add('lang-btn-active');
+      // Posodobi naslov
+      const title = document.getElementById('navodilaPreviewTitle');
+      if (currentPreviewDoc === 'navodila-ucitelji') {
+        title.textContent = lang === 'sl' ? 'Navodila za učitelje' : 'Teacher Instructions';
+      } else if (currentPreviewDoc === 'navodila-vodstvo') {
+        title.textContent = lang === 'sl' ? 'Navodila za vodstvo' : 'Management & Admin Guide';
+      }
+      const body = document.getElementById('navodilaPreviewBody');
+      body.textContent = 'Nalagam ...';
+      loadPreviewContent();
+    }
+
+    // Zažene prenos PDF dokumenta (trenutni jezik).
+    function downloadPreviewDoc() {
+      if (!currentPreviewDoc) return;
+      downloadDoc(currentPreviewDoc);
+    }
+
+    // Skrij predogled po 300 ms zamude (uporabnik je odmaknil miško).
+    function scheduleHidePreview() {
+      previewTimer = setTimeout(() => {
+        hidePreview();
+      }, 300);
+    }
+
+    // Prepreči skrivanje predogleda (uporabnik je z miško nad oknom).
+    function keepPreview() {
+      clearTimeout(previewTimer);
+    }
+
+    // Skrij predogled in počisti timer.
+    function hidePreview() {
+      clearTimeout(previewTimer);
+      document.getElementById('navodilaPreview').classList.remove('show');
+      // Ne resetiraj currentPreviewLang — ohrani zadnji jezik
+    }
+
+    // Sproži prenos PDF-dokumenta s strežnika.
+    // Ustvari začasni <a> element s href=/docs/download/... in
+    // simulira klik. Tako uporabnik dobi PDF v privzeti prenose.
+    function downloadDoc(baseName) {
+      hidePreview();
+      const name = docLangName(baseName, currentPreviewLang);
+      const a = document.createElement('a');
+      a.href = '/docs/download/' + name;
+      a.download = name + '.pdf';
+      a.click();
+    }
+    // --- KONEC: Navodila ---
+
+    // --- 3. TIMER ZA NEAKTIVNOST (samodejna odjava) ---
+    // Varnostni ukrep: če uporabnik ne naredi nobene akcije (klik,
+    // premik miške, tipka, scroll, touch) v določenem času, ga
+    // samodejno odjavi. Časovni limit pride iz strežniške nastavitve
+    // INACTIVITY_TIMEOUT_MS (Jinja2).
+
+    function resetInactivityTimer() {
+      if (inactivityTimer) clearTimeout(inactivityTimer);
+      inactivityTimer = setTimeout(() => { window.location.href = '/auth/logout'; }, INACTIVITY_TIMEOUT_MS);
+    }
+    document.addEventListener('click', resetInactivityTimer);
+    document.addEventListener('mousemove', resetInactivityTimer);
+    document.addEventListener('keydown', resetInactivityTimer);
+    document.addEventListener('scroll', resetInactivityTimer);
+    document.addEventListener('touchstart', resetInactivityTimer);
+
+    // --- 4. POMOŽNE FUNKCIJE (helperji) ---
+    // Vsebujejo pripomočke za delo z datumi, oblikovanje besedil,
+    // polnjenje seznamov (selectov) in prikaz sporočil.
+
+    // Vrne slovenski prikaz imena prostora (za UI, ne za API).
+    function prostorLabel(p) {
+      const labels = {tablice: 'Tablice', racunalnica: 'Računalnica', ladja: 'Ladja', "gospodinjska-ucilnica": "Gospodinjska učilnica"};
+      return labels[p] || p;
+    }
+    // Izračuna ponedeljek v tednu za dani datum.
+    // Uporabljeno za nastavitev začetka tedna v rezervacijah.
+    function getMonday(d) {
+      const date = new Date(d);
+      const day = date.getDay();
+      const diff = (day === 0) ? 6 : day - 1;
+      date.setDate(date.getDate() - diff);
+      date.setHours(0,0,0,0);
+      return date;
+    }
+    // Formatira datum v ISO obliko (YYYY-MM-DD) za API klice in inpute.
+    function formatDate(d) {
+      const y = d.getFullYear();
+      const m = String(d.getMonth() + 1).padStart(2, '0');
+      const day = String(d.getDate()).padStart(2, '0');
+      return `${y}-${m}-${day}`;
+    }
+    // Formatira datum v slovenski obliki (DD/MM/YYYY) za prikaz UI.
+    function formatDateSI(d) {
+      const dd = String(d.getDate()).padStart(2,'0');
+      const mm = String(d.getMonth()+1).padStart(2,'0');
+      const yyyy = d.getFullYear();
+      return `${dd}/${mm}/${yyyy}`;
+    }
+    // Vrne slovensko ime meseca (za prikaz v koledarju).
+    function monthName(m) {
+      const names = ['Januar','Februar','Marec','April','Maj','Junij','Julij','Avgust','September','Oktober','November','December'];
+      return names[m];
+    }
+    // Prišteje n dni k datumu in vrne nov Date objekt.
+    function addDays(d, n) {
+      const r = new Date(d);
+      r.setDate(r.getDate() + n);
+      return r;
+    }
+    // Napolni <select> element z možnostmi iz seznama.
+    // Uporablja prostorLabel za prijaznejša imena.
+    function populateSelect(id, items) {
+      const sel = document.getElementById(id);
+      sel.innerHTML = items.map(v => `<option value="${v}">${prostorLabel(v)}</option>`).join('');
+    }
+    // Napolni <select> z razredi, urejenimi po kategorijah.
+    // Doda posebni moznosti za filtriranje vseh 8. ali 9. razredov.
+    function populateOcRazredi(id, items, addAll) {
+      const sel = document.getElementById(id);
+      const osmice = items.filter(r => r.startsWith('8.')).sort();
+      const devetke = items.filter(r => r.startsWith('9.')).sort();
+      const ostalo = items.filter(r => !r.startsWith('8.') && !r.startsWith('9.')).sort();
+      let html = '';
+      if (addAll) html += '<option value="">Vsi razredi</option>';
+      if (id === 'oc-razred') {
+        html += '<option value="__8__">🗂️ 8. razred (vsi)</option>';
+        html += '<option value="__9__">🗂️ 9. razred (vsi)</option>';
+        html += '<option value="" disabled style="font-size:1px;">—</option>';
+      }
+      ostalo.forEach(r => { html += `<option value="${r}">${r}</option>`; });
+      if (osmice.length) { if (id !== 'oc-razred') html += '<option value="" disabled style="font-weight:bold;background:#eee;">— 8. razred —</option>'; osmice.forEach(r => html += `<option value="${r}">${r}</option>`); }
+      if (devetke.length) { if (id !== 'oc-razred') html += '<option value="" disabled style="font-weight:bold;background:#eee;">— 9. razred —</option>'; devetke.forEach(r => html += `<option value="${r}">${r}</option>`); }
+      sel.innerHTML = html;
+    }
+    // Napolni <select> z urami urnika (pridobljenimi s strežnika).
+    function populateHours(id) {
+      const sel = document.getElementById(id);
+      sel.innerHTML = Object.entries(schedule).map(([k,v]) => `<option value="${k}">${k}: ${v}</option>`).join('');
+    }
+    // Prikaže sporočilo uporabniku v #msg div-u. type je lahko
+    // 'error' (rdeče) ali 'success' (zeleno). Po 5 sekundah se
+    // sporočilo samodejno skrije (odstrani razred). Razlog: uporabnik
+    // naj dobi povratno informacijo o akciji, brez da bi jo moral
+    // ročno zapirati. Čas 5s je dovolj za prebranost, a ne predolgo.
+    function showMsg(msg, type) {
+      const el = document.getElementById('msg');
+      el.textContent = msg;
+      el.className = 'msg ' + type;
+      setTimeout(() => { el.className = 'msg'; }, 5000);
+    }
+    // Odpre modalno okno (prekrivko) z danim ID-jem. Doda 'active'
+    // razred, ki preklopi display iz 'none' v 'flex'. Prekrivka
+    // prepreči interakcijo z vsebino pod njo (z-index 100+).
+    function openModal(id) { document.getElementById(id).classList.add('active'); }
+    // Zapre modalno okno — odstrani 'active' razred. Uporabnik se
+    // vrne na glavni pogled pod prekrivko.
+    function closeModal(id) { document.getElementById(id).classList.remove('active'); }
+
+    // --- Sprememba gesla ---
+    // Odpre modal za spremembo gesla. Preprosto delegiranje na
+    // openModal. Ločena funkcija zato, ker je povezava v navigaciji
+    // in onclick kliče to funkcijo namesto neposrednega openModal.
+    function openChangePasswordModal() { openModal('pw-modal'); }
+
+    // Pošlje zahtevek za spremembo gesla na strežnik.
+    // Najprej preveri: (1) vsa polja so izpolnjena, (2) novi gesli
+    // se ujemata, (3) dolžina >= 3 (osnovna validacija na odjemalcu).
+    // Nato pošlje POST /auth/change-password s formData.
+    // UX: ob uspehu zapre modal po 1.5s, ob napaki prikaže napako
+    // v modalu (ne v glavnem sporočilu), da uporabnik ne izgubi
+    // konteksta.
+    async function submitChangePassword() {
+      const oldPw = document.getElementById('pw-old').value;
+      const newPw1 = document.getElementById('pw-new1').value;
+      const newPw2 = document.getElementById('pw-new2').value;
+      const msgEl = document.getElementById('pw-msg');
+      if (!oldPw || !newPw1 || !newPw2) { msgEl.style.color = 'red'; msgEl.textContent = 'Izpolnite vsa polja.'; return; }
+      if (newPw1 !== newPw2) { msgEl.style.color = 'red'; msgEl.textContent = 'Novi gesli se ne ujemata.'; return; }
+      if (newPw1.length < 3) { msgEl.style.color = 'red'; msgEl.textContent = 'Novo geslo mora imeti vsaj 3 znake.'; return; }
+      try {
+        const formData = new FormData();
+        formData.append('old_password', oldPw);
+        formData.append('new_password', newPw1);
+        const res = await fetch('/auth/change-password', { method: 'POST', body: formData });
+        const json = await res.json();
+        if (res.ok) { msgEl.style.color = 'green'; msgEl.textContent = 'Geslo uspešno spremenjeno!'; setTimeout(() => closeModal('pw-modal'), 1500); }
+        else { msgEl.style.color = 'red'; msgEl.textContent = json.detail || 'Napaka pri spreminjanju gesla.'; }
+      } catch(e) { msgEl.style.color = 'red'; msgEl.textContent = 'Napaka pri povezavi s strežnikom.'; }
+    }
+
+    // --- Export rezervacij ---
+    // Odpre modal za izvoz rezervacij. Privzeto nastavi obdobje
+    // (pretekli mesec do danes) in napolni izbirnik prostorov.
+    // UX: uporabnik takoj vidi smiselno privzeto obdobje, ki ga
+    // lahko poljubno spremeni. To je namenjeno vodstvu/admin za
+    // poročila — zato je dostop omejen prek prikaza povezave.
+    function openExportRezModal() {
+        const from = new Date(); from.setMonth(from.getMonth() - 1);
+        document.getElementById('export-rez-from').value = formatDate(from);
+        document.getElementById('export-rez-to').value = formatDate(new Date());
+        const sel = document.getElementById('export-rez-prostor');
+        sel.innerHTML = '<option value="">Vsi prostori</option>' + prostori.map(p => `<option value="${p}">${prostorLabel(p)}</option>`).join('');
+        document.getElementById('export-rez-msg').textContent = '';
+        openModal('export-rez-modal');
+    }
+
+    // Pošlje zahtevek za izvoz rezervacij v CSV-obliki.
+    // Preveri, da sta datuma izbrana, nato fetch-a URL z parametri.
+    // Ob uspehu prejme blob (binarni CSV) in ga sproži kot prenos
+    // z dinamično ustvarjenim <a> elementom. Ob napaki prikaže
+    // sporočilo v modalu.
+    async function exportRezervacije() {
+        const from = document.getElementById('export-rez-from').value;
+        const to = document.getElementById('export-rez-to').value;
+        const prostor = document.getElementById('export-rez-prostor').value;
+        const msgEl = document.getElementById('export-rez-msg');
+        if (!from || !to) { msgEl.style.color = 'red'; msgEl.textContent = 'Izberite datumsko obdobje.'; return; }
+        let url = `/api/export/rezervacije?date_from=${from}&date_to=${to}`;
+        if (prostor) url += `&prostor=${prostor}`;
+        try {
+            const resp = await fetch(url);
+            if (!resp.ok) { const e = await resp.json(); msgEl.style.color = 'red'; msgEl.textContent = e.detail || 'Napaka pri izvozu.'; return; }
+            const blob = await resp.blob();
+            const link = document.createElement('a');
+            link.href = URL.createObjectURL(blob);
+            link.download = `rezervacije_${from}_${to}${prostor ? '_' + prostor : ''}.csv`;
+            link.click();
+            URL.revokeObjectURL(link.href);
+            closeModal('export-rez-modal');
+        } catch(e) { msgEl.style.color = 'red'; msgEl.textContent = 'Napaka pri povezavi s strežnikom.'; }
+    }
+
+    // --- Export ocenjevanj ---
+    // Odpre modal za izvoz ocenjevanj v CSV. Privzeto obdobje:
+    // pretekli mesec do danes. Napolni tudi izbirnik razredov.
+    // Tako kot export rezervacij je namenjeno vodstvu/admin.
+    function openExportOcModal() {
+        const from = new Date(); from.setMonth(from.getMonth() - 1);
+        document.getElementById('export-oc-from').value = formatDate(from);
+        document.getElementById('export-oc-to').value = formatDate(new Date());
+        const sel = document.getElementById('export-oc-razred');
+        sel.innerHTML = '<option value="">Vsi razredi</option>' + razredi.map(r => `<option value="${r}">${r}</option>`).join('');
+        document.getElementById('export-oc-msg').textContent = '';
+        openModal('export-oc-modal');
+    }
+
+    // Sproži prenos CSV z ocenjevanji za izbrano obdobje/razred.
+    // Deluje enako kot exportRezervacije: fetch, blob, dinamični
+    // download prek <a> elementa. Obvezno preveri datumsko polje.
+    async function exportOcenjevanja() {
+        const from = document.getElementById('export-oc-from').value;
+        const to = document.getElementById('export-oc-to').value;
+        const razred = document.getElementById('export-oc-razred').value;
+        const msgEl = document.getElementById('export-oc-msg');
+        if (!from || !to) { msgEl.style.color = 'red'; msgEl.textContent = 'Izberite datumsko obdobje.'; return; }
+        let url = `/api/export/ocenjevanja?date_from=${from}&date_to=${to}`;
+        if (razred) url += `&razred=${razred}`;
+        try {
+            const resp = await fetch(url);
+            if (!resp.ok) { const e = await resp.json(); msgEl.style.color = 'red'; msgEl.textContent = e.detail || 'Napaka pri izvozu.'; return; }
+            const blob = await resp.blob();
+            const link = document.createElement('a');
+            link.href = URL.createObjectURL(blob);
+            link.download = `ocenjevanja_${from}_${to}${razred ? '_' + razred : ''}.csv`;
+            link.click();
+            URL.revokeObjectURL(link.href);
+            closeModal('export-oc-modal');
+        } catch(e) { msgEl.style.color = 'red'; msgEl.textContent = 'Napaka pri povezavi s strežnikom.'; }
+    }
+
+    // --- Zasedeni datumi ---
+    // Naloži vse zasedene (blokirane) datume s strežnika.
+    // Pretvori jih v indeksiran objekt blockedDates{razred:{datum:true}}
+    // za O(1) preverjanje. Kliče se ob zagonu in po vsaki spremembi.
+    // Blokirani datumi pomenijo, da na ta dan ni možno dodati
+    // ocenjevanja za ta razred — uporablja se npr. za kulturne
+    // ali športne dni.
+    async function loadAllBlockedDates() {
+      try {
+        const res = await fetch('/api/blocked-dates');
+        if (!res.ok) return;
+        allBlocked = await res.json();
+        blockedDates = {};
+        allBlocked.forEach(b => {
+          if (!blockedDates[b.razred]) blockedDates[b.razred] = {};
+          blockedDates[b.razred][b.date] = true;
+        });
+      } catch(e) {}
+    }
+    // Preveri, ali je dani datum blokiran za določen razred.
+    // Vrne true, če je datum v blockedDates[razred] indeksu.
+    function isDateBlocked(razred, dateStr) { return blockedDates[razred] && blockedDates[razred][dateStr]; }
+
+    // Odpre modal za upravljanje zasedenih datumov.
+    // Napolni izbirnik razredov, nastavi privzeta datuma na danes
+    // in prikaže seznam obstoječih blokad.
+    function openBlockModal() {
+      const sel = document.getElementById('block-razredi');
+      sel.innerHTML = razredi.map(r => `<option value="${r}">${r}</option>`).join('');
+      const today = new Date().toISOString().split('T')[0];
+      document.getElementById('block-date-from').value = today;
+      document.getElementById('block-date-to').value = today;
+      document.getElementById('block-msg').textContent = '';
+      renderBlockList();
+      openModal('block-modal');
+    }
+
+    // Prikaže seznam bodočih zasedenih datumov (od danes naprej)
+    // v modalu. Vsak vnos ima gumb ✕ za brisanje. Za razvrščanje
+    // uporabimo localeCompare na datumskih nizih (YYYY-MM-DD).
+    async function renderBlockList() {
+      const container = document.getElementById('block-list');
+      const today = new Date().toISOString().split('T')[0];
+      const filtered = allBlocked.filter(b => b.date >= today);
+      if (filtered.length === 0) { container.innerHTML = '<p style="color:#999;">Ni zasedenih datumov od danes naprej.</p>'; return; }
+      let html = '<h4 style="margin-bottom:8px;">Zasedeni datumi od danes naprej:</h4>';
+      const sorted = [...filtered].sort((a,b) => a.date.localeCompare(b.date));
+      for (const b of sorted) {
+        html += `<div style="display:flex;justify-content:space-between;padding:4px 0;border-bottom:1px solid #eee;">
+          <span>${b.razred} - ${b.date}</span>
+          <span class="del-asm" onclick="deleteBlockedDate(${b.id})" style="cursor:pointer;">✕</span>
+        </div>`;
+      }
+      container.innerHTML = html;
+    }
+
+    // Doda nove zasedene datume za izbrane razrede in obdobje.
+    // Pošlje POST zahtevek s seznamom razredov in datumskim
+    // obdobjem. Strežnik ustvari vnose v bazi in obvesti
+    // prizadete učitelje (če so obstajala ocenjevanja na teh
+    // datumih, jih strežnik sam izbriše in pošlje email).
+    // Po uspehu osveži vse: seznam blokad, koledar ocenjevanj.
+    async function addBlockedDates() {
+      const sel = document.getElementById('block-razredi');
+      const selected = Array.from(sel.selectedOptions).map(o => o.value);
+      const dateFrom = document.getElementById('block-date-from').value;
+      const dateTo = document.getElementById('block-date-to').value;
+      const msgEl = document.getElementById('block-msg');
+      if (selected.length === 0 || !dateFrom || !dateTo) { msgEl.style.color = 'red'; msgEl.textContent = 'Izberite vsaj en razred in datum od-do.'; return; }
+      try {
+        const res = await fetch('/api/blocked-dates', {
+          method: 'POST', headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify({razredi: selected, date_from: dateFrom, date_to: dateTo})
+        });
+        const json = await res.json();
+        if (res.ok) {
+          msgEl.style.color = 'green';
+          msgEl.textContent = json.message || 'Zasedeni datumi dodani!';
+          if (json.deleted_assessments > 0) msgEl.textContent += ` (izbrisanih ${json.deleted_assessments} ocenjevanj, poslanih ${json.emails_sent} emailov)`;
+          await loadAllBlockedDates(); renderBlockList(); loadAssessments();
+        } else { msgEl.style.color = 'red'; msgEl.textContent = json.detail || 'Napaka.'; }
+      } catch(e) { msgEl.style.color = 'red'; msgEl.textContent = 'Napaka pri povezavi.'; }
+    }
+    // Izbriše posamezen zaseden datum (blokado) prek DELETE zahtevka.
+    // Po brisanju osveži seznam blokad in koledar ocenjevanj.
+    // To je potrebno, ker brisanje blokade lahko sprosti datum
+    // za dodajanje novih ocenjevanj.
+    async function deleteBlockedDate(id) {
+      try {
+        const res = await fetch(`/api/blocked-dates/${id}`, { method: 'DELETE', credentials: 'include' });
+        if (res.ok) { await loadAllBlockedDates(); renderBlockList(); loadAssessments(); }
+        else { const json = await res.json(); showMsg(json.detail || 'Napaka pri brisanju.', 'error'); }
+      } catch(e) { showMsg('Napaka pri povezavi.', 'error'); }
+    }
+
+    // --- Serije ---
+    // Odpre modal za tedensko ponavljajočo serijo.
+    // Nastavi privzete vrednosti: prvi prostor, ura 0, dan ponedeljek,
+    // od danes do +3 mesecev. Prav tako naloži seznam obstoječih
+    // serij. Tedenske serije uporabljajo vodstvo/admin za redne
+    // tedenske rezervacije (npr. vsak ponedeljek 1. uro v računalnici).
+    function openWeeklySeriesModal() {
+      document.getElementById('weekly-prostor').value = prostori[0] || '';
+      document.getElementById('weekly-hour').value = '0';
+      document.getElementById('weekly-weekday').value = '0';
+      const today = new Date().toISOString().split('T')[0];
+      document.getElementById('weekly-date-from').value = today;
+      const nextMonth = new Date(); nextMonth.setMonth(nextMonth.getMonth() + 3);
+      document.getElementById('weekly-date-to').value = nextMonth.toISOString().split('T')[0];
+      document.getElementById('weekly-qty').value = '1';
+      loadSeriesList();
+      openModal('weekly-series-modal');
+    }
+    // Pošlje zahtevek za ustvarjanje tedenske serije na strežnik.
+    // Zgradi objekt s prostorom, uro, dnevom v tednu, obdobjem
+    // in (za tablice) količino. Strežnik ustvari vse termine
+    // v obdobju in vrne število ustvarjenih ter morebitnih
+    // konfliktov. Po uspehu osveži seznam serij in urnik.
+    async function submitWeeklySeries() {
+      const prostor = document.getElementById('weekly-prostor').value;
+      const data = {
+        prostor: prostor,
+        hour: parseInt(document.getElementById('weekly-hour').value),
+        weekday: parseInt(document.getElementById('weekly-weekday').value),
+        date_from: document.getElementById('weekly-date-from').value,
+        date_to: document.getElementById('weekly-date-to').value,
+      };
+      if (prostor === 'tablice') data.qty = parseInt(document.getElementById('weekly-qty').value) || 1;
+      try {
+        const res = await fetch('/api/rezervacije/series/weekly', { method: 'POST', headers: {'Content-Type': 'application/json'}, credentials: 'include', body: JSON.stringify(data) });
+        const json = await res.json();
+        if (res.ok) { 
+          let msg = `Serija ustvarjena (${json.created} terminov).`;
+          if (json.removed > 0) msg += ` Pobrisanih konfliktnih: ${json.removed}.`;
+          showMsg(msg, 'success'); 
+          closeModal('weekly-series-modal'); 
+          loadSeriesList();
+          loadFullDaySeriesList();
+          loadAllReservations(); 
+        }
+        else { showMsg(json.detail?.message || json.detail || 'Napaka pri ustvarjanju serije.', 'error'); }
+      } catch(e) { showMsg('Napaka pri povezavi s strežnikom.', 'error'); }
+    }
+
+    // --- Seznam serij ---
+    // Notranja (z _ predpono) funkcija za prikaz seznama serij.
+    // Fetch-a vse serije s strežnika, jih uredi po datumu in
+    // izriše v podanem container elementu. Vsaka serija prikaže
+    // prostor, število terminov in datumsko obdobje. Uporablja se
+    // tako za tedenske kot celodnevne serije (containerId različen).
+    async function _renderSeriesList(containerId) {
+      const resp = await fetch('/api/rezervacije/series-list', { credentials: 'include' });
+      if (!resp.ok) { document.getElementById(containerId).innerHTML = '<span style="color:#999;">Napaka pri nalaganju</span>'; return; }
+      const data = await resp.json();
+      const container = document.getElementById(containerId);
+      if (!data.length) { container.innerHTML = '<span style="color:#999;">Ni aktivnih serij za bodoče datume.</span>'; return; }
+      data.sort((a,b) => a.min_date.localeCompare(b.min_date));
+      let html = '';
+      for (const s of data) {
+        const roomLabel = prostorLabel(s.prostor);
+        const minDate = s.min_date.split('-').reverse().join('.');
+        const maxDate = s.max_date.split('-').reverse().join('.');
+        html += `<div style="display:flex;align-items:center;justify-content:space-between;padding:4px 0;border-bottom:1px solid #f0f0f0;">
+          <span><strong>${roomLabel}</strong><br>
+          <span style="font-size:0.8rem;color:#666;">${s.count} terminov (${minDate} - ${maxDate})</span></span>
+          <span onclick="deleteSeries('${s.series_id}')" style="cursor:pointer;color:#c00;font-weight:700;padding:2px 6px;">✕</span>
+        </div>`;
+      }
+      container.innerHTML = html;
+    }
+    // Naloži in prikaže seznam tedenskih serij v ustreznem containerju.
+    async function loadSeriesList() {
+      _renderSeriesList('series-list');
+    }
+    // Naloži in prikaže seznam celodnevnih serij v ustreznem containerju.
+    async function loadFullDaySeriesList() {
+      _renderSeriesList('fullday-series-list');
+    }
+    // Izbriše serijo z danim ID-jem (seriesId). Pred brisanjem
+    // zahteva potrditev (confirm). Po brisanju osveži sezname
+    // serij in urnik rezervacij — saj so vsi termini serije
+    // izbrisani.
+    async function deleteSeries(seriesId) {
+      if (!confirm('Ste prepričani, da želite izbrisati to serijo?')) return;
+      try {
+        const resp = await fetch(`/api/rezervacije/series/${seriesId}`, { method: 'DELETE', credentials: 'include' });
+        if (!resp.ok) { const e = await resp.json(); alert(e.detail || 'Napaka pri brisanju.'); return; }
+        loadSeriesList();
+        loadFullDaySeriesList();
+        if (typeof loadAllReservations === 'function') loadAllReservations();
+      } catch(e) { alert('Napaka pri povezavi.'); }
+    }
+
+    // Odpre modal za celodnevno serijo. Nastavi privzete vrednosti:
+    // prvi prostor, od danes do +7 dni, količina 1, prazna polja ur.
+    // Celodnevna serija rezervira vse ure (ali izbrane) v danem
+    // obdobju — uporabno za dogodke, ki trajajo cel dan.
+    function openFullDaySeriesModal() {
+      const sel = document.getElementById('fullday-prostor');
+      if (sel) sel.value = prostori[0] || '';
+      const today = new Date().toISOString().split('T')[0];
+      const el1 = document.getElementById('fullday-date-from');
+      if (el1) el1.value = today;
+      const nextWeek = new Date(); nextWeek.setDate(nextWeek.getDate() + 7);
+      const el2 = document.getElementById('fullday-date-to');
+      if (el2) el2.value = nextWeek.toISOString().split('T')[0];
+      const el3 = document.getElementById('fullday-qty');
+      if (el3) el3.value = '1';
+      const el4 = document.getElementById('fullday-hours');
+      if (el4) el4.value = '';
+      loadFullDaySeriesList();
+      openModal('fullday-series-modal');
+    }
+    // Pošlje zahtevek za ustvarjanje celodnevne serije.
+    // Zgradi objekt s prostorom, obdobjem, (za tablice) količino
+    // in neobvezno omejitvijo na določene ure (hoursArray).
+    // Če uporabnik ne vpiše ur, se rezervirajo vse ure v dnevu.
+    // Po uspehu osveži sezname serij in urnik.
+    async function submitFullDaySeries() {
+      const prostor = document.getElementById('fullday-prostor');
+      if (!prostor) return;
+      const hoursInput = document.getElementById('fullday-hours');
+      let hoursArray = null;
+      if (hoursInput && hoursInput.value.trim() !== '') {
+        hoursArray = hoursInput.value.split(',').map(h => parseInt(h.trim())).filter(n => !isNaN(n));
+      }
+      const data = {
+        prostor: prostor.value,
+        date_from: document.getElementById('fullday-date-from')?.value || '',
+        date_to: document.getElementById('fullday-date-to')?.value || '',
+      };
+      if (prostor.value === 'tablice') {
+        const qty = document.getElementById('fullday-qty');
+        data.qty = parseInt(qty?.value) || 1;
+      }
+      if (hoursArray && hoursArray.length > 0) data.hours = hoursArray;
+      try {
+        const res = await fetch('/api/rezervacije/series/full-day', { method: 'POST', headers: {'Content-Type': 'application/json'}, credentials: 'include', body: JSON.stringify(data) });
+        const json = await res.json();
+        if (res.ok) {
+          let msg = `Celodnevna serija ustvarjena (${json.created} terminov).`;
+          if (json.removed > 0) msg += ` Pobrisanih konfliktnih: ${json.removed}.`;
+          showMsg(msg, 'success');
+          closeModal('fullday-series-modal');
+          loadSeriesList();
+          loadFullDaySeriesList();
+          loadAllReservations();
+        } else {
+          showMsg(json.detail?.message || json.detail || 'Napaka pri ustvarjanju serije.', 'error');
+        }
+      } catch(e) { showMsg('Napaka pri povezavi s strežnikom.', 'error'); }
+    }
+
+    // --- Rezervacije ---
+    // Preklopi med pogledi prostorov v urniku. Aktivira ustrezen
+    // zavihek (prostor-tab) in pripadajoči pogled (prostor-view).
+    // Razlog: uporabnik lahko s klikom hitro preklaplja med
+    // prostori brez nalaganja strani.
+    function switchProstor(p) {
+      document.querySelectorAll('.prostor-tab').forEach(t => t.classList.toggle('active', t.dataset.prostor === p));
+      document.querySelectorAll('.prostor-view').forEach(v => v.classList.toggle('active', v.id === 'prostor-view-' + p));
+    }
+    // Naloži vse rezervacije za trenutni teden (od ponedeljka do
+    // petka) za vse prostore. Kliče loadProstorView za vsak prostor.
+    // Datum začetka tedna se bere iz input polja rez-week-start.
+    async function loadAllReservations() {
+      const weekStart = document.getElementById('rez-week-start').value;
+      if (!weekStart) return;
+      const startDate = new Date(weekStart + 'T00:00:00');
+      const endDate = addDays(startDate, 6);
+      const endStr = formatDate(endDate);
+      for (const prostor of prostori) await loadProstorView(prostor, startDate, endStr);
+    }
+
+    // Naloži rezervacije za en prostor v danem obdobju in jih
+    // izriše v pripadajočem pogledu (prostor-view). Fetch-a API
+    // /api/rezervacije s parametri in rezultat posreduje v
+    // renderWeeklyTable.
+    async function loadProstorView(prostor, startDate, endStr) {
+      try {
+        const res = await fetch(`/api/rezervacije?date_from=${formatDate(startDate)}&date_to=${endStr}&prostor=${prostor}`);
+        if (!res.ok) return;
+        const reservations = await res.json();
+        const container = document.querySelector(`#prostor-view-${prostor} .rez-table-inner`);
+        container.innerHTML = renderWeeklyTable(prostor, startDate, reservations);
+      } catch(e) {}
+    }
+    // Izriše tedenski urnik za en prostor v obliki HTML tabele.
+    // Ustvari zemljevid (map) rezervacij po ključu 'datum|ura' za
+    // hiter dostop. Za tablice vodi ločen seznam zasedenosti (qty)
+    // in prikazuje preostalo prosto količino od 28. Vsaka zasedena
+    // celica prikaže ime učitelja (+ količino za tablice) in gumb
+    // za brisanje (če ima uporabnik pravico). Proste celice
+    // prikažejo 'Prosto' in gumb + za hitro dodajanje. Delovni
+    // dnevi so pon–pet (5 dni). Navigacija s puščicami (prejšnji/
+    // naslednji teden) je vgrajena na vrhu tabele.
+    function renderWeeklyTable(prostor, weekStart, reservations) {
+      const map = {};
+      reservations.forEach(r => { const key = r.date + '|' + r.hour; if (!map[key]) map[key] = []; map[key].push(r); });
+      const tabliceMap = {};
+      if (prostor === 'tablice') {
+        reservations.forEach(r => { const key = r.date + '|' + r.hour; tabliceMap[key] = (tabliceMap[key] || 0) + (r.qty || 0); });
+      }
+      const days = [];
+      for (let i = 0; i < 5; i++) days.push(addDays(weekStart, i));
+      const weekEnd = addDays(weekStart, 4);
+      let html = `<div class="week-nav">
+        <button class="btn btn-sm btn-outline" onclick="shiftWeek(-7)">‹ Prejšnji teden</button>
+        <h3>${formatDateSI(weekStart)} – ${formatDateSI(weekEnd)}</h3>
+        <button class="btn btn-sm btn-outline" onclick="shiftWeek(7)">Naslednji teden ›</button>
+      </div>`;
+      const dayNames = ['Ponedeljek', 'Torek', 'Sreda', 'Četrtek', 'Petek'];
+      const hours = Object.entries(schedule);
+      html += `<table><thead><tr><th>Ura</th>`;
+      days.forEach((d,i) => { html += `<th>${dayNames[i]}<br><small>${formatDateSI(d)}</small></th>`; });
+      html += `</thead><tbody>`;
+      for (const [hourIdx, hourLabel] of hours) {
+        html += `<tr><td><strong>${hourIdx}</strong><br><small>${hourLabel}</small></td>`;
+        for (const day of days) {
+          const dateStr = formatDate(day);
+          const key = dateStr + '|' + hourIdx;
+          const resList = map[key];
+          if (resList && resList.length > 0) {
+            html += `<td class="slot-taken">`;
+            for (const res of resList) {
+              if (prostor === 'tablice') {
+                const parts = []; if (res.qty) parts.push(`${res.qty} kos`); parts.push(res.teacher_name || '?');
+                html += `<div class="rez-label">${parts.join(' : ')}</div>`;
+              } else { html += `<div class="rez-label">${res.teacher_name || '?'}</div>`; }
+              if (currentUser && (res.teacher_id === currentUser.id || currentUser.role === 'admin' || currentUser.role === 'vodstvo')) {
+                html += `<span class="del-rez" onclick="deleteReservation(${res.id})">✕</span>`;
+              }
+            }
+            if (prostor === 'tablice') { const used = tabliceMap[key] || 0; const free = 28 - used; html += `<div class="slot-info" style="margin-top:4px;">Prosto: ${free}/28</div>`; }
+            html += `</td>`;
+          } else {
+            html += `<td><div class="slot-free">Prosto</div>`;
+            if (prostor === 'tablice') { const used = tabliceMap[key] || 0; html += `<div class="slot-info">${28 - used}/28 preostalih</div>`; }
+            html += `<div class="quick-add"><button class="btn btn-sm btn-outline" onclick="quickRez('${prostor}','${dateStr}',${hourIdx})">+</button></div></td>`;
+          }
+        }
+        html += `</tr>`;
+      }
+      html += `</tbody></table>`;
+      return html;
+    }
+    // Premakne prikazani teden za podano število dni (naprej ali
+    // nazaj). Spremeni vrednost v datumskem inputu in ponovno
+    // naloži vse rezervacije za nov teden. Klicano s puščicama
+    // 'Prejšnji teden' / 'Naslednji teden'.
+    function shiftWeek(days) {
+      const input = document.getElementById('rez-week-start');
+      const d = new Date(input.value + 'T00:00:00');
+      d.setDate(d.getDate() + days);
+      input.value = formatDate(d);
+      loadAllReservations();
+    }
+
+    // Odpre modal za novo rezervacijo z že izpolnjenimi podatki
+    // (prostor, datum, ura) — klicano ob kliku na + gumb v prosti
+    // celici urnika. UX: uporabniku ni treba ročno vnašati znanih
+    // podatkov, kar pospeši proces.
+    function quickRez(prostor, date, hour) {
+      document.getElementById('rez-form-prostor').value = prostor;
+      document.getElementById('rez-form-date').value = date;
+      document.getElementById('rez-form-hour').value = hour;
+      document.getElementById('rez-form-qty').value = 1;
+      document.getElementById('rez-form-qty-group').style.display = prostor === 'tablice' ? 'block' : 'none';
+      openModal('rez-modal');
+    }
+    // Odpre prazen modal za novo rezervacijo (brez vnaprej
+    // izpolnjenih podatkov) — klicano iz gumba '+ Nova rezervacija'.
+    // Nastavi privzeti datum na začetek tedna in prvi prostor.
+    function openRezModal() {
+      document.getElementById('rez-form-date').value = document.getElementById('rez-week-start').value;
+      document.getElementById('rez-form-prostor').value = prostori[0];
+      document.getElementById('rez-form-qty').value = 1;
+      document.getElementById('rez-form-qty-group').style.display = 'block';
+      openModal('rez-modal');
+    }
+
+    // Pošlje zahtevek za ustvarjanje nove rezervacije na strežnik.
+    // Zgradi objekt s prostorom, datumom, uro, teacher_id in (za
+    // tablice) količino. Po uspehu prikaže sporočilo, zapre modal
+    // in osveži urnik. Ob napaki prikaže napako v glavnem sporočilu.
+    async function submitRezervacija() {
+      const data = {
+        prostor: document.getElementById('rez-form-prostor').value,
+        date: document.getElementById('rez-form-date').value,
+        hour: parseInt(document.getElementById('rez-form-hour').value),
+        teacher_id: currentUser.id,
+      };
+      if (data.prostor === 'tablice') data.qty = parseInt(document.getElementById('rez-form-qty').value) || 1;
+      try {
+        const res = await fetch('/api/rezervacije', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(data) });
+        const json = await res.json();
+        if (res.ok) { showMsg('Rezervacija uspešno ustvarjena!', 'success'); closeModal('rez-modal'); loadAllReservations(); }
+        else { showMsg(json.detail || 'Napaka pri ustvarjanju rezervacije.', 'error'); }
+      } catch(e) { showMsg('Napaka pri povezavi s strežnikom.', 'error'); }
+    }
+    // Izbriše rezervacijo z danim ID-jem. Pred brisanjem zahteva
+    // potrditev (confirm). Po uspešnem brisanju osveži urnik.
+    // Brisanje je dovoljeno le lastniku rezervacije, adminu ali
+    // vodstvu — preverjeno na strežniku.
+    async function deleteReservation(id) {
+      if (!confirm('Ste prepričani, da želite izbrisati to rezervacijo?')) return;
+      try {
+        const res = await fetch(`/api/rezervacije/${id}`, { method: 'DELETE' });
+        if (res.ok) { showMsg('Rezervacija izbrisana.', 'success'); loadAllReservations(); }
+        else { const json = await res.json(); showMsg(json.detail || 'Napaka pri brisanju.', 'error'); }
+      } catch(e) { showMsg('Napaka pri povezavi s strežnikom.', 'error'); }
+    }
+
+    // --- Ocenjevanja ---
+    // Naloži ocenjevanja za trenutni mesec in izbrani razred.
+    // Podpira filtriranje po celotnem 8. ali 9. razredu (__8__, __9__).
+    // Če razred ni izbran ('' ali 'Vsi razredi'), prikaže vse.
+    // Po fetch-u podatke posreduje v renderMonthlyCalendar.
+    async function loadAssessments() {
+      let razred = document.getElementById('oc-razred').value;
+      let month = currentOcMonth;
+      if (!month) { const now = new Date(); month = now.getFullYear() + '-' + String(now.getMonth() + 1).padStart(2,'0'); currentOcMonth = month; }
+      let url = `/api/ocenjevanja?month=${month}`;
+      let filterPrefix = '';
+      if (razred === '__8__') filterPrefix = '8.';
+      else if (razred === '__9__') filterPrefix = '9.';
+      else if (razred) url += `&razred=${razred}`;
+      try {
+        const res = await fetch(url);
+        if (!res.ok) { showMsg('Napaka pri nalaganju ocenjevanj.', 'error'); return; }
+        let assessments = await res.json();
+        if (filterPrefix) assessments = assessments.filter(a => a.razred && a.razred.startsWith(filterPrefix));
+        renderMonthlyCalendar(razred || 'Vsi razredi', month, assessments, razred === '' || filterPrefix !== '');
+      } catch(e) { showMsg('Napaka pri povezavi s strežnikom.', 'error'); }
+    }
+    // Izriše mesečni koledar ocenjevanj v HTML obliki.
+    // Uporablja CSS grid (7 stolpcev) za dneve v tednu.
+    // Vsak dan prikaže: številko, ocenjevanja (z barvnimi značkami),
+    // zasedene datume (vijolično) in gumb + za hitro dodajanje.
+    // Obdeluje tudi predhodne/prazne celice za poravnavo prvega dne
+    // v mesecu ter preostanek zadnjega tedna.
+    // Legenda na dnu pojasnjuje barve: modra=običajno, rdeča=ponavljanje,
+    // vijolična=zaseden datum.
+    function renderMonthlyCalendar(razred, month, assessments, showAll) {
+      const [year, mon] = month.split('-').map(Number);
+      const firstDay = new Date(year, mon-1, 1);
+      const lastDay = new Date(year, mon, 0);
+      const daysInMonth = lastDay.getDate();
+      const startDow = firstDay.getDay();
+      const startCol = startDow === 0 ? 6 : startDow - 1;
+      const asmMap = {};
+      assessments.forEach(a => { const d = new Date(a.date); const key = d.getDate(); if (!asmMap[key]) asmMap[key] = []; asmMap[key].push(a); });
+      const prevMonth = mon === 1 ? `${year-1}-12` : `${year}-${String(mon-1).padStart(2,'0')}`;
+      const nextMonth = mon === 12 ? `${year+1}-01` : `${year}-${String(mon+1).padStart(2,'0')}`;
+      const dayNames = ['Pon','Tor','Sre','Čet','Pet','Sob','Ned'];
+      const today = new Date();
+      let html = `<div class="calendar-nav"><button class="btn btn-sm btn-outline" onclick="changeMonth('${prevMonth}')">‹ Prejšnji mesec</button>
+        <h3>${monthName(mon-1)} ${year}</h3><button class="btn btn-sm btn-outline" onclick="changeMonth('${nextMonth}')">Naslednji mesec ›</button></div>`;
+      html += `<div class="calendar-grid">`;
+      dayNames.forEach(n => html += `<div class="calendar-header">${n}</div>`);
+      for (let i=0; i<startCol; i++) html += `<div class="calendar-day other-month"></div>`;
+      for (let day=1; day<=daysInMonth; day++) {
+        const cellDate = new Date(year, mon-1, day);
+        const isToday = cellDate.toDateString() === today.toDateString();
+        const isWeekend = cellDate.getDay() === 0 || cellDate.getDay() === 6;
+        const dateStr = `${year}-${String(mon).padStart(2,'0')}-${String(day).padStart(2,'0')}`;
+        let hasBlockedOnDate = false, blockedRazredi = [];
+        for (const r of Object.keys(blockedDates)) {
+          if (blockedDates[r][dateStr]) { hasBlockedOnDate = true; blockedRazredi.push(r); }
+        }
+        blockedRazredi.sort();
+        let showBlocked = false;
+        if (hasBlockedOnDate && razred && razred !== 'Vsi razredi') {
+          if (razred.startsWith('__')) { const prefix = razred === '__8__' ? '8.' : '9.'; showBlocked = blockedRazredi.some(r => r.startsWith(prefix)); }
+          else if (blockedDates[razred] && blockedDates[razred][dateStr]) showBlocked = true;
+        } else if (hasBlockedOnDate && (!razred || razred === 'Vsi razredi')) showBlocked = true;
+        let cls = 'calendar-day';
+        if (isToday) cls += ' today';
+        if (isWeekend) cls += ' other-month';
+        html += `<div class="${cls}" ${showBlocked ? '' : `onclick="quickOc('${razred}','${dateStr}')"`}>
+          <div class="day-num">${day}</div>`;
+        if (showBlocked) html += `<div class="assessment-badge" style="background:#7c3aed;color:#fff;font-weight:600;"><span>Zasedeni: ${blockedRazredi.join(', ')}</span></div>`;
+        if (asmMap[day]) {
+          asmMap[day].forEach(a => {
+            const asmCls = a.ponavljanje ? 'assessment-ponavljanje' : 'assessment-normal';
+            const clsLabel = showAll ? ` [${a.razred}]` : '';
+            html += `<div class="assessment-badge ${asmCls}"><span>${a.ponavljanje ? '🔄 ' : ''}Ocenjevanje${clsLabel}: ${a.teacher_name || '?'}</span>
+            ${currentUser && (a.teacher_id === currentUser.id || currentUser.role === 'admin' || currentUser.role === 'vodstvo') ? `<span class="del-asm" onclick="event.stopPropagation();deleteAssessment(${a.id})">✕</span>` : ''}</div>`;
+          });
+        }
+        if (!asmMap[day] && !showBlocked && !isWeekend) html += `<div class="add-asm-btn" onclick="event.stopPropagation();quickOc('${razred}','${dateStr}')">+</div>`;
+        html += `</div>`;
+      }
+      const lastCol = (startCol + daysInMonth) % 7;
+      const remaining = lastCol === 0 ? 0 : 7 - lastCol;
+      for (let i=0; i<remaining; i++) html += `<div class="calendar-day other-month"></div>`;
+      html += `</div><div style="display:flex;gap:15px;justify-content:center;margin-top:10px;font-size:0.75rem;">
+        <span><span style="display:inline-block;width:12px;height:12px;background:#cce5ff;border-radius:2px;"></span> Običajno ocenjevanje</span>
+        <span><span style="display:inline-block;width:12px;height:12px;background:#ffcccc;border-radius:2px;"></span> Ponavljanje</span>
+        <span><span style="display:inline-block;width:12px;height:12px;background:#7c3aed;border-radius:2px;"></span> Zaseden datum</span>
+      </div>`;
+      document.getElementById('oc-calendar-container').innerHTML = html;
+    }
+    // Preklopi na drug mesec v koledarju ocenjevanj. Spremeni
+    // globalno stanje currentOcMonth in ponovno naloži ocenjevanja.
+    function changeMonth(month) { currentOcMonth = month; loadAssessments(); }
+
+    // Odpre modal za novo ocenjevanje z že izpolnjenim razredom
+    // in datumom — klicano ob kliku na + v koledarju.
+    // UX: uporabnik takoj vidi, kateri dan bo ocenjevanje,
+    // in mora le potrditi razred ter morebitno ponavljanje.
+    function quickOc(razred, date) {
+      const formRazred = document.getElementById('oc-form-razred').value;
+      document.getElementById('oc-form-razred').value = formRazred || (razredi.length > 0 ? razredi[0] : '');
+      document.getElementById('oc-form-date').value = date;
+      document.getElementById('oc-form-ponavljanje').checked = false;
+      openModal('oc-modal');
+    }
+    // Odpre prazen modal za novo ocenjevanje (klicano iz
+    // gumba '+ Novo ocenjevanje'). Nastavi privzeti razred
+    // iz filtrov in današnji datum.
+    function openOcModal() {
+      document.getElementById('oc-form-razred').value = document.getElementById('oc-razred').value;
+      document.getElementById('oc-form-date').value = new Date().toISOString().split('T')[0];
+      document.getElementById('oc-form-ponavljanje').checked = false;
+      openModal('oc-modal');
+    }
+
+    // Pošlje zahtevek za dodajanje novega ocenjevanja na strežnik.
+    // Zgradi objekt z razredom, datumom, oznako ponavljanja in
+    // teacher_id. Po uspehu prikaže sporočilo, zapre modal in
+    // osveži koledar. Ob napaki prikaže napako.
+    async function submitOcenjevanje() {
+      const data = {
+        razred: document.getElementById('oc-form-razred').value,
+        date: document.getElementById('oc-form-date').value,
+        ponavljanje: document.getElementById('oc-form-ponavljanje').checked,
+        teacher_id: currentUser.id,
+      };
+      try {
+        const res = await fetch('/api/ocenjevanja', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(data) });
+        const json = await res.json();
+        if (res.ok) { showMsg('Ocenjevanje uspešno dodano!', 'success'); closeModal('oc-modal'); loadAssessments(); }
+        else { showMsg(json.detail || 'Napaka pri dodajanju ocenjevanja.', 'error'); }
+      } catch(e) { showMsg('Napaka pri povezavi s strežnikom.', 'error'); }
+    }
+    // Izbriše ocenjevanje z danim ID-jem. Pred brisanjem zahteva
+    // potrditev (confirm). Po uspešnem brisanju osveži koledar.
+    // Brisanje je dovoljeno le lastniku ocenjevanja, adminu ali
+    // vodstvu — preverjeno na strežniku.
+    async function deleteAssessment(id) {
+      if (!confirm('Ste prepričani, da želite izbrisati to ocenjevanje?')) return;
+      try {
+        const res = await fetch(`/api/ocenjevanja/${id}`, { method: 'DELETE' });
+        if (res.ok) { showMsg('Ocenjevanje izbrisano.', 'success'); loadAssessments(); }
+        else { const json = await res.json(); showMsg(json.detail || 'Napaka pri brisanju.', 'error'); }
+      } catch(e) { showMsg('Napaka pri povezavi s strežnikom.', 'error'); }
+    }
+
+    // --- DOMContentLoaded init ---
+    // Glavna inicializacija ob nalaganju strani. Izvede:
+    // 1. Fetch vseh začetnih podatkov: urnik (schedule), razredi,
+    //    prostori, trenutni uporabnik (auth/me) — vse v enem
+    //    Promise.all za hitrejše nalaganje.
+    // 2. Prikaže uporabniške informacije (ime, vloga).
+    // 3. Prikaže/zakrije gumbe glede na vlogo (admin, vodstvo):
+    //    admin link, export linki, gumbi za serije, navodila za vodstvo.
+    // 4. Napolni vse izbirnike (select) s podatki.
+    // 5. Nastavi začetek tedna na ponedeljek in ustvari zavihke
+    //    prostorov ter njihove poglede.
+    // 6. Nastavi event listenerje za preklapljanje zavihkov in
+    //    za prikaz polja s količino tablic ob izbiri prostora.
+    // 7. Zažene začetno nalaganje: rezervacije, zasedeni datumi,
+    //    ocenjevanja.
     document.addEventListener('DOMContentLoaded', async () => {
       const [schedRes, razRes, proRes, meRes] = await Promise.all([
         fetch('/api/schedule'), fetch('/api/razredi'), fetch('/api/prostori'), fetch('/auth/me')
@@ -222,33 +1661,42 @@
       if (meRes.ok) currentUser = await meRes.json();
 
       if (currentUser) {
-        document.getElementById('userInfo').textContent = `${currentUser.username} (${currentUser.role})`;
+        document.getElementById('userInfo').textContent = `${currentUser.full_name || currentUser.username} (${currentUser.role === 'admin' ? 'admin' : currentUser.role === 'vodstvo' ? 'vodstvo' : 'učitelj'})`;
+        if (currentUser.role === 'admin') {
+            document.getElementById('admin-link').style.display = 'inline';
+        }
+        if (currentUser.role === 'admin' || currentUser.role === 'vodstvo') {
+            document.getElementById('export-rez-link').style.display = 'inline';
+            document.getElementById('export-oc-link').style.display = 'inline';
+        }
+        const allowedIds = [1,2,3,4]; const allowedRoles = ['admin','vodstvo'];
+        const btnContainer = document.getElementById('block-btn-container');
+        if (allowedIds.includes(currentUser.id) || allowedRoles.includes(currentUser.role)) btnContainer.style.display = 'inline';
+        else btnContainer.style.display = 'none';
+        const seriesDiv = document.getElementById('series-buttons');
+        if (currentUser.role === 'admin' || currentUser.role === 'vodstvo') { seriesDiv.style.display = 'inline-flex'; seriesDiv.style.gap = '0.5rem'; }
+        if (currentUser.role) {
+          document.getElementById('navodilaSidebar').style.display = 'flex';
+          if (currentUser.role === 'vodstvo' || currentUser.role === 'admin') {
+            document.getElementById('sideBtnVodstvo').style.display = 'block';
+          }
+        }
       }
 
-      // Populate selects
       populateSelect('rez-form-prostor', prostori);
-      populateSelect('rez-form-razred', razredi);
-      populateSelect('oc-razred', razredi, true);
-      populateSelect('oc-form-razred', razredi);
+      populateSelect('weekly-prostor', prostori);
+      populateSelect('fullday-prostor', prostori);
+      populateOcRazredi('oc-razred', razredi, true);
+      populateOcRazredi('oc-form-razred', razredi);
       populateHours('rez-form-hour');
 
-      // Set default week start to this Monday
       const monday = getMonday(new Date());
       document.getElementById('rez-week-start').value = formatDate(monday);
-
-      // Build prostor tabs
-      const tabsHtml = prostori.map(p =>
-        `<div class="prostor-tab${p === prostori[0] ? ' active' : ''}" data-prostor="${p}" onclick="switchProstor('${p}')">${prostorLabel(p)}</div>`
-      ).join('');
+      const tabsHtml = prostori.map(p => `<div class="prostor-tab${p === prostori[0] ? ' active' : ''}" data-prostor="${p}" onclick="switchProstor('${p}')">${prostorLabel(p)}</div>`).join('');
       document.getElementById('prostor-tabs').innerHTML = tabsHtml;
-
-      // Build prostor view containers
-      const viewsHtml = prostori.map(p =>
-        `<div class="prostor-view${p === prostori[0] ? ' active' : ''}" id="prostor-view-${p}"><div class="rez-table-inner"><p style="text-align:center;color:#999;padding:2rem;">Nalaganje ...</p></div></div>`
-      ).join('');
+      const viewsHtml = prostori.map(p => `<div class="prostor-view${p === prostori[0] ? ' active' : ''}" id="prostor-view-${p}"><div class="rez-table-inner"><p style="text-align:center;color:#999;padding:2rem;">Nalaganje ...</p></div></div>`).join('');
       document.getElementById('rez-views-container').innerHTML = viewsHtml;
 
-      // Tab switching
       document.querySelectorAll('nav a[data-tab]').forEach(a => {
         a.addEventListener('click', e => {
           e.preventDefault();
@@ -260,415 +1708,29 @@
           if (a.dataset.tab === 'ocenjevanja') loadAssessments();
         });
       });
-
-      // Prostor change → show/hide qty field
-      document.getElementById('rez-form-prostor').addEventListener('change', e => {
-        document.getElementById('rez-form-qty-group').style.display = e.target.value === 'tablice' ? 'block' : 'none';
-      });
+      document.getElementById('rez-form-prostor').addEventListener('change', e => { document.getElementById('rez-form-qty-group').style.display = e.target.value === 'tablice' ? 'block' : 'none'; });
       document.getElementById('rez-form-prostor').dispatchEvent(new Event('change'));
 
-      // Auto-load everything
+      const weeklyProstor = document.getElementById('weekly-prostor');
+      const fulldayProstor = document.getElementById('fullday-prostor');
+      weeklyProstor.addEventListener('change', () => { document.getElementById('weekly-qty-group').style.display = weeklyProstor.value === 'tablice' ? 'block' : 'none'; });
+      fulldayProstor.addEventListener('change', () => { document.getElementById('fullday-qty-group').style.display = fulldayProstor.value === 'tablice' ? 'block' : 'none'; });
+
       loadAllReservations();
       currentOcMonth = new Date().getFullYear() + '-' + String(new Date().getMonth() + 1).padStart(2, '0');
+      loadAllBlockedDates();
       loadAssessments();
     });
 
-    // ── Helpers ──
-    function prostorLabel(p) {
-      const labels = {tablice: 'Tablice', racunalnica: 'Računalnica', ladja: 'Ladja'};
-      return labels[p] || p;
-    }
-
-    function getMonday(d) {
-      const date = new Date(d);
-      const day = date.getDay();
-      const diff = date.getDate() - day + (day === 0 ? -6 : 1);
-      date.setDate(diff);
-      date.setHours(0,0,0,0);
-      return date;
-    }
-
-    function formatDate(d) {
-      return d.toISOString().split('T')[0];
-    }
-
-    function formatDateSI(d) {
-      const dd = String(d.getDate()).padStart(2,'0');
-      const mm = String(d.getMonth()+1).padStart(2,'0');
-      const yyyy = d.getFullYear();
-      return `${dd}/${mm}/${yyyy}`;
-    }
-
-    function monthName(m) {
-      const names = ['Januar','Februar','Marec','April','Maj','Junij','Julij','Avgust','September','Oktober','November','December'];
-      return names[m];
-    }
-
-    function addDays(d, n) {
-      const r = new Date(d);
-      r.setDate(r.getDate() + n);
-      return r;
-    }
-
-    function populateSelect(id, items, addAll) {
-      const sel = document.getElementById(id);
-      let html = items.map(v => `<option value="${v}">${v}</option>`).join('');
-      if (addAll) html = '<option value="">Vsi razredi</option>' + html;
-      sel.innerHTML = html;
-    }
-
-    function populateHours(id) {
-      const sel = document.getElementById(id);
-      sel.innerHTML = Object.entries(schedule).map(([k,v]) => `<option value="${k}">${k}: ${v}</option>`).join('');
-    }
-
-    function showMsg(msg, type) {
-      const el = document.getElementById('msg');
-      el.textContent = msg;
-      el.className = 'msg ' + type;
-      setTimeout(() => { el.className = 'msg'; }, 5000);
-    }
-
-    function openModal(id) { document.getElementById(id).classList.add('active'); }
-    function closeModal(id) { document.getElementById(id).classList.remove('active'); }
-
-    // ── Rezervacije ──
-    function switchProstor(p) {
-      document.querySelectorAll('.prostor-tab').forEach(t => t.classList.toggle('active', t.dataset.prostor === p));
-      document.querySelectorAll('.prostor-view').forEach(v => v.classList.toggle('active', v.id === 'prostor-view-' + p));
-    }
-
-    async function loadAllReservations() {
-      const weekStart = document.getElementById('rez-week-start').value;
-      if (!weekStart) return;
-      const startDate = new Date(weekStart + 'T00:00:00');
-      const endDate = addDays(startDate, 6);
-      const endStr = formatDate(endDate);
-
-      for (const prostor of prostori) {
-        await loadProstorView(prostor, startDate, endStr);
-      }
-    }
-
-    async function loadProstorView(prostor, startDate, endStr) {
-      try {
-        const res = await fetch(`/api/rezervacije?date_from=${formatDate(startDate)}&date_to=${endStr}&prostor=${prostor}`);
-        if (!res.ok) return;
-        const reservations = await res.json();
-        const container = document.querySelector(`#prostor-view-${prostor} .rez-table-inner`);
-        container.innerHTML = renderWeeklyTable(prostor, startDate, reservations);
-      } catch(e) {}
-    }
-
-    function renderWeeklyTable(prostor, weekStart, reservations) {
-      const map = {};
-
-      reservations.forEach(r => {
-        const key = r.date + '|' + r.hour;
-        if (!map[key]) map[key] = [];
-        map[key].push(r);
-      });
-
-      // tablice totals per hour per day
-      const tabliceMap = {};
-      if (prostor === 'tablice') {
-        reservations.forEach(r => {
-          const key = r.date + '|' + r.hour;
-          tabliceMap[key] = (tabliceMap[key] || 0) + (r.qty || 0);
-        });
-      }
-
-      const days = [];
-      for (let i = 0; i < 5; i++) { days.push(addDays(weekStart, i)); }
-
-      // Week navigation
-      const weekEnd = addDays(weekStart, 4);
-      let html = `<div class="week-nav">
-        <button class="btn btn-sm btn-outline" onclick="shiftWeek(-7)">‹ Prejšnji teden</button>
-        <h3>${formatDateSI(weekStart)} – ${formatDateSI(weekEnd)}</h3>
-        <button class="btn btn-sm btn-outline" onclick="shiftWeek(7)">Naslednji teden ›</button>
-      </div>`;
-
-      const dayNames = ['Ponedeljek', 'Torek', 'Sreda', 'Četrtek', 'Petek'];
-      const hours = Object.entries(schedule);
-
-      html += `<table><thead><tr><th>Ura</th>`;
-      days.forEach((d, i) => {
-        html += `<th>${dayNames[i]}<br><small>${formatDateSI(d)}</small></th>`;
-      });
-      html += `</tr></thead><tbody>`;
-
-      for (const [hourIdx, hourLabel] of hours) {
-        html += `<tr><td><strong>${hourIdx}</strong><br><small>${hourLabel}</small></td>`;
-        for (const day of days) {
-          const dateStr = formatDate(day);
-          const key = dateStr + '|' + hourIdx;
-          const resList = map[key];
-
-          if (resList && resList.length > 0) {
-            html += `<td class="slot-taken">`;
-            for (const res of resList) {
-              // prostor · razred · (qty) · uporabnik
-              const parts = [prostorLabel(prostor), res.razred];
-              if (prostor === 'tablice' && res.qty) parts.push(`${res.qty} kos`);
-              parts.push(res.teacher_name || '?');
-              const label = parts.join(' · ');
-              html += `<div class="rez-label">${label}</div>`;
-              if (currentUser && res.teacher_id === currentUser.id) {
-                html += `<button class="btn btn-danger btn-sm" onclick="deleteReservation(${res.id})">✕</button>`;
-              }
-            }
-            html += `</td>`;
-          } else {
-            html += `<td>
-              <div class="slot-free">Prosto</div>`;
-            if (prostor === 'tablice') {
-              const used = tabliceMap[key] || 0;
-              html += `<div class="slot-info">${28 - used}/28 preostalih</div>`;
-            }
-            html += `<div class="quick-add"><button class="btn btn-sm btn-outline" onclick="quickRez('${prostor}','${dateStr}',${hourIdx})">+</button></div>`;
-            html += `</td>`;
-          }
-        }
-        html += `</tr>`;
-      }
-      html += `</tbody></table>`;
-      return html;
-    }
-
-    function shiftWeek(days) {
-      const input = document.getElementById('rez-week-start');
-      const d = new Date(input.value + 'T00:00:00');
-      d.setDate(d.getDate() + days);
-      input.value = formatDate(d);
-      loadAllReservations();
-    }
-
-    function quickRez(prostor, date, hour) {
-      document.getElementById('rez-form-prostor').value = prostor;
-      document.getElementById('rez-form-date').value = date;
-      document.getElementById('rez-form-hour').value = hour;
-      document.getElementById('rez-form-qty').value = 1;
-      document.getElementById('rez-form-qty-group').style.display = prostor === 'tablice' ? 'block' : 'none';
-      openModal('rez-modal');
-    }
-
-    function openRezModal() {
-      document.getElementById('rez-form-date').value = document.getElementById('rez-week-start').value;
-      document.getElementById('rez-form-prostor').value = prostori[0];
-      document.getElementById('rez-form-qty').value = 1;
-      document.getElementById('rez-form-qty-group').style.display = 'block';
-      openModal('rez-modal');
-    }
-
-    async function submitRezervacija() {
-      const data = {
-        prostor: document.getElementById('rez-form-prostor').value,
-        razred: document.getElementById('rez-form-razred').value,
-        date: document.getElementById('rez-form-date').value,
-        hour: parseInt(document.getElementById('rez-form-hour').value),
-        teacher_id: currentUser.id,
-      };
-      if (data.prostor === 'tablice') {
-        data.qty = parseInt(document.getElementById('rez-form-qty').value) || 1;
-      }
-
-      try {
-        const res = await fetch('/api/rezervacije', {
-          method: 'POST',
-          headers: {'Content-Type': 'application/json'},
-          body: JSON.stringify(data),
-        });
-        const json = await res.json();
-        if (res.ok) {
-          showMsg('Rezervacija uspešno ustvarjena!', 'success');
-          closeModal('rez-modal');
-          loadAllReservations();
-        } else {
-          showMsg(json.detail || 'Napaka pri ustvarjanju rezervacije.', 'error');
-        }
-      } catch(e) {
-        showMsg('Napaka pri povezavi s strežnikom.', 'error');
-      }
-    }
-
-    async function deleteReservation(id) {
-      if (!confirm('Ste prepričani, da želite izbrisati to rezervacijo?')) return;
-      try {
-        const res = await fetch(`/api/rezervacije/${id}`, { method: 'DELETE' });
-        if (res.ok) {
-          showMsg('Rezervacija izbrisana.', 'success');
-          loadAllReservations();
-        } else {
-          const json = await res.json();
-          showMsg(json.detail || 'Napaka pri brisanju.', 'error');
-        }
-      } catch(e) {
-        showMsg('Napaka pri povezavi s strežnikom.', 'error');
-      }
-    }
-
-    // ── Ocenjevanje ──
-    async function loadAssessments() {
-      const razred = document.getElementById('oc-razred').value;
-      currentOcRazred = razred;
-
-      let month = currentOcMonth;
-      if (!month) {
-        const now = new Date();
-        month = now.getFullYear() + '-' + String(now.getMonth() + 1).padStart(2, '0');
-        currentOcMonth = month;
-      }
-
-      let url = `/api/ocenjevanja?month=${month}`;
-      if (razred) url += `&razred=${razred}`;
-
-      try {
-        const res = await fetch(url);
-        if (!res.ok) { showMsg('Napaka pri nalaganju ocenjevanj.', 'error'); return; }
-        const assessments = await res.json();
-        renderMonthlyCalendar(razred || 'Vsi razredi', month, assessments, razred === '');
-      } catch(e) {
-        showMsg('Napaka pri povezavi s strežnikom.', 'error');
-      }
-    }
-
-    function renderMonthlyCalendar(razred, month, assessments, showAll) {
-      const [year, mon] = month.split('-').map(Number);
-      const firstDay = new Date(year, mon - 1, 1);
-      const lastDay = new Date(year, mon, 0);
-      const daysInMonth = lastDay.getDate();
-      const startDow = firstDay.getDay();
-      const startCol = startDow === 0 ? 6 : startDow - 1;
-
-      const asmMap = {};
-      assessments.forEach(a => {
-        const d = new Date(a.date + 'T00:00:00');
-        const key = d.getDate();
-        if (!asmMap[key]) asmMap[key] = [];
-        asmMap[key].push(a);
-      });
-
-      const prevMonth = mon === 1 ? `${year-1}-12` : `${year}-${String(mon-1).padStart(2,'0')}`;
-      const nextMonth = mon === 12 ? `${year+1}-01` : `${year}-${String(mon+1).padStart(2,'0')}`;
-
-      const dayNames = ['Pon','Tor','Sre','Čet','Pet','Sob','Ned'];
-      const today = new Date();
-
-      let html = `<div class="calendar-nav">
-        <button class="btn btn-sm btn-outline" onclick="changeMonth('${prevMonth}')">‹ Prejšnji mesec</button>
-        <h3>${monthName(mon-1)} ${year}</h3>
-        <button class="btn btn-sm btn-outline" onclick="changeMonth('${nextMonth}')">Naslednji mesec ›</button>
-      </div>`;
-
-      html += `<div class="calendar-grid">`;
-      dayNames.forEach(n => { html += `<div class="calendar-header">${n}</div>`; });
-
-      for (let i = 0; i < startCol; i++) {
-        html += `<div class="calendar-day other-month"></div>`;
-      }
-
-      for (let day = 1; day <= daysInMonth; day++) {
-        const cellDate = new Date(year, mon-1, day);
-        const isToday = cellDate.toDateString() === today.toDateString();
-        const isWeekend = cellDate.getDay() === 0 || cellDate.getDay() === 6;
-        let cls = 'calendar-day';
-        if (isToday) cls += ' today';
-        if (isWeekend) cls += ' other-month';
-
-        html += `<div class="${cls}" onclick="quickOc('${razred}','${year}-${String(mon).padStart(2,'0')}-${String(day).padStart(2,'0')}')">
-          <div class="day-num">${day}</div>`;
-
-        if (asmMap[day]) {
-          asmMap[day].forEach(a => {
-            const asmCls = a.ponavljanje ? 'assessment-ponavljanje' : 'assessment-normal';
-            const clsLabel = showAll ? ` [${a.razred}]` : '';
-            const label = `Ocenjevanje${clsLabel}: ${a.teacher_name || '?'}`;
-            html += `<div class="assessment-badge ${asmCls}">
-              <span>${a.ponavljanje ? '🔄 ' : ''}${label}</span>
-              <span class="del-asm" onclick="event.stopPropagation();deleteAssessment(${a.id})">✕</span>
-            </div>`;
-          });
-        } else if (!isWeekend) {
-          html += `<div class="add-asm-btn" onclick="event.stopPropagation();quickOc('${razred}','${year}-${String(mon).padStart(2,'0')}-${String(day).padStart(2,'0')}')">+</div>`;
-        }
-
-        html += `</div>`;
-      }
-
-      const lastCol = (startCol + daysInMonth) % 7;
-      const remaining = lastCol === 0 ? 0 : 7 - lastCol;
-      for (let i = 0; i < remaining; i++) {
-        html += `<div class="calendar-day other-month"></div>`;
-      }
-
-      html += `</div>`;
-      document.getElementById('oc-calendar-container').innerHTML = html;
-    }
-
-    function changeMonth(month) {
-      currentOcMonth = month;
-      loadAssessments();
-    }
-
-    function quickOc(razred, date) {
-      // If "Vsi razredi", use the form's selected razred instead
-      const formRazred = document.getElementById('oc-form-razred').value;
-      document.getElementById('oc-form-razred').value = formRazred || (razredi.length > 0 ? razredi[0] : '');
-      document.getElementById('oc-form-date').value = date;
-      document.getElementById('oc-form-ponavljanje').checked = false;
-      openModal('oc-modal');
-    }
-
-    function openOcModal() {
-      document.getElementById('oc-form-razred').value = document.getElementById('oc-razred').value;
-      document.getElementById('oc-form-date').value = new Date().toISOString().split('T')[0];
-      document.getElementById('oc-form-ponavljanje').checked = false;
-      openModal('oc-modal');
-    }
-
-    async function submitOcenjevanje() {
-      const data = {
-        razred: document.getElementById('oc-form-razred').value,
-        date: document.getElementById('oc-form-date').value,
-        ponavljanje: document.getElementById('oc-form-ponavljanje').checked,
-        teacher_id: currentUser.id,
-      };
-
-      try {
-        const res = await fetch('/api/ocenjevanja', {
-          method: 'POST',
-          headers: {'Content-Type': 'application/json'},
-          body: JSON.stringify(data),
-        });
-        const json = await res.json();
-        if (res.ok) {
-          showMsg('Ocenjevanje uspešno dodano!', 'success');
-          closeModal('oc-modal');
-          loadAssessments();
-        } else {
-          showMsg(json.detail || 'Napaka pri dodajanju ocenjevanja.', 'error');
-        }
-      } catch(e) {
-        showMsg('Napaka pri povezavi s strežnikom.', 'error');
-      }
-    }
-
-    async function deleteAssessment(id) {
-      if (!confirm('Ste prepričani, da želite izbrisati to ocenjevanje?')) return;
-      try {
-        const res = await fetch(`/api/ocenjevanja/${id}`, { method: 'DELETE' });
-        if (res.ok) {
-          showMsg('Ocenjevanje izbrisano.', 'success');
-          loadAssessments();
-        } else {
-          const json = await res.json();
-          showMsg(json.detail || 'Napaka pri brisanju.', 'error');
-        }
-      } catch(e) {
-        showMsg('Napaka pri povezavi s strežnikom.', 'error');
-      }
-    }
+    // ── Popravek za date pickerje: klik kjerkoli na input odpre koledar ──
+    // Brskalniki (zlasti Chrome) pogosto zahtevajo klik na puščico
+    // namesto kjerkoli na polje. Ta poslušalec na klik prepreči to
+    // težavo: ob kliku kjerkoli na <input type="date"> se pokliče
+    // showPicker(), kar odpre sistemski koledar. To je UX izboljšava
+    // za uporabnike, ki so navajeni klikanja na celotno polje.
+    document.querySelectorAll('input[type=date]').forEach(el => {
+      el.addEventListener('click', function() { this.showPicker?.(); });
+    });
   </script>
 </body>
 </html>

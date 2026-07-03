@@ -1,0 +1,36 @@
+<mxfile host="app.diagrams.net" agent="Hermes Agent=">
+  <diagram name="cnpg-cluster" id="diagram-cnpg-cluster.drawio">
+    <mxGraphModel dx="865" dy="488" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="827" pageHeight="1169" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="d3-2" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#E8F0FE;strokeColor=#4285F4;fontSize=13;fontStyle=1;" value="CNPG Cluster &quot;sola-db&quot;" vertex="1">
+          <mxGeometry height="280" width="580" x="10" y="10" as="geometry" />
+        </mxCell>
+        <mxCell id="d3-3" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F3E5F5;strokeColor=#9C27B0;fontSize=11;" value="sola-db-1 (PRIMARY) → k3s-1&#xa;&#xa;piše + bere&#xa;&#xa;Storage: Longhorn PVC (1Gi)" vertex="1">
+          <mxGeometry height="100" width="220" x="40" y="30" as="geometry" />
+        </mxCell>
+        <mxCell id="d3-4" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#E8F5E9;strokeColor=#4CAF50;fontSize=11;" value="sola-db-2 (REPLICA) → k3s-2&#xa;&#xa;samo bere&#xa;gleda kaj primary dela&#xa;&#xa;Storage: Longhorn PVC (1Gi)" vertex="1">
+          <mxGeometry height="100" width="240" x="330" y="30" as="geometry" />
+        </mxCell>
+        <mxCell id="d3-5" parent="1" style="text;whiteSpace=wrap;html=1;fontSize=12;fontStyle=1;" value="Servisni endpointi (Kubernetes Services):" vertex="1">
+          <mxGeometry height="30" width="200" x="40" y="190" as="geometry" />
+        </mxCell>
+        <mxCell id="d3-6" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFF9C4;strokeColor=#F57F17;fontSize=11;" value="sola-db-rw → primary (pisanje + branje)" vertex="1">
+          <mxGeometry height="35" width="220" x="40" y="230" as="geometry" />
+        </mxCell>
+        <mxCell id="d3-7" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#F5F5F5;strokeColor=#9E9E9E;fontSize=11;" value="sola-db-ro → vse instance (samo branje)" vertex="1">
+          <mxGeometry height="35" width="200" x="280" y="230" as="geometry" />
+        </mxCell>
+        <mxCell id="d3-8" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#F5F5F5;strokeColor=#9E9E9E;fontSize=11;" value="sola-db-r → vse instance" vertex="1">
+          <mxGeometry height="35" width="70" x="500" y="230" as="geometry" />
+        </mxCell>
+        <mxCell id="d3-9" edge="1" parent="1" source="d3-3" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;dashed=1;dashPattern=6 3;strokeColor=#9C27B0;fontSize=11;" target="d3-4" value="streaming replicacija=">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint as="offset" />
+          </mxGeometry>
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

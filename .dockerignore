@@ -1,0 +1,16 @@
+__pycache__
+*.pyc
+*.pyo
+.git
+.gitignore
+README.md
+Dockerfile
+.dockerignore
+navodila.md
+k3s_setup.md
+uporabniki.csv
+.data/
+*.db
+*.sqlite
+.env
+.res_app/

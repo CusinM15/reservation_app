@@ -1,0 +1,59 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="670" height="510" viewBox="10 -10 670 510">
+<defs><marker id="arrow" viewBox="0 0 10 10" refX="10" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+<path d="M 0 0 L 10 5 L 0 10 z" fill="#616161"/></marker>
+<marker id="arrow-green" viewBox="0 0 10 10" refX="10" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+<path d="M 0 0 L 10 5 L 0 10 z" fill="#4CAF50"/></marker>
+<marker id="arrow-purple" viewBox="0 0 10 10" refX="10" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+<path d="M 0 0 L 10 5 L 0 10 z" fill="#9C27B0"/></marker>
+<marker id="arrow-orange" viewBox="0 0 10 10" refX="10" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+<path d="M 0 0 L 10 5 L 0 10 z" fill="#F57F17"/></marker>
+</defs>
+<rect x="10" y="-10" width="670" height="510" fill="#FAFBFC"/>
+<line x1="300.0" y1="60.0" x2="300.0" y2="90.0" stroke="#1E88E5" stroke-width="2"  marker-end="url(#arrow)"/>
+<line x1="300.0" y1="150.0" x2="150.0" y2="200.0" stroke="#4CAF50" stroke-width="2"  marker-end="url(#arrow-green)"/>
+<line x1="300.0" y1="150.0" x2="520.0" y2="90.0" stroke="#F57F17" stroke-width="2"  marker-end="url(#arrow-orange)"/>
+<line x1="520.0" y1="150.0" x2="520.0" y2="200.0" stroke="#4CAF50" stroke-width="2"  marker-end="url(#arrow-green)"/>
+<line x1="520.0" y1="150.0" x2="520.0" y2="300.0" stroke="#FF9800" stroke-width="2"  marker-end="url(#arrow)"/>
+<line x1="300.0" y1="150.0" x2="200.0" y2="320.0" stroke="#F57F17" stroke-width="2"  marker-end="url(#arrow-orange)"/>
+<line x1="200.0" y1="380.0" x2="130.0" y2="430.0" stroke="#4CAF50" stroke-width="2"  marker-end="url(#arrow-green)"/>
+<line x1="200.0" y1="380.0" x2="390.0" y2="430.0" stroke="#FF9800" stroke-width="2"  marker-end="url(#arrow)"/>
+<rect x="200.0" y="10.0" width="200.0" height="50.0" rx="10" ry="10" fill="#E3F2FD" stroke="#1E88E5" stroke-width="1.5"/>
+<g font-family="Arial, sans-serif" font-size="14.0" fill="#FFFFFF">
+<text x="300.0" y="37.8" text-anchor="middle" font-weight="bold">Kateri način namestitve?</text>
+</g>
+<polygon points="300.0,90.0 380.0,120.0 300.0,150.0 220.0,120.0" fill="#FFF9C4" stroke="#F57F17" stroke-width="2"/>
+<g font-family="Arial, sans-serif" font-size="12.0" fill="#333333">
+<text x="300.0" y="122.4" text-anchor="middle" >Samo en računalnik?</text>
+</g>
+<rect x="30.0" y="200.0" width="240.0" height="60.0" rx="10" ry="10" fill="#E8F5E9" stroke="#4CAF50" stroke-width="1.5"/>
+<g font-family="Arial, sans-serif" font-size="11.0" fill="#333333">
+<text x="150.0" y="225.04999999999998" text-anchor="middle" >✅ Da → LOKALNO (uvicorn/Docker)</text>
+<text x="150.0" y="239.35" text-anchor="middle" >Enostavno, brez Kubernetes</text>
+</g>
+<polygon points="520.0,90.0 600.0,120.0 520.0,150.0 440.0,120.0" fill="#FFF9C4" stroke="#F57F17" stroke-width="2"/>
+<g font-family="Arial, sans-serif" font-size="12.0" fill="#333333">
+<text x="520.0" y="122.4" text-anchor="middle" >2+ računalnikov?</text>
+</g>
+<rect x="380.0" y="200.0" width="280.0" height="60.0" rx="10" ry="10" fill="#E8F5E9" stroke="#4CAF50" stroke-width="1.5"/>
+<g font-family="Arial, sans-serif" font-size="11.0" fill="#333333">
+<text x="520.0" y="225.04999999999998" text-anchor="middle" >✅ Da → KUBERNETES (k3s)</text>
+<text x="520.0" y="239.35" text-anchor="middle" >Visoka razpoložljivost</text>
+</g>
+<rect x="380.0" y="300.0" width="280.0" height="60.0" rx="10" ry="10" fill="#FFF3E0" stroke="#FF9800" stroke-width="1.5"/>
+<g font-family="Arial, sans-serif" font-size="11.0" fill="#333333">
+<text x="520.0" y="325.05" text-anchor="middle" >Ne, ampak bom dodajal →</text>
+<text x="520.0" y="339.35" text-anchor="middle" >KUBERNETES (k3s) — začni zdaj</text>
+</g>
+<polygon points="200.0,320.0 300.0,350.0 200.0,380.0 100.0,350.0" fill="#FFF9C4" stroke="#F57F17" stroke-width="2"/>
+<g font-family="Arial, sans-serif" font-size="12.0" fill="#333333">
+<text x="200.0" y="352.4" text-anchor="middle" >Imaš star laptop v omari?</text>
+</g>
+<rect x="30.0" y="430.0" width="200.0" height="50.0" rx="10" ry="10" fill="#E8F5E9" stroke="#4CAF50" stroke-width="1.5"/>
+<g font-family="Arial, sans-serif" font-size="11.0" fill="#333333">
+<text x="130.0" y="457.20000000000005" text-anchor="middle" >Samo za test → LOKALNO</text>
+</g>
+<rect x="280.0" y="430.0" width="220.0" height="50.0" rx="10" ry="10" fill="#FFF3E0" stroke="#FF9800" stroke-width="1.5"/>
+<g font-family="Arial, sans-serif" font-size="11.0" fill="#333333">
+<text x="390.0" y="457.20000000000005" text-anchor="middle" >Za res → k3s (tudi 1 node > nič)</text>
+</g>
+</svg>

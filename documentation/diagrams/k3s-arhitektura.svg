@@ -1,0 +1,64 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="820" height="490" viewBox="40 -10 820 490">
+<defs><marker id="arrow" viewBox="0 0 10 10" refX="10" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+<path d="M 0 0 L 10 5 L 0 10 z" fill="#616161"/></marker>
+<marker id="arrow-green" viewBox="0 0 10 10" refX="10" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+<path d="M 0 0 L 10 5 L 0 10 z" fill="#4CAF50"/></marker>
+<marker id="arrow-purple" viewBox="0 0 10 10" refX="10" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+<path d="M 0 0 L 10 5 L 0 10 z" fill="#9C27B0"/></marker>
+<marker id="arrow-orange" viewBox="0 0 10 10" refX="10" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+<path d="M 0 0 L 10 5 L 0 10 z" fill="#F57F17"/></marker>
+</defs>
+<rect x="40" y="-10" width="820" height="490" fill="#FAFBFC"/>
+<line x1="220.0" y1="315.0" x2="680.0" y2="275.0" stroke="#f0c040" stroke-width="2"  marker-end="url(#arrow)"/>
+<text x="450.0" y="287.0" text-anchor="middle" font-size="10" fill="#f0c040" font-family="Arial">streaming replikacija</text>
+<line x1="450.0" y1="50.0" x2="450.0" y2="80.0" stroke="#cccccc" stroke-width="2"  marker-end="url(#arrow)"/>
+<line x1="450.0" y1="120.0" x2="220.0" y2="180.0" stroke="#cccccc" stroke-width="2"  marker-end="url(#arrow)"/>
+<rect x="350.0" y="10.0" width="200.0" height="40.0" rx="10" ry="10" fill="#f6821f" stroke="#d46914" stroke-width="1.5"/>
+<g font-family="Arial, sans-serif" font-size="11" fill="#FFFFFF">
+<text x="450.0" y="32.2" text-anchor="middle" >Cloudflare {{DOMAIN}}</text>
+</g>
+<rect x="350.0" y="80.0" width="200.0" height="40.0" rx="10" ry="10" fill="#e07c24" stroke="#b8631d" stroke-width="1.5"/>
+<g font-family="Arial, sans-serif" font-size="11" fill="#FFFFFF">
+<text x="450.0" y="102.19999999999999" text-anchor="middle" font-weight="bold">MetalLB LoadBalancer&#10;({{LB_IP}}:{{LB_PORT}})</text>
+</g>
+<rect x="60.0" y="180.0" width="320.0" height="280.0" rx="10" ry="10" fill="#0f3460" stroke="#16213e" stroke-width="1.5"/>
+<g font-family="Arial, sans-serif" font-size="11" fill="#FFFFFF">
+<text x="220.0" y="322.20000000000005" text-anchor="middle" >k3s-1 (cp, etcd)</text>
+</g>
+<rect x="520.0" y="180.0" width="320.0" height="280.0" rx="10" ry="10" fill="#0f3460" stroke="#16213e" stroke-width="1.5"/>
+<g font-family="Arial, sans-serif" font-size="11" fill="#FFFFFF">
+<text x="680.0" y="322.20000000000005" text-anchor="middle" >k3s-2 (cp, etcd)</text>
+</g>
+<rect x="85.0" y="210.0" width="270.0" height="40.0" rx="10" ry="10" fill="#e94560" stroke="#c23152" stroke-width="1.5"/>
+<g font-family="Arial, sans-serif" font-size="11" fill="#FFFFFF">
+<text x="220.0" y="232.2" text-anchor="middle" >sola-app</text>
+</g>
+<rect x="85.0" y="275.0" width="270.0" height="40.0" rx="10" ry="10" fill="#533483" stroke="#3d2563" stroke-width="1.5"/>
+<g font-family="Arial, sans-serif" font-size="11" fill="#FFFFFF">
+<text x="220.0" y="297.20000000000005" text-anchor="middle" >sola-db-1 (PRIMARY)</text>
+</g>
+<rect x="85.0" y="340.0" width="270.0" height="40.0" rx="10" ry="10" fill="#0a8754" stroke="#08643e" stroke-width="1.5"/>
+<g font-family="Arial, sans-serif" font-size="11" fill="#FFFFFF">
+<text x="220.0" y="362.20000000000005" text-anchor="middle" >Longhorn</text>
+</g>
+<rect x="85.0" y="400.0" width="270.0" height="40.0" rx="10" ry="10" fill="#e07c24" stroke="#b8631d" stroke-width="1.5"/>
+<g font-family="Arial, sans-serif" font-size="11" fill="#FFFFFF">
+<text x="220.0" y="422.20000000000005" text-anchor="middle" >MetalLB</text>
+</g>
+<rect x="545.0" y="210.0" width="270.0" height="40.0" rx="10" ry="10" fill="#e94560" stroke="#c23152" stroke-width="1.5"/>
+<g font-family="Arial, sans-serif" font-size="11" fill="#FFFFFF">
+<text x="680.0" y="232.2" text-anchor="middle" >sola-app</text>
+</g>
+<rect x="545.0" y="275.0" width="270.0" height="40.0" rx="10" ry="10" fill="#533483" stroke="#3d2563" stroke-width="1.5"/>
+<g font-family="Arial, sans-serif" font-size="11" fill="#FFFFFF">
+<text x="680.0" y="297.20000000000005" text-anchor="middle" >sola-db-2 (REPLICA)</text>
+</g>
+<rect x="545.0" y="340.0" width="270.0" height="40.0" rx="10" ry="10" fill="#0a8754" stroke="#08643e" stroke-width="1.5"/>
+<g font-family="Arial, sans-serif" font-size="11" fill="#FFFFFF">
+<text x="680.0" y="362.20000000000005" text-anchor="middle" >Longhorn</text>
+</g>
+<rect x="545.0" y="400.0" width="270.0" height="40.0" rx="10" ry="10" fill="#e07c24" stroke="#b8631d" stroke-width="1.5"/>
+<g font-family="Arial, sans-serif" font-size="11" fill="#FFFFFF">
+<text x="680.0" y="422.20000000000005" text-anchor="middle" >MetalLB</text>
+</g>
+</svg>

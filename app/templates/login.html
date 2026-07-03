@@ -5,25 +5,221 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Prijava - Šolski App</title>
     <style>
+        /* --- OSNOVNE NASTAVITVE TELESA --- */
+        /* Enostaven, čist font (Arial) za berljivost. Svetlo sivo ozadje za
+           ločitev prijavne kartice od ozadja — skladno z modernimi spletnimi
+           vzorci za prijavne forme. */
         body { font-family: Arial, sans-serif; margin: 50px; background: #f5f5f5; }
+
+        /* --- PRIJAVNA KARTICA --- */
+        /* Omejena širina (400px), centrirana, bela, z zaobljenimi robovi in
+           senco — tako je forma vizualno poudarjena in uporabnik takoj ve,
+           kam mora vpisati podatke. Box-shadow daje občutek dvignjenega
+           elementa (angl. elevation). */
         .container { max-width: 400px; margin: auto; background: white; padding: 30px; border-radius: 10px; box-shadow: 0 0 10px rgba(0,0,0,0.1); }
-        input { width: 100%; padding: 10px; margin: 10px 0; border: 1px solid #ddd; border-radius: 5px; }
-        button { width: 100%; padding: 10px; background: #007bff; color: white; border: none; border-radius: 5px; cursor: pointer; }
+
+        /* --- VNOSNA POLJA (input) --- */
+        /* Celotna širina (znotraj kartice), z robom in zaokrožitvijo za
+           prijazen videz. box-sizing: border-box zagotovi, da padding ne
+           poveča širine preko 100%. */
+        input { width: 100%; padding: 10px; margin: 10px 0; border: 1px solid #ddd; border-radius: 5px; box-sizing: border-box; }
+
+        /* --- GLAVNI GUMB (prijava/pošlji) --- */
+        /* Moder (primarna barva) za poudarek — uporabnik takoj ve, da je to
+           glavna akcija. Ob hoverju potemnimo za vizualno povratno informacijo. */
+        button { width: 100%; padding: 10px; background: #007bff; color: white; border: none; border-radius: 5px; cursor: pointer; margin-top: 5px; }
         button:hover { background: #0056b3; }
-        .error { color: red; margin-bottom: 10px; }
+
+        /* --- POVEZAVNI GUMB (npr. 'Pozabljeno geslo?') --- */
+        /* Prosojno ozadje, moder tekst s podčrtajem — izgleda kot povezava,
+           ne kot gumb. Uporabljeno za sekundarne akcije, ki niso glavni
+           namen strani. */
+        .btn-link { background: transparent; color: #007bff; padding: 5px 0; text-decoration: underline; display: inline; width: auto; border: none; cursor: pointer; font-size: 0.9rem; }
+        .btn-link:hover { background: transparent; color: #0056b3; }
+
+        /* --- SPOROČILA O NAPAKAH / USPEHU --- */
+        /* Rdeča za napake (uporabnik takoj vidi, da je nekaj narobe),
+           zelena za uspešna obvestila (npr. 'povezava poslana'). */
+        .error { color: red; margin-bottom: 10px; font-size: 0.9rem; }
+        .info { color: green; margin-bottom: 10px; font-size: 0.9rem; }
+
+        /* --- PREKLAPLJANJE MED SEKCIJAMI --- */
+        /* Same sekcije so skrite; aktivna se prikaže. To omogoča SPA-obnašanje
+           (single-page app) brez osveževanja strani. */
+        .section { display: none; }
+        .section.active { display: block; }
+
+        /* --- POVRATNA POVEZAVA --- */
+        /* Centrirana, manjša pisava za '← Nazaj na prijavo' — uporabniku
+           omogoča vrnitev na začetni zaslon. */
+        .back-link { text-align: center; margin-top: 15px; font-size: 0.85rem; }
+        .back-link a { color: #007bff; text-decoration: none; }
+        .back-link a:hover { text-decoration: underline; }
+
+        /* --- NASLOV --- */
+        /* Centriran za lepšo postavitev. */
+        h2 { text-align: center; }
     </style>
 </head>
 <body>
     <div class="container">
-        <h2>Prijava v sistem</h2>
-        {% if error %}
-        <div class="error">{{ error }}</div>
-        {% endif %}
-        <form method="POST" action="/auth/login">
-            <input type="text" name="username" placeholder="Uporabniško ime" required>
-            <input type="password" name="password" placeholder="Geslo" required>
-            <button type="submit">Prijava</button>
-        </form>
+        <!-- ============================================================
+             SEKCUA: PRIJAVA
+             Glavni obrazec za vpis v sistem. Uporabnik vpiše uporabniško
+             ime in geslo. Vsebuje tudi preklop prikaza gesla (oko) in
+             povezavo na pozabljeno geslo.
+             ============================================================ -->
+        <div id="section-login" class="section {% if not show_forgot and not show_reset %}active{% endif %}">
+            <h2>Prijava v sistem</h2>
+            {% if error and not show_forgot and not show_reset %}
+            <div class="error">{{ error }}</div>
+            {% endif %}
+            {% if info and not show_forgot and not show_reset %}
+            <div class="info">{{ info }}</div>
+            {% endif %}
+            <form method="POST" action="/auth/login">
+                <input type="text" name="username" placeholder="Uporabniško ime" required>
+                <!-- OKENCE ZA GESLO — vsebuje vnosno polje in ikono za
+                     preklop prikaza gesla (oko). Relativno pozicionirano,
+                     da je ikona poravnana desno znotraj polja. UX: uporabnik
+                     lahko s klikom na oko preveri, kaj je vpisal. -->
+                <div style="position:relative;">
+                    <input type="password" name="password" id="login-pw" placeholder="Geslo" required style="padding-right:40px;">
+                    <span onclick="togglePw()" id="pw-toggle" style="position:absolute;right:10px;bottom:9px;cursor:pointer;font-size:1.1rem;user-select:none;color:#999;line-height:1;">
+                        <!-- IKONA ZA PRIKAZ/PRIKRITJE GESLA — SVG oblika očesa.
+                             Ob kliku se preklaplja med odprtim (vidno geslo) in
+                             prečrtanim (geslo skrito) očesom. -->
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path id="pw-eye-path" d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+                            <circle id="pw-pupil" cx="12" cy="12" r="3"/>
+                        </svg>
+                    </span>
+                </div>
+                <button type="submit">Prijava</button>
+            </form>
+
+            <!-- JAVASCRIPT: PREKLOP PRIKAZA GESLA (togglePw)
+                 Funkcija preklaplja med type="password" in type="text" za
+                 polje gesla. Hkrati spremeni SVG ikono očesa: odprto oko
+                 (vidno geslo) → prečrtano oko (geslo skrito). To je zgolj
+                 UX izboljšava — uporabnik si lahko ogleda geslo, da preveri
+                 tipkarske napake. -->
+            <script>
+            function togglePw() {
+                const pw = document.getElementById('login-pw');
+                const eye = document.getElementById('pw-toggle');
+                const path = document.getElementById('pw-eye-path');
+                const pupil = document.getElementById('pw-pupil');
+                if (pw.type === 'password') {
+                    // Preklopi na besedilni način (geslo je vidno) in
+                    // spremeni SVG v prečrtano oko.
+                    pw.type = 'text';
+                    path.setAttribute('d', 'M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8zM3.5 3.5l17 17');
+                    pupil.style.display = 'none';
+                } else {
+                    // Preklopi nazaj na skrito geslo in prikaže normalno oko.
+                    pw.type = 'password';
+                    path.setAttribute('d', 'M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z');
+                    pupil.style.display = 'block';
+                }
+            }
+            </script>
+
+            <div style="text-align:center;margin-top:15px;">
+                <a href="/auth/forgot-password" style="color:#007bff;text-decoration:none;font-size:0.85rem;">Pozabljeno geslo?</a>
+            </div>
+        </div>
+
+        <!-- ============================================================
+             SEKCUA: POZABLJENO GESLO
+             Uporabnik vpiše svoj službeni email, na katerega dobi
+             povezavo za ponastavitev gesla. Ta sekcija se prikaže, ko
+             uporabnik klikne 'Pozabljeno geslo?' (strežnik nastavi
+             show_forgot=True).
+             ============================================================ -->
+        <div id="section-forgot" class="section {% if show_forgot %}active{% endif %}">
+            <h2>Pozabljeno geslo</h2>
+            {% if error and show_forgot %}
+            <div class="error">{{ error }}</div>
+            {% endif %}
+            {% if info and show_forgot %}
+            <div class="info">{{ info }}</div>
+            {% endif %}
+            <form method="POST" action="/auth/forgot-password">
+                <input type="email" name="email" placeholder="Vnesite vaš službeni email" required>
+                <button type="submit">Pošlji povezavo</button>
+            </form>
+            <div class="back-link">
+                <a href="/auth/login">← Nazaj na prijavo</a>
+            </div>
+        </div>
+
+        <!-- ============================================================
+             SEKCUA: PONASTAVITEV GESLA
+             Uporabnik prispe s povezave, ki jo je prejel po emailu.
+             Strežnik nastavi show_reset=True in posreduje token in email
+             prek skritih polj. Obrazec zahteva novo geslo in potrditev.
+             Gesli se na odjemalcu preverita pred pošiljanjem
+             (validateResetPasswords), da ni nepotrebnega nalaganja
+             strežnika ob očitni napaki.
+             ============================================================ -->
+        <div id="section-reset" class="section {% if show_reset %}active{% endif %}">
+            <h2>Ponastavitev gesla</h2>
+            {% if error and show_reset %}
+            <div class="error">{{ error }}</div>
+            {% endif %}
+            <form method="POST" action="/auth/reset-password" onsubmit="return validateResetPasswords()">
+                <!-- Skriti polji: strežnik jih nastavi prek Jinja2, da na
+                     odjemalcu ni treba shranjevati občutljivih podatkov
+                     v JS spremenljivke. -->
+                <input type="hidden" name="token" value="{{ reset_token }}">
+                <input type="hidden" name="email" value="{{ reset_email }}">
+                <input type="password" name="new_password" id="reset_pw1" placeholder="Novo geslo" required>
+                <!-- Potrditveno polje: ob vnosu skrije morebitno prejšnje
+                     sporočilo o neujemanju (oninput handler) — uporabnik
+                     dobi takojšnjo povratno informacijo. -->
+                <input type="password" name="confirm_password" id="reset_pw2" placeholder="Ponovite novo geslo" required
+                       oninput="document.getElementById('reset_pw_match').style.display='none'"
+                       style="margin-top:6px;">
+                <div id="reset_pw_match" style="color:red;font-size:0.85rem;display:none;">Gesli se ne ujemata.</div>
+                <p style="font-size:0.8rem;color:#666;margin:-5px 0 10px;">
+                    Geslo mora biti dolgo vsaj 5 znakov ter vsebovati vsaj eno malo črko, eno veliko črko in eno številko.
+                </p>
+                <button type="submit">Spremeni geslo</button>
+            </form>
+
+            <!-- JAVASCRIPT: PREVERJANJE GESEL PRED POŠILJANJEM
+                 (validateResetPasswords)
+                 Preveri, da se novi gesli ujemata, preden se obrazec pošlje
+                 strežniku. Razlog: izboljšanje UX (takojšnja napaka) in
+                 zmanjšanje nepotrebnih zahtev na strežnik.
+                 Opomba: to ni varnostna kontrola — gesla se vedno preverijo
+                 tudi na strežniku. -->
+            <script>
+            function validateResetPasswords() {
+                const pw1 = document.getElementById('reset_pw1').value;
+                const pw2 = document.getElementById('reset_pw2').value;
+                if (pw1 !== pw2) {
+                    document.getElementById('reset_pw_match').style.display = 'block';
+                    return false;  // Prepreči pošiljanje obrazca
+                }
+                return true;  // Obrazec se pošlje naprej
+            }
+            </script>
+
+            <div class="back-link">
+                <a href="/auth/login">← Nazaj na prijavo</a>
+            </div>
+        </div>
+    </div>
+
+    <!-- POVEZAVE DO NAVODIL — prikažejo se pod prijavno kartico.
+         Omogočajo prenos slovenskih in angleških navodil za učitelje.
+         UX: dostopna tudi neprijavljenim uporabnikom, saj so navodila
+         javna. -->
+    <div style="text-align:center;margin-top:20px;padding-top:15px;border-top:1px solid #ddd;max-width:400px;margin-left:auto;margin-right:auto;">
+        <a href="/docs/download/navodila-ucitelji" style="color:#007bff;text-decoration:none;font-size:0.85rem;display:block;margin-bottom:4px;">📖 Navodila za učitelje</a>
+        <a href="/docs/download/navodila-ucitelji-en" style="color:#007bff;text-decoration:none;font-size:0.85rem;display:block;">🌍 Teacher Instructions (English)</a>
     </div>
 </body>
 </html>

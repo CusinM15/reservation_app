@@ -1,0 +1,14 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: sola-config
+  namespace: sola-app
+data:
+  APP_HOST: "0.0.0.0"
+  APP_PORT: "8002"
+  BASE_URL: "https://ostc-app.org"
+  RESET_TOKEN_EXPIRATION_MINUTES: "30"
+  TABLICE_MAX: "28"
+  SCHEDULE: '{"0":"07:30-08:15","1":"08:20-09:05","2":"09:15-10:00","3":"10:20-11:05","4":"11:10-12:55","5":"12:00-12:45","6":"12:50-13:35","7":"14:00-14:45"}'
+  RAZREDI: "IP/NIP/ID,1.a,1.b,1.c,1.č,2.a,2.b,2.c,2.č,3.a,3.b,3.c,3.č,4.a,4.b,4.c,4.č,5.a,5.b,5.c,5.č,6.a,6.b,6.c,6.č,7.a,7.b,7.c,8.a,8.b,8.c,8.č,8.1,8.2,8.3,8.4,8.5,8.6,9.a,9.b,9.c,9.1,9.2,9.3,9.4,9.5"
+  PROSTORI: "tablice,racunalnica,ladja,gospodinjska-ucilnica"

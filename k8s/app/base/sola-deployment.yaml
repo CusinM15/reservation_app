@@ -1,0 +1,76 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: sola-app
+  namespace: sola-app
+  labels:
+    app: sola-app
+spec:
+<<<<<<< Updated upstream
+  replicas: 2  # ena replika na node; HPA (HorizontalPodAutoscaler) lahko doda do 4 replike
+=======
+  replicas: 2  # minimalno 2 repliki; HPA (HorizontalPodAutoscaler) lahko doda do 2 dodatni (skupaj 4)
+>>>>>>> Stashed changes
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 0
+  selector:
+    matchLabels:
+      app: sola-app
+  template:
+    metadata:
+      labels:
+        app: sola-app
+    spec:
+      affinity:
+        podAntiAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+          - weight: 100
+            podAffinityTerm:
+              labelSelector:
+                matchExpressions:
+                - key: app
+                  operator: In
+                  values: [sola-app]
+              topologyKey: kubernetes.io/hostname
+      containers:
+      - name: app
+        image: mato12345/sola-app:latest
+        imagePullPolicy: Always
+        ports:
+        - containerPort: 8002
+          name: http
+        envFrom:
+        - configMapRef:
+            name: sola-config
+        - secretRef:
+            name: sola-secrets
+        resources:
+          requests:
+            memory: "256Mi"
+            cpu: "100m"
+          limits:
+            memory: "512Mi"
+            cpu: "500m"
+        volumeMounts:
+        - name: tmp-volume
+          mountPath: /tmp
+        readinessProbe:
+          httpGet:
+            path: /health
+            port: http
+          initialDelaySeconds: 8
+          periodSeconds: 10
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: http
+          initialDelaySeconds: 20
+          periodSeconds: 30
+          failureThreshold: 5
+      volumes:
+      - name: tmp-volume
+        emptyDir:
+          sizeLimit: 2Gi
