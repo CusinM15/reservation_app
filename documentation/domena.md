@@ -10,7 +10,7 @@
 
 # Domena — kako nas najde internet?
 
-Trenutna domena: **`{{DOMAIN}}`** (Cloudflare proxied — oranžni oblak prižgan 🟠)
+Trenutna domena: **`{{DOMAIN}}`** (Cloudflare proxy — oranžni oblak prižgan 🟠)
 
 ---
 
@@ -24,8 +24,8 @@ Trenutna domena: **`{{DOMAIN}}`** (Cloudflare proxied — oranžni oblak prižga
 
 | Tip | Ime | Vrednost | Proxy | Namen |
 |-----|-----|----------|-------|-------|
-| A | `{{DOMAIN}}` | `{{LB_IP}}` | ✅ Proxied (oranžni oblak 🟠) | Aplikacija — uporabniki pridejo sem |
-| CNAME | `www` | `{{DOMAIN}}` | ✅ Proxied (oranžni oblak 🟠) | Preusmeritev www na domeno |
+| A | `{{DOMAIN}}` | `{{LB_IP}}` | ✅ Proxy (oranžni oblak 🟠) | Aplikacija — uporabniki pridejo sem |
+| CNAME | `www` | `{{DOMAIN}}` | ✅ Proxy (oranžni oblak 🟠) | Preusmeritev www na domeno |
 
 ---
 
@@ -36,7 +36,7 @@ Trenutna domena: **`{{DOMAIN}}`** (Cloudflare proxied — oranžni oblak prižga
 > in pospešuje nalaganje. Če te zanima, kdo je tvoj strežnik — ne moreš vedeti.
 > Vidiš samo varnostnika.
 
-**Oranžni oblak (Proxied) 🟠** — Cloudflare aktivno posreduje promet. Uporabnik
+**Oranžni oblak (Proxy) 🟠** — Cloudflare aktivno posreduje promet. Uporabnik
 pokliče `{{DOMAIN}}`, Cloudflare pogleda, ali je zahteva varna, in jo pošlje
 naprej na `{{LB_IP}}`. Vse gre skozi Cloudflare.
 
@@ -52,13 +52,13 @@ Cloudflare proxy v praksi pomeni:
 
 ---
 
-## 🔐 Flexible SSL — polovična šifra (ELI5)
+## 🔐 Flexible SSL — polovično šifriranje (ELI5)
 
-> Flexible SSL je kot **polovična šifra**. Med uporabnikom in Cloudflarom je HTTPS
+> Flexible SSL je kot **polovično šifriranje**. Med uporabnikom in Cloudflarom je HTTPS
 > (zaklenjeno 🔒). Med Cloudflarom in našim strežnikom pa HTTP (odklenjeno 🔓).
 > V šolskem omrežju je to OK, ker je promet znotraj zaupanja vrednega omrežja.
 >
-> Če bi aplikacija tekla na javnem WiFi-ju v kavarni, bi to bil problem.
+> Če bi aplikacija delovala na javnem WiFi-ju v kavarni, bi to bil problem.
 > Ampak promet med Cloudflarom in `{{LB_IP}}` nikoli ne zapusti šolskega omrežja.
 > Za šolo je to čisto dovolj dobro.
 
@@ -78,7 +78,7 @@ Cloudflare proxy v praksi pomeni:
 > svoj naslov) in za preusmeritve (ko te pošlje iz ene strani na drugo).
 >
 > Če bi BASE_URL manjkal ali bil napačen, bi aplikacija pošiljala email povezave
-> kot `http://localhost:3000/...» namesto `https://{{DOMAIN}}/...» — in to ne
+> kot `http://localhost:3000/...` namesto `https://{{DOMAIN}}/...` — in to ne
 > deluje.
 
 Konfiguracija v ConfigMap (`sola-config`, namespace `sola-app`):
@@ -105,7 +105,7 @@ BASE_URL: "https://{{DOMAIN}}"
 ### 1. Cloudflare — dodaj novo domeno in A zapis
 
 1. Odpri Cloudflare dashboard
-2. Dodaj A zapis: `@` → `{{LB_IP}}` (Proxied — oranžni oblak, LoadBalancer)
+2. Dodaj A zapis: `@` → `{{LB_IP}}` (Proxy — oranžni oblak, LoadBalancer)
 3. Počakaj, da se DNS propagira (lahko traja od nekaj minut do 48 ur, ponavadi ~5 min)
 
 ### 2. Posodobi BASE_URL v Kubernetes
@@ -122,8 +122,8 @@ kubectl -n sola-app rollout restart deployment/sola-app
 
 ### ❓ Zakaj ne vidim svojega strežnika ko pingam `{{DOMAIN}}`?
 
-> Ker imamo **oranžni oblak (Proxied)**. Ping gre na Cloudflare edge, ne na tvoj
-> strežnik. Cloudflare se ne pusta pingat — vrže timeout. To je **normalno**.
+> Ker imamo **oranžni oblak (Proxy)**. Ping gre na Cloudflare edge, ne na tvoj
+> strežnik. Cloudflare se ne pusti pingati — vrže timeout. To je **normalno**.
 > Tvoj strežnik je še vedno živ in zdrav. Če bi želel videti pravi IP, bi moral
 > dati DNS v **siv oblak (DNS only)** — ampak tega nočemo, ker potem izgubimo
 > Cloudflare zaščito.
@@ -157,7 +157,7 @@ kubectl -n sola-app rollout restart deployment/sola-app
 - **Cloudflare SSL** je "Flexible" — HTTPS med uporabnikom in Cloudflarom, HTTP med Cloudflarom in `{{LB_IP}}` (znotraj šolskega omrežja — v redu)
 - **server: cloudflare** se pojavi v HTTP headerjih — to je dokaz da Cloudflare posreduje
 - Če bi želeli **end-to-end HTTPS**, bi potrebovali certifikat na aplikaciji (trenutno ni potrebe — ne kompliciraj)
-- DNS propagacija lahko traja. Če si ravno spremenil DNS in ne dela — počakaj. Ne paničari. Skoči na `dig {DOMAIN}` po 5 minutah.
+- DNS propagacija lahko traja. Če si ravno spremenil DNS in ne dela — počakaj. Ne paničari. Skoči na `dig {{DOMAIN}}` po 5 minutah.
 
 ---
 
