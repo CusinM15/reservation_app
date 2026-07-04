@@ -208,7 +208,7 @@ As of October 2025, Windows 10 is officially dead — no more updates, no more s
 You can install **Zorin OS 18.01** or **Linux Mint** on these machines. Both are fast, secure, and user-friendly — Zorin is even designed for people switching from Windows. The catch? Schools have Microsoft contracts and most staff use Office. Switching OS isn't always practical when teachers rely on Outlook, Word, and Excel.
 
 **2. Local server from obsolete computers**
-Even if a computer isn't suitable for daily work with Windows anymore, it still makes an excellent server. Install Linux on it and host this app (and other things). This means more work for the admin — setup, maintenance — but:
+Even if a computer isn't suitable for daily work with Windows 11 anymore, it still makes an excellent server. Install Linux on it and host this app (and other things). This means more work for the admin — setup, maintenance — but:
 - The computer stays in full use until the end of its life
 - Nothing goes to waste
 - The app stays fully under your control
@@ -221,9 +221,6 @@ Without security updates, it's a ticking time bomb. Especially for an app that h
 
 ---
 
-*Documentation written in the style of "a DevOps senior explaining things to their neighbor over the backyard fence" — because if you can't explain it simply, you don't understand it well enough.*
-
----
 
 > **Author:** Matej Cousin  
 > **School:** OS Toneta Cufarja, Jesenice
