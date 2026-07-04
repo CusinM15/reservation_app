@@ -25,7 +25,7 @@ Aplikacija teče v **dveh kopijah (pod-ih)**, ena na vsakem nodu. To ni luksuz, 
 
 **Ena replika na en node** — to je pravilo. Ker imava 2 noda (k3s-1 in k3s-2), imava vedno 2 repliki, vsaka na svojem računalniku.
 
-Če pa je gneča (ocene, začetek šolskega leta), **HorizontalPodAutoscaler (HPA)** samodejno doda še tretjo repliko. Ko obremenitev pade, se vrne na 2.
+Če pa je gneča (začetek šolskega leta ...), **HorizontalPodAutoscaler (HPA)** samodejno doda še tretjo repliko. Ko obremenitev pade, se vrne na 2.
 
 ```bash
 kubectl get hpa -n sola-app
@@ -33,7 +33,7 @@ kubectl get hpa -n sola-app
 # sola-app-hpa    Deployment/sola-app    45%/60% (CPU)    2     4     2
 ```
 
-> **ELI5:** Kot dva kavomata v šolski kuhinji — vsak ima svoj rezervoar za vodo in kavo. Ko je malica in gneča (100 učiteljev hoče kavo naenkrat), se samodejno vključi še tretji in četrti kavomat. Ko gneče zmanjka, gresta spet dva. Učitelji (uporabniki) samo dobijo kavo, ne zanima jih, koliko kavomatov stoji za zaveso.
+> **ELI5:** Kot dva kavomata v šolski kuhinji — vsak ima svoj rezervoar za vodo in kavo. Ko je malica in gneča (100 učiteljev hoče kavo naenkrat), se samodejno vključi še tretji in četrti kavomat. Ko gneče zmanjka, pa spet "samo" dva. Učitelji (uporabniki) samo dobijo kavo, ne zanima jih, koliko kavomatov stoji za zaveso.
 
 > 💡 **Opomba:** Health check na `/health` endpoint — če vrne 200 OK, je pod živ. Če ne, ga Kubernetes ubije in zažene znova.
 
@@ -187,7 +187,7 @@ kubectl get cluster -n sola sola-db    # CNPG naj ima 2 ready instance
 
 ### Kaj če oba noda crkneta?
 
-Potem nimaš sreče. Aplikacija je mrtva, baza je mrtva, uporabniki vidijo "stran ni dosegljiva". Ko pridejo nodi nazaj gor, k3s etcd potrebuje rokoborbo (recovery), Longhorn PVC-ji se morajo ponovno pripeti, CNPG pa bo poskusil restartati bazo. Podatki so varni (Longhorn replikacija), ampak **dokler oba noda nista gor, nič ne dela.** Če se to dogaja pogosto, rabiš 3. node ali pa cloud rešitev.
+Potem nimaš sreče. Aplikacija je mrtva, baza je mrtva, uporabniki vidijo "stran ni dosegljiva". Ko pridejo nodi nazaj gor, k3s etcd potrebuje recovery, Longhorn PVC-ji se morajo ponovno pripeti, CNPG pa bo poskusil restartati bazo. Podatki so varni (Longhorn replikacija), ampak **dokler oba noda nista gor, nič ne dela.** Če se to dogaja pogosto, rabiš 3. node ali pa cloud rešitev.
 
 ### Kako vem kateri node ima bazo (primary)?
 
@@ -202,11 +202,11 @@ kubectl exec -n sola -it deploy/sola-app -- psql $DATABASE_URL -c "SELECT pg_is_
 
 ### Ali izgubim podatke če node crkne?
 
-**Ne, če crkne samo en node.** Longhorn skrbi za replikacijo podatkov (tipično 2 ali 3 kopije). Tudi če crkne node, kjer je primarna baza, ima replika na drugem nodu vse podatke (malenkost zakasnitve zaradi asinhrone streaming replikacije — max nekaj sekund, v praksi ponavadi <1s). To se imenuje **RPO (Recovery Point Objective)** — v najslabšem primeru izgubiš zadnjih nekaj sekund transakcij. Za to aplikacijo je to sprejemljivo.
+**Ne, če crkne samo en node.** Longhorn skrbi za replikacijo podatkov. Tudi če crkne node, kjer je primarna baza, ima replika na drugem nodu vse podatke (malenkost zakasnitve zaradi asinhrone streaming replikacije — max nekaj sekund, v praksi ponavadi <1s). To se imenuje **RPO (Recovery Point Objective)** — v najslabšem primeru izgubiš zadnjih nekaj sekund transakcij. Za to aplikacijo je to sprejemljivo.
 
-### Zakaj 2 noda in ne 3?
+### Zakaj bi imeli app lokalno?
 
-Ker imamo dva HP ProBooka in je tretji predrag. Za produkcijo s 5 nines bi rabil 3 (ali 5) nodov za etcd kvorum. Ampak to je šolski sistem — 2 noda je dovolj, da preprečimo izpad ob eni okvari. Če bi hotel biti **res** varen, bi rabil 3 node za etcd in 3+ instance baze za quorum-based failover. Ampak potem bi rabil še en ProBook in elektriko zanj. Zaenkrat smo OK.
+Od oktobra 2025 je precej računalnikovbrez zaščite (konec supporta za windovs 10), ker so tej računalniki še vedno ok za uporabo npr Zorin OS ali Linux Mint, kot čisto okej čisto dobre operativen računalnik, toda šole imajo pogodbe z Microsftom (morajo biti) 
 
 ---
 
