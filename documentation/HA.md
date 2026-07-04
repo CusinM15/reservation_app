@@ -160,7 +160,7 @@ Service `sola-db-rw` vedno kaže na trenutni primary. App se nikoli ne rabi ukva
 # Ugasni en node (npr. k3s-1)
 ssh k3s-1 "sudo poweroff"
 
-# Preveri, da app ostane dostopen
+# Preveri, da app ostane dostopen, po parih minutah bi mogelo biti spet dostopen, če ste izklopii primary, če izklopite repliko, iporabnik sploh nebi smet opaziti
 curl -I https://{{DOMAIN}}
 
 # Po ~2 min preveri stanje
@@ -179,7 +179,6 @@ kubectl get cluster -n sola sola-db    # CNPG naj ima 2 ready instance
 - **Longhorn** poskrbi za PVC-je — podatki so varni tudi ob izgubi enega noda
 - **Ni custom failover skript** — vse upravlja CNPG operator (pusti ga pri miru, dela kar mora)
 - **Failover je popolnoma avtomatski** — ni potrebno ročno posredovanje
-- **Stara Bitnami PostgreSQL** je bila odstranjena po migraciji na CNPG (ne išči je)
 
 ---
 

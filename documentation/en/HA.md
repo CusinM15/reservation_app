@@ -91,7 +91,7 @@ podAntiAffinityType: preferred  # prefers pods on different nodes
 5. **App on k3s-1** — pod is dead, k3s reschedules it to k3s-2
 6. **App on k3s-2** — connects to sola-db-rw (now pointing to sola-db-2) — business as usual
 
-**Total downtime:** ~1-2 minutes. In IT, that's pretty solid for HA without a formal downtime SLA.
+**Total downtime:** ~1-2 minutes. In IT, that's pretty solid for HA without a formal downtime.
 
 > ELI5: Like a plane with two engines. One fails — the pilot (CNPG) just increases power on the other. Passengers (users) feel a slight shudder (a couple minutes of inaccessibility), then the plane flies on like nothing happened.
 
@@ -114,11 +114,11 @@ Etcd works on a **quorum** principle. For 2 nodes this means:
 - **2 nodes = quorum of 2** — both must confirm a change
 - **If one node goes down** — the other can still read and write because 1 out of 2 is technically a majority... wait, **that's not entirely accurate**
 
-> Technical note: A classic 2-node etcd cluster is technically in a risk zone, because losing one node means losing quorum for writes (N/2+1 = 2 for 3 nodes). In practice, k3s with 2 nodes works fine for our use-case (2 ProBooks, no SLA) because k3s tolerates losing 1 node for reads, while writes still need confirmation. But for production with strict requirements, go with 3 nodes.
+> Technical note: A classic 2-node etcd cluster is technically in a risk zone, because losing one node means losing quorum for writes. In practice, k3s with 2 nodes works fine for our use-case (2 ProBooks) because k3s tolerates losing 1 node for reads, while writes still need confirmation. But for production with strict requirements, go with more nodes if you have "a lot" off win 10 computers.
 
 **The takeaway:** 2 nodes can work normally even if one fails, as long as the surviving node takes over all operations.
 
-> ELI5: etcd is like a club with rules. Every decision (change in the cluster) needs a majority vote. With two members and one goes down — the other can still decide alone (quorum exists). But if both go down, the club is closed until someone comes back.
+> ELI5: etcd is like a club with rules. Every decision (change in the cluster) needs a majority vote. With two members and one goes down — the other can still decide alone. But if both go down, the club is closed until someone comes back.
 
 ---
 
@@ -157,7 +157,7 @@ If you want to simulate an outage:
 # Shut down one node (e.g. k3s-1)
 ssh k3s-1 "sudo poweroff"
 
-# Verify the app stays accessible
+# Verify the app stays accessible in few minutes it shoud be active again
 curl -I https://{{DOMAIN}}
 
 # After ~2 min, check the state
@@ -176,7 +176,6 @@ kubectl get cluster -n sola sola-db    # CNPG should have 2 ready instances
 - **Longhorn** takes care of PVCs — data is safe even if one node is lost
 - **No custom failover scripts** — everything is managed by the CNPG operator (leave it alone, it does what it needs to)
 - **Failover is fully automatic** — no manual intervention required
-- **Old Bitnami PostgreSQL** was removed after migrating to CNPG (don't look for it)
 
 ---
 
