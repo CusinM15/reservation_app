@@ -206,7 +206,22 @@ kubectl exec -n sola -it deploy/sola-app -- psql $DATABASE_URL -c "SELECT pg_is_
 
 ### Zakaj bi imeli app lokalno?
 
-Od oktobra 2025 je precej računalnikovbrez zaščite (konec supporta za windovs 10), ker so tej računalniki še vedno ok za uporabo npr Zorin OS ali Linux Mint, kot čisto okej čisto dobre operativen računalnik, toda šole imajo pogodbe z Microsftom (morajo biti) 
+Od oktobra 2025 je Windows 10 uradno mrtev — konec posodobitev, konec zaščite. A to ne pomeni, da je treba te računalnike zavreči. Še vedno so čisto uporabni. Pa poglejmo opcije.
+
+**1. Linux namesto Windowsa**
+Na te računalnike lahko namestimo **Zorin OS 18.01** ali **Linux Mint**. Oba sta hitra, varna in uporabniku prijazna — Zorin je celo namenjen prehodnikom iz Windowsa. Težava? Šole imajo pogodbo z Microsoftom in večina uporablja Office. Zamenjava OS ni vedno praktična, če so učitelji navajeni na Outlook, Word, Excel.
+
+**2. Lokalni strežnik iz "odpadnih" računalnikov**
+Tudi če računalnik ni več primeren za vsakodnevno delo z Windowsom, je še vedno odličen kot strežnik. Nanj lahko namestimo Linux in na njem gostimo ta app (pa še kaj drugega). To pomeni več dela za admina — setup, vzdrževanje — ampak:
+- Računalnik gre v polno uporabo do konca svoje življenjske dobe
+- Nič ne gre v odpad
+- App je povsem pod našo kontrolo
+- Ni mesečnih stroškov za cloud
+
+**3. Windows 10? Ne pride v poštev**
+Brez varnostnih posodobitev je to časovna bomba. Še posebej za app, ki ima opravka s podatki.
+
+**Skratka:** Računalniki so še vedno dobri — samo ne več za Windows 10. Možnosti so: Linux (če gre za uporabnike), lokalni strežnik (če gre za infrastrukturo) ali pač novejši Windows. Ta app rešuje problem tako, da sploh ne rabiš zmogljive mašine — dovolj je že kakšen star laptop kot strežnik.
 
 ---
 
