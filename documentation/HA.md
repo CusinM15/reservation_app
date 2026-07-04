@@ -225,9 +225,5 @@ Brez varnostnih posodobitev je to časovna bomba. Še posebej za app, ki ima opr
 
 ---
 
-*Dokumentacija napisana v slogu "DevOps senior razlaga sosedu za mizo" — ker če ne moreš razložiti enostavno, ga ne razumeš dovolj dobro.*
-
----
-
 > **Avtor:** Matej Čušin  
 > **Šola:** OŠ Toneta Čufarja, Jesenice
