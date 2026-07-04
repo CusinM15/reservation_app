@@ -194,7 +194,7 @@ or
 ```bash
 kubectl exec -n sola -it deploy/sola-app -- psql $DATABASE_URL -c "SELECT pg_is_in_recovery();"
 ```
-`f` = primary, `t` = replica.
+`pg_is_in_recovery()` returns `f` (false) = primary, `t` (true) = replica.
 
 ### Do I lose data if a node fails?
 
