@@ -14,7 +14,7 @@
 
 Prevedeno v človeščino: **če en računalnik crkne, drugi takoj prevzame, uporabniki pa niti ne opazijo.** 
 
-Aplikacija in baza tečeta na dveh fizičnih nodih (HP ProBook 455 G5 in 450 G5). Če eden od njiju crkne, gre na servis, mu zmanjka elektrike – drugi node pobere vse skupaj brez da bi kdo moral karkoli ročno prestavljati.
+Aplikacija in baza tečeta na dveh fizičnih nodih (HP ProBook 455 G5 in 450 G5). Če eden od njiju crkne, gre na servis ali mu zmanjka elektrike – drugi node pobere vse skupaj ne da bi kdo moral karkoli ročno prestavljati.
 
 
 ---
@@ -41,7 +41,7 @@ kubectl get hpa -n sola-app
 
 ## 2. Dostop (omrežje) — "promet vedno najde pot"
 
-![HA omrežni tok: Internet → Cloudflare → LoadBalancer → app poda](diagrams/ha-network.png)
+![HA omrežni tok: Internet → Cloudflare → LoadBalancer → app podi](diagrams/ha-network.png)
 
 
 - **Cloudflare** kaže na fiksni IP `{{LB_IP}}` — to je javna vstopna točka
@@ -77,7 +77,7 @@ V praksi app uporablja izključno `sola-db-rw` prek `DATABASE_URL`.
 
 ### Failover — "stražar, ki pazi na bazo"
 
-CNPG operator je kot **stražar, ki pazi na bazo**. Ves čas preverja ali je primary živ. Če primarni pade, takoj postavi rezervo.
+CNPG operator je kot **stražar, ki pazi na bazo**. Ves čas preverja ali je primary živ. Če primary pade, takoj postavi rezervo.
 
 ```yaml
 failoverDelay: 30      # počaka 30 sekund, da se prepriča da primary res ne bo prišel nazaj
@@ -96,7 +96,7 @@ podAntiAffinityType: preferred  # raje imej poda na različnih nodih
 
 **Skupni izpad:** ~1–2 minuti. V IT svetu je to za HA brez downtime SLA kar solidno.
 
-> 💡 **ELI5:** Kot letalo z dvema motorjema. Eden crkne — pilot (CNPG) samo poveča moč na drugem. Potniki (uporabniki) občutijo rahlo tresljaje (par minut nedosegljivosti), potem pa letijo naprej kot da se ni nič zgodilo.
+> 💡 **ELI5:** Kot letalo z dvema motorjema. Eden crkne — pilot (CNPG) samo poveča moč na drugem. Potniki (uporabniki) občutijo rahle tresljaje (par minut nedosegljivosti), potem pa letijo naprej kot da se ni nič zgodilo.
 
 #### Recovery (ko se crknjeni node vrne)
 
@@ -121,7 +121,7 @@ Etcd deluje na principu **kvoruma**. Za 2 noda to pomeni:
 
 **Kar si je treba zapomniti:** 2 noda lahko normalno delujeta tudi če eden crkne, dokler preživeli node prevzame vse operacije.
 
-> 💡 **ELI5:** etcd je kot klub s pravili. Za vsako odločitev (spremembo v集群u) mora glasovati večina članov. Pri dveh članih eden crkne — drugi še vedno lahko sam odloča (kvorum obstaja). Ampak če crkneta oba, je klub zaprt, dokler nekdo ne pride nazaj.
+> 💡 **ELI5:** etcd je kot klub s pravili. Za vsako odločitev (spremembo v clusterju) mora glasovati večina članov. Pri dveh članih eden crkne — drugi še vedno lahko sam odloča (kvorum obstaja). Ampak če crkneta oba, je klub zaprt, dokler nekdo ne pride nazaj.
 
 ---
 
@@ -209,7 +209,7 @@ kubectl exec -n sola -it deploy/sola-app -- psql $DATABASE_URL -c "SELECT pg_is_
 Od oktobra 2025 je Windows 10 uradno mrtev — konec posodobitev, konec zaščite. A to ne pomeni, da je treba te računalnike zavreči. Še vedno so čisto uporabni. Pa poglejmo opcije.
 
 **1. Linux namesto Windowsa**
-Na te računalnike lahko namestimo **Zorin OS 18.01** ali **Linux Mint**. Oba sta hitra, varna in uporabniku prijazna — Zorin je celo namenjen prehodnikom iz Windowsa. Težava? Šole imajo pogodbo z Microsoftom in večina uporablja Office. Zamenjava OS ni vedno praktična, če so učitelji navajeni na Outlook, Word, Excel.
+Na te računalnike lahko namestimo **Zorin OS 18.01** ali **Linux Mint**. Oba sta hitra, varna in uporabniku prijazna — Zorin je celo namenjen tistim, ki prehajajo iz Windowsa. Težava? Šole imajo pogodbo z Microsoftom in večina uporablja Office. Zamenjava OS ni vedno praktična, če so učitelji navajeni na Outlook, Word, Excel.
 
 **2. Lokalni strežnik iz "odpadnih" računalnikov**
 Tudi če računalnik ni več primeren za vsakodnevno delo z Windowsom, je še vedno odličen kot strežnik. Nanj lahko namestimo Linux in na njem gostimo ta app (pa še kaj drugega). To pomeni več dela za admina — setup, vzdrževanje — ampak:
