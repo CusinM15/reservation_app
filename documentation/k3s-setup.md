@@ -14,7 +14,7 @@
 
 ---
 
-## 🧠 Kaj je Kubernetes (in k3s)? — Za tiste, ki niste spali pri informatiki
+## 🧠 Kaj je Kubernetes (in k3s)? 
 
 ### Kubernetes / k3s — hotelski receptor za tvoje aplikacije
 Predstavljaj si, da imaš aplikacijo (spletno stran, bazo, API). Daš jo Kubernetesu in on poskrbi:
