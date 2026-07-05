@@ -55,7 +55,7 @@ Namesto da vsak pod uporablja lokalni disk (ki crkne, če pod skoči na drug nod
 
 - 2 fizični mašini z **Ubuntu 24.04 LTS** (tvoja HP ProBook laptopa)
 - Vsaka mašina: min **2 CPU**, **4GB RAM**, **20GB disk**
-- **sudo** dostop na obeh (boš rabil za namestitev)
+- **sudo** (pred komando v terminalu damo sudo (v windovs principu recimo izvedemo kot administrator komando)) **sido** geslo boš potreboval na obeh 
 - Mašini v istem omrežju (da se vidita — ping brez problema)
 - Docker nameščen (za build slike):
   ```bash
@@ -79,7 +79,7 @@ curl -sfL https://get.k3s.io | sh -s - server \
   --write-kubeconfig-mode=644 \  # Dovoli branje kubeconfig datoteke navadnemu uporabniku (ni treba vsakič sudo).
   --cluster-cidr=10.42.0.0/16 \ # Razred IP-jev za pode (notranje omrežje znotraj clustra).
   --service-cidr=10.43.0.0/16 \ # Razred IP-jev za servise (drugo notranje omrežje za servise).
-  --node-ip={{K3S_1_IP}}        # Kateri IP naj uporablja ta node. Vstavi notranji IP prvega laptopa (npr. 192.168.1.10).
+  --node-ip={{K3S_1_IP}}        # Kateri IP naj uporablja ta node. Vstavi notranji IP prvega laptopa (v terminal vtipamo ip a in izberemo tistega, ki je preko kabla wifi, zelo verjetno ni dovolj stabilen  npr. 192.168.1.10).
 ```
 
 **Kaj se zgodi zdaj?** curl prenesi skripto z get.k3s.io, skripta pa namesti k3s v `server` načinu (kot control-plane). Vse `--disable` zastavice izklapljajo stvari, ki jih ne rabimo. `--node-ip` pove k3s-u "glej, tvoj IP je ta", kar je pomembno, če ima mašina več omrežnih kartic.
@@ -178,7 +178,7 @@ helm install longhorn longhorn/longhorn \
   --set persistence.defaultClass=true                 # Longhorn naj bo privzeti StorageClass
 ```
 
-**Zakaj replicaCount=2?** Ker imamo 2 noda. 1 kopija = brez zaščite. 2 kopiji = če en node crkne, so podatki na drugem. 3 kopije bi bile še boljše, ampak za 2 noda fizično ne greš — kam bi dal tretjo kopijo?
+**Zakaj replicaCount=2?** Ker imamo 2 noda. 1 kopija = brez zaščite. 2 kopiji = če en node crkne, so podatki na drugem. 3 kopije bi bile še boljše, ampak za 2 noda fizično ne gre — kam bi dal tretjo kopijo?
 
 ### 3.3 Omogoči replica-auto-balance
 
@@ -302,7 +302,7 @@ kubectl rollout status -n sola-app deployment/sola-app   # Spremljaj, da so vsi 
 ### Dodajanje novega noda
 
 ```bash
-# Na masterju pridobi token
+# Na masterju (pri nas na kateremkoli nodu) pridobi token
 sudo cat /var/lib/rancher/k3s/server/node-token
 
 # Na novem nodu:
@@ -356,13 +356,13 @@ open-iscsi in nfs-common je treba namestiti na **vsakem** nodu posebej. Če poza
 | Pojem | Pomen (ELI5) |
 |-------|-------------|
 | **Kubernetes (k8s)** | Hotelski receptor za aplikacije — upravlja, kje in kako tečejo |
-| **k3s** | Lažja verzija Kubernetes — kot SmartCar namesto tovornjaka |
+| **k3s** | Lažja verzija Kubernetes — kot fičo namesto tovornjaka |
 | **Control-plane** | Možgani clustra — odloča kam gre kaj |
 | **etcd** | Spomin clustra — če ta izgine, cluster ne ve kdo je |
 | **Pod** | Zabojnik z aplikacijo in vsem kar rabi |
 | **Node** | Fizični računalnik v clustru |
 | **Cluster** | Skupina računalnikov (nodov), ki delujejo kot eno |
-| **MetalLB** | Daje fiksne IP-je aplikacijam v clustru — kot receptor, ki vsaki sobi dodeli sobo |
+| **MetalLB** | Daje fiksne IP-je aplikacijam v clustru — kot receptor, ki vsakemu gostu dodeli sobo |
 | **Longhorn** | Distribuiran trdi disk — vsak podatek v 2 kopijah na 2 različnih računalnikih |
 | **LoadBalancer** | Servis, ki aplikaciji dodeli zunanji IP |
 | **Namespace** | Mapa v Kubernetesu — ločuje različne projekte med seboj |
