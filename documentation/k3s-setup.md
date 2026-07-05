@@ -42,9 +42,6 @@ Ko v Kubernetesu rečeš "ta aplikacija naj bo dostopna na zunanjem naslovu", po
 ### Longhorn — distribuiran trdi disk
 Namesto da vsak pod uporablja lokalni disk (ki crkne, če pod skoči na drug node), Longhorn poskrbi, da je vsak podatek v **2 kopijah na 2 različnih računalnikih**. Če en node crkne, podatki še vedno obstajajo na drugem.
 
-### Ingress — vhodna vrata
-Ampak kaj če nočeš za vsako aplikacijo svojega IP-ja? Ingress je kot recepcija — vse pride na ena vrata, Ingress pa pogleda "aha, ta zahteva gre za sola-app, tista za drug servis" in jih pošlje naprej na pravo mesto.
-
 ---
 
 ## 📋 Arhitektura (trenutna)
@@ -367,7 +364,6 @@ open-iscsi in nfs-common je treba namestiti na **vsakem** nodu posebej. Če poza
 | **Cluster** | Skupina računalnikov (nodov), ki delujejo kot eno |
 | **MetalLB** | Daje fiksne IP-je aplikacijam v clustru — kot receptor, ki vsaki sobi dodeli sobo |
 | **Longhorn** | Distribuiran trdi disk — vsak podatek v 2 kopijah na 2 različnih računalnikih |
-| **Ingress** | Vhodna vrata — vsi gredo skozi ena vrata, Ingress jih pošlje naprej |
 | **LoadBalancer** | Servis, ki aplikaciji dodeli zunanji IP |
 | **Namespace** | Mapa v Kubernetesu — ločuje različne projekte med seboj |
 | **Helm** | App store za Kubernetes — poveš kateri paket hočeš in Helm ga namesti |

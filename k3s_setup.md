@@ -70,7 +70,7 @@ curl -sfL https://get.k3s.io | sudo sh -s - server \
 
 | Parameter | Opis |
 |---|---|
-| `--disable=traefik` | Ne potrebujemo vgrajenega ingressa, uporabili bomo nginx |
+| `--disable=traefik` | Ne potrebujemo vgrajenega ingressa, uporabili bomo MetalLB |
 | `--disable=servicelb` | Ne potrebujemo vgrajenega LB, uporabili bomo MetalLB |
 | `--write-kubeconfig-mode=644` | Omogoči branje kubeconfig vsem uporabnikom |
 
@@ -302,8 +302,6 @@ Manifesti so organizirani takole:
 
 - `k8s/app/base/` — Namespace, ConfigMap, Deployment, Service (`ClusterIP`) in CronJob.
 |- `k8s/app/overlays/production-lb/` — ista osnova, Service pa spremeni v MetalLB `LoadBalancer`.
-|- `k8s/app/overlays/ingress/` — ista osnova, dodan Ingress in Service ostane `ClusterIP`.
-|
 Občutljive vrednosti ostanejo v Secretu `sola-secrets`; `DATABASE_URL` ni več v ConfigMapu.
 
 Deploy z LoadBalancer servisom:
@@ -317,30 +315,11 @@ kubectl -n sola-app get svc sola-app
 # EXTERNAL-IP naj bo iz MetalLB pool-a
 ```
 
-Deploy z Ingressom:
-
-```bash
-kubectl apply -k k8s/app/overlays/ingress
-```
-
-Deploy z LoadBalancer servisom:
-
-```bash
-kubectl apply -k k8s/app/overlays/production-lb
-```
-
 Za pregled generiranih manifestov brez spreminjanja klasterja:
 
 ```bash
 kubectl kustomize k8s/app/overlays/production-lb
 ```
-
-```bash
-kubectl kustomize k8s/app/overlays/production-lb
-kubectl kustomize k8s/app/overlays/ingress
-kubectl kustomize k8s/app/overlays/frp
-```
-
 ### 7.7 Uvozi uporabnike
 
 ```bash
@@ -418,10 +397,7 @@ CronJob je zdaj del `k8s/app/base/sola-backup-cronjob.yaml`. Ker `DATABASE_URL` 
 Če uporabljaš Kustomize overlay, se CronJob deploya skupaj z aplikacijo:
 
 ```bash
-kubectl apply -k k8s/app/overlays/production-lb
-# ali
-kubectl apply -k k8s/app/overlays/ingress
-```
+kubectl apply -k k8s/app/overlays/production-lb```
 
 Če želiš aplicirati samo osnovo:
 

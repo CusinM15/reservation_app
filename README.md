@@ -379,7 +379,6 @@ Kubernetes manifesti so zdaj organizirani v mapi `k8s/` po Kustomize vzorcu:
 
 - `k8s/app/base/` — osnovni objekti: Namespace, ConfigMap, Deployment, Service, CronJob.
 - `k8s/app/overlays/production-lb/` — produkcijski deploy z MetalLB `LoadBalancer` servisom.
-- `k8s/app/overlays/ingress/` — deploy z Ingressom in `ClusterIP` servisom.
 - `k8s/cluster/metallb-config.yaml` — MetalLB IP pool, če ga cluster še nima.
 
 Pred deployom v klasterju ustvari Secret `sola-secrets` v namespaceu `sola-app`. Vanj spadajo občutljive vrednosti, ki niso v repozitoriju: `DATABASE_URL`, `MAIL_USERNAME`, `MAIL_PASSWORD`, `MAIL_SERVER`, `MAIL_PORT`, `MAIL_FROM` in `BACKUP_EMAIL`.
@@ -403,15 +402,12 @@ kubectl -n sola-app create secret generic sola-secrets \
 # Deploy z LoadBalancer servisom:
 kubectl apply -k k8s/app/overlays/production-lb
 
-# Deploy z Ingressom:
-kubectl apply -k k8s/app/overlays/ingress
+kubectl apply -k k8s/app/overlays/production-lb
 ```
-
 Za pregled generiranih manifestov brez spreminjanja klasterja:
 
 ```bash
 kubectl kustomize k8s/app/overlays/production-lb
-kubectl kustomize k8s/app/overlays/ingress
 ```
 
 ---

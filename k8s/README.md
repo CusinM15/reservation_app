@@ -15,7 +15,6 @@ k8s/
 │   │   ├── sola-service.yaml
 │   │   └── sola-backup-cronjob.yaml
 │   └── overlays/
-│       ├── ingress/
 │       └── production-lb/
 ├── cluster/
 │   └── metallb-config.yaml
@@ -90,15 +89,8 @@ Deploy z LoadBalancer servisom:
 kubectl apply -k k8s/app/overlays/production-lb
 ```
 
-Deploy z Ingressom:
-
-```bash
-kubectl apply -k k8s/app/overlays/ingress
-```
-
 Za pregled generiranih manifestov brez spreminjanja klasterja:
 
 ```bash
 kubectl kustomize k8s/app/overlays/production-lb
-kubectl kustomize k8s/app/overlays/ingress
 ```
