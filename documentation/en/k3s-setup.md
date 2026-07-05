@@ -46,7 +46,7 @@ Instead of each pod using the local disk (which disappears if the pod moves to a
 
 ## 📋 Architecture (current)
 
-![K3s architecture: Internet → Cloudflare → MetalLB → 2 nodes](diagrams/k3s-setup-arhitektura.png)
+![K3s architecture: Internet → Cloudflare → MetalLB → 2 nodes](../diagrams/k3s-setup-arhitektura.png)
 
 
 ---
