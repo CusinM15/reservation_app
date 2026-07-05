@@ -55,7 +55,7 @@ Namesto da vsak pod uporablja lokalni disk (ki crkne, če pod skoči na drug nod
 
 - 2 fizični mašini z **Ubuntu 24.04 LTS** (tvoja HP ProBook laptopa)
 - Vsaka mašina: min **2 CPU**, **4GB RAM**, **20GB disk**
-- **sudo** (pred komando v terminalu damo sudo (v windovs principu recimo izvedemo kot administrator komando)) **sido** geslo boš potreboval na obeh 
+- **sudo** (pred komando v terminalu damo sudo (v Windows principu recimo, izvedemo ukaz kot administrator)) **sido** geslo boš potreboval na obeh 
 - Mašini v istem omrežju (da se vidita — ping brez problema)
 - Docker nameščen (za build slike):
   ```bash
@@ -82,7 +82,7 @@ curl -sfL https://get.k3s.io | sh -s - server \
   --node-ip={{K3S_1_IP}}        # Kateri IP naj uporablja ta node. Vstavi notranji IP prvega laptopa (v terminal vtipamo ip a in izberemo tistega, ki je preko kabla wifi, zelo verjetno ni dovolj stabilen  npr. 192.168.1.10).
 ```
 
-**Kaj se zgodi zdaj?** curl prenesi skripto z get.k3s.io, skripta pa namesti k3s v `server` načinu (kot control-plane). Vse `--disable` zastavice izklapljajo stvari, ki jih ne rabimo. `--node-ip` pove k3s-u "glej, tvoj IP je ta", kar je pomembno, če ima mašina več omrežnih kartic.
+**Kaj se zgodi zdaj?** curl prenese skripto z get.k3s.io, skripta pa namesti k3s v `server` načinu (kot control-plane). Vse `--disable` zastavice izklapljajo stvari, ki jih ne rabimo. `--node-ip` pove k3s-u "glej, tvoj IP je ta", kar je pomembno, če ima mašina več omrežnih kartic.
 
 ### 1.2 Pridobi token (ključ za pridružitev drugega noda)
 
@@ -187,7 +187,7 @@ kubectl patch settings.longhorn -n longhorn-system replica-auto-balance \
   --type='merge' -p '{"value":"least-effort"}'
 ```
 
-**Kaj to pomeni?** Longhounova "pamet" za razporejanje kopij. Če je eden od nodov poln, Longhorn samodejno premakne kakšno kopijo na drugega. `least-effort` = "naredi kar je najlažje, ne prerazporejaj po nepotrebnem".
+**Kaj to pomeni?** Longhornova "pamet" za razporejanje kopij. Če je eden od nodov poln, Longhorn samodejno premakne kakšno kopijo na drugega. `least-effort` = "naredi kar je najlažje, ne prerazporejaj po nepotrebnem".
 
 ---
 
@@ -251,7 +251,7 @@ spec:
 ```bash
 cd /home/admin/reservation_app
 docker build -t sola-app:latest .   # Zgradi Docker sliko iz Dockerfile-a v trenutni mapi
-docker push sola-app:latest         # Pošlji sliko v registri, da jo Kubernetes lahko potegne
+docker push sola-app:latest         # Pošlji sliko v register, da jo Kubernetes lahko potegne
 ```
 
 ### 5.2 Ustvari namespace in Secret
@@ -292,7 +292,7 @@ kubectl apply -k k8s/app/overlays/production-lb
 cd /home/admin/reservation_app
 git pull                          # Potegni zadnjo kodo
 docker build -t sola-app:latest . # Zgradi novo sliko
-docker push sola-app:latest       # Pošlji v registri
+docker push sola-app:latest       # Pošlji v register
 kubectl rollout restart -n sola-app deployment/sola-app  # Počasi zamenjaj stare pode z novimi
 kubectl rollout status -n sola-app deployment/sola-app   # Spremljaj, da so vsi novi podi zagnani
 ```
