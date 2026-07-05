@@ -142,4 +142,4 @@ Izberete posamezen razred ali — za 8. in 9. razred — celotno generacijo. S f
 
 > 🫶 **Upam, da vam bo aplikacija v pomoč. Želim vam vse dobro pri uporabi!**
 >
-> *Matej Čušin*
+> **Avtor:** Matej Čušin

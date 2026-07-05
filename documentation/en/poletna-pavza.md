@@ -238,5 +238,3 @@ kubectl exec -n sola sola-db-1 -- psql -U postgres -d sola -c \
 ---
 
 > **Author:** Matej Čušin  
-> **School:** OŠ Toneta Čufarja, Jesenice
-** — no manual command needed.

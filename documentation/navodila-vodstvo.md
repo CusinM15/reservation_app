@@ -234,4 +234,3 @@ python3 scripts/import_teachers.py --base-url https://ostc-app.org --include-all
 skrbijo za pouk.
 
 > **Avtor:** Matej Čušin  
-> **Šola:** OŠ Toneta Čufarja, Jesenice

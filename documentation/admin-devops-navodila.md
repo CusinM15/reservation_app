@@ -394,4 +394,3 @@ journalctl -u k3s --tail=50
 
 
 > **Avtor:** Matej Čušin  
-> **Šola:** OŠ Toneta Čufarja, Jesenice

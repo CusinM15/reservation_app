@@ -225,4 +225,3 @@ idea of where to look.
 ---
 
 > **Author:** Matej Čušin  
-> **School:** OŠ Toneta Čufarja, Jesenice

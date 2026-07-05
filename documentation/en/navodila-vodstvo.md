@@ -214,4 +214,3 @@ python3 scripts/import_teachers.py --base-url https://ostc-app.org --include-all
 **In one sentence:** Admin takes care of the system, management takes care of the schedule, teachers take care of teaching.
 
 > **Author:** Matej Čušin  
-> **School:** OŠ Toneta Čufarja, Jesenice

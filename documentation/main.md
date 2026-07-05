@@ -562,4 +562,3 @@ git pull                                    # Potegni zadnjo kodo
 ---
 
 > **Avtor:** Matej Čušin  
-> **Šola:** OŠ Toneta Čufarja, Jesenice

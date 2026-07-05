@@ -142,4 +142,4 @@ Select a specific class or — for grades 8 and 9 — an entire cohort. Filters 
 
 > 🫶 **I hope this app helps make your work easier. All the best!**
 >
-> *Matej Čušin*
+> **Author:** Matej Čušin

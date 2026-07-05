@@ -223,4 +223,3 @@ Without security updates, it's a ticking time bomb. Especially for an app that h
 
 
 > **Author:** Matej Cousin  
-> **School:** OS Toneta Cufarja, Jesenice

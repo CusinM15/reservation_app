@@ -504,6 +504,4 @@ kubectl exec -n sola -it sola-db-1 -- psql -U postgres -d sola -f /tmp/sola_back
 ---
 
 > **Avtor:** Matej Čušin  
-> **Šola:** OŠ Toneta Čufarja, Jesenice
 
-*Zadnja posodobitev: {DATE}*

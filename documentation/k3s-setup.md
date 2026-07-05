@@ -385,4 +385,3 @@ open-iscsi in nfs-common je treba namestiti na **vsakem** nodu posebej. Če poza
 ---
 
 > **Avtor:** Matej Čušin  
-> **Šola:** OŠ Toneta Čufarja, Jesenice

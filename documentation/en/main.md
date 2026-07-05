@@ -566,4 +566,3 @@ git pull                                    # Pull the latest code
 ---
 
 > **Author:** Matej Čušin  
-> **School:** OŠ Toneta Čufarja, Jesenice

@@ -13,9 +13,6 @@
 Instructions for running the application **on a single computer** (without Kubernetes, without PostgreSQL).
 Suitable for other schools, testing, or demonstration.
 
-> **Author:** Matej Čušin  
-> **School:** OŠ Toneta Čufarja, Jesenice
-
 ---
 
 ## 1) What You Need
@@ -182,3 +179,5 @@ If you don't have an email server, you can set passwords manually via the admin 
 | SQLite `database is locked` | Stop the app, delete `data/sola.db`, restart |
 | Teachers not imported | Check with `--dry-run` first |
 | Cannot see rooms | Check `PROSTORI` in `.env` |
+
+> **Author:** Matej Čušin  

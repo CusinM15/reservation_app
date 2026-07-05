@@ -10,8 +10,6 @@
 
 # POSTAVI LOKALNI APP — Šolski sistem OSTC App
 
-> **Avtor:** Matej Čušin  
-> **Šola:** OŠ Toneta Čufarja, Jesenice
 
 Ta dokument je napisan za **čisto lokalno namestitev** — aplikacijo poženemo na **enem samem računalniku**. Brez Kubernetes gruče, brez PostreSQL strežnika, brez omrežnega čudeža. Samo ti in tvoj računalnik.
 
@@ -386,5 +384,4 @@ Uredi datoteko `scripts/import_teachers.py` v beležnici ali urejevalniku:
 
 
 > **Avtor:** Matej Čušin  
-> **Šola:** OŠ Toneta Čufarja, Jesenice
 

@@ -267,4 +267,3 @@ sudo systemctl enable --now iscsid
 ---
 
 > **Author:** Matej Čušin  
-> **School:** OŠ Toneta Čufarja, Jesenice

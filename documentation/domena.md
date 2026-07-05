@@ -163,4 +163,3 @@ kubectl -n sola-app rollout restart deployment/sola-app
 ---
 
 > **Avtor:** Matej Čušin  
-> **Šola:** OŠ Toneta Čufarja, Jesenice
