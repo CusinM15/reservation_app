@@ -40,7 +40,7 @@
         <mxCell id="mlb2_6" value="MetalLB" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e07c24;fontColor=#ffffff;strokeColor=#b8631d;arcSize=8;" vertex="1" parent="1">
           <mxGeometry x="545" y="400" width="270" height="40" as="geometry" />
         </mxCell>
-        <mxCell id="rep6" value="streaming replikacija" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=doubleBlock;endFill=1;strokeColor=#f0c040;fontColor=#f0c040;fontSize=11;" edge="1" parent="1" source="db1_6" target="db2_6" />
+        <mxCell id="rep6" value="streaming replikacija" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=doubleBlock;endFill=1;strokeColor=#f0c040;fontColor=#f0c040;fontSize=11;verticalLabelPosition=middle;labelPosition=center;verticalAlign=middle;align=center;labelBackgroundColor=#1a1a2e;" edge="1" parent="1" source="db1_6" target="db2_6" />
         <mxCell id="a1_6" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#cccccc;" edge="1" parent="1" source="cf6" target="mlb6" />
         <mxCell id="a2_6" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#cccccc;" edge="1" parent="1" source="mlb6" target="k1_6" />
         <mxCell id="a3_6" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#cccccc;" edge="1" parent="1" source="mlb6" target="k2_6" />
