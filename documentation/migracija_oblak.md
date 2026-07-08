@@ -1,6 +1,5 @@
 # ☁️ Migracija v oblak — opcije
 
-> Dokument za debato. Nič ni odločeno, dokler ne rečemo drugače.
 
 Trenutno app **teče doma** na 2 HP prenosnikih s k3s. To pomeni: strojna oprema bo slej ko prej crknila, nekdo mora skrbeti za k3s upgrade, Longhorn, CNPG, backup, MetalLB, omrežje, izpade elektrike itd. Spodaj so možne alternative, kako se znebiti odgovornosti vzdrževanja.
 
