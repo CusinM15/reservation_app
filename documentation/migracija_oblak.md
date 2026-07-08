@@ -17,7 +17,7 @@ Za bazo samo dodaš njihov managed PostgreSQL — ne rabiš nič konfigurirati.
 | + Samodejni deploy ob `git push` | – App je v tujem cloudu (ZDA/EU) |
 | + Managed Postgres (backupi, PITR) | – Če gre Railway bankrot, je treba seliti |
 | + HTTPS/SSL avtomatsko | – Omejen free tier (€5 za začetek) |
-| + Storage volumes za file shrambo | – Ni "fizičnega dostopa" |
+| + Samo baza — app ne shranjuje slik/datotek | – Ni "fizičnega dostopa" |
 | + Cena: ~€5–20/mesec | |
 | + 0 vzdrževanja infrastrukture | |
 
@@ -26,7 +26,6 @@ Za bazo samo dodaš njihov managed PostgreSQL — ne rabiš nič konfigurirati.
 |----------|------|
 | App (FastAPI) — 1 CPU, 1GB RAM | €5/mesec |
 | PostgreSQL — 1GB storage | €5/mesec |
-| Dodaten storage (če app rabi) | ~€2/mesec |
 | Domena | Ni treba — dobiš `app.railway.app`. Lahko kupiš svojo (~€10/leto) |
 | **Skupaj** | **~€10–15/mesec** |
 
@@ -161,18 +160,17 @@ Tvoje YAMLe daš gor enake kot zdaj — samo ne rabiš skrbeti za etcd, API serv
 | + Skalira se avtomatsko do 0 | – WebSocket/i dolge povezave ne delajo |
 | + 0 vzdrževanja | – "Cold start" zakasnitev ob prvem klicu |
 | | – Težje debugiranje |
-| | – Storage (file uploadi) je zapleten |
+| | – App ni pisan za serverless (cold start) |
 
 **Cena (Cloud Run + Cloud SQL):**
 | Storitev | Cena |
 |----------|------|
 | Cloud Run — 2M klicev/mesec | ~€5/mesec |
 | Cloud SQL (PostgreSQL mini) | ~€10/mesec |
-| Cloud Storage (slike/datoteke) | ~€1/mesec |
 | Domena | Ni treba — dobiš `app.run.app`. Lahko kupiš svojo (~€10/leto) |
 | **Skupaj** | **~€15/mesec** |
 
-**Zakaj ni idealno:** Šolska aplikacija rabi file upload (slike, dokumenti) in verjetno kakšen daljši proces — serverless je za to neroden. Možno, ampak več dela kot Railway.
+**Zakaj ni idealno:** App ni pisan za serverless arhitekturo — cold start zakasnitve ob prvem klicu, težje debugiranje. Možno (FastAPI + Mangum adapter), ampak več dela kot Railway.
 
 ---
 
