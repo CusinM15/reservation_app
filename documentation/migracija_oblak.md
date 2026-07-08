@@ -27,6 +27,7 @@ Za bazo samo dodaš njihov managed PostgreSQL — ne rabiš nič konfigurirati.
 | App (FastAPI) — 1 CPU, 1GB RAM | €5/mesec |
 | PostgreSQL — 1GB storage | €5/mesec |
 | Dodaten storage (če app rabi) | ~€2/mesec |
+| Domena | Ni treba — dobiš `app.railway.app`. Lahko kupiš svojo (~€10/leto) |
 | **Skupaj** | **~€10–15/mesec** |
 
 ### Fly.io
@@ -44,6 +45,7 @@ Za bazo samo dodaš njihov managed PostgreSQL — ne rabiš nič konfigurirati.
 | App — shared CPU, 256MB RAM | Free |
 | App — 1 CPU, 1GB RAM | ~€12/mesec |
 | PostgreSQL — 1GB | ~€8/mesec |
+| Domena | Ni treba — dobiš `app.fly.dev`. Lahko kupiš svojo (~€10/leto) |
 | **Skupaj** | **~€15–20/mesec** |
 
 ### Render
@@ -59,6 +61,7 @@ Za bazo samo dodaš njihov managed PostgreSQL — ne rabiš nič konfigurirati.
 |----------|------|
 | App (starter) | €7/mesec |
 | PostgreSQL — 1GB | €7/mesec |
+| Domena | Ni treba — dobiš `app.onrender.com`. Lahko kupiš svojo (~€10/leto) |
 | **Skupaj** | **~€14/mesec** |
 
 **Kaj ni treba vzdrževati:** OS, Docker, Kubernetes, baza, backupi, SSL, domenska imena (DNS nastaviš enkrat).
@@ -85,6 +88,7 @@ Coolify je kot Railway, ampak na tvojem strežniku. Povežeš GitHub repo, on sa
 | Coolify (brezplačen, open-source) | €0 |
 | PostgreSQL (v Docker na istem VPS) | €0 (všteto) |
 | Backups (Hetzner Storage Box) | ~€3/mesec |
+| Domena | **Treba kupiti** (~€10/leto). Brez domene je dostop samo prek IP-ja brez HTTPS. |
 | **Skupaj** | **~€7–8/mesec** |
 
 Alternative: **Dokploy** (lažji od Coolify) ali **Dokku** (še bolj simpl).
@@ -112,6 +116,7 @@ Na GitHub pushaš, na VPS greš `git pull && docker compose up -d --build`.
 | VPS (Hetzner CX22 — 2 CPU, 4GB RAM) | €3.99/mesec |
 | Docker — brezplačen | €0 |
 | Backups (Hetzner Storage Box) | ~€3/mesec |
+| Domena | **Treba kupiti** (~€10/leto). Brez domene je dostop samo prek IP-ja brez HTTPS. |
 | **Skupaj** | **~€7/mesec** |
 
 **Kaj ni treba vzdrževati:** Kubernetes, Longhorn, MetalLB, fizični prenosniki.
@@ -139,6 +144,7 @@ Tvoje YAMLe daš gor enake kot zdaj — samo ne rabiš skrbeti za etcd, API serv
 | Worker nodi (2x 2CPU, 4GB) | ~€30/mesec |
 | Managed PostgreSQL (Azure DB/Cloud SQL) | ~€15/mesec |
 | Disk storage | ~€5/mesec |
+| Domena | **Priporočljiva** (~€10/leto). Dobiš LB IP, ampak za HTTPS/SSL rabiš domeno. |
 | **Skupaj** | **~€50–100/mesec** |
 
 **Zakaj ni smiselno:** Plačaš več kot vse druge opcije, imaš več dela, in za eno šolsko aplikacijo je to topovska cev na muho.
@@ -163,6 +169,7 @@ Tvoje YAMLe daš gor enake kot zdaj — samo ne rabiš skrbeti za etcd, API serv
 | Cloud Run — 2M klicev/mesec | ~€5/mesec |
 | Cloud SQL (PostgreSQL mini) | ~€10/mesec |
 | Cloud Storage (slike/datoteke) | ~€1/mesec |
+| Domena | Ni treba — dobiš `app.run.app`. Lahko kupiš svojo (~€10/leto) |
 | **Skupaj** | **~€15/mesec** |
 
 **Zakaj ni idealno:** Šolska aplikacija rabi file upload (slike, dokumenti) in verjetno kakšen daljši proces — serverless je za to neroden. Možno, ampak več dela kot Railway.
@@ -178,6 +185,7 @@ Tvoje YAMLe daš gor enake kot zdaj — samo ne rabiš skrbeti za etcd, API serv
 | **Coolify na VPS** | ~€7–8 | 🟢 Zelo malo | 10 % |
 | **Docker Compose na VPS** | ~€7 | 🟡 Malo | 15 % |
 | **Managed K8s** | ~€50–100 | 🔶 Srednje | 60 % |
+| Domena (vse opcije) | ~€10/**leto** (če jo kupiš) | – | – |
 | **Serverless** | ~€15 | 🟢 Malo | 25 % |
 
 ---
