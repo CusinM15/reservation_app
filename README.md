@@ -1,3 +1,7 @@
+🌐 **Language / Jezik:** [🇸🇮 Slovenščina](README.md) | [🇬🇧 English](documentation/en/README.md)
+
+---
+
 # Šolski App – Reservation & Assessment Management
 
 Spletna aplikacija za OŠ Toneta Čufarja Jesenice za rezervacije prostorov (tablice, računalnica, ladja in učilnico za gospodinstvo) in napovedovanje ocenjevanj.
