@@ -4,8 +4,6 @@
 
 # ☁️ Cloud Migration — Options
 
-> Discussion document. Nothing is decided until we say otherwise.
-
 Currently the app **runs at home** on 2 HP laptops with k3s. This means: hardware will eventually fail, someone has to handle k3s upgrades, Longhorn, CNPG, backups, MetalLB, networking, power outages, etc. Below are possible alternatives to offload maintenance responsibility.
 
 ---
@@ -23,7 +21,7 @@ For the database, just add their managed PostgreSQL — no configuration needed.
 | + Managed Postgres (backups, PITR) | – If Railway goes bust, you need to migrate |
 | + HTTPS/SSL automatic | – Limited free tier (€5 to start) |
 | + Database only — app doesn't store files/images | – No "physical access" |
-| + Price: ~€5–20/month | |
+| + Price: ~€5–10/month | |
 | + 0 infrastructure maintenance | |
 
 **Pricing (Railway):**
