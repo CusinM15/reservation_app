@@ -14,13 +14,13 @@ This document contains **step-by-step instructions** for safely shutting down an
 
 The system we're shutting down:
 
-| Component                                   | Description                                                                                                               |
-| ------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------- |
-| **2 nodes** (laptops): `k3s-1` and `k3s-2` | Both serve as control-planes and store data (etcd). Physically: old laptops.                                               |
-| **CloudNativePG (CNPG)**                    | The database (PostgreSQL). Runs in 2 instances (replicas) for safety.                                                     |
-| **Longhorn**                                | Disk storage — like a "filing cabinet for data." Ensures data isn't lost, even if one disk fails.                          |
-| **MetalLB**                                 | Assigns external IP addresses to applications (e.g. {{LB_IP}} for web access).                                            |
-| **Application**                             | The school web application itself (namespace: sola-app).                                                                  |
+| Component                                  | Description                                                                                       |
+| ------------------------------------------ | ------------------------------------------------------------------------------------------------- |
+| **2 nodes** (laptops): `k3s-1` and `k3s-2` | Both serve as control-planes and store data (etcd). Physically: old laptops.                      |
+| **CloudNativePG (CNPG)**                   | The database (PostgreSQL). Runs in 2 instances (replicas) for safety.                             |
+| **Longhorn**                               | Disk storage — like a "filing cabinet for data." Ensures data isn't lost, even if one disk fails. |
+| **MetalLB**                                | Assigns external IP addresses to applications (e.g. {{LB_IP}} for web access).                    |
+| **Application**                            | The school web application itself (namespace: sola-app).                                          |
 
 ---
 
@@ -172,7 +172,7 @@ kubectl get pods -n sola-app
 
 ### 3.2 Next: Stop the Database (CNPG)
 
-The database is the heart of the system. All the data is here (grades, reservations, users). CNPG manages the database in two copies (replicas), so stopping works a bit differently than a regular application — **we don't delete, we just patch to 0**.
+The database is the heart of the system. All the data is here (reservations, users). CNPG manages the database in two copies (replicas), so stopping works a bit differently than a regular application — **we don't delete, we just patch to 0**.
 
 ```bash
 # "Patch cluster to instances=0" = tell the database "stop yourself, but don't delete the disks"
