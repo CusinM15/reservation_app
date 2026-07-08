@@ -8,7 +8,7 @@
 
 ---
 
-# 🌞 Poletna pavza — k3s cluster (OŠ Toneta Čufarja Jesenice)
+# 🌞 Poletna pavza — k3s cluster
 
 Ta dokument vsebuje **navodila po korakih** za varen izklop in kasnejši vklop celega šolskega strežniškega sistema — tako imenovani **"počitniški izklop"**. Namenjen je ljudem, ki niso vsak dan v Kubernetesu, zato je vsak ukaz tudi **razložen v običajnem jeziku**.
 
@@ -60,10 +60,10 @@ Ker so to **stari prenosniki**. Počitnike (julij, avgust) nihče ne uporablja a
 
 Preden karkoli naredimo, poglejmo, kako sistem izgleda zdaj.
 
-| Node | IP | Vloga | Stanje |
-|---|---|---|---|
-| k3s-1 | {{K3S_1_IP}} | control-plane, etcd | Ready |
-| k3s-2 | {{K3S_2_IP}} | control-plane, etcd | Ready |
+| Node  | IP           | Vloga               | Stanje |
+| ----- | ------------ | ------------------- | ------ |
+| k3s-1 | {{K3S_1_IP}} | control-plane, etcd | Ready  |
+| k3s-2 | {{K3S_2_IP}} | control-plane, etcd | Ready  |
 
 Poglej, kaj vse teče:
 

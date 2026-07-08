@@ -323,12 +323,12 @@ sudo systemctl enable --now iscsid
 
 ## 7. Common issues
 
-| Issue | Solution |
-|-------|----------|
-| Pod won't start | `kubectl logs -n sola-app <pod>` — check the logs to see what happens at startup |
-| DB won't connect | Check the `sola-db-rw` endpoint: `kubectl get endpoints -n sola sola-db-rw` — does the service exist? |
-| MetalLB won't assign IP | `kubectl -n metallb-system get ipaddresspool` — check if you've defined the IP range |
-| Longhorn volume stuck | Check in Longhorn UI: `kubectl port-forward -n longhorn-system svc/longhorn-frontend 8080:80` — open `localhost:8080` in browser |
+| Issue                   | Solution                                                                                                                         |
+| ----------------------- | -------------------------------------------------------------------------------------------------------------------------------- |
+| Pod won't start         | `kubectl logs -n sola-app <pod>` — check the logs to see what happens at startup                                                 |
+| DB won't connect        | Check the `sola-db-rw` endpoint: `kubectl get endpoints -n sola sola-db-rw` — does the service exist?                            |
+| MetalLB won't assign IP | `kubectl -n metallb-system get ipaddresspool` — check if you've defined the IP range                                             |
+| Longhorn volume stuck   | Check in Longhorn UI: `kubectl port-forward -n longhorn-system svc/longhorn-frontend 8080:80` — open `localhost:8080` in browser |
 
 ---
 
@@ -353,30 +353,30 @@ If you write the wrong hostname in `DATABASE_URL` (e.g. `sola-db` instead of `so
 
 ## 📖 Glossary
 
-| Term | Meaning (ELI5) |
-|------|----------------|
-| **Kubernetes (k8s)** | Hotel receptionist for apps — manages where and how they run |
-| **k3s** | Lighter version of Kubernetes — like a compact car instead of a truck |
-| **Control-plane** | The brain of the cluster — decides where things go |
-| **etcd** | The cluster's memory — if it's gone, the cluster doesn't know who it is |
-| **Pod** | Container with the app and everything it needs |
-| **Node** | Physical computer in the cluster |
-| **Cluster** | Group of computers (nodes) working as one |
-| **MetalLB** | Gives fixed IPs to apps in the cluster — like a receptionist assigning rooms to guests |
-| **Longhorn** | Distributed hard drive — every piece of data in 2 copies on 2 different computers |
-| **LoadBalancer** | Service that gives the app an external IP |
-| **Namespace** | Folder in Kubernetes — separates different projects from each other |
-| **Helm** | App store for Kubernetes — you say which package you want and Helm installs it |
-| **Operator** | Robot-maintainer — automatically manages complex services (databases, monitoring) |
-| **Secret** | Kubernetes storage for passwords and keys — not stored in plain text |
-| **Replica** | Copy — more copies = better reliability |
-| **Failover** | When one component crashes, another automatically takes over |
-| **Rolling update** | Slowly replacing old pods with new ones — zero downtime |
-| **StorageClass** | Disk type in Kubernetes (e.g. "fast SSD" or "slow HDD" or "Longhorn") |
-| **ClusterCIDR** | IP range for pods — internal cluster network |
-| **ServiceCIDR** | IP range for services — another internal network |
-| **Kubeconfig** | Configuration file for accessing the cluster — like an ID card |
-| **Token** | Password for joining the cluster — without it you can't get in |
+| Term                 | Meaning (ELI5)                                                                         |
+| -------------------- | -------------------------------------------------------------------------------------- |
+| **Kubernetes (k8s)** | Hotel receptionist for apps — manages where and how they run                           |
+| **k3s**              | Lighter version of Kubernetes — like a compact car instead of a truck                  |
+| **Control-plane**    | The brain of the cluster — decides where things go                                     |
+| **etcd**             | The cluster's memory — if it's gone, the cluster doesn't know who it is                |
+| **Pod**              | Container with the app and everything it needs                                         |
+| **Node**             | Physical computer in the cluster                                                       |
+| **Cluster**          | Group of computers (nodes) working as one                                              |
+| **MetalLB**          | Gives fixed IPs to apps in the cluster — like a receptionist assigning rooms to guests |
+| **Longhorn**         | Distributed hard drive — every piece of data in 2 copies on 2 different computers      |
+| **LoadBalancer**     | Service that gives the app an external IP                                              |
+| **Namespace**        | Folder in Kubernetes — separates different projects from each other                    |
+| **Helm**             | App store for Kubernetes — you say which package you want and Helm installs it         |
+| **Operator**         | Robot-maintainer — automatically manages complex services (databases, monitoring)      |
+| **Secret**           | Kubernetes storage for passwords and keys — not stored in plain text                   |
+| **Replica**          | Copy — more copies = better reliability                                                |
+| **Failover**         | When one component crashes, another automatically takes over                           |
+| **Rolling update**   | Slowly replacing old pods with new ones — zero downtime                                |
+| **StorageClass**     | Disk type in Kubernetes (e.g. "fast SSD" or "slow HDD" or "Longhorn")                  |
+| **ClusterCIDR**      | IP range for pods — internal cluster network                                           |
+| **ServiceCIDR**      | IP range for services — another internal network                                       |
+| **Kubeconfig**       | Configuration file for accessing the cluster — like an ID card                         |
+| **Token**            | Password for joining the cluster — without it you can't get in                         |
 
 ---
 
