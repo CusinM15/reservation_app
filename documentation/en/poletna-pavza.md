@@ -8,232 +8,497 @@
 
 ---
 
-# 🌞 Summer Shutdown — k3s Cluster
+# 🌞 Summer Break — k3s Cluster
 
-This document contains instructions for safely shutting down the application and the k3s cluster over the summer (July/August) when the application is not needed. The goal is to reduce wear on old computers and preserve data.
+This document contains **step-by-step instructions** for safely shutting down and later powering up the entire school server system — the so-called **"holiday shutdown"**. It's written for people who aren't in Kubernetes every day, so every command is also **explained in plain language**.
 
-> ⚠️ **This document has been updated for the CNPG architecture.** If you are using the old Bitnami PostgreSQL, refer to the older version.
+The system we're shutting down:
+
+| Component                                   | Description                                                                                                               |
+| ------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------- |
+| **2 nodes** (laptops): `k3s-1` and `k3s-2` | Both serve as control-planes and store data (etcd). Physically: old laptops.                                               |
+| **CloudNativePG (CNPG)**                    | The database (PostgreSQL). Runs in 2 instances (replicas) for safety.                                                     |
+| **Longhorn**                                | Disk storage — like a "filing cabinet for data." Ensures data isn't lost, even if one disk fails.                          |
+| **MetalLB**                                 | Assigns external IP addresses to applications (e.g. {{LB_IP}} for web access).                                            |
+| **Application**                             | The school web application itself (namespace: sola-app).                                                                  |
 
 ---
 
-## 📋 Summary
+## 📋 Summary — what happens start to finish
 
-```text
-1. Check cluster status
-2. Backup database
-3. Stop application (scale down)
-4. Stop database (scale down CNPG)
-5. Stop k3s on nodes
-6. Poweroff
---- in autumn ---
-7. Power on nodes in reverse order
-8. Wait for Longhorn to be healthy
-9. Start database (scale up CNPG)
-10. Start application (scale up)
-11. Verify everything
+```
+1.  Check cluster status — make sure everything is OK
+2.  Backup the database — save a copy just in case
+3.  Stop the application (scale down) — tell the system "sleep, not death"
+4.  Stop the database (scale down CNPG) — the database goes dormant, data stays
+5.  Wait for Longhorn disks to detach — volumes become "detached"
+6.  Stop Kubernetes and power off the laptops
+7.  Unplug from power (optional)
+   --- SUMMER BREAK ---
+8.  Power on the laptops
+9.  Start Kubernetes on both
+10. Wait for Longhorn to be healthy — disks must be "healthy"
+11. Start the database (scale up CNPG)
+12. Start the application (scale up)
+13. Verify everything works
 ```
 
 ---
 
-## 1. Current status (before shutdown)
+## 🤔 Why shut down at all?
 
-| Node | IP | Role | Status |
-|---|---|---|---|
-| k3s-1 | 192.168.1.1 | control-plane,etcd | Ready |
-| k3s-2 | 192.168.1.2 | control-plane,etcd | Ready |
+Because these are **old laptops**. Nobody uses the application during the summer break (July, August), so:
 
-Current pods:
+- **Less runtime = less wear = longer lifespan.** Old fans, old disks, old chips — every hour of operation counts. Two months saved is huge.
+- **Less electricity usage** — every kilowatt matters, especially in a school.
+- **Less risk** — during summer storms and power outages, there's nobody around to check if the system is OK.
+
+**Important:** we're not deleting anything. We're just stopping. Think of it as **hibernation** for the computer — when it wakes up, it returns exactly where it was.
+
+---
+
+## 1. 📊 Current State (Before the Break)
+
+Before we do anything, let's see what the system looks like right now.
+
+| Node  | IP           | Role                | Status |
+| ----- | ------------ | ------------------- | ------ |
+| k3s-1 | {{K3S_1_IP}} | control-plane, etcd | Ready  |
+| k3s-2 | {{K3S_2_IP}} | control-plane, etcd | Ready  |
+
+See what's running:
 
 ```bash
 kubectl get pods -A -o wide
 ```
 
-Longhorn volumes:
+Longhorn disk (storage) status:
 
 ```bash
 kubectl get volumes -n longhorn-system -o wide
-# Expected: both sola-db volumes "attached", "healthy"
+# Expected: both sola-db volumes "attached" and "healthy"
 ```
+
+> **Why are we checking this?** If something is already wrong (e.g. a volume is "faulted" or a node isn't "Ready"), we don't want to make it worse by shutting down. Fix any issues first, then proceed with the shutdown.
 
 ---
 
-## 2. Before shutdown — verification
+## 2. ✅ Before Shutdown — Verification and Backup
 
-### 2.1 Check cluster status
+### 2.1 Check the Entire Cluster
+
+Run these commands. They're not "magic words" — each one checks a different part of the system:
 
 ```bash
+# Check that both laptops are alive, reachable, and ready
 kubectl get nodes -o wide
+
+# Check what's running (pods = programs)
 kubectl get pods -A
+
+# Check Longhorn disks — are they "healthy"?
 kubectl get volumes.longhorn.io -n longhorn-system -o wide
+
+# Check that disk claims (PVCs) are properly connected
 kubectl get pvc,pv -A -o wide
+
+# Check the database (CNPG) — does it have 2 working instances?
 kubectl get cluster -n sola sola-db
 ```
 
-Verify:
-- Both nodes are `Ready`
-- Longhorn volumes are `healthy`
-- CNPG cluster has 2 ready instances
-- No Longhorn rebuilds in progress
+**What you should see (checklist):**
 
-### 2.2 Backup database
+- [ ] Both nodes: `Ready`
+- [ ] Longhorn volumes: `healthy`
+- [ ] CNPG cluster: 2 ready instances
+- [ ] No Longhorn rebuilds in progress (no "rebuilding" in the STATE column)
 
-Before shutting down, take a fresh backup:
+### 2.2 Database Backup — Safety Copy
+
+**This is the most important step.** If anything goes wrong, you'll have a backup on a USB drive.
 
 ```bash
-# Backup via CNPG (recommended)
+# Dump the entire database to a file
 kubectl exec -n sola -it sola-db-1 -- pg_dump -U postgres -d sola --clean > /tmp/sola_backup_pred_pavzo.sql
 
-# Check size
+# Verify the file exists and isn't empty (~1 MB or more)
 ls -lh /tmp/sola_backup_pred_pavzo.sql
 
-# Also save outside the cluster (e.g. on a USB stick)
+# COPY TO A USB STICK or another safe disk!
+cp /tmp/sola_backup_pred_pavzo.sql /media/usb/
 ```
+
+> **Why USB?** Longhorn is great, but if both laptops die over the summer (lightning, humidity, anything), the USB backup is the only solution. Longhorn protects against one disk failing, not against a fire in the school.
 
 ---
 
-## 3. Stopping the application and database
+## 3. ⬇️ Stopping the Application and Database — "Let's Put the System to Sleep"
 
-### 3.1 Stop app
-
-```bash
-kubectl -n sola-app scale deployment sola-app --replicas=0
-kubectl -n sola-app rollout status deployment/sola-app
-# Wait until there are no more Running pods
+**The order is important!** We stop in this order:
+```
+Application → Database (CNPG) → Wait for Longhorn → Power off nodes
 ```
 
-### 3.2 Stop database (CNPG)
+Why? Think of a **restaurant kitchen**:
+1. First, tell the cooks to stop cooking (stop the application)
+2. Then close the pantry (stop the database) — nobody will grab ingredients anymore
+3. Then clean up and close the kitchen (Longhorn detaches disks)
+4. Finally, turn off the lights (power off the laptops)
+   If you turned off the lights while cooks were still chopping vegetables, there'd be a mess.
 
-CNPG does not use StatefulSet. The cluster is stopped with:
+---
+
+### 3.1 First: Stop the Application
+
+The application is the web program people use in their browser. We tell it to "go to sleep":
 
 ```bash
-# Patch cluster to 0 instances (stops without deleting PVCs)
+# Scale down = tell the system "put the pods to sleep, don't delete them"
+# --replicas=0 means: 0 copies = nothing is running
+kubectl -n sola-app scale deployment sola-app --replicas=0
+
+# Wait for the system to confirm all pods are stopped
+kubectl -n sola-app rollout status deployment/sola-app
+```
+
+**Important:** pods (programs) disappear, **but the data stays**. Disks, settings, everything remains. When you say `--replicas=2` in autumn, they come back exactly as they were.
+
+Verify the application is gone:
+
+```bash
+kubectl get pods -n sola-app
+# Expected: no pod is "Running"
+```
+
+### 3.2 Next: Stop the Database (CNPG)
+
+The database is the heart of the system. All the data is here (grades, reservations, users). CNPG manages the database in two copies (replicas), so stopping works a bit differently than a regular application — **we don't delete, we just patch to 0**.
+
+```bash
+# "Patch cluster to instances=0" = tell the database "stop yourself, but don't delete the disks"
+# This is NOT deletion! Instance=0 means "temporarily stop" — like putting the kitchen in standby,
+# not demolishing it. Disks (PVCs) remain attached and preserved.
 kubectl patch cluster -n sola sola-db --type merge \
   -p '{"spec":{"instances":0}}'
 
-# Wait for pods to disappear
+# Wait for the database pods to disappear (watch live)
 kubectl get pods -n sola -w
+# Press Ctrl+C when you see no more Running pods
 
-# Verify that PVCs are still present
+# Verify that disks (PVCs) are STILL present!
 kubectl get pvc -n sola
-# Expected: sola-db-1 and sola-db-2 (Bound)
+# Expected: sola-db-1 and sola-db-2 — both "Bound" (attached, though without active pods)
 ```
 
-> ✅ PVCs remain — data is safe in Longhorn.
+> ✅ PVCs (disks) remain. This means **your data is safe in Longhorn**. When you start the database again, it attaches to the same disks with the same data.
 
-### 3.3 Wait for Longhorn volumes to detach
+### 3.3 Wait for Longhorn Disks to Detach
+
+Once the database is no longer running, Longhorn will **automatically detach the disks** after a few minutes. This is normal and expected.
 
 ```bash
 kubectl get volumes -n longhorn-system -o wide
-# Wait for sola-db volumes to become "detached"
 ```
+
+In the `STATE` column you'll see:
+
+- **Before:** `attached` (disks are attached to database pods — normal during operation)
+- **Later:** `detached` (disks are detached — **this is OK**, meaning they're safe in storage and nobody is writing to them)
+
+**Why is "detached" OK?** Think of a book in a library. When someone is reading it, it's "attached" (to the reader). When they return it to the shelf, it's "detached" (on the shelf, safe, nobody can damage it). The data is still there. When we need the database again in autumn, Longhorn automatically reattaches the disks.
+
+> ⚠️ **Don't continue until all volumes are "detached"!** If you power off a laptop while Longhorn is still writing something to disk, you could lose data.
 
 ---
 
-## 4. Shutting down nodes
+## 4. 🔌 Shutting Down Nodes
 
-### 4.1 Stop k3s and power off
+### 4.1 Stop Kubernetes and Power Off
 
-First `k3s-1`, then `k3s-2`:
+Now that all programs are stopped and disks are safe, we can power off the laptops.
+
+**Order: k3s-1 first, then k3s-2.** Why? Both are control-planes, so the order isn't critically important, but it's good practice to always follow the same order — fewer chances for mistakes.
 
 ```bash
-# On k3s-1:
+# ON k3s-1 (physically or via SSH):
+# 1. Stop the Kubernetes service
 sudo systemctl stop k3s
+# 2. Power off the laptop
 sudo poweroff
 
-# Wait for k3s-1 to shut down
+# Wait for k3s-1 to be completely off (no longer pings)
 
-# On k3s-2:
+# ON k3s-2:
 sudo systemctl stop k3s
 sudo poweroff
 ```
 
-> **Order is not critical** (both are control-plane), but I recommend k3s-1 → k3s-2 for consistency.
+> **Tip:** If you have SSH access, check that the laptop really powered off (try connecting again via SSH — a refused connection means the computer is off).
+
+### 4.2 Optional: Unplug from Power
+
+If summer storms are frequent, you can also **physically unplug the laptops from power**. Laptops have internal batteries that will protect the system in case of a sudden power event.
 
 ---
 
-## 5. Powering on in autumn
+## 5. ⬆️ Powering On in Autumn — "Waking from Hibernation"
 
-### 5.1 Power on both nodes
-
-Physically turn on the computers. Once the systems have booted:
-
-### 5.2 Start k3s
-
-```bash
-# On k3s-2 (any order):
-sudo systemctl start k3s
-
-# Wait for the node to be Ready
-kubectl get nodes
-
-# On k3s-1:
-sudo systemctl start k3s
-
-# Wait for both to be Ready
-kubectl get nodes
+**The power-on order is the reverse of the shutdown:**
+```
+Power on nodes → Start Kubernetes → Wait for Longhorn → Start database → Start application
 ```
 
-### 5.3 Verify Longhorn
+Why this order? Think of unlocking a store:
+1. First, unlock the door (power on laptops)
+2. Then turn on the lights (start Kubernetes)
+3. Then check that the fridge is plugged in and working (check Longhorn)
+4. Then open the warehouse (start the database)
+5. Then turn on the cash register and open the doors for customers (start the application)
+
+---
+
+### 5.1 Physically Power On Laptops
+
+Go to the laptops and turn them on (power button — usually on the side or keyboard). Wait for both systems to boot (about 1–2 minutes).
+
+### 5.2 Start Kubernetes
+
+Start on one, then the other:
+
+```bash
+# ON k3s-2 (order isn't critical, but let's start with the second one):
+sudo systemctl start k3s
+
+# Wait for the node to be visible and "Ready"
+kubectl get nodes
+# k3s-2 should be "Ready"
+
+# ON k3s-1:
+sudo systemctl start k3s
+
+# Wait for both to be "Ready"
+kubectl get nodes
+# Expected: both nodes "Ready"
+```
+
+> **Why not start both at the same time?** Because we want to see if either one causes problems. If you start both at once and one dies, you won't know which one is at fault.
+
+### 5.3 Check Longhorn — Disks Must Be Healthy
+
+Longhorn is the most sensitive part of the system. When Kubernetes starts, Longhorn automatically **reattaches disks** (they transition from "detached" to "attached" and then to "healthy").
 
 ```bash
 kubectl get volumes -n longhorn-system -o wide
-# Wait for volumes to be "healthy" (may take a few minutes)
-# If any volume is "detached", Longhorn will automatically reattach it
 ```
 
-### 5.4 Start database (CNPG)
+**What you'll see:**
+1. First: volumes are "detached" — this is OK, Longhorn hasn't attached them yet
+2. After ~30 seconds to 5 minutes: they become "attached" — reattached
+3. Then: "healthy" — all data has been read and verified
+
+**Wait for ALL volumes to be "healthy."** This is the signal that storage is ready.
+
+> **Why does this take time?** Longhorn needs to read data from disk, check that all parts (replicas) are consistent, and fix minor discrepancies if needed. It's like restoring a backup onto a disk — it takes a while.
+
+**If any volume is "faulted" (broken):**
+This is rare but possible. Go to the "If Something Goes Wrong" section below.
+
+### 5.4 Start the Database (CNPG)
+
+Once Longhorn is healthy, you can start the database. This is the reverse of step 3.2 — instead of `instances:0`, we set `instances:2`:
 
 ```bash
-# Restore CNPG cluster to 2 instances
+# Restore CNPG cluster to 2 instances (two database copies)
 kubectl patch cluster -n sola sola-db --type merge \
   -p '{"spec":{"instances":2}}'
 
-# Wait for both pods to be Running
+# Watch database pods start up (wait for both to be Running)
 kubectl get pods -n sola -w
+# Press Ctrl+C when you see sola-db-1 and sola-db-2 in Running state
 
-# Check cluster status
+# Verify the CNPG cluster is healthy
 kubectl get cluster -n sola sola-db
-# Expected: 2 ready instances, healthy
+# Expected: 2 ready instances, status "healthy"
 ```
 
-### 5.5 Start application
+> **Good news:** CNPG (CloudNativePG) automatically establishes replication between both instances. No manual command is needed. This means data syncs automatically between the first and second database copies.
+
+### 5.5 Start the Application
+
+Once the database is running, we can start the application:
 
 ```bash
+# Scale up = tell the system "wake up the pods"
+# --replicas=2: two copies of the application (for better reliability)
 kubectl -n sola-app scale deployment sola-app --replicas=2
+
+# Wait for all pods to be Running and the application to be ready
 kubectl -n sola-app rollout status deployment/sola-app
+# Expected: "deployment sola-app successfully rolled out"
 ```
 
-### 5.6 Verify application
+### 5.6 Verify Everything Works
+
+Now it's time for the final check:
 
 ```bash
-# Health check
-curl -s http://192.168.1.10:8002/health
-# {"status":"ok","version":"0.1.0"}
+# 1. Application health check — ask the system "are you alive?"
+curl -s http://{{LB_IP}}:8002/health
+# Response: {"status":"ok","version":"0.1.0"}
 
-# Website
+# 2. Check that the domain works (website)
 curl -sI https://{{DOMAIN}}
-# HTTP/2 307 → redirect to /auth/login
+# Response: HTTP/2 307 → redirect to /auth/login (normal!)
 
-# Check data in database
+# 3. Check the data in the database — are all users and reservations still there?
 kubectl exec -n sola sola-db-1 -- psql -U postgres -d sola -c \
   "SELECT count(*) FROM users; SELECT count(*) FROM reservations;"
+# Expected: numbers that aren't 0 (same number of users and reservations as before the break)
 ```
 
 ---
 
-## 6. Important warnings
+## 6. ⚠️ Important Warnings
 
-1. **Longhorn is not a backup** — Longhorn protects against disk/node failure, not human error. Always have an external database backup.
+1. **Longhorn is NOT a backup.** Longhorn protects against a single disk failure (if one laptop dies, data remains on the other). **It does NOT protect against:**
+   - Human error (someone accidentally deletes the database)
+   - Software bugs (a bug in the application deletes data)
+   - Physical theft or fire
+   → Therefore, always keep an **external backup** (as we did in step 2.2)
 
-2. **Do not power off during a Longhorn rebuild** — if Longhorn is repairing a replica, wait until the volume is `healthy` again.
+2. **Don't shut down during a Longhorn rebuild.** If Longhorn is currently repairing a replica (you see "rebuilding" in the STATE column), **wait!** Shutting down during a rebuild can corrupt data. Wait until the volume is `healthy` again.
 
-3. **Do not just flip the power switch** — always graceful shutdown: scale down app → scale down database → stop k3s → poweroff.
+3. **Don't just flip the power switch!** Always do a **graceful shutdown**:
+   ```
+   Scale down app → scale down database → wait for Longhorn to detach → stop k3s → poweroff
+   ```
+   Think of it like: don't throw a book out the window — close it and place it neatly on the shelf.
 
-4. **The domain will be unreachable during the shutdown** — Cloudflare proxy points to LoadBalancer (192.168.1.10), which will be powered off.
+4. **The domain will be unreachable during the break.** The Cloudflare proxy points to the LoadBalancer ({{LB_IP}}), which will be off during the break. When the application starts in autumn, the LoadBalancer automatically starts with it. The domain will work again within a few minutes of powering on.
 
-5. **Check cronjobs after powering on** — backup and report will start automatically per schedule.
+5. **Check cronjobs after powering on.** The system has scheduled tasks (database backups, daily reports). Verify they've started:
+   ```bash
+   kubectl get cronjobs -A
+   kubectl get jobs -A
+   ```
 
-6. **CNPG automatically establishes replication
+6. **CNPG automatically establishes replication.** No manual `pg_basebackup` or similar command is needed. CloudNativePG handles everything itself.
+
+---
+
+## 7. 🆘 If Something Goes Wrong — Troubleshooting
+
+Here are the most common issues and how to resolve them.
+
+### Issue: Longhorn volume stays "detached" even after 15 minutes
+
+**Cause:** Longhorn is waiting for the disk to attach, but something is blocking it.
+**Solution:** Try manually attaching the volume:
+```bash
+# Find the volume name
+kubectl get volumes -n longhorn-system
+
+# Manually attach
+kubectl annotate volume -n longhorn-system <volume-name> longhorn.io/volume-scheduling-error-
+
+# If that doesn't help, check the Longhorn UI:
+kubectl port-forward -n longhorn-system svc/longhorn-frontend 8080:80
+# Open in browser: http://localhost:8080
+# Go to "Volume" and check what's listed under "Conditions"
+```
+
+### Issue: Longhorn volume is "faulted" (broken)
+
+**Cause:** One of the disks has physically failed or the data is corrupted.
+**Solution:**
+1. Check which replica is faulty
+2. If one replica is working, you can restore from it:
+```bash
+kubectl get volumes -n longhorn-system -o yaml | grep -A 5 "robustness"
+# See which replica is "healthy"
+```
+3. In the Longhorn UI (see above), select "Detach" and then "Attach" — this often fixes itself
+4. If there's no fix, **restore the database from the USB backup** (step 2.2)
+
+### Issue: CNPG won't start (pods stay "Pending" or "CrashLoopBackOff")
+
+**Cause:** PVCs are corrupted or Longhorn isn't ready yet.
+**Solution:**
+```bash
+# Check what's wrong
+kubectl describe pod -n sola sola-db-1
+
+# Check PVC status
+kubectl get pvc -n sola
+
+# If PVC isn't "Bound", check Longhorn
+kubectl get volumes -n longhorn-system -o wide
+
+# Wait for Longhorn volumes to become "healthy", then try again:
+kubectl patch cluster -n sola sola-db --type merge \
+  -p '{"spec":{"instances":0}}'
+# Wait 30 seconds
+kubectl patch cluster -n sola sola-db --type merge \
+  -p '{"spec":{"instances":2}}'
+```
+
+### Issue: Application starts but throws "database connection refused"
+
+**Cause:** The database isn't ready yet when the application tries to connect.
+**Solution:** Wait a few more minutes and try again. If that doesn't help:
+```bash
+# Check if the database is reachable
+kubectl exec -n sola-app deploy/sola-app -- nc -zv sola-db-rw.sola 5432
+# If "Connection refused", the database isn't ready yet
+
+# Check database status
+kubectl get cluster -n sola sola-db
+```
+
+### Issue: Node won't wake up (no response on SSH)
+
+**Cause:** There might be a network issue or the laptop wasn't properly powered on.
+**Solution:**
+1. Physically check the laptop — are there lights? Can you hear the fan?
+2. Try holding the power button for 30 seconds (hard reset), then turn it on again
+3. Consider the possibility that the battery completely drained over the summer — plug in the charger and wait 10 minutes
+
+### Issue: Data is missing from the database after powering on
+
+**Cause:** Very rare — disk corruption or a Longhorn replication error may have occurred.
+**Solution:** Restore from the USB backup:
+```bash
+# Copy the backup into the database pod
+kubectl cp /media/usb/sola_backup_pred_pavzo.sql sola/sola-db-1:/tmp/
+
+# Restore the database
+kubectl exec -n sola -it sola-db-1 -- psql -U postgres -d sola -f /tmp/sola_backup_pred_pavzo.sql
+```
+
+---
+
+## 8. 📝 Quick Checklist
+
+### Before Shutdown (July)
+- [ ] Both nodes `Ready`
+- [ ] Longhorn volumes `healthy`
+- [ ] Database backup created and saved to USB
+- [ ] App scaled down to 0
+- [ ] Database scaled down to 0 (instances: 0)
+- [ ] Longhorn volumes `detached`
+- [ ] k3s stopped on both nodes
+- [ ] Laptops powered off
+
+### After Powering On (August)
+- [ ] Both laptops powered on
+- [ ] k3s running on both nodes
+- [ ] Both nodes `Ready`
+- [ ] Longhorn volumes `healthy`
+- [ ] Database scaled up to 2
+- [ ] App scaled up to 2
+- [ ] Health check OK (`curl /health`)
+- [ ] Website reachable
+- [ ] Cronjobs running
 
 ---
 

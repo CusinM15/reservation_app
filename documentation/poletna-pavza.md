@@ -14,13 +14,13 @@ Ta dokument vsebuje **navodila po korakih** za varen izklop in kasnejši vklop c
 
 Sistem, ki ga ugašamo:
 
-| Komponenta | Opis |
-|---|---|
-| **2 noda** (prenosnika): `k3s-1` in `k3s-2` | Oba delujeta kot krmilnika (control-plane) in hranita podatke (etcd). Fizično: stara prenosnika. |
-| **CloudNativePG (CNPG)** | Baza podatkov (PostgreSQL). Teče v 2 izvodih (repliki) za varnost. |
-| **Longhorn** | Shramba diskov — kot "omara za podatke". Poskrbi, da se podatki ne izgubijo, tudi če en disk crkne. |
-| **MetalLB** | Daje zunanje IP naslove aplikacijam (npr. {{LB_IP}} za dostop s spleta). |
-| **Aplikacija** | Sama šolska spletna aplikacija (namespace: sola-app). |
+| Komponenta                                  | Opis                                                                                                |
+| ------------------------------------------- | --------------------------------------------------------------------------------------------------- |
+| **2 noda** (prenosnika): `k3s-1` in `k3s-2` | Oba delujeta kot krmilnika (control-plane) in hranita podatke (etcd). Fizično: stara prenosnika.    |
+| **CloudNativePG (CNPG)**                    | Baza podatkov (PostgreSQL). Teče v 2 izvodih (repliki) za varnost.                                  |
+| **Longhorn**                                | Shramba diskov — kot "omara za podatke". Poskrbi, da se podatki ne izgubijo, tudi če en disk crkne. |
+| **MetalLB**                                 | Daje zunanje IP naslove aplikacijam (npr. {{LB_IP}} za dostop s spleta).                            |
+| **Aplikacija**                              | Sama šolska spletna aplikacija (namespace: sola-app).                                               |
 
 ---
 
@@ -47,13 +47,13 @@ Sistem, ki ga ugašamo:
 
 ## 🤔 Zakaj sploh ugašati?
 
-Ker so to **stari prenosniki**. Počitnike (julij, avgust) nihče ne uporablja aplikacije, zato:
+Ker so to **stari prenosniki**. Med počitnicami (julij, avgust) nihče ne uporablja aplikacije, zato:
 
 - **Manj obratovanja = manj obrabe = daljša življenjska doba.** Stari ventilatorji, stari diski, stari čipi — vsaka ura delovanja šteje. Dva meseca prihranimo ogromno.
 - **Manj porabe elektrike** — vsak kilovat šteje, še posebej v šoli.
-- **Manj tveganja** — med nevihtami, izpadi elektrike poleti, ko ni nikogar, da bi pogledal, če je sistem v redu.
+- **Manj tveganja** — med poletnimi nevihtami in izpadi elektrike ni nikogar, ki bi preveril, ali je sistem v redu.
 
-**Pomembno:** ne brišemo ničesar. Samo ustavimo. Pomisli kot na **zimsko spanje** računalnika — ko se zbudi, se vrne točno tja, kjer je bil.
+**Pomembno:** ne brišemo ničesar. Samo ustavimo. Pomisli na to kot na **zimsko spanje** računalnika — ko se zbudi, se vrne točno tja, kjer je bil.
 
 ---
 
@@ -87,7 +87,7 @@ kubectl get volumes -n longhorn-system -o wide
 
 ### 2.1 Preveri celoten cluster
 
-Zaženi te ukaze. Ne razumej jih kot "čarobne besede" — vsak od njih preveri en del sistema:
+Zaženi te ukaze. To niso "čarobne besede" — vsak od njih preveri en del sistema:
 
 ```bash
 # Preveri, da sta oba prenosnika živa, dosegljiva in pripravljena
@@ -177,7 +177,7 @@ Baza je srce sistema. Tu so vsi podatki (ocene, rezervacije, uporabniki). CNPG u
 ```bash
 # "Patch cluster na instances=0" = rečemo bazi "daj se ustaviti, ampak ne zbriši diskov"
 # To NI brisanje! Instance=0 pomeni "začasno ustavi" — kot da bi dali kuhinjo v mirovanje,
-# ne da bi jo porušili. Diski (PVC-ji) ostanejo pripeti in shranjeni.
+# ne da bi jo porušili. Diski (PVC-ji) ostanejo pripeti in ohranjeni.
 kubectl patch cluster -n sola sola-db --type merge \
   -p '{"spec":{"instances":0}}'
 
@@ -187,14 +187,14 @@ kubectl get pods -n sola -w
 
 # Preveri, da so diski (PVC-ji) ŠE VEDNO prisotni!
 kubectl get pvc -n sola
-# Pričakovano: sola-db-1 in sola-db-2 — oba "Bound" (pripeta, čeprav prazna)
+# Pričakovano: sola-db-1 in sola-db-2 — oba "Bound" (pripeta, a brez aktivnih podov)
 ```
 
 > ✅ PVC-ji (diski) ostanejo. To pomeni, da so **tvoji podatki varni v Longhornu**. Ko bazo spet vklopiš, se pripne na iste diske z istimi podatki.
 
 ### 3.3 Počakaj, da se Longhorn diski odklopijo
 
-Ko baza ni več aktivna, Longhorn po nekaj minutah **sam odklopi diske**. To je normalno in pričakovano.
+Ko baza ne teče več, Longhorn po nekaj minutah **sam odklopi diske**. To je normalno in pričakovano.
 
 ```bash
 kubectl get volumes -n longhorn-system -o wide
@@ -255,8 +255,6 @@ Zakaj ta vrstni red? Predstavljaj si, da odklepaš trgovino:
 4. Nato odpreš skladišče (vklopiš bazo)
 5. Nato prižgeš registrsko blagajno in odpreš vrata za stranke (vklopiš aplikacijo)
 
-Če bi poskusil prižgati registrsko blagajno, preden je hladilnik priklopljen, bi se sistem sesul.
-
 ---
 
 ### 5.1 Fizični vklop prenosnikov
@@ -283,7 +281,7 @@ kubectl get nodes
 # Pričakovano: oba node-a "Ready"
 ```
 
-> **Zakaj ne zaženemo obeh hkrati?** Ker želimo videti, če kateri od njiju povzroča težave. Če zaženeš oba naenkrat in eden crkne, ne veš, kateri je kriv.
+> **Zakaj ne zaženemo obeh hkrati?** Ker želimo videti, ali kateri od njiju povzroča težave. Če zaženeš oba naenkrat in eden crkne, ne veš, kateri je kriv.
 
 ### 5.3 Preveri Longhorn — diski morajo biti zdravi
 
@@ -370,9 +368,9 @@ kubectl exec -n sola sola-db-1 -- psql -U postgres -d sola -c \
 
 2. **Ne ugašaj med Longhorn rebuildom.** Če Longhorn ravno popravlja repliko (vidiš "rebuilding" v stolpcu STATE), **počakaj!** Ugašanje med rebuildom lahko poškoduje podatke. Počakaj, da je volume spet `healthy`.
 
-3. **Ne izklapljaj kar s stikala!** Vedno naredi **graceful shutdown**:
+3. **Ne izklapljaj kar s stikalom!** Vedno naredi **graceful shutdown**:
    ```
-   Scale down app → scale down baza → počakaj da se Longhorn odklopi → stop k3s → poweroff
+   Scale down app → scale down baza → počakaj, da se Longhorn odklopi → stop k3s → poweroff
    ```
    To je kot: ne meči knjige skozi okno, ampak jo zapri in lepo odloži na polico.
 
@@ -462,7 +460,7 @@ kubectl get cluster -n sola sola-db
 **Vzrok:** Morda je napaka na omrežju ali prenosnik ni pravilno vklopljen.
 **Rešitev:**
 1. Fizično preveri prenosnik — ali so lučke? Ali se sliši ventilator?
-2. Poskusi ga držati 10 sekund pritisnjen gumb za vklop (trdi reset), nato spet vklopi
+2. Poskusi 30 sekund držati pritisnjen gumb za vklop (trdi reset), nato spet vklopi
 3. Pomisli na možnost, da je baterija čez poletje popolnoma izpraznjena — priklopi polnilnik in počakaj 10 minut
 
 ### Težava: Po vklopu manjkajo podatki v bazi
@@ -481,7 +479,7 @@ kubectl exec -n sola -it sola-db-1 -- psql -U postgres -d sola -f /tmp/sola_back
 
 ## 8. 📝 Hitra kontrolna lista (checklist)
 
-### Pred izklopom (pomlad)
+### Pred izklopom (julija)
 - [ ] Oba noda `Ready`
 - [ ] Longhorn volume-i `healthy`
 - [ ] Backup baze narejen in shranjen na USB
@@ -491,7 +489,7 @@ kubectl exec -n sola -it sola-db-1 -- psql -U postgres -d sola -f /tmp/sola_back
 - [ ] k3s ustavljen na obeh nodih
 - [ ] Prenosnika ugasnjena
 
-### Po vklopu (jeseni)
+### Po vklopu (avgusta)
 - [ ] Oba prenosnika vklopljena
 - [ ] k3s teče na obeh nodih
 - [ ] Oba noda `Ready`
