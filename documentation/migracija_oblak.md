@@ -191,4 +191,4 @@ Tvoje YAMLe daš gor enake kot zdaj — samo ne rabiš skrbeti za etcd, API serv
 
 ---
 
-> **Vse cene so okvirne, stanje julij 2026. Načeloma gre za mikrostoritve (1 CPU, 1GB RAM, 1GB baza), kar za šolsko aplikacijo s ~100–200 učenci povsem zadostuje.**
+> **Vse cene so okvirne, stanje julij 2026. Načeloma gre za mikrostoritve (1 CPU, 1GB RAM, 1GB baza), kar za šolsko aplikacijo s ~100–200 uporabniki povsem zadostuje.**
