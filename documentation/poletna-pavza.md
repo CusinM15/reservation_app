@@ -13,7 +13,8 @@
 Ta dokument vsebuje **navodila po korakih** za varen izklop in kasnejši vklop celega šolskega strežniškega sistema — tako imenovani **"počitniški izklop"**. Namenjen je ljudem, ki niso vsak dan v Kubernetesu, zato je vsak ukaz tudi **razložen v običajnem jeziku**.
 
 Sistem, ki ga ugašamo:
-| Komponenta | Opis |g
+
+| Komponenta | Opis |
 |---|---|
 | **2 noda** (prenosnika): `k3s-1` in `k3s-2` | Oba delujeta kot krmilnika (control-plane) in hranita podatke (etcd). Fizično: stara prenosnika. |
 | **CloudNativePG (CNPG)** | Baza podatkov (PostgreSQL). Teče v 2 izvodih (repliki) za varnost. |
