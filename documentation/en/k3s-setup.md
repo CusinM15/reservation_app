@@ -1,4 +1,4 @@
-🌐 **Language:** [🇸🇮 Slovenščina](k3s-setup.md) | [🇬🇧 English](en/k3s-setup.md)
+🌐 **Language:** [🇸🇮 Slovenščina](../k3s-setup.md) | [🇬🇧 English](k3s-setup.md)
 
 ---
 
