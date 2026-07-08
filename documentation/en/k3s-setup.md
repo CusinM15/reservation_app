@@ -272,7 +272,7 @@ kubectl create secret generic sola-secrets \
 
 **`--from-literal`** — writes the data directly on the command line. In production, you'd use `--from-file` or pull from Azure Key Vault / HashiCorp Vault, but for a school app this is sufficient.
 
-**`DATABASE_URL`** — tells the app where the database is. `sola-db-rw` is the service pointing to the **currently primary** database (rw = read-write). `sola.sola` = service name in the `sola` namespace.
+**`DATABASE_URL`** — tells the app where the database is. `sola-db-rw` is the service pointing to the **currently primary** database (rw = read-write). `sola-db-rw.sola` = service `sola-db-rw` in the `sola` namespace (K8s DNS: `sola-db-rw.sola.svc.cluster.local`).
 
 ### 5.3 Deploy using overlays
 
