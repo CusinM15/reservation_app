@@ -22,8 +22,8 @@ Ta dokument je napisan za **čisto lokalno namestitev** — aplikacijo poženemo
 1. [Kaj sploh pomeni "lokalna namestitev"?](#1-kaj-sploh-pomeni-lokalna-namestitev)
 2. [Kaj rabiš — kontrola, preden začneš](#2-kaj-rabiš--kontrola-preden-začneš)
 3. [Kaj je Docker? (za tiste, ki prvič slišite)](#3-kaj-je-docker-za-tiste-ki-prvič-slišite)
-4. [Namestitev prek Dockerja (✅ priporočeno)](#4-namestitev-prek-dockerja--priporočeno)
-5. [Namestitev brez Dockerja — na roke (uvicorn)](#5-namestitev-brez-dockerja--na-roke-uvicorn)
+4. [Namestitev prek Dockerja](#4-namestitev-prek-dockerja)
+5. [Namestitev brez Dockerja — na roke (uvicorn) (✅ priporočeno)](#5-namestitev-brez-dockerja--na-roke-uvicorn-️-priporočeno)
 6. [Prvi zagon — kaj se zgodi v ozadju?](#6-prvi-zagon--kaj-se-zgodi-v-ozadju)
 7. [Uvoz učiteljev iz spleta](#7-uvoz-učiteljev-iz-spleta)
 8. [Pomembne razlike: Lokalno vs. Produkcija](#8-pomembne-razlike-lokalno-vs-produkcija)
@@ -71,7 +71,7 @@ python3 --version
 docker --version
 ```
 
-Če vidiš `Docker version 24.x.x` — super. Če ne, preskoči na [poglavje 5](#5-namestitev-brez-dockerja--na-roke-uvicorn) (namestitev brez Dockerja) ali pa si Docker namesti.
+Če vidiš `Docker version 24.x.x` — super. Če ne, preskoči na [poglavje 5](#5-namestitev-brez-dockerja--na-roke-uvicorn-️-priporočeno) (namestitev brez Dockerja) ali pa si Docker namesti.
 
 ---
 
@@ -96,7 +96,7 @@ Ko to zaženeš, Docker vzame ta zabojnik in ga postavi v svoj "mikro-računalni
 
 ---
 
-## 4) Namestitev prek Dockerja (✅ priporočeno)
+## 4) Namestitev prek Dockerja
 
 ### 4a) Priprava — prenesi kodo in nastavi konfiguracijo
 
@@ -189,9 +189,9 @@ docker start sola-app
 
 ---
 
-## 5) Namestitev brez Dockerja — na roke (uvicorn)
+## 5) Namestitev brez Dockerja — na roke (uvicorn) (✅ priporočeno)
 
-Če nimaš Dockerja ali ga nočeš nameščati, lahko aplikacijo poženeš neposredno s Pythonom. To je kot bi sestavljal jed iz sestavin — malo več dela, a popolnoma možno.
+Če nimaš Dockerja ali ga nočeš nameščati (ali imaš težave z njim, npr. tmpfs overload med buildom), lahko aplikacijo poženeš neposredno s Pythonom. To je kot bi sestavljal jed iz sestavin — malo več dela, a bolj predvidljivo na starejših ali bolj omejenih računalnikih.
 
 ### 5a) Priprava okolja
 
@@ -370,7 +370,11 @@ Uredi datoteko `scripts/import_teachers.py` v beležnici ali urejevalniku:
 
 ## Še zadnji nasveti
 
-✅ **Vedno uporabi Docker, če lahko.** Je enostavnejši, bolj zanesljiv in ne umaže tvojega računalnika z desetinami Python knjižnic.
+✅ **Priporočamo namestitev brez Dockerja (uvicorn).** Docker je sicer standardna izbira za produkcijo, vendar na starejših ali bolj omejenih računalnikih (zlasti tistih z majhno tmpfs particijo) lahko povzroči težave — `/tmp` se med buildom napolni in build pade. Neposredna namestitev z uvicorn te težave nima in je bolj predvidljiva.
+
+> 🧠 **Težava s tmpfs (tmpfs overload):** Ko Docker gradi sliko, uporablja `/tmp` za začasne datoteke — pip prenose, WeasyPrint pisave, prevode. Če ima tvoj sistem majhno tmpfs particijo (manj kot 2 GB), to povzroči napako 'No space left on device'. Neposredna namestitev z uvicornom tega nima, ker uporablja običajen diskovni prostor.
+
+✅ **Če imaš Docker in dovolj tmpfs prostora:** Lahko uporabiš Docker, navodila so v 4. poglavju. Za večino pa je uvicorn enostavnejša in bolj zanesljiva pot.
 
 ✅ **Ne uporabljaj `--reload` v produkciji.** Je super za razvoj (samodejni restart ob spremembah), ampak v produkciji povzroča nepotrebne restart-e in lahko izgubiš podatke.
 
@@ -378,7 +382,7 @@ Uredi datoteko `scripts/import_teachers.py` v beležnici ali urejevalniku:
 
 ✅ **Geslo admin uporabnika takoj spremeni.** Privzeto geslo `your_password` ve vsak, ki prebere to dokumentacijo.
 
-✅ **Če se kaj zalomi:** zbriši vse in začni znova. Pri Dockerju: `docker stop sola-app && docker rm sola-app && docker rmi sola-app`. Nato ponovi korake iz [poglavja 4](#4-namestitev-prek-dockerja--priporočeno). Pri lokalni namestitvi: zbriši mapo `venv/`, zbriši `data/sola.db`, in začni od [koraka 5a](#5a-priprava-okolja).
+✅ **Če se kaj zalomi:** zbriši vse in začni znova. Pri Dockerju: `docker stop sola-app && docker rm sola-app && docker rmi sola-app`. Nato ponovi korake iz [poglavja 4](#4-namestitev-prek-dockerja). Pri lokalni namestitvi: zbriši mapo `venv/`, zbriši `data/sola.db`, in začni od [koraka 5a](#5a-priprava-okolja).
 
 ---
 

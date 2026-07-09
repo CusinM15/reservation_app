@@ -23,7 +23,7 @@ Suitable for other schools, testing, or demonstration.
 
 ---
 
-## 2) Installation via Docker (recommended)
+## 2) Installation via Docker
 
 ### 2a) Preparation
 
@@ -69,7 +69,9 @@ docker stop sola-app && docker rm sola-app
 
 ---
 
-## 3) Installation without Docker (uvicorn)
+## 3) Installation without Docker (uvicorn) (recommended)
+
+> **Why not Docker?** On systems with limited `/tmp` (tmpfs) space, Docker builds can fail with `No space left on device` due to tmpfs overload during pip installs and asset compilation. Direct uvicorn installation avoids this issue entirely and is therefore the recommended approach for most local setups.
 
 ### 3a) Environment Setup
 
