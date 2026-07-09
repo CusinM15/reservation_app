@@ -11,7 +11,11 @@
 # POSTAVI LOKALNI APP — Šolski sistem OSTC App
 
 
+<<<<<<< HEAD
 Ta dokument je napisan za **čisto lokalno namestitev** — aplikacijo poženemo na **enem samem računalniku**. Brez Kubernetes gruče, brez PostgreSQL strežnika, brez omrežnega čudeža. Samo ti in tvoj računalnik.
+=======
+Ta dokument je napisan za **čisto lokalno namestitev** — aplikacijo poženemo na **enem samem računalniku**. Brez Kubernetes gruče, brez PostgreSQL strežnika. Samo ti in tvoj računalnik.
+>>>>>>> 1767c7091f99cd9b71ec9c9fefc836a1892cedd3
 
 > 🎯 **Kdaj to uporabim?** Ko želiš aplikacijo pokazati kolegom, jo preizkusiti na svojem prenosniku, ali jo namestiti v šoli, ki nima svojega Kubernetes okolja.
 
@@ -23,10 +27,11 @@ Ta dokument je napisan za **čisto lokalno namestitev** — aplikacijo poženemo
 2. [Kaj rabiš — kontrola, preden začneš](#2-kaj-rabiš--kontrola-preden-začneš)
 3. [Kaj je Docker? (za tiste, ki prvič slišite)](#3-kaj-je-docker-za-tiste-ki-prvič-slišite)
 4. [Namestitev prek Dockerja](#4-namestitev-prek-dockerja)
-5. [Namestitev brez Dockerja — na roke (uvicorn) (✅ priporočeno)](#5-namestitev-brez-dockerja--na-roke-uvicorn-️-priporočeno)
+5. [Namestitev brez Dockerja — na roke (uvicorn) ](#5-namestitev-brez-dockerja--na-roke-uvicorn-️-priporočeno)
 6. [Prvi zagon — kaj se zgodi v ozadju?](#6-prvi-zagon--kaj-se-zgodi-v-ozadju)
 7. [Uvoz učiteljev iz spleta](#7-uvoz-učiteljev-iz-spleta)
 8. [Pomembne razlike: Lokalno vs. Produkcija](#8-pomembne-razlike-lokalno-vs-produkcija)
+8.5. [Dostop iz drugih naprav — nastavitev mDNS](#85-dostop-iz-drugih-naprav--nastavitev-mdns)
 9. [Pogoste težave in kako jih rešiti](#9-pogoste-težave-in-kako-jih-rešiti)
 
 ---
@@ -36,28 +41,28 @@ Ta dokument je napisan za **čisto lokalno namestitev** — aplikacijo poženemo
 Predstavljaj si, da imaš na polici škatlo sestavljanke (aplikacije). **Lokalna namestitev** pomeni, da to škatlo odpreš in sestaviš **kar na svoji mizi** — ne pošiljaš je v tovarno, ne uporabljaš industrijskih strojev. Vse, kar rabiš, je na dosegu roke.
 
 V našem primeru:
-- **Aplikacija** (spletna stran z urniki in rezervacijami) teče na **tvojem računalniku**.
-- **Baza podatkov** (kjer so shranjeni učitelji, rezervacije, ocene) je **datoteka na tvojem disku**.
+- **Aplikacija** (spletna stran z koledarjem in rezervacijami) teče na **tvojem računalniku**.
+- **Baza podatkov** (kjer so shranjeni učitelji, rezervacije) je **datoteka na tvojem disku**.
 - **Drugi uporabniki** lahko dostopajo samo, če so v istem omrežju in poznajo tvoj IP naslov.
 
-> 📌 **Bistvo:** Vse je na enem mestu. Nič ne leti v oblake. En računalnik, ena aplikacija, ena baza.
+> 📌 **Bistvo:** Vse je na enem mestu. Nič ne leti v oblak. En računalnik, ena aplikacija, ena baza.
 
 ---
 
 ## 2) Kaj rabiš — kontrola, preden začneš
 
-Preden karkoli nameščaš, preveri, ali imaš sledeče:
+Preden karkoli namestiš, preveri, ali imaš sledeče:
 
-| Orodje | Zakaj ga rabiš? | Kje ga dobiš? |
-|--------|----------------|---------------|
-| **Python 3.11 ali novejši** | Aplikacija je napisana v Pythonu — to je "motor", ki poganja kodo. Brez njega ne gre. | [python.org](https://python.org) — prenesi in namesti. |
-| **Docker** (ni obvezen, ampak priporočljiv) | Docker zapakira aplikacijo v "zabojnik", ki vsebuje vse, kar rabi. Kot že pripravljena TV večerja — samo pogreješ. | [docker.com](https://docker.com) |
-| **Git** | Orodje za prenos kode iz spletnega repozitorija (GitHub). Kot Dropbox za programsko kodo. | `sudo apt install git` (Linux) ali [git-scm.com](https://git-scm.com) |
-| **Brskalnik** | Aplikacija je spletna — dostopaš do nje prek brskalnika (Chrome, Firefox, Edge...). | Verjetno ga že imaš. |
+| Orodje                      | Zakaj ga rabiš?                                                                                                 | Kje ga dobiš?                                                         |
+| --------------------------- | --------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------- |
+| **Python 3.11 ali novejši** | Aplikacija je napisana v Pythonu — to je "motor", ki poganja kodo. Brez njega ne gre.                           | [python.org](https://python.org) — prenesi in namesti.                |
+| **Docker** (ni nujno)       | Docker zapakira aplikacijo v "zabojnik", ki vsebuje vse, kar rabi. Kot že pripravljena večerja — samo pogreješ. | [docker.com](https://docker.com)                                      |
+| **Git**                     | Orodje za prenos kode iz spletnega repozitorija (GitHub). Kot Dropbox za programsko kodo.                       | `sudo apt install git` (Linux) ali [git-scm.com](https://git-scm.com) |
+| **Brskalnik**               | Aplikacija je spletna — dostopaš do nje prek brskalnika (Chrome, Firefox, Edge...).                             | Verjetno ga že imaš.                                                  |
 
 ### Kako preverim, ali imam Python nameščen?
 
-Odpri **terminal** (Command Prompt na Windows, Terminal na Mac/Linux) in zaženi:
+Odpri **terminal** (Command Prompt v Windows, Terminal na Mac/Linux) in zaženi:
 
 ```bash
 python3 --version
@@ -87,10 +92,10 @@ docker --version
 
 Ko to zaženeš, Docker vzame ta zabojnik in ga postavi v svoj "mikro-računalnik" — deluje popolnoma samostojno, ne glede na to, kaj je nameščeno na tvojem pravem računalniku.
 
-### 🔥 Zakaj je Docker priporočen?
+### 🔥 Zakaj Docker?
 
 1. **Ničesar ti ni treba nameščati na svoj računalnik.** Ne Python knjižnic, ne orodij — vse je že v zabojniku.
-2. **Deluje povsod enako.** Ne glede na to, ali imaš Windows 10, Mac ali Linux — Docker zagotovi, da aplikacija vidi popolnoma isto okolje.
+2. **Deluje povsod enako.** Ne glede na to, ali imaš Windows, Mac ali Linux — Docker zagotovi, da aplikacija vidi popolnoma isto okolje.
 3. **Če ga zamočiš, ga enostavno zbrišeš.** `docker rm sola-app` in začneš znova — na tvojem računalniku ne ostane nobenih sledi.
 4. **Izolacija.** Aplikacija ne more "pobrisati" tvojih pomembnih datotek — živi v svojem svetu znotraj Dockerja.
 
@@ -137,10 +142,10 @@ PROSTORI=tablice,racunalnica,ladja
 > - `APP_PORT=8001` — vrata, na katerih bo aplikacija dostopna (kot TV kanal — na 8001).
 > - `BASE_URL=http://localhost:8001` — naslov, pod katerim je aplikacija vidna (localhost = ta računalnik).
 > - `DATABASE_URL=sqlite:///./data/sola.db` — **kje je baza**. SQLite je preprosta baza v eni datoteki.
-> - `TABLICE_MAX=28` — največje število tablic v enem terminu.
+> - `TABLICE_MAX=28` — število vseh tablic
 > - `SCHEDULE=...` — urnik (7:30-8:15 je 0. ura, itd.).
 > - `RAZREDI=...` — seznam vseh razredov na šoli.
-> - `PROSTORI=...` — seznam prostorov, ki jih lahko rezerviraš.
+> - `PROSTORI=...` — seznam prostorov, ki jih lahko rezerviraš (in tablice).
 
 ### 4b) Zgradi Docker sliko in zaženi
 
@@ -164,13 +169,13 @@ docker run -d --name sola-app -p 8001:8001 \
 > 🧠 **Razlaga parametrov:**
 > - `-d` — **detached mode** (teče v ozadju, ne zaseda terminala).
 > - `--name sola-app` — ime zabojnika (da ga lahko kasneje ustaviš z imenom).
-> - `-p 8001:8001` — **port mapping**. "Če nekdo pokliče na vrata 8001 tvojega računalnika, preusmeri klic v zabojnik na ista vrata." Zunanja : notranja vrata.
+> - `-p 8001:8001` — **port mapping**. "Če nekdo pokliče na vrata 8001 tvojega računalnika, preusmeri klic v zabojnik na ista vrata." Zunanja: notranja vrata.
 > - `-v $(pwd)/data:/app/data` — **volume mount**. To je ključno! Tvoja mapa `./data` na računalniku je povezana z mapo `/app/data` v zabojniku. **Če zbrišeš zabojnik, baza ostane na tvojem disku.**
 > - `sola-app` — ime slike, ki smo jo zgradili zgoraj.
 
 ✅ **Aplikacija je zdaj na:** [**http://localhost:8001**](http://localhost:8001)
 
-Privzeti dostop: uporabniško ime `admin`, geslo `your_password` (**geslo takoj spremenite!**).
+Privzeti dostop: uporabniško ime `admin`, geslo `admin123` (**geslo takoj spremenite!**).
 
 ### 4c) Ustavitev in odstranitev
 
@@ -189,7 +194,7 @@ docker start sola-app
 
 ---
 
-## 5) Namestitev brez Dockerja — na roke (uvicorn) (✅ priporočeno)
+## 5) Namestitev brez Dockerja — na roke (uvicorn) 
 
 Če nimaš Dockerja ali ga nočeš nameščati (ali imaš težave z njim, npr. tmpfs overload med buildom), lahko aplikacijo poženeš neposredno s Pythonom. To je kot bi sestavljal jed iz sestavin — malo več dela, a bolj predvidljivo na starejših ali bolj omejenih računalnikih.
 
@@ -204,9 +209,6 @@ cd sola-app
 python3 -m venv venv
 ```
 
-> 🧠 **Kaj je virtualno okolje (venv)?**
-> Predstavljaj si, da imaš na mizi kup svinčnikov, barvic in markerjev (to so Python knjižnice). Vsak projekt bi rad imel svoj komplet — ne želiš, da ti eden projekt pobriše rdeči svinčnik, ki ga drugi rabi.
-> **Virtualno okolje (venv) je kot ločena mapa za igrače.** Ko ga aktiviraš, Python ve: "Glej samo v to mapo, ne brskaj po celem računalniku." To pomeni, da lahko vsak projekt uporablja svoje verzije knjižnic brez konfliktov.
 
 Aktiviraj virtualno okolje:
 
@@ -247,11 +249,11 @@ uvicorn app.main:app --host 0.0.0.0 --port 8001 --reload
 > - `app.main:app` — **"V datoteki `app/main.py` poišči objekt `app`."** Uvicorn potrebuje vedeti, kje je vhodna točka v aplikacijo.
 > - `--host 0.0.0.0` — poslušaj na vseh omrežnih vmesnikih.
 > - `--port 8001` — vrata (če so zasedena, spremeni v 8002 ali kaj drugega).
-> - **`--reload`** — to je **zlata vredno za razvoj**. Pomeni, da se aplikacija **samodejno znova zažene vsakič, ko spremeniš kodo**. Če urejaš kaj v mapi `app/`, Uvicorn to zazna in restart-a aplikacijo. Kot da bi imel(a) avtomatsko "shrani in osveži" funkcijo. **V produkciji se --reload ne uporablja** — tam hočeš, da teče stabilno brez ponovnih zagonov.
+> - **`--reload`** — to je **zlata vredno za razvoj**. Pomeni, da se aplikacija **samodejno znova zažene vsakič, ko spremeniš kodo**. Če urejaš kaj v mapi `app/`, Uvicorn to zazna in znova zažene aplikacijo. Kot da bi imel(a) avtomatsko "shrani in osveži" funkcijo. **V produkciji se --reload ne uporablja** — tam hočeš, da teče stabilno brez ponovnih zagonov.
 
 ✅ **Aplikacija je zdaj na:** [**http://localhost:8001**](http://localhost:8001)
 
-Privzeti dostop: `admin` / `your_password`
+Privzeti dostop: `admin` / `admin123`
 
 ### 5c) Ustavi aplikacijo
 
@@ -266,7 +268,7 @@ Ko prvič poženeš aplikacijo (bodisi prek Dockerja ali na roke), se zgodi več
 1. **Ustvari se SQLite baza.** V mapi `data/` nastane datoteka `sola.db`. To je cela baza — ena sama datoteka na tvojem disku.
    > 🧠 **Kaj je SQLite?** Predstavljaj si Excel tabelo, ki je shranjena v eni datoteki. Samo namesto Excela uporabljaš programsko kodo za branje in pisanje. **SQLite je preprosta baza — kot Excel tabela, shranjena v eni datoteki.** Ne rabiš nameščati posebnega baznega strežnika (kot je PostgreSQL ali MySQL) — vse je v tisti datoteki.
 
-2. **Doda se začetni admin uporabnik.** Uporabniško ime: `admin`, geslo: `your_password` (nujno spremeni takoj ob prvi prijavi!).
+2. **Doda se začetni admin uporabnik.** Uporabniško ime: `admin`, geslo: `admin123` (nujno spremeni takoj ob prvi prijavi!).
 
 3. **Vse je pripravljeno za uporabo.** Baza je sicer prazna — ni rezervacij, ni ocenjevanj, ni učiteljev. To je kot nov zvezek: vse strani so prazne, čakajo, da jih napolniš.
 
@@ -313,8 +315,8 @@ python3 scripts/import_teachers.py --base-url http://localhost:8001 --dry-run
 Uredi datoteko `scripts/import_teachers.py` v beležnici ali urejevalniku:
 
 1. **Spremeni `SCRAPE_URL`** — to je naslov spletne strani tvoje šole, kjer piše seznam zaposlenih.
-2. **Po potrebi popravi `ROLE_MAP`** — preslikava nazivov (npr. "učitelj" → "teacher", "ravnatelj" → "principal").
-3. **Po potrebi popravi `NON_TEACHING_TABS`** — zavihki na spletni strani, ki niso učitelji (npr. "Administracija", "Vodstvo").
+2. **Po potrebi popravi `ROLE_MAP`** — preslikava nazivov.
+3. **Po potrebi popravi `NON_TEACHING_TABS`** — zavihki na spletni strani, ki niso učitelji (npr. "Administracija").
 
 ### 7d) Kako učitelji dostopajo do aplikacije?
 
@@ -331,13 +333,13 @@ Uredi datoteko `scripts/import_teachers.py` v beležnici ali urejevalniku:
 
 ### SQLite proti PostgreSQL
 
-| Značilnost | Lokalno (SQLite) | Produkcija (PostgreSQL na k3s) |
-|-----------|-----------------|-------------------------------|
-| **Kje je baza?** | Ena datoteka: `data/sola.db` | PostgreSQL strežnik v Kubernetes gruči |
-| **Kako deluje?** | Preprosto — datoteka se odpre, zapiše, zapre. Kot beležka. | Profesionalni strežnik — omogoča več sočasnih uporabnikov, boljšo zmogljivost. Kot Toyota vs. Formul 1. |
-| **Email** | ❌ Ne deluje brez SMTP strežnika. "Pozabljeno geslo" ne bo poslalo emaila. | ✅ Arnes mail ali drug SMTP — pošiljanje gesel deluje. |
-| **Število uporabnikov** | Manj uporabnikov (do ~30 sočasno) — SQLite ni narejen za veliko obremenitev. | Več uporabnikov, visoka razpoložljivost (HA — High Availability), porazdelitev obremenitve. |
-| **Varnost** | Samo za lokalni ali intranet dostop. Brez HTTPS, brez Cloudflare varovanja. | HTTPS prek Cloudflare proxyja, zaščiteno pred zunanjimi napadi. |
+| Značilnost              | Lokalno (SQLite)                                                            | Produkcija (PostgreSQL na k3s)                                                              |
+| ----------------------- | --------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------- |
+| **Kje je baza?**        | Ena datoteka: `data/sola.db`                                                | PostgreSQL strežnik v Kubernetes gruči                                                      |
+| **Kako deluje?**        | Preprosto — datoteka se odpre, zapiše, zapre. Kot beležka.                  | Profesionalni strežnik — omogoča več sočasnih uporabnikov, boljšo zmogljivost.              |
+| **Email**               | ❌ Ne deluje brez SMTP strežnika. "Pozabljeno geslo" ne bo poslalo emaila.   | ✅ Arnes mail ali drug SMTP — pošiljanje gesel deluje.                                       |
+| **Število uporabnikov** | Manj uporabnikov                                                            | Več uporabnikov, visoka razpoložljivost (HA — High Availability), porazdelitev obremenitve. |
+| **Varnost**             | Samo za lokalni ali intranet dostop. Brez HTTPS, brez Cloudflare varovanja. | HTTPS prek Cloudflare proxyja, zaščiteno pred zunanjimi napadi.                             |
 
 > 🧠 **Zakaj SQLite za lokalno?** Ker ne rabiš strežnika. Baza je datoteka — kopiraš jo na USB ključek in jo odneseš na drug računalnik. Za testiranje in demonstracijo je popolnoma dovolj.
 >
@@ -345,26 +347,76 @@ Uredi datoteko `scripts/import_teachers.py` v beležnici ali urejevalniku:
 
 ### Preglednica ključnih razlik
 
-| Značilnost | Lokalno (SQLite) | Produkcija (PostgreSQL/k3s) |
-|------------|-----------------|-------------------------------|
-| Baza | `data/sola.db` | PostgreSQL v k3s |
-| Email | Ne deluje brez SMTP | Arnes mail |
-| Vzdržljivost | Manj uporabnikov | Več uporabnikov, HA |
-| Varnost | Samo za lokalni dostop | HTTPS prek Cloudflare proxyja |
+| Značilnost   | Lokalno (SQLite)       | Produkcija (PostgreSQL/k3s)   |
+| ------------ | ---------------------- | ----------------------------- |
+| Baza         | `data/sola.db`         | PostgreSQL v k3s              |
+| Email        | Ne deluje brez SMTP    | Arnes mail                    |
+| Vzdržljivost | Manj uporabnikov       | Več uporabnikov, HA           |
+| Varnost      | Samo za lokalni dostop | HTTPS prek Cloudflare proxyja |
+
+---
+
+## 8.5) Dostop iz drugih naprav — nastavitev mDNS
+
+Do zdaj aplikacijo odpiraš na `http://localhost:8001` — to deluje samo na računalniku, kjer aplikacija teče. Kaj pa, če želiš aplikacijo odpreti na telefonu, tablici ali drugem računalniku v istem omrežju?
+
+Lahko bi v brskalnik vpisal(a) IP naslov računalnika (npr. `http://192.168.1.42:8001`), vendar se ta lahko spremeni ob vsakem ponovnem zagonu. Bolj elegantno je uporabiti **mDNS** (Multicast DNS).
+
+### Kaj je mDNS?
+
+mDNS je protokol, ki omogoča, da do računalnika dostopaš **po imenu namesto po IP naslovu** — podobno kot kličeš prijatelja po imenu, ne po številki osebne izkaznice.
+
+Na Linuxu za mDNS skrbi storitev `avahi-daemon`. Ko ga namestiš, postane tvoj računalnik dosegljiv na naslovu `http://<ime-računalnika>.local:8001` — iz katerekoli naprave v istem omrežju.
+
+### Namestitev
+
+```bash
+# Namesti avahi-daemon
+sudo apt install avahi-daemon
+
+# Zaženi in omogoči ob vsakem zagonu sistema
+sudo systemctl enable --now avahi-daemon
+```
+
+### Kako ugotoviš ime računalnika?
+
+```bash
+hostname
+```
+
+Če ukaz vrne `šolski-pc`, je aplikacija dosegljiva na:
+
+✅ **http://šolski-pc.local:8001**
+
+
+Spremeni hostname:
+```bash
+sudo vim /etc/hostmane
+```
+
+Spremeniš besedilo (v vimu pritisneš `Esc` + `i`, da začneš tipkati, nato pa `Esc` + `ZZ` oziroma `:wq`), ko je shranjeno, ponovno zaženi računalnik in ime bi moralo biti spremenjeno.
+### Dostop iz drugih naprav
+
+- **Linux:** namesti `avahi-daemon` (enako kot zgoraj)
+- **Windows:** mDNS je vgrajen v Windows 10 in novejše — deluje brez posebne namestitve
+- **Mac:** podpira mDNS vgrajeno (Apple ga imenuje Bonjour)
+- **Android/iOS:** podpirajo `.local` naslove vgrajeno
+
+> 💡 **Praktični nasvet:** Če ima šolski računalnik ime `sola-pc`, preprosto povej učiteljem: "Odprite brskalnik in pojte na `sola-pc.local:8001`." Deluje, tudi če se IP naslov čez noč spremeni.
 
 ---
 
 ## 9) Pogoste težave in kako jih rešiti
 
-| ❌ Težava | ✅ Rešitev |
-|-----------|-----------|
-| **`Port already in use`** (vrata so zasedena) | Druga aplikacija že uporablja vrata 8001. Spremeni `APP_PORT=8002` v `.env` datoteki in poskusi znova. Z Dockerjem: dodaj drug port mapping (`-p 8002:8001`). |
-| **SQLite `database is locked`** (baza je zaklenjena) | Aplikacija se je nepričakovano ustavila, medtem ko je pisala v bazo. **Rešitev:** Ustavi aplikacijo, zbriši datoteko `data/sola.db` in zaženi znova — aplikacija bo ustvarila novo bazo. **Pozor:** S tem izgubiš vse podatke! |
-| **Učitelji niso uvoženi** | Seznam zaposlenih na spletni strani je morda drugačne strukture. Najprej zaženi **`--dry-run`**, da vidiš, kaj skripta najde. Nato prilagodi `SCRAPE_URL` v `scripts/import_teachers.py`. |
-| **Ne vidim prostorov (tablice, računalnica, ladja)** | Preveri `PROSTORI` v `.env` datoteki. Če manjkajo, jih dodaj ločene z vejico: `PROSTORI=tablice,racunalnica,ladja,telovadnica`. Nato znova zaženi aplikacijo. |
-| **Aplikacije ne morem odpreti v brskalniku** | Preveri: (1) Ali aplikacija sploh teče? (poglej terminal ali `docker ps`). (2) Ali si uporabil(a) pravi naslov? Običajno `http://localhost:8001`. (3) Ali si spremenil(a) vrata? Uporabi tista, ki si jih nastavil(a) v `.env`. |
-| **Docker: `permission denied`** | Na Linuxu moraš imet administratorske pravice. Poskusi `sudo docker ...` ali dodaj svoj uporabnik v `docker` skupino: `sudo usermod -aG docker $USER` (po tem se odjavi in prijavi nazaj). |
-| **`pip install` vrže napako** | Morda manjka kakšno sistemsko orodje (npr. Python dev headers). Na Linuxu poskusi: `sudo apt install python3-dev build-essential`. Nato ponovi `pip install -r requirements.txt`. |
+| ❌ Težava                                             | ✅ Rešitev                                                                                                                                                                                                                       |
+| ---------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **`Port already in use`** (vrata so zasedena)        | Druga aplikacija že uporablja vrata 8001. Spremeni `APP_PORT=8002` v `.env` datoteki in poskusi znova. Z Dockerjem: dodaj drug port mapping (`-p 8002:8001`).                                                                   |
+| **SQLite `database is locked`** (baza je zaklenjena) | Aplikacija se je nepričakovano ustavila, medtem ko je pisala v bazo. **Rešitev:** Ustavi aplikacijo, zbriši datoteko `data/sola.db` in zaženi znova — aplikacija bo ustvarila novo bazo. **Pozor:** S tem izgubiš vse podatke!  |
+| **Učitelji niso uvoženi**                            | Seznam zaposlenih na spletni strani je morda drugačne strukture. Najprej zaženi **`--dry-run`**, da vidiš, kaj skripta najde. Nato prilagodi `SCRAPE_URL` v `scripts/import_teachers.py`.                                       |
+| **Ne vidim prostorov (tablice, računalnica, ladja)** | Preveri `PROSTORI` v `.env` datoteki. Če manjkajo, jih dodaj ločene z vejico: `PROSTORI=tablice,racunalnica,ladja,telovadnica`. Nato znova zaženi aplikacijo.                                                                   |
+| **Aplikacije ne morem odpreti v brskalniku**         | Preveri: (1) Ali aplikacija sploh teče? (poglej terminal ali `docker ps`). (2) Ali si uporabil(a) pravi naslov? Običajno `http://localhost:8001`. (3) Ali si spremenil(a) vrata? Uporabi tista, ki si jih nastavil(a) v `.env`. |
+| **Docker: `permission denied`**                      | Na Linuxu moraš imeti administratorske pravice. Poskusi `sudo docker ...` ali dodaj svoj uporabnik v `docker` skupino: `sudo usermod -aG docker $USER` (po tem se odjavi in prijavi nazaj).                                      |
+| **`pip install` vrže napako**                        | Morda manjka kakšno sistemsko orodje (npr. Python dev headers). Na Linuxu poskusi: `sudo apt install python3-dev build-essential`. Nato ponovi `pip install -r requirements.txt`.                                               |
 
 ---
 
@@ -376,11 +428,11 @@ Uredi datoteko `scripts/import_teachers.py` v beležnici ali urejevalniku:
 
 ✅ **Če imaš Docker in dovolj tmpfs prostora:** Lahko uporabiš Docker, navodila so v 4. poglavju. Za večino pa je uvicorn enostavnejša in bolj zanesljiva pot.
 
-✅ **Ne uporabljaj `--reload` v produkciji.** Je super za razvoj (samodejni restart ob spremembah), ampak v produkciji povzroča nepotrebne restart-e in lahko izgubiš podatke.
+✅ **Ne uporabljaj `--reload` v produkciji.** Je super za razvoj (samodejni restart ob spremembah), ampak v produkciji povzroča nepotrebne ponovne zagone in lahko izgubiš podatke.
 
 ✅ **Redno varnostno kopiraj `data/sola.db`** (ali celotno `data/` mapo). To je tvoja baza — če jo izgubiš, izgubiš vse podatke. Kopiraj datoteko na USB ključek ali v oblak.
 
-✅ **Geslo admin uporabnika takoj spremenite.** Privzeto geslo `your_password` ve vsak, ki prebere to dokumentacijo.
+✅ **Geslo admin uporabnika takoj spremenite.** Privzeto geslo `admin123` ve vsak, ki prebere to dokumentacijo.
 
 ✅ **Če se kaj zalomi:** zbriši vse in začni znova. Pri Dockerju: `docker stop sola-app && docker rm sola-app && docker rmi sola-app`. Nato ponovi korake iz [poglavja 4](#4-namestitev-prek-dockerja). Pri lokalni namestitvi: zbriši mapo `venv/`, zbriši `data/sola.db`, in začni od [koraka 5a](#5a-priprava-okolja).
 
