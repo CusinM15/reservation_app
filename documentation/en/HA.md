@@ -114,7 +114,7 @@ Etcd works on a **quorum** principle. For 2 nodes this means:
 - **2 nodes = quorum of 2** — both must confirm a change
 - **If one node goes down** — the other can still read and write because 1 out of 2 is technically a majority... wait, **that's not entirely accurate**
 
-> Technical note: A classic 2-node etcd cluster is technically in a risk zone, because losing one node means losing quorum for writes. In practice, k3s with 2 nodes works fine for our use-case (2 ProBooks) because k3s tolerates losing 1 node for reads, while writes still need confirmation. But for production with strict requirements, go with more nodes if you have "a lot" off win 10 computers.
+> Technical note: A classic 2-node etcd cluster is technically in a risk zone, because losing one node means losing quorum for writes. In practice, k3s with 2 nodes works fine for our use-case (2 ProBooks) because k3s tolerates losing 1 node for reads, while writes still need confirmation. But for production with strict requirements, go with more nodes if you have "a lot" of Windows 10 computers.
 
 **The takeaway:** 2 nodes can work normally even if one fails, as long as the surviving node takes over all operations.
 
@@ -157,7 +157,7 @@ If you want to simulate an outage:
 # Shut down one node (e.g. k3s-1)
 ssh k3s-1 "sudo poweroff"
 
-# Verify the app stays accessible in few minutes it shoud be active again
+# Verify the app stays accessible in few minutes it should be active again
 curl -I https://{{DOMAIN}}
 
 # After ~2 min, check the state
@@ -222,4 +222,4 @@ Without security updates, it's a ticking time bomb. Especially for an app that h
 ---
 
 
-> **Author:** Matej Cousin  
+> **Author:** Matej Čušin  

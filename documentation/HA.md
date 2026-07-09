@@ -160,7 +160,7 @@ Service `sola-db-rw` vedno kaže na trenutni primary. App se nikoli ne rabi ukva
 # Ugasni en node (npr. k3s-1)
 ssh k3s-1 "sudo poweroff"
 
-# Preveri, da app ostane dostopen, po parih minutah bi mogelo biti spet dostopen, če ste izklopii primary, če izklopite repliko, iporabnik sploh nebi smet opaziti
+# Preveri, da app ostane dostopen; po parih minutah bi moralo biti spet dostopno, če ste izklopili primary; če izklopite repliko, uporabnik sploh ne bi smel opaziti
 curl -I https://{{DOMAIN}}
 
 # Po ~2 min preveri stanje

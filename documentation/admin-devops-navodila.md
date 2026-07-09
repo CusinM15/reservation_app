@@ -388,7 +388,7 @@ journalctl -u k3s --tail=50
 
 **Privzeti admin:** uporabnik `admin`, geslo `admin123`.  
 **Takoj po namestitvi spremenite geslo!**  
-*(To ni hec. Prva stvar, ki jo vsak heker proba, je admin/admin123.)*
+*(To ni hec. Prva stvar, ki jo vsak heker poskusi, je admin/admin123.)*
 
 ---
 

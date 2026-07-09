@@ -58,9 +58,9 @@ This file is **the main entry point** — like the reception desk at school that
 5. [Daily Backup and Reports](#daily-backup-and-reports)
 6. [Audit log — change log](#audit-log--change-log)
 7. [Maintenance and Failures](#maintenance-and-failures)
-7. [Summer Shutdown](#summer-shutdown)
-8. [Complete Command Reference](#complete-command-reference)
-9. [Glossary](#glossary)
+8. [Summer Shutdown](#summer-shutdown)
+9. [Complete Command Reference](#complete-command-reference)
+10. [Glossary](#glossary)
 
 ---
 
@@ -438,7 +438,7 @@ kubectl top nodes
 kubectl get volumes.longhorn.io -n longhorn-system
 ```
 
-**From below:** If the node is reachable and has resources, Kubernetes will sort it out — wait 2 minutes.
+**In practice:** If the node is reachable and has resources, Kubernetes will sort it out — wait 2 minutes.
 
 > **ELI5:** **Pending** means Kubernetes is trying to start the Pod but can't find a suitable computer (e.g., all are busy or Longhorn isn't available). Like trying to book a classroom when all are occupied — you wait for one to become free.
 

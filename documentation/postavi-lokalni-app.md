@@ -11,7 +11,7 @@
 # POSTAVI LOKALNI APP — Šolski sistem OSTC App
 
 
-Ta dokument je napisan za **čisto lokalno namestitev** — aplikacijo poženemo na **enem samem računalniku**. Brez Kubernetes gruče, brez PostreSQL strežnika, brez omrežnega čudeža. Samo ti in tvoj računalnik.
+Ta dokument je napisan za **čisto lokalno namestitev** — aplikacijo poženemo na **enem samem računalniku**. Brez Kubernetes gruče, brez PostgreSQL strežnika, brez omrežnega čudeža. Samo ti in tvoj računalnik.
 
 > 🎯 **Kdaj to uporabim?** Ko želiš aplikacijo pokazati kolegom, jo preizkusiti na svojem prenosniku, ali jo namestiti v šoli, ki nima svojega Kubernetes okolja.
 
@@ -170,7 +170,7 @@ docker run -d --name sola-app -p 8001:8001 \
 
 ✅ **Aplikacija je zdaj na:** [**http://localhost:8001**](http://localhost:8001)
 
-Privzeti dostop: uporabniško ime `admin`, geslo `your_password` (**geslo takoj spremeni!**).
+Privzeti dostop: uporabniško ime `admin`, geslo `your_password` (**geslo takoj spremenite!**).
 
 ### 4c) Ustavitev in odstranitev
 
@@ -264,7 +264,7 @@ Pritisni **`Ctrl+C`** v terminalu. Aplikacija se bo lepo ustavila.
 Ko prvič poženeš aplikacijo (bodisi prek Dockerja ali na roke), se zgodi več stvari **samodejno**:
 
 1. **Ustvari se SQLite baza.** V mapi `data/` nastane datoteka `sola.db`. To je cela baza — ena sama datoteka na tvojem disku.
-   > 🧠 **Kaj je SQLite?** Predstavljaj si Excel tabelo, ki je shranjena v eni datoteki. Samo namesto Excela uporabljaš programsko kodo za branje in pisanje. **SQLite je preprosta baza — kot Excel tabela, shranjena v eni datoteki.** Ne rabiš nameščati posebnega bazenega strežnika (kot je PostgreSQL ali MySQL) — vse je v tisti datoteki.
+   > 🧠 **Kaj je SQLite?** Predstavljaj si Excel tabelo, ki je shranjena v eni datoteki. Samo namesto Excela uporabljaš programsko kodo za branje in pisanje. **SQLite je preprosta baza — kot Excel tabela, shranjena v eni datoteki.** Ne rabiš nameščati posebnega baznega strežnika (kot je PostgreSQL ali MySQL) — vse je v tisti datoteki.
 
 2. **Doda se začetni admin uporabnik.** Uporabniško ime: `admin`, geslo: `your_password` (nujno spremeni takoj ob prvi prijavi!).
 
@@ -380,7 +380,7 @@ Uredi datoteko `scripts/import_teachers.py` v beležnici ali urejevalniku:
 
 ✅ **Redno varnostno kopiraj `data/sola.db`** (ali celotno `data/` mapo). To je tvoja baza — če jo izgubiš, izgubiš vse podatke. Kopiraj datoteko na USB ključek ali v oblak.
 
-✅ **Geslo admin uporabnika takoj spremeni.** Privzeto geslo `your_password` ve vsak, ki prebere to dokumentacijo.
+✅ **Geslo admin uporabnika takoj spremenite.** Privzeto geslo `your_password` ve vsak, ki prebere to dokumentacijo.
 
 ✅ **Če se kaj zalomi:** zbriši vse in začni znova. Pri Dockerju: `docker stop sola-app && docker rm sola-app && docker rmi sola-app`. Nato ponovi korake iz [poglavja 4](#4-namestitev-prek-dockerja). Pri lokalni namestitvi: zbriši mapo `venv/`, zbriši `data/sola.db`, in začni od [koraka 5a](#5a-priprava-okolja).
 

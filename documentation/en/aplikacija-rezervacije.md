@@ -33,7 +33,7 @@ and the law were furious.
 The application was developed for **OŠ Toneta Čufarja Jesenice** (a primary school
 in Jesenice, Slovenia). It is deliberately kept as simple as possible — because the
 author won't be at the school forever. When he eventually leaves, anyone reasonably
-comfortable with a computer person should be able to maintain and use it. Nothing
+comfortable with computers should be able to maintain and use it. Nothing
 complicated, nothing mysterious.
 
 **Server:** The app runs on **Ubuntu Server** installed on old computers that are
@@ -135,7 +135,7 @@ Teachers enter a date and class, and the app **automatically checks all the rule
 **Rules enforced by the system:**
 
 - **Max 3 assessments per week** — regardless of type
-- **Max 2 regular (non-retake) assessments per week** — the lav
+- **Max 2 regular (non-retake) assessments per week** — the law
 - **No 3 consecutive days** — no class may take a test three days in a row
 - **Automatic rule checking for grades 1–7** — because of mixed-group scheduling,
   this is considerably harder to do for grades 8 and 9
@@ -188,7 +188,7 @@ cabinets.
 | **Delete others' reservations** | ❌ No | ✅ Yes | ✅ Yes |
 | **Schedule assessment** | ✅ Yes | ✅ Yes | ✅ Yes |
 | **Manage blocked dates** | ❌ No | ✅ Yes | ✅ Yes |
-| **Serial reservatopm** | ❌ No | ✅ Yes | ✅ Yes |
+| **Serial reservation** | ❌ No | ✅ Yes | ✅ Yes |
 | **Admin panel (users)** | ❌ No | ❌ No | ✅ Yes |
 
 **Teacher** — can reserve rooms, schedule assessments, and delete only their own

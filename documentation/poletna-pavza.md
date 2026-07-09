@@ -115,7 +115,7 @@ kubectl get cluster -n sola sola-db
 
 ### 2.2 Backup baze — varnostna kopija
 
-**To je najpomembnejši korak.** Če gre kar koli narobe, imaš rezervno kopijo na USB-ju.
+**To je najpomembnejši korak.** Če gre karkoli narobe, imaš rezervno kopijo na USB-ju.
 
 ```bash
 # Naredi kopijo celotne baze v datoteko

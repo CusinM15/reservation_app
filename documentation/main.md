@@ -71,7 +71,7 @@ Ta datoteka je **glavni vstopni dokument** — kot recepcija v šoli, ki ti pove
 > **ELI5:** Predstavljaj si **dva učitelja, ki imata enak dnevnik** (aplikacijo) in **ista dva pomočnika** (baza) — eden je glavni, drugi budno spremlja vse, kar glavni naredi. Če glavni zboli (crkne), pomočnik takoj prevzame njegovo mesto. Učenci (uporabniki) tega sploh ne opazijo. Vse skupaj je shranjeno v **dveh sefih** (Longhorn), tako da tudi če en sef crkne, podatki niso izgubljeni.
 
 > **Razlaga diagrama:**
-> - Dva računalnika (k3s-1 in k3s-2) skupaj v gruči — kot dve mizi  pisarni.
+> - Dva računalnika (k3s-1 in k3s-2) skupaj v gruči — kot dve mizi v pisarni.
 > - Na vsakem računalniku tečeta **ena kopija aplikacije (sola-app Pod)** in **ena kopija podatkovne baze (sola-db)**.
 > - Podatkovna baza ima eno **primarno (PRIMARY)** in eno **replikacijsko (REPLICA)** instanco, ki nenehno kopira vse, kar primarna izvede.
 > - Vsi podatki so shranjeni v **Longhornu** – sistemu, ki zagotavlja, da imate 2 kopiji na 2 različnih računalnikih, tako da tudi če en računalnik odpove, ne pride do izgube podatkov.
@@ -245,7 +245,7 @@ kubectl get volumes.longhorn.io -n longhorn-system
 
 **Longhorn replikacija** (2 kopiji) zagotavlja, da tudi ob izgubi enega noda podatki ostanejo. Oba PVC-ja imata dve repliki — vsaka na svojem k3s nodu.
 
-> **Namig:** 5Gi za podatke in 2Gi za WAL se sliši malo, ampak za šolski sistem z nekaj sto uporabniki in rezervacijami je to več kot dovolj. PostgreSQL je presenetljivo učinkovit s prostorom — cela baza za leto dni dela bo verjetno pod 1GB. Če boš kdaj blizu meje, spremljaš z `kubectl get pvc` in povečaš velikost — Longhorn omogoča online resize brez izpada.
+> **Namig:** 5Gi za podatke in 2Gi za WAL se sliši malo, ampak za šolski sistem z nekaj sto uporabniki in rezervacijami je to več kot dovolj. PostgreSQL je presenetljivo učinkovit s prostorom — cela baza za leto dni dela bo verjetno pod 1GB. Če boš kdaj blizu meje, spremljaj z `kubectl get pvc` in povečaš velikost — Longhorn omogoča online resize brez izpada.
 
 ---
 
@@ -534,7 +534,7 @@ git pull                                    # Potegni zadnjo kodo
 | **ELI5** | *Explain Like I'm 5* (razloži kot petletniku) — način razlage, kjer se izogneš strokovnim izrazom in uporabiš vsakdanje analogije. Npr. Kubernetes ni "sistem za orkestracijo kontejnerjev", ampak "dirigent orkestra za aplikacije". |
 | **etcd** | **Spominska knjiga clustra** — shranjuje vse podatke o tem, kaj kje teče, kakšne so nastavitve, kdo je živ in kdo mrtev. Je možgani Kubernetesa. |
 | **Failover** | **Samodejna menjava straže** — ko primarni sistem crkne, pomožni samodejno prevzame njegovo vlogo. V našem primeru CNPG promovira replica v primary. |
-| **FastAPI** | **Ogrodje za spletne aplikacije v Pythonu** — v njem je napisana sola-app. Hitro, moderno, itd..|
+| **FastAPI** | **Ogrodje za spletne aplikacije v Pythonu** — v njem je napisana sola-app. Hitro, moderno, itd.|
 | **Git** | **Sistem za sledenje spremembam kode** — kot "Track Changes" v Wordu, ampak za programsko kodo. |
 | **GitHub Actions** | **Samodejno testiranje in gradnja ob vsaki spremembi** — ko nekdo naloži novo kodo na GitHub, se avtomatsko zgradi nov Docker Image. |
 | **Helm** | **"App Store" za Kubernetes** — orodje za nameščanje pripravljenih paketov (npr. Longhorn, CNPG) v Kubernetes. Namesto da ročno pišeš YAML, samo poveš "namesti Longhorn". |

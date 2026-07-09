@@ -46,14 +46,14 @@ rooms — you can't physically fit two classes in one room at the same time.
 
 - **📝 Assessments** — Teachers schedule written assessments. The app limits
   them to **max 3 per week** and **max 2 regular** (the third can only be a
-  rewriting same exam, because there hav morethan 50% knowlage for nit positive). **Why?** The law.
+  rewriting same exam, because there must be more than 50% knowledge for a passing grade). **Why?** The law.
 - **🚫 Blocked dates** — Management/Admin mark days when nothing is happening
   (field trips, sports days...). **Why?** So nobody wastes time trying to reserve
   a room on a day when there's no school.
 - **👥 Admin panel** — Add/remove teachers, set roles. **Why?** Someone has to
   hold the keys to the building.
 - **🔑 Forgot password** — Sends a password reset email. **Why?** Because
-  everyone forgets their password.l.
+  everyone forgets their password.
 
 ---
 
@@ -386,7 +386,7 @@ this computer. Connect me to the existing cluster at MASTER_IP. Here's the
 token so you know I'm allowed. My IP is this. And don't install traefik and
 servicelb — we already have those."
 
-**Why `--disable traefik --disable=servicelb`?** Because clouster is using MetalLB - Loadballancer. If you install them again, they'll fight over
+**Why `--disable traefik --disable=servicelb`?** Because the cluster is using MetalLB - LoadBalancer. If you install them again, they'll fight over
 who's in charge. Like having two captains on the same ship.
 
 ### 4. What a node should contain — everything in one

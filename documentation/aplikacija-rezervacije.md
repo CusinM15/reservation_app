@@ -109,7 +109,7 @@ Učitelji vnesejo datum in razred, aplikacija pa **samodejno preveri vsa pravila
 - **Največ 3 ocenjevanja na teden** — ne glede na vrsto
 - **Največ 2 običajni (neponavljalni) ocenjevanji na teden** — da učencev ne preobremenjujemo
 - **Prepoved treh zaporednih dni** — noben razred ne sme pisati testa tri dni zapored
-- **Samodejno preverjanje pravil za 1.–7. razred** — zaradi skupin, je v 8. in 9. razredu, to narediti precej težje
+- **Samodejno preverjanje pravil za 1.–7. razred** — zaradi skupin je v 8. in 9. razredu to narediti precej težje
 
 Če učitelj poskuša vnesti ocenjevanje, ki bi kršilo pravila, ga aplikacija **ne pusti**. Pokaže opozorilo in pojasni, zakaj termin ni mogoč. Ni več »nisem vedel, da že imate test«.
 

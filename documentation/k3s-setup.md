@@ -55,7 +55,7 @@ Namesto da vsak pod uporablja lokalni disk (ki crkne, če pod skoči na drug nod
 
 - 2 fizični mašini z **Ubuntu 24.04 LTS** (tvoja HP ProBook laptopa)
 - Vsaka mašina: min **2 CPU**, **4GB RAM**, **20GB disk**
-- **sudo** (pred komando v terminalu damo sudo (v Windows principu recimo, izvedemo ukaz kot administrator)) **sido** geslo boš potreboval na obeh 
+- **sudo** (pred komando v terminalu damo sudo (v Windows principu recimo, izvedemo ukaz kot administrator) **sudo** geslo boš potreboval na obeh 
 - Mašini v istem omrežju (da se vidita — ping brez problema)
 - Docker nameščen (za build slike):
   ```bash
@@ -79,7 +79,7 @@ curl -sfL https://get.k3s.io | sh -s - server \
   --write-kubeconfig-mode=644 \  # Dovoli branje kubeconfig datoteke navadnemu uporabniku (ni treba vsakič sudo).
   --cluster-cidr=10.42.0.0/16 \ # Razred IP-jev za pode (notranje omrežje znotraj clustra).
   --service-cidr=10.43.0.0/16 \ # Razred IP-jev za servise (drugo notranje omrežje za servise).
-  --node-ip={{K3S_1_IP}}        # Kateri IP naj uporablja ta node. Vstavi notranji IP prvega laptopa (v terminal vtipamo ip a in izberemo tistega, ki je preko kabla wifi, zelo verjetno ni dovolj stabilen  npr. 192.168.1.10).
+  --node-ip={{K3S_1_IP}}        # Kateri IP naj uporablja ta node. Vstavi notranji IP prvega laptopa (v terminal vtipamo ip a in izberemo tistega, ki je prek kabla ali wifi-ja, zelo verjetno ni dovolj stabilen  npr. 192.168.1.10).
 ```
 
 **Kaj se zgodi zdaj?** curl prenese skripto z get.k3s.io, skripta pa namesti k3s v `server` načinu (kot control-plane). Vse `--disable` zastavice izklapljajo stvari, ki jih ne rabimo. `--node-ip` pove k3s-u "glej, tvoj IP je ta", kar je pomembno, če ima mašina več omrežnih kartic.

@@ -130,7 +130,7 @@ kubectl -n sola-app rollout restart deployment/sola-app
 > Cloudflare zaščito.
 >
 > Za preverjanje strežnika uporabi `curl -v http://{{LB_IP}}:8002`
-> direktno, ne ping.
+> direktno, ne pingaj.
 
 ### ❓ Ali rabim svoj SSL certifikat?
 
