@@ -23,7 +23,7 @@ This document is written for a **clean local installation** — running the appl
 2. [What you need — checklist before you start](#2-what-you-need--checklist-before-you-start)
 3. [What is Docker? (for first-timers)](#3-what-is-docker-for-first-timers)
 4. [Installation via Docker](#4-installation-via-docker)
-5. [Installation without Docker — manual (uvicorn) (✅ recommended)](#5-installation-without-docker--manual-uvicorn--recommended)
+5. [Installation without Docker — manual (uvicorn) ](#5-installation-without-docker--manual-uvicorn--recommended)
 6. [First run — what happens behind the scenes?](#6-first-run--what-happens-behind-the-scenes)
 7. [Importing teachers from the web](#7-importing-teachers-from-the-web)
 8. [Important differences: Local vs. Production](#8-important-differences-local-vs-production)
@@ -49,12 +49,12 @@ In our case:
 
 Before installing anything, check if you have the following:
 
-| Tool                        | Why you need it                                                                                           | Where to get it                                                        |
-| --------------------------- | --------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------- |
-| **Python 3.11 or newer**   | The application is written in Python — this is the "engine" that runs the code. No engine, no application. | [python.org](https://python.org) — download and install.               |
-| **Docker** (optional)       | Docker packages the app into a "container" with everything it needs. Like a ready-made meal — just heat it up. | [docker.com](https://docker.com)                                       |
-| **Git**                     | A tool for downloading code from an online repository (GitHub). Like Dropbox for source code.             | `sudo apt install git` (Linux) or [git-scm.com](https://git-scm.com)  |
-| **Browser**                 | The application is web-based — you access it through a browser (Chrome, Firefox, Edge…).                  | You probably already have one.                                         |
+| Tool                     | Why you need it                                                                                                | Where to get it                                                      |
+| ------------------------ | -------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------- |
+| **Python 3.11 or newer** | The application is written in Python — this is the "engine" that runs the code. No engine, no application.     | [python.org](https://python.org) — download and install.             |
+| **Docker**               | Docker packages the app into a "container" with everything it needs. Like a ready-made meal — just heat it up. | [docker.com](https://docker.com)                                     |
+| **Git**                  | A tool for downloading code from an online repository (GitHub). Like Dropbox for source code.                  | `sudo apt install git` (Linux) or [git-scm.com](https://git-scm.com) |
+| **Browser**              | The application is web-based — you access it through a browser (Chrome, Firefox, Edge…).                       | You probably already have one.                                       |
 
 ### How do I check if Python is installed?
 
@@ -190,7 +190,7 @@ docker start sola-app
 
 ---
 
-## 5) Installation without Docker — manual (uvicorn) (✅ recommended)
+## 5) Installation without Docker — manual (uvicorn) 
 
 If you don't have Docker or don't want to install it (or have issues with it, e.g. tmpfs overload during build), you can run the application directly with Python. This is like cooking a meal from ingredients — a bit more work, but more predictable on older or more constrained computers.
 
@@ -316,7 +316,7 @@ Edit the file `scripts/import_teachers.py` in Notepad or your editor:
 
 ### 7d) How do teachers access the application?
 
-1. They go to **http://localhost:8001** (or your URL, if accessing from another computer).
+1. They go to **http://localhost:8001**(or your URL, if accessing from another computer).
 2. They click **"Forgot password"**.
 3. They enter their email address.
 4. They receive an email with a link to set their password.
@@ -329,13 +329,13 @@ Edit the file `scripts/import_teachers.py` in Notepad or your editor:
 
 ### SQLite vs. PostgreSQL
 
-| Characteristic            | Local (SQLite)                                                            | Production (PostgreSQL on k3s)                                                           |
-| ------------------------- | ------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------- |
-| **Where is the database?** | A single file: `data/sola.db`                                            | PostgreSQL server in a Kubernetes cluster                                                |
-| **How does it work?**     | Simple — the file opens, writes, closes. Like a notepad.                  | Professional server — supports multiple concurrent users, better performance.             |
-| **Email**                 | ❌ Doesn't work without an SMTP server. "Forgot password" won't send email. | ✅ Arnes mail or other SMTP — password emails work.                                       |
-| **Number of users**       | Fewer users                                                               | More users, high availability (HA), load distribution.                                   |
-| **Security**              | Local or intranet access only. No HTTPS, no Cloudflare protection.       | HTTPS via Cloudflare proxy, protected from external attacks.                             |
+| Characteristic             | Local (SQLite)                                                             | Production (PostgreSQL on k3s)                                                |
+| -------------------------- | -------------------------------------------------------------------------- | ----------------------------------------------------------------------------- |
+| **Where is the database?** | A single file: `data/sola.db`                                              | PostgreSQL server in a Kubernetes cluster                                     |
+| **How does it work?**      | Simple — the file opens, writes, closes. Like a notepad.                   | Professional server — supports multiple concurrent users, better performance. |
+| **Email**                  | ❌ Doesn't work without an SMTP server. "Forgot password" won't send email. | ✅ Arnes mail or other SMTP — password emails work.                            |
+| **Number of users**        | Fewer users                                                                | More users, high availability (HA), load distribution.                        |
+| **Security**               | Local or intranet access only. No HTTPS, no Cloudflare protection.         | HTTPS via Cloudflare proxy, protected from external attacks.                  |
 
 > 🧠 **Why SQLite for local?** Because you don't need a server. The database is a file — copy it to a USB stick and take it to another computer. For testing and demonstration, it's perfectly sufficient.
 >
@@ -362,7 +362,7 @@ You could type the computer's IP address into the browser (e.g. `http://192.168.
 
 mDNS is a protocol that lets you access a computer **by name instead of by IP address** — similar to calling a friend by their name, not by their ID number.
 
-On Linux, mDNS is handled by the `avahi-daemon` service. Once installed, your computer becomes reachable at `http://<computer-name>.local:8001` — from any device on the same network.
+On Linux, mDNS is handled by the `avahi-daemon` service. Once installed, your computer becomes reachable at `http://<computer-name>.local:8001` — from any device on the same network (in Arnes network, there is more rules, so the app is no accessible to everyone on network).
 
 ### Installation
 
@@ -382,8 +382,14 @@ hostname
 
 If the command returns `school-pc`, the application is reachable at:
 
+
 ✅ **http://school-pc.local:8001**
 
+To chnge hostname it is very simple 
+```bash
+sudo vim /etc/hostmane
+```
+You change the text (in vim presss `Esc`+ `i`to start tiping and then `Esc`+ `ZZ`/`:wq`), once it is saved reboot computer and then the name shoud be changed
 ### Access from other devices
 
 - **Linux:** install `avahi-daemon` (same as above)
@@ -397,15 +403,15 @@ If the command returns `school-pc`, the application is reachable at:
 
 ## 9) Common issues and how to solve them
 
-| ❌ Issue                                               | ✅ Solution                                                                                                                                                                                                                             |
-| ----------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **`Port already in use`**                             | Another application is already using port 8001. Change `APP_PORT=8002` in the `.env` file and try again. With Docker: add a different port mapping (`-p 8002:8001`).                                                                   |
-| **SQLite `database is locked`**                       | The application stopped unexpectedly while writing to the database. **Solution:** Stop the app, delete the `data/sola.db` file, and restart — the application will create a new database. **Warning:** This deletes all your data!     |
-| **Teachers not imported**                             | The employee list on the website might have a different structure. First run **`--dry-run`** to see what the script finds. Then adjust `SCRAPE_URL` in `scripts/import_teachers.py`.                                                   |
-| **Can't see rooms (tablets, computer lab, ship)**    | Check `PROSTORI` in the `.env` file. If any are missing, add them separated by commas: `PROSTORI=tablice,racunalnica,ladja,gym`. Then restart the application.                                                                         |
-| **Can't open the application in the browser**         | Check: (1) Is the application actually running? (look at the terminal or `docker ps`). (2) Did you use the right address? Usually `http://localhost:8001`. (3) Did you change the port? Use the one you set in `.env`.                  |
-| **Docker: `permission denied`**                       | On Linux you need administrator privileges. Try `sudo docker ...` or add your user to the `docker` group: `sudo usermod -aG docker $USER` (log out and back in afterwards).                                                             |
-| **`pip install` throws an error**                     | Maybe a system tool is missing (e.g. Python dev headers). On Linux, try: `sudo apt install python3-dev build-essential`. Then repeat `pip install -r requirements.txt`.                                                                |
+| ❌ Issue                                           | ✅ Solution                                                                                                                                                                                                                         |
+| ------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **`Port already in use`**                         | Another application is already using port 8001. Change `APP_PORT=8002` in the `.env` file and try again. With Docker: add a different port mapping (`-p 8002:8001`).                                                               |
+| **SQLite `database is locked`**                   | The application stopped unexpectedly while writing to the database. **Solution:** Stop the app, delete the `data/sola.db` file, and restart — the application will create a new database. **Warning:** This deletes all your data! |
+| **Teachers not imported**                         | The employee list on the website might have a different structure. First run **`--dry-run`** to see what the script finds. Then adjust `SCRAPE_URL` in `scripts/import_teachers.py`.                                               |
+| **Can't see rooms (tablets, computer lab, ship)** | Check `PROSTORI` in the `.env` file. If any are missing, add them separated by commas: `PROSTORI=tables,racunalnica,ladja,gym`. Then restart the application.                                                                      |
+| **Can't open the application in the browser**     | Check: (1) Is the application actually running? (look at the terminal or `docker ps`). (2) Did you use the right address? Usually `http://localhost:8001`. (3) Did you change the port? Use the one you set in `.env`.             |
+| **Docker: `permission denied`**                   | On Linux you need administrator privileges. Try `sudo docker ...` or add your user to the `docker` group: `sudo usermod -aG docker $USER` (log out and back in afterwards).                                                        |
+| **`pip install` throws an error**                 | Maybe a system tool is missing (e.g. Python dev headers). On Linux, try: `sudo apt install python3-dev build-essential`. Then repeat `pip install -r requirements.txt`.                                                            |
 
 ---
 

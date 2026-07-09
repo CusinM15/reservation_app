@@ -23,7 +23,7 @@ Ta dokument je napisan za **čisto lokalno namestitev** — aplikacijo poženemo
 2. [Kaj rabiš — kontrola, preden začneš](#2-kaj-rabiš--kontrola-preden-začneš)
 3. [Kaj je Docker? (za tiste, ki prvič slišite)](#3-kaj-je-docker-za-tiste-ki-prvič-slišite)
 4. [Namestitev prek Dockerja](#4-namestitev-prek-dockerja)
-5. [Namestitev brez Dockerja — na roke (uvicorn) (✅ priporočeno)](#5-namestitev-brez-dockerja--na-roke-uvicorn-️-priporočeno)
+5. [Namestitev brez Dockerja — na roke (uvicorn) ](#5-namestitev-brez-dockerja--na-roke-uvicorn-️-priporočeno)
 6. [Prvi zagon — kaj se zgodi v ozadju?](#6-prvi-zagon--kaj-se-zgodi-v-ozadju)
 7. [Uvoz učiteljev iz spleta](#7-uvoz-učiteljev-iz-spleta)
 8. [Pomembne razlike: Lokalno vs. Produkcija](#8-pomembne-razlike-lokalno-vs-produkcija)
@@ -190,7 +190,7 @@ docker start sola-app
 
 ---
 
-## 5) Namestitev brez Dockerja — na roke (uvicorn) (✅ priporočeno)
+## 5) Namestitev brez Dockerja — na roke (uvicorn) 
 
 Če nimaš Dockerja ali ga nočeš nameščati (ali imaš težave z njim, npr. tmpfs overload med buildom), lahko aplikacijo poženeš neposredno s Pythonom. To je kot bi sestavljal jed iz sestavin — malo več dela, a bolj predvidljivo na starejših ali bolj omejenih računalnikih.
 
@@ -384,6 +384,13 @@ hostname
 
 ✅ **http://šolski-pc.local:8001**
 
+
+Spremeni hostname:
+```bash
+sudo vim /etc/hostmane
+```
+
+Spremeniš besedilo (v vimu pritisneš `Esc` + `i`, da začneš tipkati, nato pa `Esc` + `ZZ` oziroma `:wq`), ko je shranjeno, ponovno zaženi računalnik in ime bi moralo biti spremenjeno.
 ### Dostop iz drugih naprav
 
 - **Linux:** namesti `avahi-daemon` (enako kot zgoraj)
