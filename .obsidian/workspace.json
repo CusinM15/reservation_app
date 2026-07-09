@@ -4,24 +4,80 @@
     "type": "split",
     "children": [
       {
-        "id": "425a22b25a90e994",
-        "type": "tabs",
+        "id": "51bf4c477a273ae2",
+        "type": "split",
         "children": [
           {
-            "id": "c3af386f9885101d",
-            "type": "leaf",
-            "state": {
-              "type": "markdown",
-              "state": {
-                "file": "documentation/migracija_oblak.md",
-                "mode": "source",
-                "source": false
-              },
-              "icon": "lucide-file",
-              "title": "migracija_oblak"
-            }
+            "id": "425a22b25a90e994",
+            "type": "tabs",
+            "children": [
+              {
+                "id": "c3af386f9885101d",
+                "type": "leaf",
+                "state": {
+                  "type": "markdown",
+                  "state": {
+                    "file": "documentation/postavi-lokalni-app.md",
+                    "mode": "source",
+                    "source": false
+                  },
+                  "icon": "lucide-file",
+                  "title": "postavi-lokalni-app"
+                }
+              }
+            ]
+          },
+          {
+            "id": "e9b610c9e297a1df",
+            "type": "tabs",
+            "children": [
+              {
+                "id": "8250a2f366eae815",
+                "type": "leaf",
+                "pinned": true,
+                "state": {
+                  "type": "terminal:terminal",
+                  "state": {
+                    "terminal:terminal": {
+                      "cwd": "/mnt/zunanji/forgejo/reservation_app",
+                      "focus": false,
+                      "profile": {
+                        "args": [],
+                        "environment": [],
+                        "executable": "/bin/sh",
+                        "followTheme": true,
+                        "name": "",
+                        "platforms": {
+                          "linux": true
+                        },
+                        "pythonExecutable": "python3",
+                        "restoreHistory": false,
+                        "rightClickAction": "copyPaste",
+                        "successExitCodes": [
+                          "0",
+                          "SIGINT",
+                          "SIGTERM"
+                        ],
+                        "terminalOptions": {
+                          "documentOverride": null
+                        },
+                        "type": "integrated",
+                        "useWin32Conhost": true
+                      },
+                      "profileSourceId": "linuxIntegratedDefault",
+                      "serial": null,
+                      "userTitle": ""
+                    }
+                  },
+                  "pinned": true,
+                  "icon": "terminal",
+                  "title": "Terminal: sh"
+                }
+              }
+            ]
           }
-        ]
+        ],
+        "direction": "horizontal"
       }
     ],
     "direction": "vertical"
@@ -112,12 +168,11 @@
             "state": {
               "type": "outgoing-link",
               "state": {
-                "file": "documentation/migracija_oblak.md",
                 "linksCollapsed": false,
                 "unlinkedCollapsed": true
               },
               "icon": "links-going-out",
-              "title": "Outgoing links from migracija_oblak"
+              "title": "Outgoing links"
             }
           },
           {
@@ -155,13 +210,12 @@
             "state": {
               "type": "outline",
               "state": {
-                "file": "documentation/migracija_oblak.md",
                 "followCursor": true,
                 "showSearch": false,
                 "searchQuery": ""
               },
               "icon": "lucide-list",
-              "title": "Outline of migracija_oblak"
+              "title": "Outline"
             }
           },
           {
@@ -226,12 +280,13 @@
       "obsidian-git:Open Git source control": false
     }
   },
-  "active": "c3af386f9885101d",
+  "active": "8250a2f366eae815",
   "lastOpenFiles": [
-    "documentation/migracija_oblak.md",
-    "documentation/en/migracija_oblak.md",
-    "documentation/en/README.md",
     "documentation/postavi-lokalni-app.md",
+    "documentation/en/postavi-lokalni-app.md",
+    "documentation/en/migracija_oblak.md",
+    "documentation/migracija_oblak.md",
+    "documentation/en/README.md",
     "documentation/poletna-pavza.md",
     "documentation/en/poletna-pavza.md",
     "documentation/en/k3s-setup.md",
