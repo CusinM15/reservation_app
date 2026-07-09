@@ -17,6 +17,7 @@ data/*.db
 # IDE
 .vscode/
 .idea/
+.obsidian/
 *.swp
 
 # OS
