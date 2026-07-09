@@ -4,80 +4,24 @@
     "type": "split",
     "children": [
       {
-        "id": "51bf4c477a273ae2",
-        "type": "split",
+        "id": "425a22b25a90e994",
+        "type": "tabs",
         "children": [
           {
-            "id": "425a22b25a90e994",
-            "type": "tabs",
-            "children": [
-              {
-                "id": "c3af386f9885101d",
-                "type": "leaf",
-                "state": {
-                  "type": "markdown",
-                  "state": {
-                    "file": "documentation/postavi-lokalni-app.md",
-                    "mode": "source",
-                    "source": false
-                  },
-                  "icon": "lucide-file",
-                  "title": "postavi-lokalni-app"
-                }
-              }
-            ]
-          },
-          {
-            "id": "e9b610c9e297a1df",
-            "type": "tabs",
-            "children": [
-              {
-                "id": "8250a2f366eae815",
-                "type": "leaf",
-                "pinned": true,
-                "state": {
-                  "type": "terminal:terminal",
-                  "state": {
-                    "terminal:terminal": {
-                      "cwd": "/mnt/zunanji/forgejo/reservation_app",
-                      "focus": false,
-                      "profile": {
-                        "args": [],
-                        "environment": [],
-                        "executable": "/bin/sh",
-                        "followTheme": true,
-                        "name": "",
-                        "platforms": {
-                          "linux": true
-                        },
-                        "pythonExecutable": "python3",
-                        "restoreHistory": false,
-                        "rightClickAction": "copyPaste",
-                        "successExitCodes": [
-                          "0",
-                          "SIGINT",
-                          "SIGTERM"
-                        ],
-                        "terminalOptions": {
-                          "documentOverride": null
-                        },
-                        "type": "integrated",
-                        "useWin32Conhost": true
-                      },
-                      "profileSourceId": "linuxIntegratedDefault",
-                      "serial": null,
-                      "userTitle": ""
-                    }
-                  },
-                  "pinned": true,
-                  "icon": "terminal",
-                  "title": "Terminal: sh"
-                }
-              }
-            ]
+            "id": "c3af386f9885101d",
+            "type": "leaf",
+            "state": {
+              "type": "markdown",
+              "state": {
+                "file": "documentation/postavi-lokalni-app.md",
+                "mode": "source",
+                "source": false
+              },
+              "icon": "lucide-file",
+              "title": "postavi-lokalni-app"
+            }
           }
-        ],
-        "direction": "horizontal"
+        ]
       }
     ],
     "direction": "vertical"
@@ -168,11 +112,12 @@
             "state": {
               "type": "outgoing-link",
               "state": {
+                "file": "documentation/postavi-lokalni-app.md",
                 "linksCollapsed": false,
                 "unlinkedCollapsed": true
               },
               "icon": "links-going-out",
-              "title": "Outgoing links"
+              "title": "Outgoing links from postavi-lokalni-app"
             }
           },
           {
@@ -210,12 +155,13 @@
             "state": {
               "type": "outline",
               "state": {
+                "file": "documentation/postavi-lokalni-app.md",
                 "followCursor": true,
                 "showSearch": false,
                 "searchQuery": ""
               },
               "icon": "lucide-list",
-              "title": "Outline"
+              "title": "Outline of postavi-lokalni-app"
             }
           },
           {
@@ -280,7 +226,7 @@
       "obsidian-git:Open Git source control": false
     }
   },
-  "active": "8250a2f366eae815",
+  "active": "c3af386f9885101d",
   "lastOpenFiles": [
     "documentation/postavi-lokalni-app.md",
     "documentation/en/postavi-lokalni-app.md",
