@@ -25,6 +25,7 @@ For the database, just add their managed PostgreSQL — no configuration needed.
 | + 0 infrastructure maintenance | |
 
 **Pricing (Railway):**
+
 | Service | Price |
 |---------|-------|
 | App (FastAPI) — 1 CPU, 1GB RAM | €5/month |
@@ -42,6 +43,7 @@ For the database, just add their managed PostgreSQL — no configuration needed.
 | + Good free tier for small projects | |
 
 **Pricing (Fly.io):**
+
 | Service | Price |
 |---------|-------|
 | App — shared CPU, 256MB RAM | Free |
@@ -59,6 +61,7 @@ For the database, just add their managed PostgreSQL — no configuration needed.
 | + Blueprint (Infrastructure as Code) | |
 
 **Pricing (Render):**
+
 | Service | Price |
 |---------|-------|
 | App (starter) | €7/month |
@@ -84,6 +87,7 @@ Coolify is like Railway, but on your own server. Connect your GitHub repo, it de
 | + Can host multiple apps on the same VPS | |
 
 **Pricing:**
+
 | Service | Price |
 |---------|-------|
 | VPS (Hetzner CX22 — 2 CPU, 4GB RAM) | €3.99/month |
@@ -113,6 +117,7 @@ Push to GitHub, then on the VPS run `git pull && docker compose up -d --build`.
 | + No extra tools needed | |
 
 **Pricing:**
+
 | Service | Price |
 |---------|-------|
 | VPS (Hetzner CX22 — 2 CPU, 4GB RAM) | €3.99/month |
@@ -140,6 +145,7 @@ Your existing YAML files work as-is — you just don't need to manage etcd, API 
 | | – Most work of all options |
 
 **Pricing:**
+
 | Service | Price |
 |---------|-------|
 | AKS/EKS/GKE control plane | ~€70/month (EKS) – €0 (AKS/GKE, workers only) |
@@ -166,6 +172,7 @@ Your existing YAML files work as-is — you just don't need to manage etcd, API 
 | | – App wasn't written for serverless (cold start) |
 
 **Pricing (Cloud Run + Cloud SQL):**
+
 | Service | Price |
 |---------|-------|
 | Cloud Run — 2M calls/month | ~€5/month |

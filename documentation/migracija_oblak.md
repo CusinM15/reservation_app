@@ -22,6 +22,7 @@ Za bazo samo dodaš njihov managed PostgreSQL — ne rabiš nič konfigurirati.
 | + 0 vzdrževanja infrastrukture | |
 
 **Cena (Railway):**
+
 | Storitev | Cena |
 |----------|------|
 | App (FastAPI) — 1 CPU, 1GB RAM | €5/mesec |
@@ -39,6 +40,7 @@ Za bazo samo dodaš njihov managed PostgreSQL — ne rabiš nič konfigurirati.
 | + Dober free tier za male stvari | |
 
 **Cena (Fly.io):**
+
 | Storitev | Cena |
 |----------|------|
 | App — shared CPU, 256MB RAM | Free |
@@ -56,6 +58,7 @@ Za bazo samo dodaš njihov managed PostgreSQL — ne rabiš nič konfigurirati.
 | + Blueprint (Infrastructure as Code) | |
 
 **Cena (Render):**
+
 | Storitev | Cena |
 |----------|------|
 | App (starter) | €7/mesec |
@@ -81,6 +84,7 @@ Coolify je kot Railway, ampak na tvojem strežniku. Povežeš GitHub repo, on sa
 | + Lahko dodaš več appov na isti strežnik | |
 
 **Cena:**
+
 | Storitev | Cena |
 |----------|------|
 | VPS (Hetzner CX22 — 2 CPU, 4GB RAM) | €3.99/mesec |
@@ -110,6 +114,7 @@ Na GitHub pushaš, na VPS greš `git pull && docker compose up -d --build`.
 | + Brez dodatnih orodij | |
 
 **Cena:**
+
 | Storitev | Cena |
 |----------|------|
 | VPS (Hetzner CX22 — 2 CPU, 4GB RAM) | €3.99/mesec |
@@ -137,6 +142,7 @@ Tvoje YAMLe daš gor enake kot zdaj — samo ne rabiš skrbeti za etcd, API serv
 | | – Največ dela od vseh opcij |
 
 **Cena:**
+
 | Storitev | Cena |
 |----------|------|
 | AKS/EKS/GKE kontrolna ravnina | ~€70/mesec (EKS) – €0 (AKS/GKE, samo worker nodi) |
@@ -163,6 +169,7 @@ Tvoje YAMLe daš gor enake kot zdaj — samo ne rabiš skrbeti za etcd, API serv
 | | – App ni pisan za serverless (cold start) |
 
 **Cena (Cloud Run + Cloud SQL):**
+
 | Storitev | Cena |
 |----------|------|
 | Cloud Run — 2M klicev/mesec | ~€5/mesec |
