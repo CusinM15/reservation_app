@@ -125,7 +125,7 @@ class BlockedDate(Base):
 class AuditLog(Base):
     __tablename__ = "audit_log"
 
-    id = Column(BigInteger, primary_key=True, index=True, autoincrement=True)
+    id = Column(Integer, primary_key=True, index=True, autoincrement=True)
     user_id = Column(Integer, ForeignKey("users.id"), nullable=True, index=True)
     username = Column(String, nullable=True)
     action = Column(String, nullable=False, index=True)
