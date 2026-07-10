@@ -56,6 +56,16 @@ Before installing anything, check if you have the following:
 | **Git**                  | A tool for downloading code from an online repository (GitHub). Like Dropbox for source code.                  | `sudo apt install git` (Linux) or [git-scm.com](https://git-scm.com) |
 | **Browser**              | The application is web-based — you access it through a browser (Chrome, Firefox, Edge…).                       | You probably already have one.                                       |
 
+> **💡 Important: choose your path**
+>
+> **Git** in the table above is optional — you can also download the code as a [ZIP archive](https://github.com/os-tc-jesenice/reservation_app/archive/refs/heads/main.zip) and extract it manually. However, **I recommend Git** because it makes updates easier (`git pull`). Without Git, you'll need to download the full ZIP and replace files every time.
+>
+> **Two paths, two tools:**
+> - **Path 1 — uvicorn** (recommended): you need **Python**, Docker is **not needed**.
+> - **Path 2 — Docker**: you need **Docker**, Python is **not required** (it's installed inside the container).
+>
+> Choose one — you don't need to install both.
+
 ### How do I check if Python is installed?
 
 Open a **terminal** (Command Prompt on Windows, Terminal on Mac/Linux) and run:

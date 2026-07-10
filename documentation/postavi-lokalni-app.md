@@ -56,6 +56,16 @@ Preden karkoli namestiš, preveri, ali imaš sledeče:
 | **Git**                     | Orodje za prenos kode iz spletnega repozitorija (GitHub). Kot Dropbox za programsko kodo.                       | `sudo apt install git` (Linux) ali [git-scm.com](https://git-scm.com) |
 | **Brskalnik**               | Aplikacija je spletna — dostopaš do nje prek brskalnika (Chrome, Firefox, Edge...).                             | Verjetno ga že imaš.                                                  |
 
+> **💡 Pomembno: izbira poti**
+>
+> **Git** v zgornji tabeli ni obvezen — kodo lahko preneseš tudi kot [ZIP arhiv](https://github.com/os-tc-jesenice/reservation_app/archive/refs/heads/main.zip) in jo ročno razpakiraš. Vendar **priporočam Git**, ker potem lažje prenašaš posodobitve (`git pull`). Brez Gita boš moral vsakič znova prenesti celoten ZIP in prepisati datoteke.
+>
+> **Dve poti, dve orodji:**
+> - **Pot 1 — uvicorn** (priporočeno): rabiš **Python**, Dockerja **ne rabiš**.
+> - **Pot 2 — Docker**: rabiš **Docker**, Python **ni potreben** (nameščen je znotraj containerja).
+>
+> Izberi eno — obojega **ni treba** nameščati.
+
 ### Kako preverim, ali imam Python nameščen?
 
 Odpri **terminal** (Command Prompt v Windows, Terminal na Mac/Linux) in zaženi:
