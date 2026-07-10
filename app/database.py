@@ -14,6 +14,7 @@
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker, declarative_base, Session
 
+import os
 from app.config import settings
 
 # ── Engine ────────────────────────────────────────────────────────────
@@ -67,19 +68,32 @@ def init_db():
     # ADD COLUMN IF NOT EXISTS deluje na PostgreSQL >= 9.6 in na SQLite >= 3.35.
     # Brez Alembica, ker je sprememba trivialna (nullable kolona, brez FK).
     from sqlalchemy import text
+    # Poskrbi, da mapa za bazo obstaja (SQLite ne zna sama ustvariti map)
+    db_path = settings.DATABASE_URL.replace("sqlite:///", "")
+    if db_path:
+        db_dir = os.path.dirname(db_path)
+        if db_dir and not os.path.exists(db_dir):
+            os.makedirs(db_dir, exist_ok=True)
+
     with engine.begin() as conn:
+        # Migracija: dodaj stolpec series_id v tabelo reservations
+        # Uporabimo try/except namesto IF NOT EXISTS, ker starejši SQLite
+        # (< 3.35) tega ne podpira.
         try:
             conn.execute(text(
-                "ALTER TABLE reservations ADD COLUMN IF NOT EXISTS series_id VARCHAR"
+                "ALTER TABLE reservations ADD COLUMN series_id VARCHAR"
             ))
+        except Exception:
+            pass  # Kolona že obstaja — to je OK
+
+        # Index za series_id (prav tako s try/except)
+        try:
             conn.execute(text(
-                "CREATE INDEX IF NOT EXISTS ix_reservations_series_id "
+                "CREATE INDEX ix_reservations_series_id "
                 "ON reservations (series_id)"
             ))
-        except Exception as e:
-            # Če baza tega ne podpira (npr. zelo star SQLite), to ni fatalno —
-            # nova kolona bo manjkala, ampak app še vedno teče za enkratne rez.
-            print(f"[init_db] migracija series_id preskočena: {e}")
+        except Exception:
+            pass  # Index že obstaja
 
 
 def log_audit(db: Session, user_id: int, user_name: str, action: str,
