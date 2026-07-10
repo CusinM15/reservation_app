@@ -57,5 +57,3 @@ I've written rather long and **very detailed instructions** — from installatio
 ---
 
 **Author:** Matej Čušin  
-**School:** OŠ Toneta Čufarja Jesenice  
-**GitHub:** [os-tc-jesenice/reservation_app](https://github.com/os-tc-jesenice/reservation_app)
