@@ -56,14 +56,6 @@ I've written rather long and **very detailed instructions** — from installatio
 
 ---
 
-## ☕ Support the Project
-
-If this app helps you, you can buy me a coffee via PayPal:
-
-[![Donate with PayPal](https://www.paypalobjects.com/en_US/i/btn/btn_donateCC_LG.gif)](https://www.paypal.com/donate/?hosted_button_id=TVKQZWNUEWMPQ)
-
----
-
 **Author:** Matej Čušin  
 **School:** OŠ Toneta Čufarja Jesenice  
 **GitHub:** [os-tc-jesenice/reservation_app](https://github.com/os-tc-jesenice/reservation_app)
