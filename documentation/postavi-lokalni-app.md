@@ -132,6 +132,8 @@ Ko to zaženeš, Docker vzame ta zabojnik in ga postavi v svoj "mikro-računalni
 
 ### 4a) Priprava — prenesi kodo in nastavi konfiguracijo
 
+> 🐳 **Docker brez sudo:** Če ob zagonu `docker` ukazov dobivaš napako "permission denied", dodaj svojega uporabnika v docker skupino: `sudo usermod -aG docker $USER` in se ponovno prijavi.
+
 > 🪟 **Če si na Windowsu:** pred začetkom zaženi WSL (`wsl` v cmd/PowerShell) in nadaljuj znotraj WSL terminala. Vsi ukazi spodaj (git clone, cp, docker) delujejo enako kot na Linuxu.
 
 Najprej moraš kodo aplikacije prenesti s spleta na svoj računalnik. To narediš z Gitom:

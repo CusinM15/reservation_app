@@ -132,6 +132,8 @@ When you run it, Docker takes this container and places it in its own "micro-com
 
 ### 4a) Preparation — download the code and set up configuration
 
+> 🐳 **Docker without sudo:** If you get a "permission denied" error when running `docker` commands, add your user to the docker group: `sudo usermod -aG docker $USER` and log back in.
+
 > 🪟 **On Windows:** before you start, run WSL (`wsl` in cmd/PowerShell) and continue inside the WSL terminal. All commands below (git clone, cp, docker) work the same as on Linux.
 
 First, you need to download the application code from the internet to your computer. You do this with Git:
