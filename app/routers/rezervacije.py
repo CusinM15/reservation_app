@@ -350,7 +350,6 @@ def _resolve_conflicts_and_notify(
                     db, user_id=creator_id, username=creator_name, action="delete",
                     details=f"Avtomatsko izbrisana rezervacija (serija id={res.id}): tablice, {d}, {h}. ura"
                 )
-                )
                 removed += 1
                 still_used = sum(r.qty or 0 for r in existing)
                 if teacher and teacher.email:
