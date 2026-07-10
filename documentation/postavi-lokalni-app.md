@@ -294,7 +294,31 @@ Pritisni **`Ctrl+C`** v terminalu. Aplikacija se bo lepo ustavila.
 
 ---
 
-## 6) Prvi zagon — kaj se zgodi v ozadju?
+## 6) Po zagonu — preveri, ali aplikacija deluje
+
+Ko zaženeš aplikacijo (bodisi prek Dockerja ali uvicorn), odpri brskalnik in pojdi na:
+
+```
+http://localhost:8001
+```
+
+### ✅ Kontrolna lista — kaj moraš videti:
+
+1. **Prijavna stran** — vpraša za uporabniško ime in geslo. Privzeto: `admin` / `admin123`
+2. **Rezervacije** — po prijavi vidiš zavihka **Rezervacije** in **Ocenjevanja**. Oba morata biti vidna.
+3. **Tedenski pregled (Rezervacije)** — pod zavihkom Rezervacije se mora prikazati tedenska tabela s prostori in urami. Tudi če ni nobene rezervacije, se tabela izriše (prazna).
+4. **Koledar (Ocenjevanja)** — pod zavihkom Ocenjevanja se mora prikazati mesečni koledar. Tudi če ni nobenega ocenjevanja, koledar mora biti viden.
+5. **Prostori v zavihkih** — zgoraj pod Rezervacijami morajo biti vidni zavitki za vsak prostor (tablice, računalnica, ladja...).
+6. **/health endpoint** — odpri `http://localhost:8001/health` v brskalniku. Videti moraš `{"status": "ok"}`.
+
+> ⚠️ **Če kaj od tega manjka:** poglej terminal, kjer si zagnal aplikacijo — tam piše napaka. Najpogostejši vzroki so:
+> - `--workers 2` z SQLite (baza se zaklene) — uporabi `--workers 1`
+> - Manjka `.env` datoteka — aplikacija uporabi privzete vrednosti
+> - Port 8001 je zaseden — spremeni v `.env`
+
+---
+
+## 7) Prvi zagon — kaj se zgodi v ozadju?
 
 Ko prvič poženeš aplikacijo (bodisi prek Dockerja ali na roke), se zgodi več stvari **samodejno**:
 
@@ -444,12 +468,14 @@ Spremeniš besedilo (v vimu pritisneš `Esc` + `i`, da začneš tipkati, nato pa
 | ❌ Težava                                             | ✅ Rešitev                                                                                                                                                                                                                       |
 | ---------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | **`Port already in use`** (vrata so zasedena)        | Druga aplikacija že uporablja vrata 8001. Spremeni `APP_PORT=8002` v `.env` datoteki in poskusi znova. Z Dockerjem: dodaj drug port mapping (`-p 8002:8001`).                                                                   |
-| **SQLite `database is locked`** (baza je zaklenjena) | Aplikacija se je nepričakovano ustavila, medtem ko je pisala v bazo. **Rešitev:** Ustavi aplikacijo, zbriši datoteko `data/sola.db` in zaženi znova — aplikacija bo ustvarila novo bazo. **Pozor:** S tem izgubiš vse podatke!  |
+| **SQLite `database is locked`** (baza je zaklenjena) | **Najpogosteje:** uporabljaš `--workers 2` ali več. SQLite ne podpira več procesov hkrati. Popravi v Dockerfile ali v ukazu na `--workers 1`. **Rešitev:** ustavi aplikacijo, zbriši `data/sola.db`, zaženi z `--workers 1`. **Pozor:** S tem izgubiš vse podatke! |
 | **Učitelji niso uvoženi**                            | Seznam zaposlenih na spletni strani je morda drugačne strukture. Najprej zaženi **`--dry-run`**, da vidiš, kaj skripta najde. Nato prilagodi `SCRAPE_URL` v `scripts/import_teachers.py`.                                       |
-| **Ne vidim prostorov (tablice, računalnica, ladja)** | Preveri `PROSTORI` v `.env` datoteki. Če manjkajo, jih dodaj ločene z vejico: `PROSTORI=tablice,racunalnica,ladja,telovadnica`. Nato znova zaženi aplikacijo.                                                                   |
+| **Ne vidim prostorov (tablice, računalnica, ladja)** | Preveri `PROSTORI` v `.env` datoteki. Če manjkajo, jih dodaj ločene z vejico: `PROSTORI=tablice,racunalnica,ladja,telovadnica`. Nato znova zaženi aplikacij. |                                                                   |
 | **Aplikacije ne morem odpreti v brskalniku**         | Preveri: (1) Ali aplikacija sploh teče? (poglej terminal ali `docker ps`). (2) Ali si uporabil(a) pravi naslov? Običajno `http://localhost:8001`. (3) Ali si spremenil(a) vrata? Uporabi tista, ki si jih nastavil(a) v `.env`. |
 | **Docker: `permission denied`**                      | Na Linuxu moraš imeti administratorske pravice. Poskusi `sudo docker ...` ali dodaj svoj uporabnik v `docker` skupino: `sudo usermod -aG docker $USER` (po tem se odjavi in prijavi nazaj).                                      |
 | **`pip install` vrže napako**                        | Morda manjka kakšno sistemsko orodje (npr. Python dev headers). Na Linuxu poskusi: `sudo apt install python3-dev build-essential`. Nato ponovi `pip install -r requirements.txt`.                                               |
+| **Koledarja ni, stran kaže "Nalaganje ..."**          | API klic se ni izvedel. Najpogosteje: `--workers 2` z SQLite, ali pa aplikacija sploh ni štartala (poglej terminal za napako). Popravi na `--workers 1` in ponovno zaženi.                                                         |
+| **Docker build pade z napako**                         | Verjetno tmpfs overload — `/tmp` se je napolnil med gradnjo. Poskusi z `uvicorn` namesto Dockerja, ali povečaj tmpfs.                                                                                                            |
 
 ---
 

@@ -294,7 +294,31 @@ Press **`Ctrl+C`** in the terminal. The application will shut down gracefully.
 
 ---
 
-## 6) First run — what happens behind the scenes?
+## 6) After starting — verify the app is working
+
+Once you start the app (via Docker or uvicorn), open your browser and go to:
+
+```
+http://localhost:8001
+```
+
+### ✅ Checklist — what you should see:
+
+1. **Login page** — asks for username and password. Default: `admin` / `admin123`
+2. **Reservations & Assessments tabs** — after login, you should see both tabs.
+3. **Weekly schedule (Reservations tab)** — a weekly table with rooms and hours should appear. Even if there are no reservations, the table should render (empty).
+4. **Calendar (Assessments tab)** — a monthly calendar should appear. Even if there are no assessments, the calendar must be visible.
+5. **Room tabs** — under Reservations, you should see tabs for each room (tablice, racunalnica, ladja...).
+6. **/health endpoint** — open `http://localhost:8001/health` in your browser. You should see `{"status": "ok"}`.
+
+> ⚠️ **If something is missing:** check the terminal where you started the app — the error is there. Most common causes:
+> - `--workers 2` with SQLite (database gets locked) — use `--workers 1`
+> - Missing `.env` file — the app uses default values
+> - Port 8001 is already in use — change it in `.env`
+
+---
+
+## 7) First run — what happens behind the scenes?
 
 When you first run the application (either via Docker or manually), several things happen **automatically**:
 
@@ -449,6 +473,8 @@ You change the text (in vim presss `Esc`+ `i`to start tiping and then `Esc`+ `ZZ
 | **Can't open the application in the browser**     | Check: (1) Is the application actually running? (look at the terminal or `docker ps`). (2) Did you use the right address? Usually `http://localhost:8001`. (3) Did you change the port? Use the one you set in `.env`.             |
 | **Docker: `permission denied`**                   | On Linux you need administrator privileges. Try `sudo docker ...` or add your user to the `docker` group: `sudo usermod -aG docker $USER` (log out and back in afterwards).                                                        |
 | **`pip install` throws an error**                 | Maybe a system tool is missing (e.g. Python dev headers). On Linux, try: `sudo apt install python3-dev build-essential`. Then repeat `pip install -r requirements.txt`.                                                            |
+| **Calendar shows "Loading..." indefinitely**        | The API call failed. Most common cause: `--workers 2` with SQLite, or the app never started (check terminal for errors). Fix: change to `--workers 1` and restart.                                                                  |
+| **Docker build fails with an error**                 | Likely tmpfs overload — `/tmp` filled up during build. Try uvicorn instead of Docker, or increase tmpfs size.                                                                                                                      |
 
 ---
 
