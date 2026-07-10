@@ -194,6 +194,7 @@ Ko je slika zgrajena, jo zaženi:
 ```bash
 docker run -d --name sola-app -p 8001:8002 \
   -v $(pwd)/data:/app/data \
+  --env-file .env \
   sola-app
 ```
 
@@ -203,6 +204,7 @@ docker run -d --name sola-app -p 8001:8002 \
 > - `-p 8001:8002` — **port mapping**. "Če nekdo pokliče na vrata 8001 tvojega računalnika, preusmeri klic v zabojnik na ista vrata." Zunanja: notranja vrata.
 > - `-v $(pwd)/data:/app/data` — **volume mount**. To je ključno! Tvoja mapa `./data` na računalniku je povezana z mapo `/app/data` v zabojniku. **Če zbrišeš zabojnik, baza ostane na tvojem disku.**
 > - `sola-app` — ime slike, ki smo jo zgradili zgoraj.
+> - `--env-file .env` — naloži okoljske spremenljivke (RAZREDI, PROSTORI, SCHEDULE) iz `.env` datoteke v zabojnik. **Brez tega ne boš videl razredov in prostorov!**
 
 ✅ **Aplikacija je zdaj na:** [**http://localhost:8001**](http://localhost:8001)
 

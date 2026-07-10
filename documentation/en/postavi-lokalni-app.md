@@ -140,7 +140,7 @@ First, you need to download the application code from the internet to your compu
 
 ```bash
 # 1. Clone the repository (meaning: download the entire folder with the code)
-git clone https://github.com/sola-app.git
+git clone https://github.com/os-tc-jesenice/reservation_app.git
 cd sola-app
 ```
 
@@ -194,6 +194,7 @@ Once the image is built, run it:
 ```bash
 docker run -d --name sola-app -p 8001:8001 \
   -v $(pwd)/data:/app/data \
+  --env-file .env \
   sola-app
 ```
 
@@ -203,6 +204,7 @@ docker run -d --name sola-app -p 8001:8001 \
 > - `-p 8001:8001` — **port mapping**. "If someone calls port 8001 on your computer, forward the call to the container on the same port." External:internal port.
 > - `-v $(pwd)/data:/app/data` — **volume mount**. This is crucial! Your `./data` folder on the computer is linked to the `/app/data` folder in the container. **If you delete the container, the database stays on your disk.**
 > - `sola-app` — the name of the image we built above.
+> - `--env-file .env` — loads environment variables (RAZREDI, PROSTORI, SCHEDULE) from the `.env` file into the container. **Without this, classes and rooms won't be visible!**
 
 ✅ **The application is now at:** [**http://localhost:8001**](http://localhost:8001)
 
@@ -235,7 +237,7 @@ If you don't have Docker or don't want to install it (or have issues with it, e.
 
 ```bash
 # 1. Download the code
-git clone https://github.com/sola-app.git
+git clone https://github.com/os-tc-jesenice/reservation_app.git
 cd sola-app
 
 # 2. Create a virtual environment
