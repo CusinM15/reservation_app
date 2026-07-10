@@ -346,10 +346,10 @@ def _resolve_conflicts_and_notify(
                 date_str = d.strftime("%d.%m.%Y")
                 hour_key = str(h)
                 hour_label = settings.SCHEDULE.get(hour_key, f"ura {h}")
-                db.delete(res)
                 log_audit(
-                    db, creator_id, creator_name, "delete", "reservation", res.id,
-                    f"Avtomatsko izbrisana rezervacija (serija): tablice, {d}, {h}. ura"
+                    db, user_id=creator_id, username=creator_name, action="delete",
+                    details=f"Avtomatsko izbrisana rezervacija (serija id={res.id}): tablice, {d}, {h}. ura"
+                )
                 )
                 removed += 1
                 still_used = sum(r.qty or 0 for r in existing)
@@ -377,8 +377,8 @@ def _resolve_conflicts_and_notify(
                 prostor_label = {"tablice": "tablice", "racunalnica": "računalnico", "ladja": "ladjo"}.get(prostor, prostor)
                 db.delete(existing)
                 log_audit(
-                    db, creator_id, creator_name, "delete", "reservation", existing.id,
-                    f"Avtomatsko izbrisana rezervacija (serija): {prostor_label}, {d}, {h}. ura"
+                    db, user_id=creator_id, username=creator_name, action="delete",
+                    details=f"Avtomatsko izbrisana rezervacija (serija id={existing.id}): {prostor_label}, {d}, {h}. ura"
                 )
                 removed += 1
                 if teacher and teacher.email:
@@ -623,7 +623,7 @@ def list_series(series_id: str, db: Session = Depends(get_db)):
 
 
 @router.get("/series-list", response_model=list[SeriesListItem])
-def list_all_series(
+def list_series_items(
     request: Request,
     db: Session = Depends(get_db),
 ):

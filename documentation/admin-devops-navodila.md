@@ -93,7 +93,7 @@ network:
         - {{LB_IP}}/24
       routes:
         - to: default
-          via: {{K3S_1_IP}}
+          via: {{GATEWAY_IP}}
       nameservers:
         addresses:
           - {{LB_IP}}

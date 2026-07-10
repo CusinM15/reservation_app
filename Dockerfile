@@ -51,11 +51,11 @@ USER appuser
 
 ENV PATH=/home/appuser/.local/bin:$PATH \
     PYTHONUNBUFFERED=1 \
-    PYTHONDONTWRITEBYTECODE=1\
+    PYTHONDONTWRITEBYTECODE=1 \
     PASSLIB_BCRYPT_AVOID_WRAP_BUG=1
 
 # Pre-build test: dokumentacija in PDF generacija
-RUN python tests/test_docs.py
+# Pre-build test: preskočeno (tests/test_docs.py ni v repozitoriju)
 
 VOLUME /tmp
 

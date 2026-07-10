@@ -115,7 +115,7 @@ The audit log provides an **overview of all important changes in the system** â€
 | `create_blocked_dates` | Blocked dates added |
 | `delete_blocked_date` | Blocked date removed |
 
-**Admin** is the only one who can see it, go under **Admin panel** - **Dnevni dogodki**
+**Admin** is the only one who can see it, go under **Admin panel** - **Event Log**
 
 ---
 

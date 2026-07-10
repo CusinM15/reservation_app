@@ -11,11 +11,7 @@
 # POSTAVI LOKALNI APP — Šolski sistem OSTC App
 
 
-<<<<<<< HEAD
 Ta dokument je napisan za **čisto lokalno namestitev** — aplikacijo poženemo na **enem samem računalniku**. Brez Kubernetes gruče, brez PostgreSQL strežnika, brez omrežnega čudeža. Samo ti in tvoj računalnik.
-=======
-Ta dokument je napisan za **čisto lokalno namestitev** — aplikacijo poženemo na **enem samem računalniku**. Brez Kubernetes gruče, brez PostgreSQL strežnika. Samo ti in tvoj računalnik.
->>>>>>> 1767c7091f99cd9b71ec9c9fefc836a1892cedd3
 
 > 🎯 **Kdaj to uporabim?** Ko želiš aplikacijo pokazati kolegom, jo preizkusiti na svojem prenosniku, ali jo namestiti v šoli, ki nima svojega Kubernetes okolja.
 
@@ -109,7 +105,7 @@ Najprej moraš kodo aplikacije prenesti s spleta na svoj računalnik. To naredi�
 
 ```bash
 # 1. Kloniraj repozitorij (to pomeni: prenesi celotno mapo s kodo)
-git clone https://github.com/sola-app.git
+git clone https://github.com/os-tc-jesenice/reservation_app.git
 cd sola-app
 ```
 
@@ -161,7 +157,7 @@ docker build -t sola-app .
 Ko je slika zgrajena, jo zaženi:
 
 ```bash
-docker run -d --name sola-app -p 8001:8001 \
+docker run -d --name sola-app -p 8001:8002 \
   -v $(pwd)/data:/app/data \
   sola-app
 ```
@@ -169,7 +165,7 @@ docker run -d --name sola-app -p 8001:8001 \
 > 🧠 **Razlaga parametrov:**
 > - `-d` — **detached mode** (teče v ozadju, ne zaseda terminala).
 > - `--name sola-app` — ime zabojnika (da ga lahko kasneje ustaviš z imenom).
-> - `-p 8001:8001` — **port mapping**. "Če nekdo pokliče na vrata 8001 tvojega računalnika, preusmeri klic v zabojnik na ista vrata." Zunanja: notranja vrata.
+> - `-p 8001:8002` — **port mapping**. "Če nekdo pokliče na vrata 8001 tvojega računalnika, preusmeri klic v zabojnik na ista vrata." Zunanja: notranja vrata.
 > - `-v $(pwd)/data:/app/data` — **volume mount**. To je ključno! Tvoja mapa `./data` na računalniku je povezana z mapo `/app/data` v zabojniku. **Če zbrišeš zabojnik, baza ostane na tvojem disku.**
 > - `sola-app` — ime slike, ki smo jo zgradili zgoraj.
 
@@ -202,7 +198,7 @@ docker start sola-app
 
 ```bash
 # 1. Prenesi kodo
-git clone https://github.com/sola-app.git
+git clone https://github.com/os-tc-jesenice/reservation_app.git
 cd sola-app
 
 # 2. Ustvari virtualno okolje
@@ -391,7 +387,7 @@ hostname
 
 Spremeni hostname:
 ```bash
-sudo vim /etc/hostmane
+sudo vim /etc/hostname
 ```
 
 Spremeniš besedilo (v vimu pritisneš `Esc` + `i`, da začneš tipkati, nato pa `Esc` + `ZZ` oziroma `:wq`), ko je shranjeno, ponovno zaženi računalnik in ime bi moralo biti spremenjeno.

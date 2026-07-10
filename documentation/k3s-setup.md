@@ -210,7 +210,8 @@ helm install cnpg cnpg/cloudnative-pg \
 ### 4.2 Ustvari CNPG cluster
 
 ```bash
-kubectl apply -f sola-cnpg-cluster.yaml
+# Ta datoteka ni vključena v repozitorij — generiraj jo s CNPG operatorjem
+# kubectl apply -f sola-cnpg-cluster.yaml
 ```
 
 Primer `sola-cnpg-cluster.yaml`:

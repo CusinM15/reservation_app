@@ -40,7 +40,7 @@ kubectl get hpa -n sola-app
 
 ## 2. Network Access — "traffic always finds a way"
 
-![HA network flow: Internet to Cloudflare to LoadBalancer to app pods](diagrams/ha-network.png)
+![HA network flow: Internet to Cloudflare to LoadBalancer to app pods](../diagrams/ha-network.png)
 
 - **Cloudflare** points to the static IP LB_IP — this is the public entry point
 - **MetalLB** (Layer2 mode) advertises this IP on one of the nodes

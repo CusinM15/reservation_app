@@ -419,7 +419,7 @@ kubectl get volumes.longhorn.io -n longhorn-system
 
 # If the primary has failed, CNPG will automatically promote the replica to primary
 # Wait up to 2 minutes. Check with:
-kubectl logs -n sola deploy/sola-db-1 --tail=50   # primary database
+kubectl logs -n sola sola-db-1 --tail=50   # primary database
 kubectl logs -n sola deploy/sola-db-2 --tail=50   # backup database
 ```
 
@@ -492,7 +492,7 @@ kubectl get nodes -o wide                           # Which computers are in the
 kubectl get pods -n sola-app -o wide                # Which applications are running and where?
 kubectl get services -n sola-app                    # Which services are available?
 kubectl get pvc -n sola-app                         # How much disk space is used?
-kubectl get cluster -n sola-app                     # How is the database doing?
+kubectl get cluster -n sola sola-db                     # How is the database doing?
 kubectl get events -n sola-app --sort-by='.lastTimestamp'  # What happened recently?
 
 # === App Management ===

@@ -239,7 +239,7 @@ kubectl get volumes.longhorn.io -n longhorn-system
 >
 > Preveriš lahko z `kubectl get pv` — videl boš PV-je z imeni kot `pvc-...`, ki jih je ustvaril Longhorn.
 
-> **ELI5 — WAL (Write-Ahead Log):** Predstavljaj si, da pišeš test. Najprej napišeš odgovor na **list za beležke (WAL)**
+> **ELI5 — WAL (Write-Ahead Log):** Predstavljaj si, da pišeš test. Najprej napišeš odgovor na **list za beležke (WAL)**, potem pa ga PREPISEŠ v čistopis (commit v bazo). Če zmanjka časa, list z odgovori (WAL) že obstaja in učitelj (baza) ga lahko prebere.
 
 **Zakaj dva ločena PVC-ja?** PostgreSQL vsako spremembo najprej zapiše v WAL, šele nato v glavne podatkovne datoteke. Ločena PVC-ja omogočata različne I/O profile — WAL je zaporedno pisanje (hitro), podatki so naključni bralno-pisalni dostopi. Prav tako omogoča ločeni backup strategiji: WAL se arhivira sproti, podatki se periodično snapshottajo.
 
@@ -418,7 +418,7 @@ kubectl get volumes.longhorn.io -n longhorn-system
 
 # Če je primary padel, bo CNPG samodejno promoviral replica v primary
 # Počakaj do 2 minuti. Preveri z:
-kubectl logs -n sola deploy/sola-db-1 --tail=50   # primarna baza
+kubectl logs -n sola sola-db-1 --tail=50   # primarna baza
 kubectl logs -n sola deploy/sola-db-2 --tail=50   # pomožna baza
 ```
 
@@ -491,7 +491,7 @@ kubectl get nodes -o wide                           # Kateri računalniki so v g
 kubectl get pods -n sola-app -o wide                # Katere aplikacije tečejo in kje?
 kubectl get services -n sola-app                    # Katere storitve so na voljo?
 kubectl get pvc -n sola-app                         # Koliko diskovnega prostora je zasedenega?
-kubectl get cluster -n sola-app                     # Kako je z bazo?
+kubectl get cluster -n sola sola-db                     # Kako je z bazo?
 kubectl get events -n sola-app --sort-by='.lastTimestamp'  # Kaj se je nazadnje zgodilo?
 
 # === Upravljanje aplikacije ===
