@@ -62,19 +62,22 @@ def init_db():
       (tedenske in celodnevne serije za admin/vodstvo).
     """
     import app.models  # noqa: F401 – ensure models are registered
-    Base.metadata.create_all(bind=engine)
 
-    # ── Lahka migracija: dodaj series_id v reservations, če manjka ──
-    # ADD COLUMN IF NOT EXISTS deluje na PostgreSQL >= 9.6 in na SQLite >= 3.35.
-    # Brez Alembica, ker je sprememba trivialna (nullable kolona, brez FK).
+    # ── Poskrbi, da mapa za bazo obstaja ────────────────────────────
+    # SQLite ne more ustvariti baze, če mapa ne obstaja. To je pogosta
+    # težava na Linuxu, kjer init_db() pade z 'unable to open database file'.
     from sqlalchemy import text
-    # Poskrbi, da mapa za bazo obstaja (SQLite ne zna sama ustvariti map)
     db_path = settings.DATABASE_URL.replace("sqlite:///", "")
     if db_path:
         db_dir = os.path.dirname(db_path)
         if db_dir and not os.path.exists(db_dir):
             os.makedirs(db_dir, exist_ok=True)
 
+    Base.metadata.create_all(bind=engine)
+
+    # ── Lahka migracija: dodaj series_id v reservations, če manjka ──
+    # Uporabimo try/except namesto IF NOT EXISTS, ker starejši SQLite
+    # (< 3.35) tega ne podpira.
     with engine.begin() as conn:
         # Migracija: dodaj stolpec series_id v tabelo reservations
         # Uporabimo try/except namesto IF NOT EXISTS, ker starejši SQLite
