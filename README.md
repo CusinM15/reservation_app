@@ -57,5 +57,3 @@ Spisal sem kar dolga in **zelo podrobna navodila** — od namestitve na gol Linu
 ---
 
 **Avtor:** Matej Čušin  
-**Šola:** OŠ Toneta Čufarja Jesenice  
-**GitHub:** [os-tc-jesenice/reservation_app](https://github.com/os-tc-jesenice/reservation_app)
