@@ -84,6 +84,27 @@ docker --version
 
 Če vidiš `Docker version 24.x.x` — super. Če ne, preskoči na [poglavje 5](#5-namestitev-brez-dockerja--na-roke-uvicorn-️-priporočeno) (namestitev brez Dockerja) ali pa si Docker namesti.
 
+### Namestitev na Windows — WSL (Windows Subsystem for Linux)
+
+Če uporabljaš **Windows**, je najlažje, da vse skupaj poženeš znotraj **WSL** (Windows Subsystem for Linux). To je kot majhen Linux znotraj tvojega Windowsa.
+
+```powershell
+# 1. Odpri PowerShell kot Administrator in zaženi:
+wsl --install
+
+# 2. Ko se namesti, zaženi WSL:
+wsl
+
+# 3. Znotraj WSL (linux terminal) namesti Git in Docker:
+sudo apt update && sudo apt install -y git docker.io
+
+# 4. Sledi navodilom spodaj — ukazi so enaki kot za Linux
+```
+
+> 💡 **WSL + Docker:** Če želiš uporabljati Docker prek WSL, namesti [Docker Desktop for Windows](https://docs.docker.com/desktop/install/windows-install/) in vklopi WSL2 backend (Settings → Resources → WSL Integration). Nato lahko Docker ukaze kličeš kar iz WSL terminala.
+>
+> 💡 **WSL + uvicorn:** Python lahko namestiš direktno znotraj WSL (`sudo apt install python3 python3-pip`) in slediš navodilom za Linux. Ničesar ti ni treba nameščati na Windows strani.
+
 ---
 
 ## 3) Kaj je Docker? (za tiste, ki prvič slišite)
@@ -110,6 +131,8 @@ Ko to zaženeš, Docker vzame ta zabojnik in ga postavi v svoj "mikro-računalni
 ## 4) Namestitev prek Dockerja
 
 ### 4a) Priprava — prenesi kodo in nastavi konfiguracijo
+
+> 🪟 **Če si na Windowsu:** pred začetkom zaženi WSL (`wsl` v cmd/PowerShell) in nadaljuj znotraj WSL terminala. Vsi ukazi spodaj (git clone, cp, docker) delujejo enako kot na Linuxu.
 
 Najprej moraš kodo aplikacije prenesti s spleta na svoj računalnik. To narediš z Gitom:
 
@@ -205,6 +228,8 @@ docker start sola-app
 Če nimaš Dockerja ali ga nočeš nameščati (ali imaš težave z njim, npr. tmpfs overload med buildom), lahko aplikacijo poženeš neposredno s Pythonom. To je kot bi sestavljal jed iz sestavin — malo več dela, a bolj predvidljivo na starejših ali bolj omejenih računalnikih.
 
 ### 5a) Priprava okolja
+
+> 🪟 **Če si na Windowsu:** priporočam uporabo WSL. Zaženi `wsl` v cmd/PowerShell in sledi navodilom spodaj — vsi ukazi delujejo enako kot na Linuxu. Če želiš pognati direktno na Windowsu, uporabi PowerShell/CMD in ustrezne Windows ukaze (npr. `venv\Scripts\activate` namesto `source venv/bin/activate`).
 
 ```bash
 # 1. Prenesi kodo

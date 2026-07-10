@@ -84,6 +84,27 @@ docker --version
 
 If you see `Docker version 24.x.x` — great. If not, skip to [section 5](#5-installation-without-docker--manual-uvicorn--recommended) (installation without Docker) or install Docker.
 
+### Installing on Windows — WSL (Windows Subsystem for Linux)
+
+If you're using **Windows**, the easiest way is to run everything inside **WSL** (Windows Subsystem for Linux). It's like a small Linux inside your Windows.
+
+```powershell
+# 1. Open PowerShell as Administrator and run:
+wsl --install
+
+# 2. Once installed, start WSL:
+wsl
+
+# 3. Inside WSL (linux terminal), install Git and Docker:
+sudo apt update && sudo apt install -y git docker.io
+
+# 4. Follow the instructions below — all commands are the same as on Linux
+```
+
+> 💡 **WSL + Docker:** If you want to use Docker via WSL, install [Docker Desktop for Windows](https://docs.docker.com/desktop/install/windows-install/) and enable the WSL2 backend (Settings → Resources → WSL Integration). Then you can run Docker commands from the WSL terminal.
+>
+> 💡 **WSL + uvicorn:** You can install Python directly inside WSL (`sudo apt install python3 python3-pip`) and follow the Linux instructions. No need to install anything on the Windows side.
+
 ---
 
 ## 3) What is Docker? (for first-timers)
@@ -110,6 +131,8 @@ When you run it, Docker takes this container and places it in its own "micro-com
 ## 4) Installation via Docker
 
 ### 4a) Preparation — download the code and set up configuration
+
+> 🪟 **On Windows:** before you start, run WSL (`wsl` in cmd/PowerShell) and continue inside the WSL terminal. All commands below (git clone, cp, docker) work the same as on Linux.
 
 First, you need to download the application code from the internet to your computer. You do this with Git:
 
@@ -205,6 +228,8 @@ docker start sola-app
 If you don't have Docker or don't want to install it (or have issues with it, e.g. tmpfs overload during build), you can run the application directly with Python. This is like cooking a meal from ingredients — a bit more work, but more predictable on older or more constrained computers.
 
 ### 5a) Environment setup
+
+> 🪟 **On Windows:** I recommend using WSL. Run `wsl` in cmd/PowerShell and follow the instructions below — all commands work the same as on Linux. If you want to run directly on Windows, use PowerShell/CMD with the appropriate Windows commands (e.g. `venv\Scripts\activate` instead of `source venv/bin/activate`).
 
 ```bash
 # 1. Download the code
