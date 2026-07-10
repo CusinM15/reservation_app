@@ -56,4 +56,12 @@ Spisal sem kar dolga in **zelo podrobna navodila** — od namestitve na gol Linu
 
 ---
 
+## ☕ Podpri projekt
+
+Če ti je aplikacija v pomoč, mi lahko kupiš kavo prek PayPalla:
+
+[![Donate with PayPal](https://www.paypalobjects.com/en_US/i/btn/btn_donateCC_LG.gif)](https://www.paypal.com/donate/?hosted_button_id=TVKQZWNUEWMPQ)
+
+---
+
 **Avtor:** Matej Čušin  
