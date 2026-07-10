@@ -70,8 +70,16 @@ def init_db():
     db_path = settings.DATABASE_URL.replace("sqlite:///", "")
     if db_path:
         db_dir = os.path.dirname(db_path)
-        if db_dir and not os.path.exists(db_dir):
+        if db_dir:
+            # Ustvari mapo, če ne obstaja (varen tudi, če že obstaja)
             os.makedirs(db_dir, exist_ok=True)
+            # Če mapa obstaja ampak ni pisljiva (npr. ustvaril jo je Docker kot root),
+            # poskusi popraviti pravice
+            if not os.access(db_dir, os.W_OK):
+                try:
+                    os.chmod(db_dir, 0o755)
+                except Exception:
+                    pass  # best-effort, spodaj bo padel z jasno napako
 
     Base.metadata.create_all(bind=engine)
 
