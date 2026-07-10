@@ -61,4 +61,5 @@ VOLUME /tmp
 
 EXPOSE 8002
 
-CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8002", "--workers", "2"]
+# workers=1 ker SQLite ne podpira več procesov hkrati; za produkcijo zamenjaj na PostgreSQL in povečaj
+CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8002", "--workers", "1"]
