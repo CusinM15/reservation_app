@@ -54,9 +54,6 @@ ENV PATH=/home/appuser/.local/bin:$PATH \
     PYTHONDONTWRITEBYTECODE=1 \
     PASSLIB_BCRYPT_AVOID_WRAP_BUG=1
 
-# Pre-build test: dokumentacija in PDF generacija
-# Pre-build test: preskočeno (tests/test_docs.py ni v repozitoriju)
-
 VOLUME /tmp
 
 EXPOSE 8002
