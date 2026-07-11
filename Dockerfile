@@ -2,7 +2,7 @@ FROM python:3.11-slim AS builder
 
 WORKDIR /app
 
-# Sistemske odvisnosti za build
+# System dependencies for build
 RUN apt-get update && apt-get install -y --no-install-recommends \
     gcc \
     libpq-dev \
@@ -16,7 +16,7 @@ FROM python:3.11-slim
 
 WORKDIR /app
 
-# Sistemske odvisnosti za runtime
+# System dependencies for runtime
 RUN apt-get update && apt-get install -y --no-install-recommends \
     libpq5 \
     curl \
@@ -33,7 +33,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     libthai0 \
     && rm -rf /var/lib/apt/lists/*
 
-# PostgreSQL official repo (za pg_dump 18 — server je 18.4)
+# PostgreSQL official repo (for pg_dump 18 — server runs 18.4)
 RUN curl -fsSL https://www.postgresql.org/media/keys/ACCC4CF8.asc | gpg --dearmor -o /usr/share/keyrings/postgresql-keyring.gpg \
     && echo "deb [signed-by=/usr/share/keyrings/postgresql-keyring.gpg] http://apt.postgresql.org/pub/repos/apt trixie-pgdg main" > /etc/apt/sources.list.d/pgdg.list \
     && apt-get update && apt-get install -y --no-install-recommends \
@@ -58,5 +58,5 @@ VOLUME /tmp
 
 EXPOSE 8002
 
-# workers=1 ker SQLite ne podpira več procesov hkrati; za produkcijo zamenjaj na PostgreSQL in povečaj
+# workers=1 because SQLite does not support concurrent processes; switch to PostgreSQL and increase for production
 CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8002", "--workers", "1"]
