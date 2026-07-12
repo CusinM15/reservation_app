@@ -14,3 +14,4 @@ uporabniki.csv
 *.sqlite
 .env
 .res_app/
+.venv/

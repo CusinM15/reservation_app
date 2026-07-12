@@ -44,7 +44,8 @@ RUN curl -fsSL https://www.postgresql.org/media/keys/ACCC4CF8.asc | gpg --dearmo
 RUN useradd -m -u 1000 appuser
 
 COPY --from=builder /root/.local /home/appuser/.local
-COPY . .
+COPY app/ app/
+COPY data/ data/
 
 RUN chown -R appuser:appuser /app
 USER appuser
