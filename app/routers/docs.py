@@ -70,6 +70,7 @@ h3 { font-size: 12.5pt; color: #4a6cf7; margin-top: 12pt; font-family: 'Noto San
 h4 { font-size: 11pt; color: #333; margin-top: 8pt; font-family: 'Noto Sans', 'DejaVu Sans', 'Noto Color Emoji', sans-serif; }
 p { margin: 5pt 0; text-align: justify; }
 img { max-width: 100%; height: auto; border: 1px solid #ddd; border-radius: 4pt; margin: 10pt 0; display: block; }
+img.emoji { display: inline; height: 1.15em; width: auto; border: none; border-radius: 0; margin: 0 0.05em; vertical-align: -0.2em; }
 pre { background: #f5f5f5; padding: 10pt 12pt; border-radius: 4pt; font-size: 9pt; font-family: 'DejaVu Sans Mono', 'Noto Color Emoji', monospace; overflow-x: auto; page-break-inside: avoid; }
 code { background: #f0f0f0; padding: 1pt 3pt; border-radius: 2pt; font-size: 9.5pt; font-family: 'DejaVu Sans Mono', 'Noto Color Emoji', monospace; }
 blockquote { border-left: 4pt solid #4a6cf7; margin: 10pt 0; padding: 6pt 12pt; background: #f8f9fa; color: #555; page-break-inside: avoid; }
@@ -103,6 +104,44 @@ def _doc_to_html(content: str, label: str) -> str:
     return html
 
 
+# Emoji regex — pokrije barvne emoji (U+1F000–U+1FAFF), simbole (U+2600–U+27BF),
+# dodatne simbole (U+2B00–U+2BFF), skupaj z VS16 (U+FE0F), ZWJ sekvencami
+# (U+200D) in regionalnimi indikatorji (zastave, U+1F1E6–U+1F1FF).
+_EMOJI_RE = re.compile(
+    r'[\U0001F000-\U0001FAFF\u2600-\u27BF\u2B00-\u2BFF]'
+    r'(?:\uFE0F|\u200D[\U0001F000-\U0001FAFF\u2600-\u27BF\u2B00-\u2BFF\uFE0F])*'
+    r'[\U0001F1E6-\U0001F1FF]*',
+    re.UNICODE,
+)
+
+_EMOJI_DIR = DOCS_DIR / "slike" / "emoji"
+
+
+def _emoji_to_images(html: str) -> str:
+    """Zamenja emoji znake v HTML-ju z <img> tagi na lokalne PNG datoteke.
+
+    WeasyPrint ne zna pravilno skalirati bitmap emoji fontov (CBDT/CBLC)
+    pri majhnih velikostih — izriše jih kot 2×2 pt pike. Zato v PDF-ju
+    emoji nadomestimo s pravimi slikami iz slike/emoji/ (Google Noto
+    emoji, 512×512). Če PNG za določen emoji ne obstaja, pustimo znak
+    (fallback na font).
+
+    Primer: 👩🏫 (U+1F469 U+200D U+1F3EB) → emoji_u1f469_200d_1f3eb.png
+    """
+
+    def _replace(m: re.Match) -> str:
+        seq = m.group(0)
+        if not seq or seq in ("\ufe0f", "\u200d"):
+            return seq
+        cp = "_".join(f"{ord(c):x}" for c in seq)
+        png = _EMOJI_DIR / f"emoji_u{cp}.png"
+        if png.exists():
+            return f'<img class="emoji" src="file://{png}" alt="{seq}">'
+        return seq
+
+    return _EMOJI_RE.sub(_replace, html)
+
+
 def _make_pdf(md_content: str, title: str) -> bytes:
     """Pretvori markdown v lep PDF s pomočjo weasyprint (HTML+CSS → PDF).
     
@@ -120,6 +159,12 @@ def _make_pdf(md_content: str, title: str) -> bytes:
     body_html = re.sub(r'src="\.\./slike/([^"]+)"', r'src="file://' + str(DOCS_DIR) + r'/slike/\1"', body_html)
     # Emojiji → <img> (weasyprint 69 ne izriše CBDT barvnih emoji — vidi app/emoji_pdf.py)
     body_html = replace_emojis(body_html)
+
+    # Emoji → slike (PNG iz slike/emoji/). WeasyPrint ne zna pravilno
+    # skalirati bitmap emoji fontov (CBDT) pri majhnih velikostih — izriše
+    # jih kot 2×2 pt pike. Zato emoji zamenjamo z <img> tagi, ki kažejo
+    # na lokalne PNG datoteke (Google Noto emoji, 512×512).
+    body_html = _emoji_to_images(body_html)
 
     full_html = f"""<!DOCTYPE html>
 <html>
