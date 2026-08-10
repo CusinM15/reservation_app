@@ -58,15 +58,15 @@ DOC_LABELS = {
 
 _PDF_CSS = """
 @page { margin: 2cm 2.2cm; @bottom-center { content: "OŠ Toneta Čufarja Jesenice"; font-size: 8pt; color: #999; } }
-body { font-family: 'DejaVu Sans', sans-serif; font-size: 10.5pt; line-height: 1.6; color: #333; }
+body { font-family: 'DejaVu Sans', 'Noto Color Emoji', sans-serif; font-size: 10.5pt; line-height: 1.6; color: #333; }
 h1 { font-size: 18pt; color: #1a1a2e; border-bottom: 2px solid #4a6cf7; padding-bottom: 4pt; margin-top: 18pt; }
 h2 { font-size: 14pt; color: #1a1a2e; border-bottom: 1px solid #ddd; padding-bottom: 3pt; margin-top: 14pt; }
 h3 { font-size: 11.5pt; color: #4a6cf7; margin-top: 10pt; }
 h4 { font-size: 10.5pt; color: #333; margin-top: 8pt; }
 p { margin: 4pt 0; text-align: justify; }
 img { max-width: 100%; height: auto; border: 1px solid #ccc; border-radius: 4pt; margin: 8pt 0; display: block; }
-pre { background: #f5f5f5; padding: 8pt 10pt; border-radius: 4pt; font-size: 8.5pt; font-family: 'DejaVu Sans Mono', monospace; overflow-x: auto; page-break-inside: avoid; }
-code { background: #f0f0f0; padding: 1pt 3pt; border-radius: 2pt; font-size: 9pt; font-family: 'DejaVu Sans Mono', monospace; }
+pre { background: #f5f5f5; padding: 8pt 10pt; border-radius: 4pt; font-size: 8.5pt; font-family: 'DejaVu Sans Mono', 'Noto Color Emoji', monospace; overflow-x: auto; page-break-inside: avoid; }
+code { background: #f0f0f0; padding: 1pt 3pt; border-radius: 2pt; font-size: 9pt; font-family: 'DejaVu Sans Mono', 'Noto Color Emoji', monospace; }
 blockquote { border-left: 4pt solid #4a6cf7; margin: 10pt 0; padding: 6pt 12pt; background: #f8f9fa; color: #555; page-break-inside: avoid; }
 hr { border: none; border-top: 1pt solid #ddd; margin: 14pt 0; }
 table { border-collapse: collapse; width: 100%; margin: 8pt 0; font-size: 9.5pt; page-break-inside: avoid; }

@@ -31,6 +31,9 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     libgdk-pixbuf-2.0-0 \
     shared-mime-info \
     libthai0 \
+    fonts-dejavu-core \
+    fonts-dejavu-extra \
+    fonts-noto-color-emoji \
     && rm -rf /var/lib/apt/lists/*
 
 # PostgreSQL official repo (for pg_dump 18 — server runs 18.4)
