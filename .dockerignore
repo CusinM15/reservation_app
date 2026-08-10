@@ -9,9 +9,6 @@ Dockerfile
 navodila.md
 k3s_setup.md
 uporabniki.csv
-.data/
-*.db
-*.sqlite
 .env
 .res_app/
 .venv/

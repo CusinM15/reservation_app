@@ -11,7 +11,7 @@
 # dovolj za redke spremembe sheme.
 # ─────────────────────────────────────────────────────────────────────────
 
-from sqlalchemy import create_engine
+from sqlalchemy import create_engine, text
 from sqlalchemy.orm import sessionmaker, declarative_base, Session
 
 import os
@@ -19,8 +19,9 @@ from app.config import settings
 
 # ── Engine ────────────────────────────────────────────────────────────
 # Ustvari SQLAlchemy engine glede na DATABASE_URL.
-# Za SQLite moramo nastaviti check_same_thread=False, ker FastAPI
-# uporablja večnitnost. Za PostgreSQL tega ne potrebujemo.
+# Produkcija je vedno PostgreSQL. Pogoj za check_same_thread obstaja
+# samo zato, da lokalni razvoj z eksplicitno nastavljenim SQLite
+# DATABASE_URL še vedno deluje; v produkciji se vedno izvede {} veja.
 engine = create_engine(
     settings.DATABASE_URL,
     connect_args={} if "postgresql" in settings.DATABASE_URL else {"check_same_thread": False},
@@ -63,33 +64,14 @@ def init_db():
     """
     import app.models  # noqa: F401 – ensure models are registered
 
-    # ── Poskrbi, da mapa za bazo obstaja ────────────────────────────
-    # SQLite ne more ustvariti baze, če mapa ne obstaja. To je pogosta
-    # težava na Linuxu, kjer init_db() pade z 'unable to open database file'.
-    from sqlalchemy import text
-    db_path = settings.DATABASE_URL.replace("sqlite:///", "")
-    if db_path:
-        db_dir = os.path.dirname(db_path)
-        if db_dir:
-            # Ustvari mapo, če ne obstaja (varen tudi, če že obstaja)
-            os.makedirs(db_dir, exist_ok=True)
-            # Če mapa obstaja ampak ni pisljiva (npr. ustvaril jo je Docker kot root),
-            # poskusi popraviti pravice
-            if not os.access(db_dir, os.W_OK):
-                try:
-                    os.chmod(db_dir, 0o755)
-                except Exception:
-                    pass  # best-effort, spodaj bo padel z jasno napako
-
     Base.metadata.create_all(bind=engine)
 
     # ── Lahka migracija: dodaj series_id v reservations, če manjka ──
-    # Uporabimo try/except namesto IF NOT EXISTS, ker starejši SQLite
-    # (< 3.35) tega ne podpira.
+    # try/except namesto IF NOT EXISTS zaradi idempotentnosti —
+    # stavek se izvede ob vsakem zagonu, kolona/index pa obstajata
+    # samo enkrat.
     with engine.begin() as conn:
         # Migracija: dodaj stolpec series_id v tabelo reservations
-        # Uporabimo try/except namesto IF NOT EXISTS, ker starejši SQLite
-        # (< 3.35) tega ne podpira.
         try:
             conn.execute(text(
                 "ALTER TABLE reservations ADD COLUMN series_id VARCHAR"

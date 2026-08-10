@@ -59,5 +59,6 @@ VOLUME /tmp
 
 EXPOSE 8002
 
-# workers=1 because SQLite does not support concurrent processes; switch to PostgreSQL and increase for production
+# workers=1 — dovolj za obremenitev šole; PostgreSQL podpira več
+# workerjev, če bo kdaj potrebno povečati.
 CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8002", "--workers", "1"]
