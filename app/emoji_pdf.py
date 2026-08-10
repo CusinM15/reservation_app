@@ -22,12 +22,13 @@ from functools import lru_cache
 import uharfbuzz as hb
 from fontTools.ttLib import TTFont
 
-# Emoji sekvence: osnovni emoji/simbol + opcijski VS16 + opcijske
-# (VS16 ZWJ emoji) skupine + opcijski VS16. Zajame tudi 👩‍🏫 (ZWJ) in ⚠️ (VS16).
+# Emoji sekvence: osnovni emoji/simbol (vključno z letterlike simboli kot ℹ️)
+# + opcijski VS16 + opcijske (VS16? ZWJ emoji) skupine + opcijski VS16.
+# Zajame tudi 👩🏫 (ZWJ brez predhodnega VS16) in ⚠️/ℹ️ (VS16).
 _EMOJI_RE = re.compile(
     r"(?:"
-    r"[\U0001F000-\U0001FAFF\u2600-\u27BF\u2B00-\u2BFF]"
-    r"(?:\uFE0F\u200D[\U0001F000-\U0001FAFF\u2600-\u27BF\u2B00-\u2BFF])*"
+    r"[\U0001F000-\U0001FAFF\u2100-\u27BF\u2B00-\u2BFF]"
+    r"(?:\uFE0F?\u200D[\U0001F000-\U0001FAFF\u2100-\u27BF\u2B00-\u2BFF])*"
     r"\uFE0F?"
     r")"
 )
