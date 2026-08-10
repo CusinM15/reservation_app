@@ -342,6 +342,7 @@ def _resolve_conflicts_and_notify(
                 still_used = 0
             while still_used + need > settings.TABLICE_MAX and existing:
                 res = existing.pop(0)
+                db.delete(res)  # ⚠️ dejansko pobriši iz baze — prej je manjkal!
                 teacher = res.teacher
                 date_str = d.strftime("%d.%m.%Y")
                 hour_key = str(h)
