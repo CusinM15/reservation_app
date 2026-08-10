@@ -342,6 +342,7 @@ def _resolve_conflicts_and_notify(
                 still_used = 0
             while still_used + need > settings.TABLICE_MAX and existing:
                 res = existing.pop(0)
+                db.delete(res)  # ⚠️ dejansko pobriši iz baze — prej je manjkal!
                 teacher = res.teacher
                 date_str = d.strftime("%d.%m.%Y")
                 hour_key = str(h)
@@ -426,6 +427,13 @@ def _commit_series(
         _validate_hour(h)
     if prostor == "tablice" and qty is None:
         raise HTTPException(status_code=400, detail="Za tablice morate navesti število (qty)")
+    # ⚠️ Preveri kapaciteto PRED brisanjem konfliktov — če qty že sam presega
+    # TABLICE_MAX, zavrni takoj, da ne izgubimo obstoječih rezervacij.
+    if prostor == "tablice" and qty is not None and qty > settings.TABLICE_MAX:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Skupno število tablet ({qty}) presega kapaciteto ({settings.TABLICE_MAX})",
+        )
 
     # 1) Pobriši konfliktne rezervacije in pošlji obvestila
     removed = _resolve_conflicts_and_notify(db, planned, prostor=prostor, creator_name=creator_name, creator_id=creator_id, qty=qty)
