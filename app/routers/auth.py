@@ -33,6 +33,34 @@ router = APIRouter(prefix="/auth", tags=["auth"])
 templates = Jinja2Templates(directory="app/templates")
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
+# ── Rate limiting za prijavo (pentest finding: ni bilo zaščite) ─────
+# Preprost in-memory števec neuspešnih poskusov: MAX_ATTEMPTS v WINDOW
+# sekundah na ključ (IP + username). Po prekoračitvi se prijava začasno
+# zavrne. Omejitev: in-memory = per-process (ob več workerjih je meja
+# nekoliko višja), kar je za šolsko aplikacijo sprejemljivo.
+from collections import defaultdict
+import time as _time
+
+_login_attempts: dict[str, list[float]] = defaultdict(list)
+MAX_LOGIN_ATTEMPTS = 10
+LOGIN_WINDOW_SECONDS = 300  # 5 minut
+
+
+def _login_blocked(key: str) -> bool:
+    """Vrne True, če je ključ trenutno blokiran (preveč neuspešnih poskusov)."""
+    now = _time.time()
+    attempts = [t for t in _login_attempts[key] if now - t < LOGIN_WINDOW_SECONDS]
+    _login_attempts[key] = attempts
+    return len(attempts) >= MAX_LOGIN_ATTEMPTS
+
+
+def _record_failed_login(key: str) -> None:
+    _login_attempts[key].append(_time.time())
+
+
+def _reset_login_attempts(key: str) -> None:
+    _login_attempts.pop(key, None)
+
 
 # ── Pomožne funkcije za ponastavitev gesla ──────────────────────────
 # Token za ponastavitev gesla je shranjen kot "<token>:<unix_expires_at>".
@@ -100,16 +128,29 @@ def login(
     Piškotke nastavimo brez max_age — pomeni, da se izbrišejo ob zaprtju
     brskalnika (session cookies). To je varnostna praksa za javne računalnike.
     """
+    # Rate limiting: blokiraj po preveč neuspešnih poskusih (brute force)
+    client_ip = request.client.host if request.client else "unknown"
+    rate_key = f"{client_ip}:{username.strip().lower()}"
+    if _login_blocked(rate_key):
+        return templates.TemplateResponse(
+            "login.html",
+            {"request": request, "error": "Preveč neuspešnih poskusov prijave. Počakajte 5 minut."}
+        )
+
     # Allow login with either username or email
     user = db.query(User).filter(
         ((User.username == username) | (User.email == username)),
         User.is_active == True
     ).first()
     if not user or not verify_password(password, user.password_hash):
+        _record_failed_login(rate_key)
         return templates.TemplateResponse(
             "login.html", 
             {"request": request, "error": "Napačno uporabniško ime ali geslo"}
         )
+    
+    # Uspešna prijava — ponastavi števec poskusov
+    _reset_login_attempts(rate_key)
     
     response = RedirectResponse(url="/", status_code=303)
     # Session cookies - no max_age, deleted on browser close
@@ -186,9 +227,11 @@ def forgot_password(
     """
     user = db.query(User).filter(User.email == email).first()
     if not user:
+        # Varnost: vedno enako sporočilo, tudi če email ne obstaja
+        # (prepreči email enumeration — pentest finding)
         return templates.TemplateResponse("login.html", {
             "request": request,
-            "error": "Uporabnik s tem emailom ne obstaja.",
+            "info": "Če email obstaja v sistemu, smo vam poslali povezavo za ponastavitev gesla.",
             "show_forgot": True,
         })
     
@@ -372,6 +415,12 @@ def create_user(
     err = validate_password_strength(password)
     if err:
         return RedirectResponse(url=f"/auth/admin/users?error={err}", status_code=303)
+    
+    # Varnost: dovoljene so samo veljavne vloge (pentest finding: 'kralj' je šel skozi)
+    if role not in ("teacher", "vodstvo", "admin"):
+        return RedirectResponse(
+            url=f"/auth/admin/users?error=Neveljavna vloga: {role}", status_code=303
+        )
     
     existing = db.query(User).filter(User.username == username).first()
     if existing:

@@ -29,9 +29,10 @@ class Settings:
     APP_PORT = int(os.getenv("APP_PORT", 8001))
 
     # ── Podatkovna baza ─────────────────────────────────────────────
-    # Privzeta vrednost je SQLite (za lokalni razvoj). V produkciji
-    # (k8s) nastavimo DATABASE_URL na PostgreSQL.
-    DATABASE_URL = os.getenv("DATABASE_URL", f"sqlite:///{os.getenv('DB_PATH', './data/sola.db')}")
+    # DATABASE_URL je OBVEZEN — SQLite fallback je odstranjen!
+    # Produkcija (k8s): postgresql://... (preko Secrets).
+    # Lokalno: v .env nastavi npr. sqlite:///./data/sola.db (ali postgresql://...).
+    DATABASE_URL = os.getenv("DATABASE_URL")
 
     # ── Kapaciteta tablic ───────────────────────────────────────────
     # Največje število tablic, ki jih je mogoče rezervirati v eni uri.
@@ -90,6 +91,16 @@ class Settings:
 
 
 settings = Settings()
+
+# ── Obvezna validacija baze ──────────────────────────────────────────
+# App ne sme teči brez eksplicitne DATABASE_URL. V produkciji to
+# prepreči tihi padec na SQLite (ki v produkciji ni podprt) — namesto
+# tega app pade ob zagonu z jasno napako.
+if not settings.DATABASE_URL:
+    raise RuntimeError(
+        "DATABASE_URL ni nastavljen! V produkciji obvezno PostgreSQL "
+        "(postgresql://...), lokalno pa v .env (npr. sqlite:///./data/sola.db)."
+    )
 
 
 def validate_password_strength(password: str) -> str | None:

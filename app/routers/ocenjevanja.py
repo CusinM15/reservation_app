@@ -201,7 +201,17 @@ def create_ocenjevanje(data: AssessmentCreate, request: Request, db: Session = D
     # Get current user name
     user_id = request.cookies.get("user_id")
     current_user = db.query(User).filter(User.id == int(user_id)).first() if user_id else None
+    if not current_user:
+        raise HTTPException(status_code=401, detail="Niste prijavljeni")
     user_name = f"{current_user.first_name} {current_user.last_name}".strip() if current_user else "?"
+
+    # Varnost: učitelj lahko napoveduje ocenjevanja SAMO zase (pentest finding:
+    # spoofing teacher_id je omogočal napoved v imenu admina). Admin/vodstvo tudi za druge.
+    if current_user.role not in (RoleEnum.admin, RoleEnum.vodstvo) and data.teacher_id != current_user.id:
+        raise HTTPException(
+            status_code=403,
+            detail="Ocenjevanje lahko napovedujete samo zase (teacher_id se ne ujema z vašim računom)",
+        )
     
     # Resource key for race detection
     resource_key = f"ocenjevanje:{data.razred}:{data.date}"

@@ -65,6 +65,7 @@ h3 { font-size: 11.5pt; color: #4a6cf7; margin-top: 10pt; }
 h4 { font-size: 10.5pt; color: #333; margin-top: 8pt; }
 p { margin: 4pt 0; text-align: justify; }
 img { max-width: 100%; height: auto; border: 1px solid #ccc; border-radius: 4pt; margin: 8pt 0; display: block; }
+img.emoji { display: inline; width: 1.15em; height: 1.15em; margin: 0 1pt; border: none; border-radius: 0; vertical-align: -0.2em; }
 pre { background: #f5f5f5; padding: 8pt 10pt; border-radius: 4pt; font-size: 8.5pt; font-family: 'DejaVu Sans Mono', monospace; overflow-x: auto; page-break-inside: avoid; }
 code { background: #f0f0f0; padding: 1pt 3pt; border-radius: 2pt; font-size: 9pt; font-family: 'DejaVu Sans Mono', monospace; }
 blockquote { border-left: 4pt solid #4a6cf7; margin: 10pt 0; padding: 6pt 12pt; background: #f8f9fa; color: #555; page-break-inside: avoid; }
@@ -74,10 +75,10 @@ th, td { border: 1px solid #ddd; padding: 4pt 8pt; text-align: left; }
 th { background: #f0f2f5; font-weight: 600; }
 ul, ol { padding-left: 20pt; margin: 4pt 0; }
 li { margin-bottom: 2pt; }
-.title-page { text-align: center; padding-top: 80pt; }
-.title-page h1 { font-size: 22pt; border: none; margin-bottom: 0; }
-.title-page .sub { font-size: 10pt; color: #888; margin-top: 4pt; }
-.title-page hr { width: 60%; margin: 20pt auto; border-top: 2px solid #4a6cf7; }
+.title-page { text-align: center; padding-top: 200pt; page-break-after: always; }
+.title-page h1 { font-size: 24pt; border: none; margin-bottom: 8pt; color: #1a1a2e; }
+.title-page .sub { font-size: 12pt; color: #4a6cf7; margin-top: 4pt; }
+.title-page hr { width: 50%; margin: 24pt auto; border-top: 2px solid #4a6cf7; }
 .page-break { page-break-before: always; }
 """
 
@@ -98,6 +99,66 @@ def _doc_to_html(content: str, label: str) -> str:
     return html
 
 
+def _emoji_to_images(html: str) -> str:
+    """Emoji v HTML-ju nadomesti z barvnimi slikami (Twemoji PNG).
+
+    Zakaj slike namesto fontov? WeasyPrint v produkcijski Docker sliki nima
+    color-emoji fonta — emoji bi se izpisali kot prazni okvirčki. Zato jih
+    zamenjamo s PNG slikami iz documentation/slike/emojis/ (Twemoji, barvni,
+    enaki kot v brskalniku). HTML predogled v brskalniku emoji ohrani kot tekst.
+
+    <pre>/<code> bloki ostanejo nedotaknjeni (koda se ne sme pokvariti).
+    """
+    EMOJI_DIR = DOCS_DIR / "slike" / "emojis"
+    DOCS_URI = DOCS_DIR.as_uri()  # file:///... — pravilno na Windows in Linux
+    # Znaki, ki jih DejaVu podpira — če zanje ni PNG-ja, ostanejo kot tekst
+    DEJAVU_SAFE = set("✓✔✕✎⚠ℹ★☆●○■□◆◇→↔↕⇒⇔")
+
+    pattern = re.compile(
+        r"[\U0001F000-\U0001FAFF\u2600-\u27BF\u2B00-\u2BFF]"
+        r"[\uFE0F\u200D\U0001F3FB-\U0001F3FF\u2600-\u27BF\U0001F000-\U0001FAFF]*"
+    )
+
+    out: list[str] = []
+    pos = 0
+    for m in pattern.finditer(html):
+        out.append(html[pos:m.start()])
+        seq = m.group(0)
+
+        # <pre>/<code> zaščita: emoji v kodi pustimo pri miru
+        head = html[:m.start()]
+        if head.count("<pre") > head.count("</pre>") or head.count("<code") > head.count("</code>"):
+            out.append(seq)
+            pos = m.end()
+            continue
+
+        # Obdelaj sekvenco po znakih; pri vsaki poziciji poskusi najdaljši PNG
+        i, n = 0, len(seq)
+        while i < n:
+            ch = seq[i]
+            if ch in "\uFE0F\u200D":  # variation selector / ZWJ — preskoči
+                i += 1
+                continue
+            matched_len = 0
+            for cut in range(n, i, -1):
+                cp = "-".join(f"{ord(c):x}" for c in seq[i:cut])
+                if (EMOJI_DIR / f"{cp}.png").exists():
+                    matched_len = cut - i
+                    break
+            if matched_len:
+                cp = "-".join(f"{ord(c):x}" for c in seq[i:i + matched_len])
+                out.append(f'<img src="{DOCS_URI}/slike/emojis/{cp}.png" class="emoji" alt="">')
+                i += matched_len
+            else:
+                if ch in DEJAVU_SAFE:
+                    out.append(ch)
+                i += 1
+        pos = m.end()
+
+    out.append(html[pos:])
+    return "".join(out)
+
+
 def _make_pdf(md_content: str, title: str) -> bytes:
     """Pretvori markdown v lep PDF s pomočjo weasyprint (HTML+CSS → PDF).
     
@@ -110,9 +171,12 @@ def _make_pdf(md_content: str, title: str) -> bytes:
 
     # Pretvori v HTML
     body_html = markdown.markdown(md_clean, extensions=["fenced_code", "tables"])
+    # Emoji → barvne slike (Twemoji PNG; HTML predogled jih ohrani kot tekst)
+    body_html = _emoji_to_images(body_html)
     # Relativne slike → absolutne za weasyprint
-    body_html = re.sub(r'src="slike/([^"]+)"', r'src="file://' + str(DOCS_DIR) + r'/slike/\1"', body_html)
-    body_html = re.sub(r'src="\.\./slike/([^"]+)"', r'src="file://' + str(DOCS_DIR) + r'/slike/\1"', body_html)
+    docs_uri = DOCS_DIR.as_uri()  # file:///C:/... — deluje tudi na Windows
+    body_html = re.sub(r'src="slike/([^"]+)"', lambda m: f'src="{docs_uri}/slike/{m.group(1)}"', body_html)
+    body_html = re.sub(r'src="\.\./slike/([^"]+)"', lambda m: f'src="{docs_uri}/slike/{m.group(1)}"', body_html)
 
     full_html = f"""<!DOCTYPE html>
 <html>

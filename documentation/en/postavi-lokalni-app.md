@@ -172,7 +172,7 @@ PROSTORI=tablice,racunalnica,ladja
 > - `APP_HOST=0.0.0.0` — "listen on all network interfaces" (so you can access from other devices on the network).
 > - `APP_PORT=8001` — the port the application will be available on (like a TV channel — on channel 8001).
 > - `BASE_URL=http://localhost:8001` — the address where the application is visible (localhost = this computer).
-> - `DATABASE_URL=sqlite:///./data/sola.db` — **where the database is**. SQLite is a simple database in a single file.
+> - `DATABASE_URL=sqlite:///./data/sola.db` — **where the database is**. DATABASE_URL is **required** (the app won't start without it). Locally you use SQLite (a simple single-file database), but **production must use PostgreSQL** (`postgresql://...`) — SQLite is not supported there.
 > - `TABLICE_MAX=28` — total number of tablets.
 > - `SCHEDULE=...` — timetable (7:30-8:15 is period 0, etc.).
 > - `RAZREDI=...` — list of all classes at the school.

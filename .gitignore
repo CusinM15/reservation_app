@@ -35,3 +35,6 @@ certs/key.pem
 certs/cert.pem
 certs/
 
+
+# pytest
+.pytest_cache/

@@ -184,7 +184,18 @@ def create_rezervacija(data: ReservationCreate, request: Request, db: Session = 
     # Get current user name
     user_id = request.cookies.get("user_id")
     current_user = db.query(User).filter(User.id == int(user_id)).first() if user_id else None
+    if not current_user:
+        raise HTTPException(status_code=401, detail="Niste prijavljeni")
     user_name = f"{current_user.first_name} {current_user.last_name}".strip() if current_user else "?"
+
+    # Varnost: učitelj lahko ustvarja rezervacije SAMO zase — prepreči
+    # spoofing teacher_id (pentest finding: učitelj je lahko rezerviral kot admin).
+    # Admin/vodstvo lahko ustvarjata tudi za druge (npr. namestniki).
+    if current_user.role not in (RoleEnum.admin, RoleEnum.vodstvo) and data.teacher_id != current_user.id:
+        raise HTTPException(
+            status_code=403,
+            detail="Rezervacijo lahko ustvarite samo zase (teacher_id se ne ujema z vašim računom)",
+        )
     
     # Build a resource key for race detection
     # Za tablice je ključ 'tablice:<date>:<hour>' (ker več učiteljev lahko
@@ -342,6 +353,7 @@ def _resolve_conflicts_and_notify(
                 still_used = 0
             while still_used + need > settings.TABLICE_MAX and existing:
                 res = existing.pop(0)
+                db.delete(res)  # POPRAVEK: dejansko izbriši iz baze (prej je manjkal delete — rezervacija je ostala, kapaciteta je bila presežena)
                 teacher = res.teacher
                 date_str = d.strftime("%d.%m.%Y")
                 hour_key = str(h)
@@ -426,6 +438,13 @@ def _commit_series(
         _validate_hour(h)
     if prostor == "tablice" and qty is None:
         raise HTTPException(status_code=400, detail="Za tablice morate navesti število (qty)")
+    # Kapaciteta: serija ne sme rezervirati več tablic, kot jih sploh je
+    # (pentest finding: qty=100 je šel skozi; enkratne rezervacije so preverjale, serije niso)
+    if prostor == "tablice" and qty > settings.TABLICE_MAX:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Število tablic ({qty}) presega kapaciteto ({settings.TABLICE_MAX})"
+        )
 
     # 1) Pobriši konfliktne rezervacije in pošlji obvestila
     removed = _resolve_conflicts_and_notify(db, planned, prostor=prostor, creator_name=creator_name, creator_id=creator_id, qty=qty)

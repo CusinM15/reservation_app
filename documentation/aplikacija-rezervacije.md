@@ -36,7 +36,7 @@ Ko vi odprete aplikacijo v brskalniku, se zgodi tole:
 2. **MetalLB** poskrbi, da zahteva najde pravi strežnik na pravem naslovu
 3. **k3s (Kubernetes)** pove, kateri del aplikacije naj zahtevo obdela
 4. **FastAPI (Python)** obdela zahtevo — pogleda, kaj hočete, in pripravi odgovor
-5. Če so potrebni podatki (ocene, uporabniki, rezervacije), jih **PostgreSQL** ali **SQLite** priskrbi iz baze
+5. Če so potrebni podatki (ocene, uporabniki, rezervacije), jih **PostgreSQL** priskrbi iz baze (v produkciji SQLite ni podprt)
 
 | Sloj | Tehnologija | Kaj to pomeni za laika |
 |------|------------|------------------------|

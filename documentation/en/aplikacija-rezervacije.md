@@ -58,8 +58,8 @@ When you open the application in your browser, here's what happens:
 3. **k3s (Kubernetes)** decides which part of the app should handle the request
 4. **FastAPI (Python)** processes the request — looks at what you want and prepares
    a response
-5. If data is needed (assessments, users, reservations), **PostgreSQL** or **SQLite**
-   provides it from the database
+5. If data is needed (assessments, users, reservations), **PostgreSQL**
+   provides it from the database (SQLite is not supported in production)
 
 | Layer | Technology | What this means in plain language |
 |-------|-----------|-----------------------------------|

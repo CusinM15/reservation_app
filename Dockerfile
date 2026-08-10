@@ -46,6 +46,7 @@ RUN useradd -m -u 1000 appuser
 COPY --from=builder /root/.local /home/appuser/.local
 COPY app/ app/
 COPY data/ data/
+COPY documentation/ documentation/
 
 RUN chown -R appuser:appuser /app
 USER appuser
@@ -59,5 +60,6 @@ VOLUME /tmp
 
 EXPOSE 8002
 
-# workers=1 because SQLite does not support concurrent processes; switch to PostgreSQL and increase for production
-CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8002", "--workers", "1"]
+# Produkcija uporablja PostgreSQL (DATABASE_URL=postgresql://...), ki podpira
+# več workerjev. SQLite ni več podprt v produkciji.
+CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8002", "--workers", "2"]

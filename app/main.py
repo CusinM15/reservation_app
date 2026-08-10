@@ -50,7 +50,27 @@ class AuthMiddleware(BaseHTTPMiddleware):
         is_public = any(path == p for p in public) or path.startswith("/static") or path.startswith("/slike") or path.startswith("/docs/")
         if not is_public and not request.cookies.get("user_id"):
             return RedirectResponse(url="/auth/login")
-        return await call_next(request)
+        response = await call_next(request)
+
+        # ── Varnostni headerji (pentest finding: manjkali so vsi) ──────
+        # Prepreči vdelavo app-a v iframe (clickjacking)
+        response.headers.setdefault("X-Frame-Options", "SAMEORIGIN")
+        # Prepreči MIME-sniffing (npr. HTML kot slika)
+        response.headers.setdefault("X-Content-Type-Options", "nosniff")
+        # Omeji, kaj se pošlje v Referer headerju
+        response.headers.setdefault("Referrer-Policy", "strict-origin-when-cross-origin")
+        # HSTS — Cloudflare prekine TLS, zato je varno vedno poslati
+        response.headers.setdefault("Strict-Transport-Security", "max-age=31536000; includeSubDomains")
+        # Osnovna CSP — app nima zunanjih virov; inline JS/CSS mora ostati
+        # dovoljen ('unsafe-inline'), ker predloge uporabljajo inline skripte.
+        response.headers.setdefault(
+            "Content-Security-Policy",
+            "default-src 'self'; script-src 'self' 'unsafe-inline'; "
+            "style-src 'self' 'unsafe-inline'; img-src 'self' data:; "
+            "font-src 'self' data:; connect-src 'self'; frame-ancestors 'self'; "
+            "form-action 'self'; base-uri 'self'"
+        )
+        return response
 
 app.add_middleware(AuthMiddleware)
 

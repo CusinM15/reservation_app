@@ -172,7 +172,7 @@ PROSTORI=tablice,racunalnica,ladja
 > - `APP_HOST=0.0.0.0` — "poslušaj na vseh omrežnih vmesnikih" (tako lahko dostopaš tudi z drugih naprav v omrežju).
 > - `APP_PORT=8001` — vrata, na katerih bo aplikacija dostopna (kot TV kanal — na 8001).
 > - `BASE_URL=http://localhost:8001` — naslov, pod katerim je aplikacija vidna (localhost = ta računalnik).
-> - `DATABASE_URL=sqlite:///./data/sola.db` — **kje je baza**. SQLite je preprosta baza v eni datoteki.
+> - `DATABASE_URL=sqlite:///./data/sola.db` — **kje je baza**. DATABASE_URL je **obvezen** (app se brez njega ne zažene). Lokalno uporabljaš SQLite (preprosta baza v eni datoteki), **v produkciji pa obvezno PostgreSQL** (`postgresql://...`) — SQLite tam ni podprt.
 > - `TABLICE_MAX=28` — število vseh tablic
 > - `SCHEDULE=...` — urnik (7:30-8:15 je 0. ura, itd.).
 > - `RAZREDI=...` — seznam vseh razredov na šoli.
