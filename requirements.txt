@@ -12,3 +12,6 @@ bcrypt==4.0.1
 kubernetes==31.0.0
 markdown==3.7
 weasyprint==69.0
+# Emoji rasterizacija za PDF (weasyprint CBDT bug): uharfbuzz (shaping/ZWJ) + fonttools (CBDT PNG)
+uharfbuzz==0.56.0
+fonttools==4.63.0

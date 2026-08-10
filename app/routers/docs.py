@@ -27,6 +27,8 @@ import re
 import os
 import html as html_mod
 
+from app.emoji_pdf import replace_emojis
+
 router = APIRouter(tags=["docs"])
 
 DOCS_DIR = Path(__file__).resolve().parent.parent.parent / "documentation"
@@ -116,6 +118,8 @@ def _make_pdf(md_content: str, title: str) -> bytes:
     # Relativne slike → absolutne za weasyprint
     body_html = re.sub(r'src="slike/([^"]+)"', r'src="file://' + str(DOCS_DIR) + r'/slike/\1"', body_html)
     body_html = re.sub(r'src="\.\./slike/([^"]+)"', r'src="file://' + str(DOCS_DIR) + r'/slike/\1"', body_html)
+    # Emojiji → <img> (weasyprint 69 ne izriše CBDT barvnih emoji — vidi app/emoji_pdf.py)
+    body_html = replace_emojis(body_html)
 
     full_html = f"""<!DOCTYPE html>
 <html>
