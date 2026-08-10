@@ -52,32 +52,35 @@ DOC_LABELS = {
 # PDF generator — weasyprint (HTML → lep PDF)
 # ═══════════════════════════════════════════════════════════════════════
 #
-# CSS je definiran inline za samostojen PDF — uporablja DejaVu Sans
-# font (univerzalno na voljo v Linuxu). Strani so formatirani A4 z
-# marginami 2cm, z nogo "OŠ Toneta Čufarja Jesenice".
+# CSS je definiran inline za samostojen PDF. Uporablja Noto Sans
+# (moderen font, vizualno blizu Segoe UI/Roboto iz HTML previewja) +
+# Noto Color Emoji (barvni emojiji — brez njega bi bili tofu kvadratki).
+# Stil namerno posnema /docs/html/{name} preview: iste barve (#1a1a2e,
+# #4a6cf7, #f8f9fa), iste oblike (rounded vogali, podčrtani naslovi).
+# Strani so A4 z marginami 2cm, z nogo "OŠ Toneta Čufarja Jesenice".
 
 _PDF_CSS = """
-@page { margin: 2cm 2.2cm; @bottom-center { content: "OŠ Toneta Čufarja Jesenice"; font-size: 8pt; color: #999; } }
-body { font-family: 'DejaVu Sans', 'Noto Color Emoji', sans-serif; font-size: 10.5pt; line-height: 1.6; color: #333; }
-h1 { font-size: 18pt; color: #1a1a2e; border-bottom: 2px solid #4a6cf7; padding-bottom: 4pt; margin-top: 18pt; }
-h2 { font-size: 14pt; color: #1a1a2e; border-bottom: 1px solid #ddd; padding-bottom: 3pt; margin-top: 14pt; }
-h3 { font-size: 11.5pt; color: #4a6cf7; margin-top: 10pt; }
-h4 { font-size: 10.5pt; color: #333; margin-top: 8pt; }
-p { margin: 4pt 0; text-align: justify; }
-img { max-width: 100%; height: auto; border: 1px solid #ccc; border-radius: 4pt; margin: 8pt 0; display: block; }
-pre { background: #f5f5f5; padding: 8pt 10pt; border-radius: 4pt; font-size: 8.5pt; font-family: 'DejaVu Sans Mono', 'Noto Color Emoji', monospace; overflow-x: auto; page-break-inside: avoid; }
-code { background: #f0f0f0; padding: 1pt 3pt; border-radius: 2pt; font-size: 9pt; font-family: 'DejaVu Sans Mono', 'Noto Color Emoji', monospace; }
+@page { margin: 1.8cm 2cm; @bottom-center { content: "OŠ Toneta Čufarja Jesenice"; font-size: 8pt; color: #999; } }
+body { font-family: 'Noto Sans', 'DejaVu Sans', 'Noto Color Emoji', sans-serif; font-size: 11pt; line-height: 1.6; color: #333; }
+h1 { font-size: 19pt; color: #1a1a2e; border-bottom: 2px solid #4a6cf7; padding-bottom: 4pt; margin-top: 20pt; font-family: 'Noto Sans', 'DejaVu Sans', 'Noto Color Emoji', sans-serif; }
+h2 { font-size: 15pt; color: #1a1a2e; border-bottom: 2px solid #4a6cf7; padding-bottom: 3pt; margin-top: 16pt; font-family: 'Noto Sans', 'DejaVu Sans', 'Noto Color Emoji', sans-serif; }
+h3 { font-size: 12.5pt; color: #4a6cf7; margin-top: 12pt; font-family: 'Noto Sans', 'DejaVu Sans', 'Noto Color Emoji', sans-serif; }
+h4 { font-size: 11pt; color: #333; margin-top: 8pt; font-family: 'Noto Sans', 'DejaVu Sans', 'Noto Color Emoji', sans-serif; }
+p { margin: 5pt 0; text-align: justify; }
+img { max-width: 100%; height: auto; border: 1px solid #ddd; border-radius: 4pt; margin: 10pt 0; display: block; }
+pre { background: #f5f5f5; padding: 10pt 12pt; border-radius: 4pt; font-size: 9pt; font-family: 'DejaVu Sans Mono', 'Noto Color Emoji', monospace; overflow-x: auto; page-break-inside: avoid; }
+code { background: #f0f0f0; padding: 1pt 3pt; border-radius: 2pt; font-size: 9.5pt; font-family: 'DejaVu Sans Mono', 'Noto Color Emoji', monospace; }
 blockquote { border-left: 4pt solid #4a6cf7; margin: 10pt 0; padding: 6pt 12pt; background: #f8f9fa; color: #555; page-break-inside: avoid; }
-hr { border: none; border-top: 1pt solid #ddd; margin: 14pt 0; }
-table { border-collapse: collapse; width: 100%; margin: 8pt 0; font-size: 9.5pt; page-break-inside: avoid; }
-th, td { border: 1px solid #ddd; padding: 4pt 8pt; text-align: left; }
+hr { border: none; border-top: 1pt solid #ddd; margin: 16pt 0; }
+table { border-collapse: collapse; width: 100%; margin: 10pt 0; font-size: 10pt; page-break-inside: avoid; }
+th, td { border: 1px solid #ddd; padding: 5pt 9pt; text-align: left; }
 th { background: #f0f2f5; font-weight: 600; }
-ul, ol { padding-left: 20pt; margin: 4pt 0; }
-li { margin-bottom: 2pt; }
-.title-page { text-align: center; padding-top: 80pt; }
-.title-page h1 { font-size: 22pt; border: none; margin-bottom: 0; }
-.title-page .sub { font-size: 10pt; color: #888; margin-top: 4pt; }
-.title-page hr { width: 60%; margin: 20pt auto; border-top: 2px solid #4a6cf7; }
+ul, ol { padding-left: 22pt; margin: 5pt 0; }
+li { margin-bottom: 3pt; }
+.title-page { text-align: center; padding-top: 60pt; }
+.title-page h1 { font-size: 24pt; border: none; margin-bottom: 0; }
+.title-page .sub { font-size: 11pt; color: #888; margin-top: 4pt; }
+.title-page hr { width: 60%; margin: 22pt auto; border-top: 2px solid #4a6cf7; }
 .page-break { page-break-before: always; }
 """
 
