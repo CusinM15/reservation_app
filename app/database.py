@@ -18,13 +18,11 @@ import os
 from app.config import settings
 
 # ── Engine ────────────────────────────────────────────────────────────
-# Ustvari SQLAlchemy engine glede na DATABASE_URL.
-# Produkcija je vedno PostgreSQL. Pogoj za check_same_thread obstaja
-# samo zato, da lokalni razvoj z eksplicitno nastavljenim SQLite
-# DATABASE_URL še vedno deluje; v produkciji se vedno izvede {} veja.
+# Ustvari SQLAlchemy engine iz DATABASE_URL. Aplikacija je 100%
+# PostgreSQL — SQLite ni podprt nikjer (ne v produkciji, ne lokalno).
 engine = create_engine(
     settings.DATABASE_URL,
-    connect_args={} if "postgresql" in settings.DATABASE_URL else {"check_same_thread": False},
+    connect_args={},
 )
 
 # ── SessionLocal ──────────────────────────────────────────────────────

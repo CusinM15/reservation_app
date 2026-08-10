@@ -5,9 +5,9 @@
 # (config.py se izvede ob importu), pripravi TestClient in pomožne
 # fixtureje za ustvarjanje uporabnikov ter čiščenje baze med testi.
 #
-# Zakaj PostgreSQL in ne SQLite? Produkcija je 100% PostgreSQL (SQLite
-# je bil odstranjen — config.py zahteva DATABASE_URL). Testi morajo
-# teči na isti bazi kot produkcija.
+# Zakaj PostgreSQL? Produkcija je 100% PostgreSQL (config.py zahteva
+# DATABASE_URL in SQLite ni podprt). Testi morajo teči na isti bazi
+# kot produkcija.
 # ─────────────────────────────────────────────────────────────────────────
 
 import os
