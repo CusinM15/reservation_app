@@ -197,6 +197,10 @@ def create_ocenjevanje(data: AssessmentCreate, request: Request, db: Session = D
     Ocenjevanje uspe, vodstvo pa dobi obvestilo, da lahko ukrepa.
     """
     _validate_razred(data.razred)
+
+    # Datum ne sme biti v preteklosti (API validacija, UI to že prepreči).
+    if data.date < date.today():
+        raise HTTPException(status_code=400, detail="Datum ne sme biti v preteklosti.")
     
     # Get current user name
     user_id = request.cookies.get("user_id")
@@ -220,8 +224,12 @@ def create_ocenjevanje(data: AssessmentCreate, request: Request, db: Session = D
         
         # Check weekly limits
         _check_weekly_limit(db, data.razred, data.date, data.ponavljanje)
-        
-        assessment = Assessment(**data.model_dump())
+
+        # Varnost: teacher_id vedno iz seje, NIKOLI od clienta (prepreči
+        # spoofing — ustvarjanje ocenjevanja v imenu drugega učitelja).
+        payload = data.model_dump()
+        payload["teacher_id"] = current_user.id if current_user else None
+        assessment = Assessment(**payload)
         db.add(assessment)
         try:
             db.commit()

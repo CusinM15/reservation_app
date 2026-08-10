@@ -175,6 +175,11 @@ def create_rezervacija(data: ReservationCreate, request: Request, db: Session = 
     if data.razred:
         _validate_razred(data.razred)
     _validate_hour(data.hour)
+
+    # Datum ne sme biti v preteklosti — UI to prepreči, API pa mora
+    # enako preveriti (drugače lahko kdo ustvari rezervacijo za nazaj).
+    if data.date < date.today():
+        raise HTTPException(status_code=400, detail="Datum ne sme biti v preteklosti.")
     
     # Za tablice je obvezno navesti število (qty), ker lahko več
     # učiteljev sočasno uporablja tablice. Za ostale prostore qty ni smiseln.
@@ -209,8 +214,13 @@ def create_rezervacija(data: ReservationCreate, request: Request, db: Session = 
         # Now do the actual checks
         _check_tablice_capacity(db, data.prostor, data.date, data.hour, data.qty or 0)
         _check_unique_space(db, data.prostor, data.date, data.hour)
-        
-        reservation = Reservation(**data.model_dump())
+
+        # Varnost: teacher_id vedno iz seje (prijavljeni uporabnik), NIKOLI
+        # od clienta. Prej je client lahko poslal poljuben teacher_id in s tem
+        # ustvaril rezervacijo v imenu drugega učitelja (spoofing/IDOR).
+        payload = data.model_dump()
+        payload["teacher_id"] = current_user.id if current_user else None
+        reservation = Reservation(**payload)
         db.add(reservation)
         
         # Audit log — pred commitom, da je v isti transakciji
@@ -487,6 +497,10 @@ def create_weekly_series(
     if data.date_to < data.date_from:
         raise HTTPException(status_code=400, detail="date_to mora biti >= date_from")
 
+    # Serija ne sme segati v preteklost.
+    if data.date_from < date.today():
+        raise HTTPException(status_code=400, detail="date_from ne sme biti v preteklosti.")
+
     # Najdi prvi datum >= date_from, ki ustreza weekday
     first = data.date_from
     delta = (data.weekday - first.weekday()) % 7
@@ -533,6 +547,10 @@ def create_full_day_series(
 
     if data.date_to < data.date_from:
         raise HTTPException(status_code=400, detail="date_to mora biti >= date_from")
+
+    # Serija ne sme segati v preteklost.
+    if data.date_from < date.today():
+        raise HTTPException(status_code=400, detail="date_from ne sme biti v preteklosti.")
 
     hours = data.hours if data.hours else list(range(0, 8))
     for h in hours:
