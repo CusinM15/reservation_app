@@ -48,7 +48,7 @@ class AuthMiddleware(BaseHTTPMiddleware):
         # ter statične datoteke in dokumentacija.
         public = ["/auth/login", "/auth/forgot-password", "/auth/reset-password", "/health", "/", "/history", "/api/razredi", "/api/prostori", "/api/schedule"]
         is_public = any(path == p for p in public) or path.startswith("/static") or path.startswith("/slike") or path.startswith("/docs/")
-        if not is_public and not request.cookies.get("user_id"):
+        if not is_public and not get_current_user_id(request):
             return RedirectResponse(url="/auth/login")
         return await call_next(request)
 
@@ -103,7 +103,7 @@ def health():
 # in pogosto dlje časa razmišljajo med vnosom.
 @app.get("/")
 def root(request: Request):
-    user_id = request.cookies.get("user_id")
+    user_id = get_current_user_id(request)
     if user_id:
         from app.database import SessionLocal
         db = SessionLocal()
@@ -153,7 +153,7 @@ def get_schedule():
 @app.get("/history", response_class=HTMLResponse)
 def history_page(request: Request):
     """Pokaži audit log — samo za prijavljenega admina."""
-    user_id = request.cookies.get("user_id")
+    user_id = get_current_user_id(request)
     if not user_id:
         return RedirectResponse(url="/auth/login")
     try:
@@ -188,6 +188,7 @@ app.include_router(docs.router)
 # Če mapa ne obstaja (npr. v Docker sliki brez dokumentacije), ne mountamo.
 # Static files: slike za dokumentacijo
 import os
+from app.security import get_current_user_id
 slike_dir = os.path.join(os.path.dirname(__file__), "..", "documentation", "slike")
 if os.path.exists(slike_dir):
     app.mount("/slike", StaticFiles(directory=slike_dir), name="slike")

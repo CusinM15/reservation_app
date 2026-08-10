@@ -85,12 +85,18 @@
                     <td style="white-space:nowrap;">
                         <a href="#" class="btn btn-warning" onclick="toggleEdit({{ user.id }})">Uredi</a>
                         {% if user.is_active %}
-                        <a href="/auth/admin/users/{{ user.id }}/deactivate" class="btn btn-danger">Deaktiviraj</a>
+                        <form method="POST" action="/auth/admin/users/{{ user.id }}/deactivate" style="display:inline;">
+                            <button type="submit" class="btn btn-danger">Deaktiviraj</button>
+                        </form>
                         {% else %}
-                        <a href="/auth/admin/users/{{ user.id }}/activate" class="btn btn-success">Aktiviraj</a>
+                        <form method="POST" action="/auth/admin/users/{{ user.id }}/activate" style="display:inline;">
+                            <button type="submit" class="btn btn-success">Aktiviraj</button>
+                        </form>
                         {% endif %}
                         {% if user.id != 1 %}
-                        <a href="/auth/admin/users/{{ user.id }}/delete" class="btn btn-danger" onclick="return confirm('Ste prepričani? Izbrisani bodo tudi vsi podatki uporabnika.')">Izbriši</a>
+                        <form method="POST" action="/auth/admin/users/{{ user.id }}/delete" style="display:inline;" onsubmit="return confirm('Ste prepričani? Izbrisani bodo tudi vsi podatki uporabnika.');">
+                            <button type="submit" class="btn btn-danger">Izbriši</button>
+                        </form>
                         {% endif %}
                     </td>
                 </tr>

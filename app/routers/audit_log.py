@@ -17,6 +17,7 @@ from sqlalchemy.orm import Session, joinedload
 from app.database import get_db
 from app.models import AuditLog, User, RoleEnum
 from app.config import settings
+from app.security import get_current_user_id
 
 router = APIRouter(prefix="/api/audit-log", tags=["audit-log"])
 templates = Jinja2Templates(directory="app/templates")
@@ -29,7 +30,7 @@ def _require_admin(request: Request, db: Session):
     ker audit log vsebuje občutljive podatke o brisanju uporabnikov
     in spremembah vlog.
     """
-    user_id = request.cookies.get("user_id")
+    user_id = get_current_user_id(request)
     if not user_id:
         raise HTTPException(status_code=401, detail="Niste prijavljeni")
     user = db.query(User).filter(User.id == int(user_id)).first()

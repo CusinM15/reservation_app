@@ -33,6 +33,7 @@ from app.config import settings
 from app.race import register_intent, check_and_raise, cleanup, get_lock
 from app.audit import log_audit
 import smtplib, ssl
+from app.security import get_current_user_id
 from email.mime.text import MIMEText
 
 router = APIRouter(prefix="/api/ocenjevanja", tags=["ocenjevanja"])
@@ -203,7 +204,7 @@ def create_ocenjevanje(data: AssessmentCreate, request: Request, db: Session = D
         raise HTTPException(status_code=400, detail="Datum ne sme biti v preteklosti.")
     
     # Get current user name
-    user_id = request.cookies.get("user_id")
+    user_id = get_current_user_id(request)
     current_user = db.query(User).filter(User.id == int(user_id)).first() if user_id else None
     user_name = f"{current_user.first_name} {current_user.last_name}".strip() if current_user else "?"
     
@@ -269,7 +270,7 @@ def create_ocenjevanje(data: AssessmentCreate, request: Request, db: Session = D
             pass  # email is best-effort
         
         cleanup(resource_key)
-        log_audit(db, user_id=int(request.cookies.get("user_id") or 0), username=user_name,
+        log_audit(db, user_id=get_current_user_id(request) or 0, username=user_name,
                   action="create_ocenjevanje",
                   details=f"razred={data.razred}, date={data.date}, ponavljanje={data.ponavljanje}")
         return assessment
@@ -287,7 +288,7 @@ def export_ocenjevanja_csv(
     
     CSV vsebuje: Datum, Razred, Tip (Ponavljanje/Običajno), Učitelj, ID.
     """
-    user_id = request.cookies.get("user_id")
+    user_id = get_current_user_id(request)
     if not user_id:
         raise HTTPException(status_code=401, detail="Niste prijavljeni")
     user = db.query(User).filter(User.id == int(user_id)).first()
@@ -330,7 +331,7 @@ def delete_ocenjevanje(id: int, request: Request, db: Session = Depends(get_db))
     Pravice: avtor, admin ali vodstvo.
     Beležimo v audit log.
     """
-    user_id = request.cookies.get("user_id")
+    user_id = get_current_user_id(request)
     if not user_id:
         raise HTTPException(status_code=401, detail="Niste prijavljeni")
     

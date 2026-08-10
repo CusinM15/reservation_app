@@ -33,6 +33,12 @@ class Settings:
     # štarta — nobenega tihega SQLite fallbacka v produkciji.
     DATABASE_URL = os.getenv("DATABASE_URL")
 
+    # ── SECRET_KEY ──────────────────────────────────────────────────
+    # OBVEZEN — uporablja se za podpisovanje session cookieja (user_id),
+    # da ga ni mogoče ponarediti. Generiraj npr.:
+    #   python3 -c "import secrets; print(secrets.token_urlsafe(48))"
+    SECRET_KEY = os.getenv("SECRET_KEY")
+
     # ── Kapaciteta tablic ───────────────────────────────────────────
     # Največje število tablic, ki jih je mogoče rezervirati v eni uri.
     TABLICE_MAX = int(os.getenv("TABLICE_MAX", 28))
@@ -97,7 +103,13 @@ settings = Settings()
 if not settings.DATABASE_URL:
     raise RuntimeError(
         "DATABASE_URL ni nastavljen! Aplikacija zahteva PostgreSQL "
-        "(npr. postgresql://user:pass@host:5432/dbname)."
+        "(npr. postgresql://user:***@host:5432/dbname)."
+    )
+
+if not settings.SECRET_KEY:
+    raise RuntimeError(
+        "SECRET_KEY ni nastavljen! Uporablja se za podpisovanje session "
+        "cookieja. Generiraj: python3 -c \"import secrets; print(secrets.token_urlsafe(48))\""
     )
 
 

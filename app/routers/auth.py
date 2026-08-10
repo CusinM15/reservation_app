@@ -28,6 +28,7 @@ from app.audit import log_audit
 from app.models import User, RoleEnum
 from app.config import settings, validate_password_strength
 from app.routers.blocked_dates import _send_email
+from app.security import sign_user_id, get_current_user_id
 
 router = APIRouter(prefix="/auth", tags=["auth"])
 templates = Jinja2Templates(directory="app/templates")
@@ -113,7 +114,9 @@ def login(
     
     response = RedirectResponse(url="/", status_code=303)
     # Session cookies - no max_age, deleted on browser close
-    response.set_cookie(key="user_id", value=str(user.id), httponly=True, samesite="lax")
+    # ⚠️ user_id je PODPISAN (itsdangerous) — brez podpisa bi lahko vsak
+    # nastavil user_id=1 in postal admin (auth bypass).
+    response.set_cookie(key="user_id", value=sign_user_id(user.id), httponly=True, samesite="lax")
     response.set_cookie(key="role", value=user.role, httponly=True, samesite="lax")
     return response
 
@@ -134,7 +137,7 @@ def get_current_user(request: Request, db: Session = Depends(get_db)):
     Uporablja se iz JavaScript-a za prikaz imena in vloge v UI.
     full_name se izračuna iz first_name + last_name.
     """
-    user_id = request.cookies.get("user_id")
+    user_id = get_current_user_id(request)
     if not user_id:
         raise HTTPException(status_code=401, detail="Ni prijavljen")
     user = db.query(User).filter(User.id == int(user_id)).first()
@@ -305,7 +308,7 @@ def change_password(
     
     Zahteva staro geslo za potrditev identitete. Beležimo v audit log.
     """
-    user_id = request.cookies.get("user_id")
+    user_id = get_current_user_id(request)
     if not user_id:
         raise HTTPException(status_code=401, detail="Niste prijavljeni")
     
@@ -337,7 +340,7 @@ def change_password(
 @router.get("/admin/users", response_class=HTMLResponse)
 def admin_users_page(request: Request, db: Session = Depends(get_db)):
     """Prikaži seznam vseh uporabnikov za admin-a."""
-    user_id = request.cookies.get("user_id")
+    user_id = get_current_user_id(request)
     if not user_id:
         return RedirectResponse(url="/auth/login")
     current_user = db.query(User).filter(User.id == int(user_id)).first()
@@ -364,7 +367,7 @@ def create_user(
     Preveri moč gesla in unikatnost uporabniškega imena.
     Če email ni podan, shranimo None (ni obvezen).
     """
-    user_id = request.cookies.get("user_id")
+    user_id = get_current_user_id(request)
     current_user = db.query(User).filter(User.id == int(user_id)).first()
     if current_user.role != RoleEnum.admin:
         return HTMLResponse("Nimate admin pravic", status_code=403)
@@ -395,7 +398,7 @@ def create_user(
     return RedirectResponse(url="/auth/admin/users", status_code=303)
 
 
-@router.get("/admin/users/{id}/deactivate")
+@router.post("/admin/users/{id}/deactivate")
 def deactivate_user(id: int, request: Request, db: Session = Depends(get_db)):
     """Deaktiviraj uporabnika (ne izbriše — samo onemogoči prijavo).
     
@@ -403,7 +406,7 @@ def deactivate_user(id: int, request: Request, db: Session = Depends(get_db)):
     (rezervacije ostanejo v bazi). Deaktiviran uporabnik se ne more
     prijaviti, vendar njegove rezervacije ostanejo vidne.
     """
-    user_id = request.cookies.get("user_id")
+    user_id = get_current_user_id(request)
     current_user = db.query(User).filter(User.id == int(user_id)).first()
     if current_user.role != RoleEnum.admin:
         return HTMLResponse("Nimate admin pravic", status_code=403)
@@ -418,10 +421,10 @@ def deactivate_user(id: int, request: Request, db: Session = Depends(get_db)):
     return RedirectResponse(url="/auth/admin/users", status_code=303)
 
 
-@router.get("/admin/users/{id}/activate")
+@router.post("/admin/users/{id}/activate")
 def activate_user(id: int, request: Request, db: Session = Depends(get_db)):
     """Ponovno aktiviraj deaktiviranega uporabnika."""
-    user_id = request.cookies.get("user_id")
+    user_id = get_current_user_id(request)
     current_user = db.query(User).filter(User.id == int(user_id)).first()
     if current_user.role != RoleEnum.admin:
         return HTMLResponse("Nimate admin pravic", status_code=403)
@@ -436,7 +439,7 @@ def activate_user(id: int, request: Request, db: Session = Depends(get_db)):
     return RedirectResponse(url="/auth/admin/users", status_code=303)
 
 
-@router.get("/admin/users/{id}/delete")
+@router.post("/admin/users/{id}/delete")
 def delete_user(id: int, request: Request, db: Session = Depends(get_db)):
     """Izbriši uporabnika in njegove rezervacije/ocenjevanja.
     
@@ -444,7 +447,7 @@ def delete_user(id: int, request: Request, db: Session = Depends(get_db)):
     rezervacije in ocenjevanja, ki jih je uporabnik ustvaril.
     Admin ne more izbrisati samega sebe (zaščita).
     """
-    user_id = request.cookies.get("user_id")
+    user_id = get_current_user_id(request)
     current_user = db.query(User).filter(User.id == int(user_id)).first()
     if current_user.role != RoleEnum.admin:
         return HTMLResponse("Nimate admin pravic", status_code=403)
@@ -484,7 +487,7 @@ def update_user(
     Če new_password ni prazen, spremeni tudi geslo.
     Sicer geslo ostane nespremenjeno.
     """
-    user_id = request.cookies.get("user_id")
+    user_id = get_current_user_id(request)
     current_user = db.query(User).filter(User.id == int(user_id)).first()
     if current_user.role != RoleEnum.admin:
         return HTMLResponse("Nimate admin pravic", status_code=403)
