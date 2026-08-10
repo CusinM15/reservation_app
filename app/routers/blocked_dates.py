@@ -33,6 +33,7 @@ from app.database import get_db
 from app.models import BlockedDate, User, Assessment, RoleEnum
 from app.config import settings
 from app.audit import log_audit
+from app.security import get_current_user_id
 
 router = APIRouter(prefix="/api/blocked-dates", tags=["blocked-dates"])
 
@@ -135,7 +136,7 @@ def create_blocked_dates(
     
     To je idempotentna operacija — če datum že obstaja, se preskoči.
     """
-    user_id = request.cookies.get("user_id")
+    user_id = get_current_user_id(request)
     if not user_id:
         raise HTTPException(status_code=401, detail="Niste prijavljeni")
     uid = _check_allowed(user_id, db)
@@ -223,7 +224,7 @@ def delete_blocked_date(
     Ne obnovi avtomatsko prej pobrisanih ocenjevanj — to mora
     učitelj storiti ročno.
     """
-    user_id = request.cookies.get("user_id")
+    user_id = get_current_user_id(request)
     if not user_id:
         raise HTTPException(status_code=401, detail="Niste prijavljeni")
     uid = _check_allowed(user_id, db)

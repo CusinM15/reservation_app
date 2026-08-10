@@ -20,13 +20,14 @@ from sqlalchemy.orm import Session, joinedload
 
 from app.database import get_db
 from app.models import Reservation, Assessment, User, RoleEnum
+from app.security import get_current_user_id
 
 router = APIRouter(prefix="/api/export", tags=["export"])
 
 
 def _require_admin_or_vodstvo(request: Request, db: Session):
     """Preveri, da je uporabnik admin ali vodstvo."""
-    user_id = request.cookies.get("user_id")
+    user_id = get_current_user_id(request)
     if not user_id:
         raise HTTPException(status_code=401, detail="Niste prijavljeni")
     user = db.query(User).filter(User.id == int(user_id)).first()

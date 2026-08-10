@@ -39,6 +39,7 @@ from app.config import settings
 from app.race import register_intent, check_and_raise, cleanup, get_lock
 from app.routers.blocked_dates import _send_email
 from app.audit import log_audit
+from app.security import get_current_user_id
 
 router = APIRouter(prefix="/api/rezervacije", tags=["rezervacije"])
 
@@ -187,7 +188,7 @@ def create_rezervacija(data: ReservationCreate, request: Request, db: Session = 
         raise HTTPException(status_code=400, detail="Za tablice morate navesti število (qty)")
     
     # Get current user name
-    user_id = request.cookies.get("user_id")
+    user_id = get_current_user_id(request)
     current_user = db.query(User).filter(User.id == int(user_id)).first() if user_id else None
     user_name = f"{current_user.first_name} {current_user.last_name}".strip() if current_user else "?"
     
@@ -224,7 +225,7 @@ def create_rezervacija(data: ReservationCreate, request: Request, db: Session = 
         db.add(reservation)
         
         # Audit log — pred commitom, da je v isti transakciji
-        log_audit(db, user_id=int(request.cookies.get("user_id") or 0), username=user_name,
+        log_audit(db, user_id=get_current_user_id(request) or 0, username=user_name,
                   action="create_rezervacija",
                   details=f"prostor={data.prostor}, date={data.date}, hour={data.hour}, razred={data.razred}, qty={data.qty}")
 
@@ -253,7 +254,7 @@ def delete_rezervacija(id: int, request: Request, db: Session = Depends(get_db))
     Beležimo v audit log pred brisanjem (da ohranimo podatke o tem,
     kaj je bilo pobrisano).
     """
-    user_id = request.cookies.get("user_id")
+    user_id = get_current_user_id(request)
     if not user_id:
         raise HTTPException(status_code=401, detail="Niste prijavljeni")
     
@@ -301,7 +302,7 @@ def delete_rezervacija(id: int, request: Request, db: Session = Depends(get_db))
 
 def _require_admin_or_vodstvo(request: Request, db: Session) -> User:
     """Preveri, da je uporabnik admin ali vodstvo. Vrne uporabnika."""
-    user_id = request.cookies.get("user_id")
+    user_id = get_current_user_id(request)
     if not user_id:
         raise HTTPException(status_code=401, detail="Niste prijavljeni")
     user = db.query(User).filter(User.id == int(user_id)).first()
@@ -701,7 +702,7 @@ def delete_series(
     vseh rezervacij v seriji. Če je serija mešana (več avtorjev),
     lahko briše samo admin/vodstvo.
     """
-    user_id = request.cookies.get("user_id")
+    user_id = get_current_user_id(request)
     if not user_id:
         raise HTTPException(status_code=401, detail="Niste prijavljeni")
     current = db.query(User).filter(User.id == int(user_id)).first()
@@ -745,7 +746,7 @@ def export_rezervacije_csv(
     CSV vsebuje stolpce: Datum, Ura, Prostor, Učitelj, Razred, Količina, ID.
     Ura se prikaže v berljivi obliki (npr. "7.00 - 7.45") iz SCHEDULE konfiguracije.
     """
-    user_id = request.cookies.get("user_id")
+    user_id = get_current_user_id(request)
     if not user_id:
         raise HTTPException(status_code=401, detail="Niste prijavljeni")
     user = db.query(User).filter(User.id == int(user_id)).first()
