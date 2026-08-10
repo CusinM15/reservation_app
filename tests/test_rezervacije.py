@@ -148,3 +148,47 @@ def test_delete_others_reservation_forbidden(client, make_user):
     login(client, u2.username)
     r = client.delete(f"/api/rezervacije/{rid}")
     assert r.status_code == 403
+
+
+# ── Dodatne validacije in RBAC ────────────────────────────────────────
+
+def test_invalid_razred_rejected(client, make_user):
+    u = make_user()
+    login(client, u.username)
+    r = _create(client, {"date": FUTURE, "hour": 0, "prostor": "ladja", "razred": "9.z"}, expected=400)
+    assert "Neveljaven razred" in r.json()["detail"]
+
+
+def test_delete_admin_allowed(client, make_user):
+    """Admin lahko briše tujo rezervacijo (učitelj ne sme)."""
+    teacher = make_user()
+    login(client, teacher.username)
+    rid = _create(client, {"date": FUTURE, "hour": 5, "prostor": "ladja", "razred": "5.a"}).json()["id"]
+    client.post("/auth/logout")
+
+    admin = make_user(role="admin")
+    login(client, admin.username)
+    r = client.delete(f"/api/rezervacije/{rid}")
+    assert r.status_code == 200
+
+
+def test_delete_nonexistent_404(client, make_user):
+    admin = make_user(role="admin")
+    login(client, admin.username)
+    assert client.delete("/api/rezervacije/999999").status_code == 404
+
+
+def test_list_filter_datum_prostor(client, make_user):
+    u = make_user()
+    login(client, u.username)
+    _create(client, {"date": FUTURE, "hour": 0, "prostor": "tablice", "razred": "5.a", "qty": 5})
+    _create(client, {"date": FUTURE, "hour": 1, "prostor": "racunalnica", "razred": "5.a"})
+    _create(client, {"date": (date.today() + timedelta(days=9)).isoformat(), "hour": 0,
+                     "prostor": "tablice", "razred": "5.a", "qty": 5})
+
+    r = client.get("/api/rezervacije", params={"date": FUTURE, "prostor": "tablice"})
+    assert r.status_code == 200
+    rows = r.json()
+    assert len(rows) == 1
+    assert rows[0]["prostor"] == "tablice"
+    assert rows[0]["teacher_name"]  # ime učitelja je izpolnjeno
