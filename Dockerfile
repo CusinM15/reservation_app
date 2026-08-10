@@ -45,7 +45,6 @@ RUN useradd -m -u 1000 appuser
 
 COPY --from=builder /root/.local /home/appuser/.local
 COPY app/ app/
-COPY data/ data/
 
 RUN chown -R appuser:appuser /app
 USER appuser
