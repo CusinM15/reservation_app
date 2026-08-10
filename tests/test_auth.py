@@ -170,3 +170,42 @@ def test_reset_token_one_time(client, make_user):
     })
     assert r.status_code == 200
     assert "Neveljavna ali potekla" in r.text
+
+
+def test_reset_password_expired_token(client, make_user):
+    """Token s preteklim časom poteka (unix=1 → 1970) mora biti zavrnjen."""
+    u = make_user(email="expired@test.si")
+    db = SessionLocal()
+    try:
+        user = db.query(User).filter(User.id == u.id).first()
+        user.reset_token = "abc:1"
+        db.commit()
+    finally:
+        db.close()
+
+    r = client.get("/auth/reset-password",
+                   params={"token": "abc:1", "email": "expired@test.si"})
+    assert r.status_code == 200
+    assert "Neveljavna ali potekla" in r.text
+
+
+# ── Odjava in nedostopnost brez prijave ───────────────────────────────
+
+def test_change_password_requires_login(client):
+    """change-password je zaščiten z middleware-om — brez prijave 307."""
+    r = client.post("/auth/change-password",
+                    data={"old_password": "x", "new_password": "y"},
+                    follow_redirects=False)
+    assert r.status_code == 307
+
+
+def test_logout_clears_session(client, make_user):
+    u = make_user()
+    login(client, u.username)
+    assert client.get("/auth/me").status_code == 200
+
+    r = client.get("/auth/logout", follow_redirects=False)
+    assert r.status_code == 307  # RedirectResponse default (ne 303 kot login)
+
+    # po odjavi je /auth/me spet nedostopen
+    assert client.get("/auth/me", follow_redirects=False).status_code == 307

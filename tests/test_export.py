@@ -85,3 +85,30 @@ def test_export_date_range_invalid(client, make_user):
     login(client, admin.username)
     r = client.get(f"/api/export/rezervacije?date_from={FUTURE}&date_to=2020-01-01")
     assert r.status_code == 400
+
+
+# ── Legacy CSV endpoint (/api/rezervacije/export/csv) ─────────────────
+
+def test_legacy_export_csv_admin(client, make_user):
+    _setup_data(client, make_user)
+    admin = make_user(role="admin")
+    login(client, admin.username)
+
+    r = client.get(f"/api/rezervacije/export/csv?date_from={FUTURE}&date_to={FUTURE}")
+    assert r.status_code == 200
+    assert "text/csv" in r.headers["content-type"]
+    assert "Datum,Ura,Prostor,Učitelj,Razred,Količina,ID" in r.text
+    assert "7.00 - 7.45" in r.text  # SCHEDULE label za uro 0
+
+
+def test_legacy_export_teacher_forbidden(client, make_user):
+    teacher = make_user()
+    login(client, teacher.username)
+    r = client.get(f"/api/rezervacije/export/csv?date_from={FUTURE}&date_to={FUTURE}")
+    assert r.status_code == 403
+
+
+def test_export_unauthenticated_307(client):
+    r = client.get("/api/export/rezervacije?date_from=2026-01-01&date_to=2026-01-31",
+                   follow_redirects=False)
+    assert r.status_code == 307  # middleware preusmeri na login
