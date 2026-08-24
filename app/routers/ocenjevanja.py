@@ -8,8 +8,8 @@
 # - Max 2 običajni (non-ponavljanje) na teden
 # - Največ 1 ocenjevanje na dan na razred
 # - Prepoved ocenjevanj na 3 zaporedne dni (npr. pon, tor, sre)
-# - Če je datum blokiran (BlockedDate), se pošlje email blokatorju
-#   (vendar ocenjevanje vseeno uspe — to je opozorilo, ne preprečitev)
+# - Če je datum blokiran (BlockedDate), ocenjevanje ni dovoljeno (400)
+#   — dan dejavnosti za razred ima prednost pred ocenjevanjem
 #
 # Zakaj so omejitve implementirane na nivoju API-ja in ne baze?
 # Ker pravila vključujejo tedenske izračune (3 zaporedni dnevi, max 3/teden),
@@ -32,9 +32,7 @@ from app.schemas import AssessmentCreate, AssessmentOut
 from app.config import settings
 from app.race import register_intent, check_and_raise, cleanup, get_lock
 from app.audit import log_audit
-import smtplib, ssl
 from app.security import get_current_user_id
-from email.mime.text import MIMEText
 
 router = APIRouter(prefix="/api/ocenjevanja", tags=["ocenjevanja"])
 
@@ -188,14 +186,14 @@ def create_ocenjevanje(data: AssessmentCreate, request: Request, db: Session = D
     
     Postopek:
     1. Validacija razreda
-    2. Race condition zaščita (enako kot rezervacije)
-    3. Preverjanje tedenskih omejitev
-    4. Shranjevanje
-    5. Če je datum blokiran → email blokatorju (best-effort)
+    2. Preverjanje blokade (dan dejavnosti za razred → 400)
+    3. Race condition zaščita (enako kot rezervacije)
+    4. Preverjanje tedenskih omejitev
+    5. Shranjevanje
     
-    Zakaj obvestilo blokatorju namesto zavrnitve ocenjevanja?
-    Vodstvo lahko blokira datum, vendar se učitelj morda ne strinja.
-    Ocenjevanje uspe, vodstvo pa dobi obvestilo, da lahko ukrepa.
+    Zakaj zavrnitev? Dan dejavnosti (zaseden datum) za razred pomeni,
+    da razred ta dan ni na voljo za ocenjevanja — ocenjevanje se zavrne
+    s 400 in jasnim sporočilom za učitelja.
     """
     _validate_razred(data.razred)
 
@@ -223,6 +221,18 @@ def create_ocenjevanje(data: AssessmentCreate, request: Request, db: Session = D
                 detail=f"Termin ocenjevanja je v istem trenutku napovedal tudi {other}. Oba sta bila zavrnjena."
             )
         
+        # Dan dejavnosti (zaseden datum) za ta razred → ocenjevanje ni dovoljeno.
+        # Preveri se PRED ostalimi pravili, ker ima blokada prednost.
+        blocked = db.query(BlockedDate).filter(
+            BlockedDate.razred == data.razred,
+            BlockedDate.date == data.date
+        ).first()
+        if blocked:
+            raise HTTPException(
+                status_code=400,
+                detail=f"Za razred {data.razred} je {data.date.strftime('%d.%m.%Y')} dan dejavnosti — ocenjevanje na ta dan ni mogoče."
+            )
+
         # Check weekly limits
         _check_weekly_limit(db, data.razred, data.date, data.ponavljanje)
 
@@ -238,36 +248,6 @@ def create_ocenjevanje(data: AssessmentCreate, request: Request, db: Session = D
         except Exception:
             db.rollback()
             raise HTTPException(status_code=500, detail="Napaka pri shranjevanju ocenjevanja")
-        
-        # Check if this date is blocked for this class → send email to blocker
-        # Zakaj pošiljamo email? Da vodstvo ve, da je učitelj kljub blokadi
-        # napovedal ocenjevanje. To je mehanizem za komunikacijo.
-        try:
-            blocked = db.query(BlockedDate).filter(
-                BlockedDate.razred == data.razred,
-                BlockedDate.date == data.date
-            ).first()
-            if blocked:
-                creator = db.query(User).filter(User.id == blocked.created_by_id).first()
-                assessor = current_user
-                if creator and creator.email and settings.MAIL_PASSWORD:
-                    msg = MIMEText(
-                        f"Pozdravljeni,\n\n"
-                        f"{assessor.first_name} {assessor.last_name} je napovedal(a) ocenjevanje za "
-                        f"{data.razred} na dan {data.date}, "
-                        f"čeprav ste ta dan označili kot zasedenega.\n\n"
-                        f"Lep pozdrav,\nŠolski App"
-                    )
-                    msg["Subject"] = f"Ocenjevanje za {data.razred} na zaseden datum {data.date}"
-                    msg["From"] = settings.MAIL_FROM
-                    msg["To"] = creator.email
-                    context = ssl.create_default_context()
-                    with smtplib.SMTP(settings.MAIL_SERVER, settings.MAIL_PORT) as s:
-                        s.starttls(context=context)
-                        s.login(settings.MAIL_USERNAME, settings.MAIL_PASSWORD)
-                        s.send_message(msg)
-        except Exception:
-            pass  # email is best-effort
         
         cleanup(resource_key)
         log_audit(db, user_id=get_current_user_id(request) or 0, username=user_name,

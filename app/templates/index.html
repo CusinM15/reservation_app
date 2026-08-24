@@ -124,7 +124,7 @@
     .calendar-day.other-month { opacity: 0.4; }
     /* Današnji dan — moder rob za hiter vizualni namig. */
     .calendar-day.today { border-color: #4a6cf7; }
-    /* Zasedeni datumi (blocked) — vijolična barva za takojšnje prepoznavanje. */
+    /* Dnevi dejavnosti (blocked) — vijolična barva za takojšnje prepoznavanje. */
     .calendar-day.blocked-date { background: #f3e8ff; border-color: #7c3aed; opacity: 0.85; }
 
     /* --- 13. ZNAČKE OCENJEVANJ --- */
@@ -240,7 +240,7 @@
   <nav>
     <span class="brand">Šolski App</span>
     <a href="#" class="active" data-tab="rezervacije">Rezervacije</a>
-    <a href="#" data-tab="ocenjevanja">Ocenjevanje</a>
+    <a href="#" data-tab="ocenjevanja">Ocenjevanje in dnevi dejavnosti</a>
     <!-- ADMIN IN AUDIT POVEZAVE — prikazane le za admin vlogo.
          Skrijemo jih privzeto (style="display:none"), JS jih pokaže
          glede na vlogo uporabnika. Tako učitelji in vodstvo ne vidijo
@@ -350,14 +350,13 @@
     <!-- ================================================================
          ZAVIHEK: OCENJEVANJA
          Prikazuje mesečni koledar ocenjevanj z možnostjo filtriranja
-         po razredu, dodajanja novih ocenjevanj in upravljanja zasedenih
-         datumov.
+         po razredu, dodajanja novih ocenjevanj in upravljanja dni dejavnosti.
          ================================================================ -->
     <div id="section-ocenjevanja" class="section">
       <div class="card">
         <h2>Ocenjevanja</h2>
         <!-- FILTRI — izbira razreda, osveži, novo ocenjevanje in
-             upravljanje zasedenih datumov. Gumb "Zasedeni datumi" je
+             upravljanje dni dejavnosti. Gumb "Dnevi dejavnosti" je
              viden le pooblaščenim uporabnikom (prek JS). -->
         <div class="filters">
           <div>
@@ -366,11 +365,11 @@
           </div>
           <button class="btn btn-primary" onclick="loadAssessments()">Osveži</button>
           <button class="btn btn-outline" onclick="openOcModal()">+ Novo ocenjevanje</button>
-          <!-- GUMB ZA ZASEDENE DATUME — prikazan le uporabnikom z
+          <!-- GUMB ZA DNEVE DEJAVNOSTI — prikazan le uporabnikom z
                ID 1-4 ali vlogo admin/vodstvo. Omejitev zato, ker
                blokiranje datumov vpliva na celoten urnik in zahteva
                pooblastila. -->
-          <span id="block-btn-container"><button class="btn btn-outline" onclick="openBlockModal()">🚫 Zasedeni datumi</button></span>
+          <span id="block-btn-container"><button class="btn btn-outline" onclick="openBlockModal()">🚫 Dnevi dejavnosti</button></span>
         </div>
         <!-- KOLEDAR — dinamično generiran mesečni pregled. -->
         <div id="oc-calendar-container">
@@ -591,14 +590,14 @@
   </div>
 
   <!-- ================================================================
-       MODAL: ZASEDENI DATUMI
+       MODAL: DNEVI DEJAVNOSTI
        Omogoča blokiranje datumov za izbrane razrede (npr. kulturni dan,
        športni dan). Ko je datum blokiran, učitelji ne morejo dodajati
        ocenjevanj na ta dan. Prikaže tudi seznam obstoječih blokad.
        ================================================================ -->
   <div class="modal-overlay" id="block-modal">
     <div class="modal" style="max-width:500px;">
-      <h3>🚫 Zasedeni datumi</h3>
+      <h3>🚫 Dnevi dejavnosti</h3>
       <div class="form-group">
         <label>Razredi (držite Ctrl za več)</label>
         <select id="block-razredi" multiple style="height:180px;width:100%;"></select>
@@ -615,7 +614,7 @@
       </div>
       <div class="form-actions">
         <button class="btn btn-cancel" onclick="closeModal('block-modal')">Zapri</button>
-        <button class="btn btn-primary" onclick="addBlockedDates()">Dodaj zasedene datume</button>
+        <button class="btn btn-primary" onclick="addBlockedDates()">Dodaj dneve dejavnosti</button>
       </div>
       <div id="block-msg" style="margin-top:10px;font-size:0.9rem;"></div>
       <div id="block-list" style="margin-top:15px;max-height:250px;overflow-y:auto;"></div>
@@ -723,7 +722,7 @@
     //   4. Pomožne funkcije (helperji)
     //   5. Spreminjanje gesla
     //   6. Izvozi (rezervacije, ocenjevanja)
-    //   7. Zasedeni datumi (blocked dates)
+    //   7. Dnevi dejavnosti (blocked dates)
     //   8. Serije (tedenske, celodnevne)
     //   9. Rezervacije (prikaz, dodajanje, brisanje)
     //  10. Ocenjevanja (koledar, dodajanje, brisanje)
@@ -1077,8 +1076,8 @@
         } catch(e) { msgEl.style.color = 'red'; msgEl.textContent = 'Napaka pri povezavi s strežnikom.'; }
     }
 
-    // --- Zasedeni datumi ---
-    // Naloži vse zasedene (blokirane) datume s strežnika.
+    // --- Dnevi dejavnosti ---
+    // Naloži vse dneve dejavnosti (blokirane datume) s strežnika.
     // Pretvori jih v indeksiran objekt blockedDates{razred:{datum:true}}
     // za O(1) preverjanje. Kliče se ob zagonu in po vsaki spremembi.
     // Blokirani datumi pomenijo, da na ta dan ni možno dodati
@@ -1100,7 +1099,7 @@
     // Vrne true, če je datum v blockedDates[razred] indeksu.
     function isDateBlocked(razred, dateStr) { return blockedDates[razred] && blockedDates[razred][dateStr]; }
 
-    // Odpre modal za upravljanje zasedenih datumov.
+    // Odpre modal za upravljanje dni dejavnosti.
     // Napolni izbirnik razredov, nastavi privzeta datuma na danes
     // in prikaže seznam obstoječih blokad.
     function openBlockModal() {
@@ -1114,15 +1113,15 @@
       openModal('block-modal');
     }
 
-    // Prikaže seznam bodočih zasedenih datumov (od danes naprej)
+    // Prikaže seznam bodočih dni dejavnosti (od danes naprej)
     // v modalu. Vsak vnos ima gumb ✕ za brisanje. Za razvrščanje
     // uporabimo localeCompare na datumskih nizih (YYYY-MM-DD).
     async function renderBlockList() {
       const container = document.getElementById('block-list');
       const today = new Date().toISOString().split('T')[0];
       const filtered = allBlocked.filter(b => b.date >= today);
-      if (filtered.length === 0) { container.innerHTML = '<p style="color:#999;">Ni zasedenih datumov od danes naprej.</p>'; return; }
-      let html = '<h4 style="margin-bottom:8px;">Zasedeni datumi od danes naprej:</h4>';
+      if (filtered.length === 0) { container.innerHTML = '<p style="color:#999;">Ni dni dejavnosti od danes naprej.</p>'; return; }
+      let html = '<h4 style="margin-bottom:8px;">Dnevi dejavnosti od danes naprej:</h4>';
       const sorted = [...filtered].sort((a,b) => a.date.localeCompare(b.date));
       for (const b of sorted) {
         html += `<div style="display:flex;justify-content:space-between;padding:4px 0;border-bottom:1px solid #eee;">
@@ -1133,7 +1132,7 @@
       container.innerHTML = html;
     }
 
-    // Doda nove zasedene datume za izbrane razrede in obdobje.
+    // Doda nove dneve dejavnosti za izbrane razrede in obdobje.
     // Pošlje POST zahtevek s seznamom razredov in datumskim
     // obdobjem. Strežnik ustvari vnose v bazi in obvesti
     // prizadete učitelje (če so obstajala ocenjevanja na teh
@@ -1154,13 +1153,13 @@
         const json = await res.json();
         if (res.ok) {
           msgEl.style.color = 'green';
-          msgEl.textContent = json.message || 'Zasedeni datumi dodani!';
+          msgEl.textContent = json.message || 'Dnevi dejavnosti dodani!';
           if (json.deleted_assessments > 0) msgEl.textContent += ` (izbrisanih ${json.deleted_assessments} ocenjevanj, poslanih ${json.emails_sent} emailov)`;
           await loadAllBlockedDates(); renderBlockList(); loadAssessments();
         } else { msgEl.style.color = 'red'; msgEl.textContent = json.detail || 'Napaka.'; }
       } catch(e) { msgEl.style.color = 'red'; msgEl.textContent = 'Napaka pri povezavi.'; }
     }
-    // Izbriše posamezen zaseden datum (blokado) prek DELETE zahtevka.
+    // Izbriše posamezen dan dejavnosti (blokado) prek DELETE zahtevka.
     // Po brisanju osveži seznam blokad in koledar ocenjevanj.
     // To je potrebno, ker brisanje blokade lahko sprosti datum
     // za dodajanje novih ocenjevanj.
@@ -1515,11 +1514,11 @@
     // Izriše mesečni koledar ocenjevanj v HTML obliki.
     // Uporablja CSS grid (7 stolpcev) za dneve v tednu.
     // Vsak dan prikaže: številko, ocenjevanja (z barvnimi značkami),
-    // zasedene datume (vijolično) in gumb + za hitro dodajanje.
+    // dneve dejavnosti (vijolično) in gumb + za hitro dodajanje.
     // Obdeluje tudi predhodne/prazne celice za poravnavo prvega dne
     // v mesecu ter preostanek zadnjega tedna.
     // Legenda na dnu pojasnjuje barve: modra=običajno, rdeča=ponavljanje,
-    // vijolična=zaseden datum.
+    // vijolična=dan dejavnosti.
     function renderMonthlyCalendar(razred, month, assessments, showAll) {
       const [year, mon] = month.split('-').map(Number);
       const firstDay = new Date(year, mon-1, 1);
@@ -1558,7 +1557,7 @@
         if (isWeekend) cls += ' other-month';
         html += `<div class="${cls}" ${showBlocked ? '' : `onclick="quickOc('${razred}','${dateStr}')"`}>
           <div class="day-num">${day}</div>`;
-        if (showBlocked) html += `<div class="assessment-badge" style="background:#7c3aed;color:#fff;font-weight:600;"><span>Zasedeni: ${blockedRazredi.join(', ')}</span></div>`;
+        if (showBlocked) html += `<div class="assessment-badge" style="background:#7c3aed;color:#fff;font-weight:600;"><span>Dnevi dejavnosti: ${blockedRazredi.join(', ')}</span></div>`;
         if (asmMap[day]) {
           asmMap[day].forEach(a => {
             const asmCls = a.ponavljanje ? 'assessment-ponavljanje' : 'assessment-normal';
@@ -1576,7 +1575,7 @@
       html += `</div><div style="display:flex;gap:15px;justify-content:center;margin-top:10px;font-size:0.75rem;">
         <span><span style="display:inline-block;width:12px;height:12px;background:#cce5ff;border-radius:2px;"></span> Običajno ocenjevanje</span>
         <span><span style="display:inline-block;width:12px;height:12px;background:#ffcccc;border-radius:2px;"></span> Ponavljanje</span>
-        <span><span style="display:inline-block;width:12px;height:12px;background:#7c3aed;border-radius:2px;"></span> Zaseden datum</span>
+        <span><span style="display:inline-block;width:12px;height:12px;background:#7c3aed;border-radius:2px;"></span> Dan dejavnosti</span>
       </div>`;
       document.getElementById('oc-calendar-container').innerHTML = html;
     }

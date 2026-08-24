@@ -126,6 +126,31 @@ def test_assessment_teacher_id_from_session(client, make_user):
     assert r.status_code == 201, r.text
     assert r.json()["teacher_id"] == u.id
 
+def test_assessment_rejected_on_blocked_date_for_class(client, make_user):
+    """Dan dejavnosti (blokada) za razred → ocenjevanje na ta dan zavrnjeno (400)."""
+    # blocked-dates endpoint preskoči vikende — poišči prihodnji delavnik
+    day = date.today() + timedelta(days=1)
+    while day.weekday() >= 5:
+        day += timedelta(days=1)
+    day_str = day.isoformat()
+
+    # vodstvo/admin označi dan dejavnosti za 5.a
+    admin = make_user(role="admin")
+    login(client, admin.username)
+    r = client.post("/api/blocked-dates", json={"razredi": ["5.a"], "date_from": day_str, "date_to": day_str})
+    assert r.status_code == 201, r.text
+
+    # učitelj poskusi napovedati ocenjevanje za 5.a na ta dan → zavrnjeno
+    u = make_user()
+    login(client, u.username)
+    r = client.post("/api/ocenjevanja", json={"date": day_str, "razred": "5.a", "ponavljanje": False, "teacher_id": TID})
+    assert r.status_code == 400, r.text
+    assert "dejavnosti" in r.json()["detail"]
+
+    # drug razred (6.a) na isti dan NI blokiran → ocenjevanje uspe
+    r2 = client.post("/api/ocenjevanja", json={"date": day_str, "razred": "6.a", "ponavljanje": False, "teacher_id": TID})
+    assert r2.status_code == 201, r2.text
+
 # ── Brisanje ───────────────────────────────────────────────────────────
 
 def test_delete_own_reservation(client, make_user):
