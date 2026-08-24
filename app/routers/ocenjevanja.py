@@ -8,8 +8,8 @@
 # - Max 2 običajni (non-ponavljanje) na teden
 # - Največ 1 ocenjevanje na dan na razred
 # - Prepoved ocenjevanj na 3 zaporedne dni (npr. pon, tor, sre)
-# - Če je datum blokiran (BlockedDate), ocenjevanje ni dovoljeno (400)
-#   — dan dejavnosti za razred ima prednost pred ocenjevanjem
+# - Če je datum za ta razred dan dejavnosti (BlockedDate), se ocenjevanje
+#   zavrne s 400 — na dan dejavnosti ni možno napovedati ocenjevanja
 #
 # Zakaj so omejitve implementirane na nivoju API-ja in ne baze?
 # Ker pravila vključujejo tedenske izračune (3 zaporedni dnevi, max 3/teden),
@@ -186,8 +186,8 @@ def create_ocenjevanje(data: AssessmentCreate, request: Request, db: Session = D
     
     Postopek:
     1. Validacija razreda
-    2. Preverjanje blokade (dan dejavnosti za razred → 400)
-    3. Race condition zaščita (enako kot rezervacije)
+    2. Race condition zaščita (enako kot rezervacije)
+    3. Preverjanje blokade (dan dejavnosti za razred → 400)
     4. Preverjanje tedenskih omejitev
     5. Shranjevanje
     

@@ -233,7 +233,7 @@
 <body>
   <!-- ================================================================
        NAVIGACIJSKA VRSTICA
-       Vsebuje: logotip, zavihke (Rezervacije, Ocenjevanje), admin/
+       Vsebuje: logotip, zavihke (Rezervacije, Ocenjevanje in dnevi dejavnosti), admin/
        audit/export povezave (prikazane le po potrebi), stranske gumbe
        za navodila, uporabniške informacije in odjavo.
        ================================================================ -->
@@ -1615,6 +1615,13 @@
         ponavljanje: document.getElementById('oc-form-ponavljanje').checked,
         teacher_id: currentUser.id,
       };
+      // Dan dejavnosti: če je izbrani dan za ta razred označen kot dan
+      // dejavnosti, ocenjevanje ni možno — preprečimo že v brskalniku.
+      // Strežnik to preveri še enkrat (API je avtoritativen).
+      if (isDateBlocked(data.razred, data.date)) {
+        showMsg('Ta dan je za ta razred dan dejavnosti — ocenjevanje ni mogoče.', 'error');
+        return;
+      }
       try {
         const res = await fetch('/api/ocenjevanja', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(data) });
         const json = await res.json();

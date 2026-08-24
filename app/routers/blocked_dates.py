@@ -69,7 +69,7 @@ def _check_allowed(user_id, db: Session):
     user = db.query(User).filter(User.id == uid).first()
     if user and user.role in (RoleEnum.admin, RoleEnum.vodstvo):
         return uid
-    raise HTTPException(status_code=403, detail="Nimate pravic za upravljanje zasedenih datumov")
+    raise HTTPException(status_code=403, detail="Nimate pravic za upravljanje dni dejavnosti")
 
 
 # ── Pošiljanje emailov ────────────────────────────────────────────────
@@ -204,7 +204,7 @@ def create_blocked_dates(
               action="create_blocked_dates",
               details=f"razredi={data.razredi}, date_from={data.date_from}, date_to={data.date_to}, created={created_count}, deleted_assessments={deleted_assessments}")
     return {
-        "message": f"Dodanih {created_count} zasedenih datumov",
+        "message": f"Dodanih {created_count} dni dejavnosti",
         "deleted_assessments": deleted_assessments,
         "emails_sent": emails_sent,
     }
@@ -234,7 +234,7 @@ def delete_blocked_date(
 
     bd = db.query(BlockedDate).filter(BlockedDate.id == id).first()
     if not bd:
-        raise HTTPException(status_code=404, detail="Zaseden datum ne obstaja")
+        raise HTTPException(status_code=404, detail="Dan dejavnosti ne obstaja")
     user_name = f"{user.first_name} {user.last_name}".strip() or user.username
     log_audit(
         db, user_id=user.id, username=user_name, action="delete_blocked_date",
@@ -242,4 +242,4 @@ def delete_blocked_date(
     )
     db.delete(bd)
     db.commit()
-    return {"message": "Zaseden datum odstranjen."}
+    return {"message": "Dan dejavnosti odstranjen."}
