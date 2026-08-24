@@ -1,13 +1,17 @@
 #!/usr/bin/env bash
 # ─────────────────────────────────────────────────────────────────────────
-# scripts/clean_test_data.sh — Počisti TESTNE podatke iz rezervacij in ocenjevanj
+# scripts/clean_test_data.sh — Počisti TESTNE podatke (TRUNCATE, ne DROP)
 #
 # Uporaba (na k3s-1 ali k3s-2):
 #   git pull
 #   bash scripts/clean_test_data.sh
 #
-# POZOR: Izbriše VSE rezervacije in ocenjevanja (testni podatki).
-# Uporabniki, audit log in blokirani datumi ostanejo.
+# POZOR: TRUNCATE izprazni:
+#   - reservations      (vključno s serijskimi rezervacijami — series_id)
+#   - assessments       (ocenjevanja)
+#   - blocked_dates     (dnevi dejavnosti / zasedeni datumi)
+# Tabele ostanejo (prazne), ID-ji se resetirajo (RESTART IDENTITY).
+# Uporabniki in audit log ostanejo nedotaknjeni.
 # ─────────────────────────────────────────────────────────────────────────
 set -euo pipefail
 
@@ -21,35 +25,39 @@ echo "✅ Pod: $POD"
 
 echo ""
 echo "📊 Stanje pred brisanjem:"
-kubectl exec -it "$POD" -n sola-app -- python -c "
+kubectl exec -i "$POD" -n sola-app -- python -c "
 import os
 from sqlalchemy import create_engine, text
 e = create_engine(os.environ['DATABASE_URL'])
 with e.connect() as c:
-    for t in ['reservations', 'assessments']:
+    for t in ['reservations', 'assessments', 'blocked_dates']:
         n = c.execute(text(f'SELECT count(*) FROM {t}')).scalar()
         print(f'  {t}: {n} vrstic')
 "
 
 echo ""
-read -p "⚠️  Izbrisati vse rezervacije in ocenjevanja? (da/NE): " CONFIRM
-if [ "$CONFIRM" != "da" ]; then
-    echo "Preklicano — nič ni izbrisano."
-    exit 0
+if [ "${1:-}" = "-y" ]; then
+    echo "⚠️  -y: TRUNCATE brez potrditve"
+else
+    read -p "⚠️  TRUNCATE rezervacij (tudi serijskih), ocenjevanj in dnevov dejavnosti? (da/NE): " CONFIRM || CONFIRM=""
+    if [ "$CONFIRM" != "da" ]; then
+        echo "Preklicano — nič ni izbrisano."
+        exit 0
+    fi
 fi
 
 echo ""
-echo "🗑️  Brisanje..."
-kubectl exec -it "$POD" -n sola-app -- python -c "
+echo "🗑️  TRUNCATE..."
+kubectl exec -i "$POD" -n sola-app -- python -c "
 import os
 from sqlalchemy import create_engine, text
 e = create_engine(os.environ['DATABASE_URL'])
 with e.begin() as c:
-    for t in ['reservations', 'assessments']:
+    for t in ['reservations', 'assessments', 'blocked_dates']:
         n = c.execute(text(f'SELECT count(*) FROM {t}')).scalar()
-        c.execute(text(f'DELETE FROM {t}'))
-        print(f'  ✅ {t}: izbrisanih {n} vrstic')
+        c.execute(text(f'TRUNCATE {t} RESTART IDENTITY'))
+        print(f'  ✅ {t}: izpraznjeno ({n} vrstic, ID resetiran)')
 "
 
 echo ""
-echo "🎉 Končano! Rezervacije in ocenjevanja so prazni."
+echo "🎉 Končano! Tabele so prazne (ne pobrisane)."
