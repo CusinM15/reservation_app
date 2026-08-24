@@ -48,6 +48,6 @@ PATCH="${PATCH%,}}"
 
 # Uporabi
 echo "Syncing configmap $CONFIGMAP in namespace $NAMESPACE..."
-echo "$PATCH" | kubectl patch configmap "$CONFIGMAP" -n "$NAMESPACE" --type merge -p "$(cat)"
+kubectl patch configmap "$CONFIGMAP" -n "$NAMESPACE" --type merge -p "$PATCH"
 
 echo "Done. Restart deployment: kubectl rollout restart deployment -n $NAMESPACE sola-app"
