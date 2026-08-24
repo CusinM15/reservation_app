@@ -1557,7 +1557,7 @@
         if (isWeekend) cls += ' other-month';
         html += `<div class="${cls}" ${showBlocked ? '' : `onclick="quickOc('${razred}','${dateStr}')"`}>
           <div class="day-num">${day}</div>`;
-        if (showBlocked) html += `<div class="assessment-badge" style="background:#7c3aed;color:#fff;font-weight:600;"><span>Dnevi dejavnosti: ${blockedRazredi.join(', ')}</span></div>`;
+        if (showBlocked) html += `<div class="assessment-badge" style="background:#7c3aed;color:#fff;font-weight:600;"><span>Dejavnost: ${blockedRazredi.join(', ')}</span></div>`;
         if (asmMap[day]) {
           asmMap[day].forEach(a => {
             const asmCls = a.ponavljanje ? 'assessment-ponavljanje' : 'assessment-normal';
