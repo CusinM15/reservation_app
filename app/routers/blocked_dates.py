@@ -1,5 +1,5 @@
 # ─────────────────────────────────────────────────────────────────────────
-# app/routers/blocked_dates.py — Upravljanje zasedenih datumov
+# app/routers/blocked_dates.py — Upravljanje dni dejavnosti
 #
 # Namen: Omogoča admin/vodstvu, da označi določene datume kot "zasedene"
 # za posamezne razrede. To pomeni, da na ta dan ni možno napovedati
@@ -178,7 +178,7 @@ def create_blocked_dates(
                 teacher = db.query(User).filter(User.id == a.teacher_id).first()
                 log_audit(
                     db, uid, creator_name, "delete_assessment",
-                    f"Avtomatsko izbrisano ocenjevanje (zaseden datum): {razred}, {current}"
+                    f"Avtomatsko izbrisano ocenjevanje (dan dejavnosti): {razred}, {current}"
                 )
                 db.delete(a)
                 deleted_assessments += 1
@@ -190,7 +190,7 @@ def create_blocked_dates(
                         to_email=teacher.email,
                         subject=f"Ocenjevanje za {razred} na dan {date_str} prestavljeno",
                         body=f"Pozdravljeni,\n\n"
-                             f"{creator_name} je razred {razred} na dan {date_str} označil(a) kot zasedenega, "
+                             f"{creator_name} je razred {razred} na dan {date_str} označil(a) kot dan dejavnosti, "
                              f"zato je bilo vaše ocenjevanje za ta dan samodejno preklicano. "
                              f"Prosimo, da izberete nov datum.\n\n"
                              f"Lep pozdrav,\nŠolski App"
@@ -238,7 +238,7 @@ def delete_blocked_date(
     user_name = f"{user.first_name} {user.last_name}".strip() or user.username
     log_audit(
         db, user_id=user.id, username=user_name, action="delete_blocked_date",
-        details=f"Odstranjen zaseden datum: {bd.razred}, {bd.date}"
+        details=f"Odstranjen dan dejavnosti: {bd.razred}, {bd.date}"
     )
     db.delete(bd)
     db.commit()
