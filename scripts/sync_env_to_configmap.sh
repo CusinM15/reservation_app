@@ -43,8 +43,9 @@ for key in PROSTORI RAZREDI SCHEDULE TABLICE_MAX; do
     fi
 done
 
-# Odstrani zadnjo vejico in zapri JSON
-PATCH="${PATCH%,}}"
+# Odstrani zadnjo vejico in zapri JSON (DVA zaklepaja: data + koren).
+# ⚠️ Bilo je `${PATCH%,}}` (samo en zaklepaj) → "unexpected end of JSON input".
+PATCH="${PATCH%,}}}"
 
 # Uporabi
 echo "Syncing configmap $CONFIGMAP in namespace $NAMESPACE..."
