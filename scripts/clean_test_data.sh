@@ -4,7 +4,8 @@
 #
 # Uporaba (na k3s-1 ali k3s-2):
 #   git pull
-#   bash scripts/clean_test_data.sh
+#   bash scripts/clean_test_data.sh        # interaktivno (potrditev da/NE)
+#   bash scripts/clean_test_data.sh -y     # brez potrditve (avtomatizacija)
 #
 # POZOR: TRUNCATE izprazni:
 #   - reservations      (vključno s serijskimi rezervacijami — series_id)
@@ -33,6 +34,8 @@ with e.connect() as c:
     for t in ['reservations', 'assessments', 'blocked_dates']:
         n = c.execute(text(f'SELECT count(*) FROM {t}')).scalar()
         print(f'  {t}: {n} vrstic')
+    s = c.execute(text('SELECT count(*) FROM reservations WHERE series_id IS NOT NULL')).scalar()
+    print(f'  od tega serijske rezervacije: {s}')
 "
 
 echo ""
@@ -57,6 +60,18 @@ with e.begin() as c:
         n = c.execute(text(f'SELECT count(*) FROM {t}')).scalar()
         c.execute(text(f'TRUNCATE {t} RESTART IDENTITY'))
         print(f'  ✅ {t}: izpraznjeno ({n} vrstic, ID resetiran)')
+"
+
+echo ""
+echo "📊 Stanje po brisanju:"
+kubectl exec -i "$POD" -n sola-app -- python -c "
+import os
+from sqlalchemy import create_engine, text
+e = create_engine(os.environ['DATABASE_URL'])
+with e.connect() as c:
+    for t in ['reservations', 'assessments', 'blocked_dates']:
+        n = c.execute(text(f'SELECT count(*) FROM {t}')).scalar()
+        print(f'  {t}: {n} vrstic')
 "
 
 echo ""
