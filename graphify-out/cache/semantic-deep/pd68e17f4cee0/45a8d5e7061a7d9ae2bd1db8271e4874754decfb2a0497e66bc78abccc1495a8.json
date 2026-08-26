@@ -1,0 +1,1 @@
+{"nodes": [{"id": "k8s_app_base_namespace", "label": "Namespace sola-app", "file_type": "code", "source_file": "k8s/app/base/namespace.yaml", "source_location": null, "source_url": null, "captured_at": null, "author": null, "contributor": null, "rationale": null}], "edges": [], "hyperedges": []}

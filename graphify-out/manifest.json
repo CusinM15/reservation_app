@@ -1,0 +1,656 @@
+{
+  "app/__init__.py": {
+    "mtime": 1779868981.9758675,
+    "seen": 1787732361.7157261,
+    "ast_hash": "d41d8cd98f00b204e9800998ecf8427e",
+    "semantic_hash": "d41d8cd98f00b204e9800998ecf8427e"
+  },
+  "app/audit.py": {
+    "mtime": 1782998381.890968,
+    "seen": 1787732361.7157302,
+    "ast_hash": "9c9a713441d2455210f74a5ff767956d",
+    "semantic_hash": "9c9a713441d2455210f74a5ff767956d"
+  },
+  "app/config.py": {
+    "mtime": 1786348742.39503,
+    "seen": 1787732361.7157335,
+    "ast_hash": "b69806fe3043fc0b92cc426ffc94bf62",
+    "semantic_hash": "b69806fe3043fc0b92cc426ffc94bf62"
+  },
+  "app/database.py": {
+    "mtime": 1786348850.3086436,
+    "seen": 1787732361.7157366,
+    "ast_hash": "ebbf58c2abaa324de1a9f63b644b5275",
+    "semantic_hash": "ebbf58c2abaa324de1a9f63b644b5275"
+  },
+  "app/emoji_pdf.py": {
+    "mtime": 1787556614.19346,
+    "seen": 1787732361.71574,
+    "ast_hash": "7fc325a9b789ca202d0704919516dff0",
+    "semantic_hash": "7fc325a9b789ca202d0704919516dff0"
+  },
+  "app/main.py": {
+    "mtime": 1786348742.39603,
+    "seen": 1787732361.715743,
+    "ast_hash": "c51994dde958f77821c97ed585523a61",
+    "semantic_hash": "c51994dde958f77821c97ed585523a61"
+  },
+  "app/models.py": {
+    "mtime": 1786339673.653872,
+    "seen": 1787732361.7157464,
+    "ast_hash": "d0bb9e9b35d0f11d33c03882b92f9b6e",
+    "semantic_hash": "d0bb9e9b35d0f11d33c03882b92f9b6e"
+  },
+  "app/race.py": {
+    "mtime": 1782998371.287883,
+    "seen": 1787732361.7157571,
+    "ast_hash": "676842956c42b1e4986227aa92a729e1",
+    "semantic_hash": "676842956c42b1e4986227aa92a729e1"
+  },
+  "app/routers/__init__.py": {
+    "mtime": 1779868981.9768677,
+    "seen": 1787732361.7157598,
+    "ast_hash": "d41d8cd98f00b204e9800998ecf8427e",
+    "semantic_hash": "d41d8cd98f00b204e9800998ecf8427e"
+  },
+  "app/routers/audit_log.py": {
+    "mtime": 1786348742.39803,
+    "seen": 1787732361.7157621,
+    "ast_hash": "e02281185d089cf24e1e8d4092012aa0",
+    "semantic_hash": "e02281185d089cf24e1e8d4092012aa0"
+  },
+  "app/routers/auth.py": {
+    "mtime": 1786348742.39903,
+    "seen": 1787732361.7157645,
+    "ast_hash": "142e8cab77ca7ecca91404c42a119f61",
+    "semantic_hash": "142e8cab77ca7ecca91404c42a119f61"
+  },
+  "app/routers/blocked_dates.py": {
+    "mtime": 1787558614.350418,
+    "seen": 1787732361.7157671,
+    "ast_hash": "ceeadfc27f1fda5f928be87d5ec739d5",
+    "semantic_hash": "ceeadfc27f1fda5f928be87d5ec739d5"
+  },
+  "app/routers/docs.py": {
+    "mtime": 1787556614.19346,
+    "seen": 1787732361.7157695,
+    "ast_hash": "f014154141304c8a2b1a0df1946ff4eb",
+    "semantic_hash": "f014154141304c8a2b1a0df1946ff4eb"
+  },
+  "app/routers/export.py": {
+    "mtime": 1786348742.40303,
+    "seen": 1787732361.7157717,
+    "ast_hash": "7f16873900bff3d2ebfd1268a74a2cff",
+    "semantic_hash": "7f16873900bff3d2ebfd1268a74a2cff"
+  },
+  "app/routers/ocenjevanja.py": {
+    "mtime": 1787557632.174754,
+    "seen": 1787732361.7157743,
+    "ast_hash": "84bc779133648112104a07edd7604d0e",
+    "semantic_hash": "84bc779133648112104a07edd7604d0e"
+  },
+  "app/routers/rezervacije.py": {
+    "mtime": 1786348742.40503,
+    "seen": 1787732361.7157764,
+    "ast_hash": "b077f0d8da3a1f7e6d7e7ee596914289",
+    "semantic_hash": "b077f0d8da3a1f7e6d7e7ee596914289"
+  },
+  "app/schemas.py": {
+    "mtime": 1782998350.339715,
+    "seen": 1787732361.7157786,
+    "ast_hash": "ba803b9785ffd8992bbca9dbf5307d85",
+    "semantic_hash": "ba803b9785ffd8992bbca9dbf5307d85"
+  },
+  "app/security.py": {
+    "mtime": 1786348742.40603,
+    "seen": 1787732361.7157812,
+    "ast_hash": "61414d21dc2886d341f04a4139d0b9fa",
+    "semantic_hash": "61414d21dc2886d341f04a4139d0b9fa"
+  },
+  "documentation/replace-ips.sh": {
+    "mtime": 1782584661.83284,
+    "seen": 1787732361.7157834,
+    "ast_hash": "f920125eac434ddd8447b4d399dd2f6c",
+    "semantic_hash": "f920125eac434ddd8447b4d399dd2f6c"
+  },
+  "scripts/clean_test_data.sh": {
+    "mtime": 1787558645.4416718,
+    "seen": 1787732361.7157857,
+    "ast_hash": "10d3bb665290454147b200c644c5161b",
+    "semantic_hash": "10d3bb665290454147b200c644c5161b"
+  },
+  "scripts/daily_report.py": {
+    "mtime": 1782998722.6145153,
+    "seen": 1787732361.7157881,
+    "ast_hash": "84630e88f66040c2908933bedc55190a",
+    "semantic_hash": "84630e88f66040c2908933bedc55190a"
+  },
+  "scripts/db_backup.py": {
+    "mtime": 1780031842.0289364,
+    "seen": 1787732361.7157903,
+    "ast_hash": "6e15865dacf69e449e235b9621a30301",
+    "semantic_hash": "6e15865dacf69e449e235b9621a30301"
+  },
+  "scripts/import_teachers.py": {
+    "mtime": 1782998663.2320924,
+    "seen": 1787732361.7157931,
+    "ast_hash": "1e1333b11ed1b8e995aef3b859af6e07",
+    "semantic_hash": "1e1333b11ed1b8e995aef3b859af6e07"
+  },
+  "scripts/import_users.py": {
+    "mtime": 1779868981.9825652,
+    "seen": 1787732361.7157955,
+    "ast_hash": "254d630970ed4b2385529d817b25b875",
+    "semantic_hash": "254d630970ed4b2385529d817b25b875"
+  },
+  "scripts/sync-env-to-prod.py": {
+    "mtime": 1787560956.6514895,
+    "seen": 1787732361.7157977,
+    "ast_hash": "8559a3c15161fd2b04eeadd36ce8496e",
+    "semantic_hash": "8559a3c15161fd2b04eeadd36ce8496e"
+  },
+  "scripts/sync_env_to_configmap.sh": {
+    "mtime": 1787561462.6043885,
+    "seen": 1787732361.7158003,
+    "ast_hash": "0de6796af2f239a08286a10aed9e189a",
+    "semantic_hash": "0de6796af2f239a08286a10aed9e189a"
+  },
+  "tests/conftest.py": {
+    "mtime": 1786348850.53297,
+    "seen": 1787732361.7158027,
+    "ast_hash": "a8166bec40e80c8a95df6c551085647a",
+    "semantic_hash": "a8166bec40e80c8a95df6c551085647a"
+  },
+  "tests/test_auth.py": {
+    "mtime": 1786359736.1426744,
+    "seen": 1787732361.7158048,
+    "ast_hash": "49999b2b83ed6158c5851ee6c44afca3",
+    "semantic_hash": "49999b2b83ed6158c5851ee6c44afca3"
+  },
+  "tests/test_export.py": {
+    "mtime": 1786359736.1436746,
+    "seen": 1787732361.7158072,
+    "ast_hash": "3f6adba6eea3a8203801952d0064ea07",
+    "semantic_hash": "3f6adba6eea3a8203801952d0064ea07"
+  },
+  "tests/test_ocenjevanja.py": {
+    "mtime": 1787557632.1767538,
+    "seen": 1787732361.7158096,
+    "ast_hash": "0b4529908658d82d872880d78ca42f7e",
+    "semantic_hash": "0b4529908658d82d872880d78ca42f7e"
+  },
+  "tests/test_rezervacije.py": {
+    "mtime": 1787557457.9447374,
+    "seen": 1787732361.7158115,
+    "ast_hash": "13f18b00f2517dc93705c58b7f5e627b",
+    "semantic_hash": "13f18b00f2517dc93705c58b7f5e627b"
+  },
+  "tests/test_series.py": {
+    "mtime": 1786359736.1436746,
+    "seen": 1787732361.7158139,
+    "ast_hash": "1fbaad72f55c00931ee7065a77efd191",
+    "semantic_hash": "1fbaad72f55c00931ee7065a77efd191"
+  },
+  ".github/workflows/ci.yml": {
+    "mtime": 1786348508.7326787,
+    "seen": 1787732361.7158165,
+    "ast_hash": "86a04f3c2df97438773c7c46bf6ffb68",
+    "semantic_hash": "86a04f3c2df97438773c7c46bf6ffb68"
+  },
+  "README.md": {
+    "mtime": 1786339673.653872,
+    "seen": 1787732361.7158186,
+    "ast_hash": "199cf3b40801e96e9f5af1a13d790c48",
+    "semantic_hash": "199cf3b40801e96e9f5af1a13d790c48"
+  },
+  "app/templates/admin_users.html": {
+    "mtime": 1786348742.40603,
+    "seen": 1787732361.715821,
+    "ast_hash": "cb6aa45c08897926a087602ed5e18557",
+    "semantic_hash": "cb6aa45c08897926a087602ed5e18557"
+  },
+  "app/templates/audit_log.html": {
+    "mtime": 1782823628.3862164,
+    "seen": 1787732361.7158234,
+    "ast_hash": "4e57878222b7a0a094f393ef2699a41a",
+    "semantic_hash": "4e57878222b7a0a094f393ef2699a41a"
+  },
+  "app/templates/index.html": {
+    "mtime": 1787557632.1757538,
+    "seen": 1787732361.7158256,
+    "ast_hash": "0ffac5eb4f94890bf71c2eba03d0d1f4",
+    "semantic_hash": "0ffac5eb4f94890bf71c2eba03d0d1f4"
+  },
+  "app/templates/login.html": {
+    "mtime": 1782998826.6812665,
+    "seen": 1787732361.715828,
+    "ast_hash": "8b4928d2312970dd272e70753cfcca6e",
+    "semantic_hash": "8b4928d2312970dd272e70753cfcca6e"
+  },
+  "documentation/HA.md": {
+    "mtime": 1786339673.653872,
+    "seen": 1787732361.7158303,
+    "ast_hash": "ea718cdc35f6873432be72db9765ab94",
+    "semantic_hash": "ea718cdc35f6873432be72db9765ab94"
+  },
+  "documentation/admin-devops-navodila.md": {
+    "mtime": 1786339673.653872,
+    "seen": 1787732361.7158325,
+    "ast_hash": "49d5381f7796a7371851ba39c8646049",
+    "semantic_hash": "49d5381f7796a7371851ba39c8646049"
+  },
+  "documentation/aplikacija-rezervacije.md": {
+    "mtime": 1786339673.6548722,
+    "seen": 1787732361.7158349,
+    "ast_hash": "4fdc2446eeccffee1cefe86d9baaa2fd",
+    "semantic_hash": "4fdc2446eeccffee1cefe86d9baaa2fd"
+  },
+  "documentation/domena.md": {
+    "mtime": 1786339673.655872,
+    "seen": 1787732361.7158375,
+    "ast_hash": "224404c9e796931665d109f36589c258",
+    "semantic_hash": "224404c9e796931665d109f36589c258"
+  },
+  "documentation/en/HA.md": {
+    "mtime": 1786339673.655872,
+    "seen": 1787732361.7158399,
+    "ast_hash": "04c73e54852f119923932cad243f0602",
+    "semantic_hash": "04c73e54852f119923932cad243f0602"
+  },
+  "documentation/en/README.md": {
+    "mtime": 1786339673.655872,
+    "seen": 1787732361.7158446,
+    "ast_hash": "17cfb2f69bb1379eeb62a2d4fd3fd067",
+    "semantic_hash": "17cfb2f69bb1379eeb62a2d4fd3fd067"
+  },
+  "documentation/en/admin-devops-navodila.md": {
+    "mtime": 1786339673.655872,
+    "seen": 1787732361.715847,
+    "ast_hash": "1fb52c19fc76da26dc2c3500f4549041",
+    "semantic_hash": "1fb52c19fc76da26dc2c3500f4549041"
+  },
+  "documentation/en/aplikacija-rezervacije.md": {
+    "mtime": 1786339673.655872,
+    "seen": 1787732361.7158492,
+    "ast_hash": "4ea9ca559ca8b3ef766cd9034fa656ad",
+    "semantic_hash": "4ea9ca559ca8b3ef766cd9034fa656ad"
+  },
+  "documentation/en/domena.md": {
+    "mtime": 1786339673.655872,
+    "seen": 1787732361.7158518,
+    "ast_hash": "d921d5f687940c0b250541383ccc0a3b",
+    "semantic_hash": "d921d5f687940c0b250541383ccc0a3b"
+  },
+  "documentation/en/k3s-setup.md": {
+    "mtime": 1786339673.655872,
+    "seen": 1787732361.7158542,
+    "ast_hash": "6c3c9176af218f2d7732e12e806d3732",
+    "semantic_hash": "6c3c9176af218f2d7732e12e806d3732"
+  },
+  "documentation/en/main.md": {
+    "mtime": 1786339673.656872,
+    "seen": 1787732361.7158566,
+    "ast_hash": "d61f13f599f03c4f5270858a56621b9c",
+    "semantic_hash": "d61f13f599f03c4f5270858a56621b9c"
+  },
+  "documentation/en/migracija_oblak.md": {
+    "mtime": 1786339673.656872,
+    "seen": 1787732361.715859,
+    "ast_hash": "b0d70b145e031cb02eb5da57f1be9329",
+    "semantic_hash": "b0d70b145e031cb02eb5da57f1be9329"
+  },
+  "documentation/en/navodila-ucitelji.md": {
+    "mtime": 1786339673.656872,
+    "seen": 1787732361.7158613,
+    "ast_hash": "e867c5acd161c0ac8dbd5e19d92e4121",
+    "semantic_hash": "e867c5acd161c0ac8dbd5e19d92e4121"
+  },
+  "documentation/en/navodila-vodstvo.md": {
+    "mtime": 1786339673.656872,
+    "seen": 1787732361.7158635,
+    "ast_hash": "18da5ea8c3fd6f421e5412001251bc03",
+    "semantic_hash": "18da5ea8c3fd6f421e5412001251bc03"
+  },
+  "documentation/en/poletna-pavza.md": {
+    "mtime": 1786339673.656872,
+    "seen": 1787732361.715866,
+    "ast_hash": "d5ec5acab0adef7fcfba2419e6a2b3d8",
+    "semantic_hash": "d5ec5acab0adef7fcfba2419e6a2b3d8"
+  },
+  "documentation/en/postavi-lokalni-app.md": {
+    "mtime": 1786339673.656872,
+    "seen": 1787732361.7158685,
+    "ast_hash": "8dce26a2b1d7bcc7cb7e136372059353",
+    "semantic_hash": "8dce26a2b1d7bcc7cb7e136372059353"
+  },
+  "documentation/k3s-setup.md": {
+    "mtime": 1786339673.6578722,
+    "seen": 1787732361.7158706,
+    "ast_hash": "be6313abb126acda79a2d41f7cf6b23d",
+    "semantic_hash": "be6313abb126acda79a2d41f7cf6b23d"
+  },
+  "documentation/main.md": {
+    "mtime": 1786339673.6578722,
+    "seen": 1787732361.7158732,
+    "ast_hash": "67ab11e332b7b867b33a026fa9e9e800",
+    "semantic_hash": "67ab11e332b7b867b33a026fa9e9e800"
+  },
+  "documentation/migracija_oblak.md": {
+    "mtime": 1786339673.6578722,
+    "seen": 1787732361.7158756,
+    "ast_hash": "f247743e538d0935b5af69c6196e1428",
+    "semantic_hash": "f247743e538d0935b5af69c6196e1428"
+  },
+  "documentation/navodila-ucitelji.md": {
+    "mtime": 1786339673.6578722,
+    "seen": 1787732361.7158778,
+    "ast_hash": "b0e4f806191a3a876434a5c6e69f426d",
+    "semantic_hash": "b0e4f806191a3a876434a5c6e69f426d"
+  },
+  "documentation/navodila-vodstvo.md": {
+    "mtime": 1786339673.6578722,
+    "seen": 1787732361.7158802,
+    "ast_hash": "04294255c5ae7f8679429834dd9f24ea",
+    "semantic_hash": "04294255c5ae7f8679429834dd9f24ea"
+  },
+  "documentation/poletna-pavza.md": {
+    "mtime": 1786339673.6578722,
+    "seen": 1787732361.7158825,
+    "ast_hash": "4c00977e49ade84a6c8db7a0e66c9985",
+    "semantic_hash": "4c00977e49ade84a6c8db7a0e66c9985"
+  },
+  "documentation/postavi-lokalni-app.md": {
+    "mtime": 1786339673.6588721,
+    "seen": 1787732361.7158847,
+    "ast_hash": "4c1e1b689b092a4c934c62e024d116f5",
+    "semantic_hash": "4c1e1b689b092a4c934c62e024d116f5"
+  },
+  "instruction_for_hermes/graphify.md": {
+    "mtime": 1787731756.3550682,
+    "seen": 1787732361.715887,
+    "ast_hash": "908321b2c798c2dcbd0b9d98dfcf1cd7",
+    "semantic_hash": "908321b2c798c2dcbd0b9d98dfcf1cd7"
+  },
+  "k8s/README.md": {
+    "mtime": 1786339673.6588721,
+    "seen": 1787732361.7158895,
+    "ast_hash": "89f96c372ee2998db5ba13f083eda675",
+    "semantic_hash": "89f96c372ee2998db5ba13f083eda675"
+  },
+  "k8s/app/base/kustomization.yaml": {
+    "mtime": 1782645376.255004,
+    "seen": 1787732361.715892,
+    "ast_hash": "cabaaf6c3db526c23b562fa55827ec6d",
+    "semantic_hash": "cabaaf6c3db526c23b562fa55827ec6d"
+  },
+  "k8s/app/base/namespace.yaml": {
+    "mtime": 1781502110.6338909,
+    "seen": 1787732361.7158942,
+    "ast_hash": "a444b8f4d65c95c5fc503bafd969e035",
+    "semantic_hash": "a444b8f4d65c95c5fc503bafd969e035"
+  },
+  "k8s/app/base/sola-backup-cronjob.yaml": {
+    "mtime": 1781599438.2091475,
+    "seen": 1787732361.7158966,
+    "ast_hash": "2afee7e9ea3f19b7aca77f9656486ff3",
+    "semantic_hash": "2afee7e9ea3f19b7aca77f9656486ff3"
+  },
+  "k8s/app/base/sola-configmap.yaml": {
+    "mtime": 1786339673.6588721,
+    "seen": 1787732361.7158992,
+    "ast_hash": "cdec15a2772f5241b9d3562b03541361",
+    "semantic_hash": "cdec15a2772f5241b9d3562b03541361"
+  },
+  "k8s/app/base/sola-daily-report-cronjob.yaml": {
+    "mtime": 1781629007.045453,
+    "seen": 1787732361.7159014,
+    "ast_hash": "9d501f4577814218bcb5c0f84f7eddd9",
+    "semantic_hash": "9d501f4577814218bcb5c0f84f7eddd9"
+  },
+  "k8s/app/base/sola-deployment.yaml": {
+    "mtime": 1786339673.6588721,
+    "seen": 1787732361.7159038,
+    "ast_hash": "fafc65bd8cdaafecb4074a18986a814f",
+    "semantic_hash": "fafc65bd8cdaafecb4074a18986a814f"
+  },
+  "k8s/app/base/sola-hpa.yaml": {
+    "mtime": 1786339673.6588721,
+    "seen": 1787732361.7159061,
+    "ast_hash": "5fa654109436e44827497a8f44482fa9",
+    "semantic_hash": "5fa654109436e44827497a8f44482fa9"
+  },
+  "k8s/app/base/sola-reporter-clusterrole.yaml": {
+    "mtime": 1781628957.672082,
+    "seen": 1787732361.7159085,
+    "ast_hash": "a04210df7fd35756467f8ff2fbf517ad",
+    "semantic_hash": "a04210df7fd35756467f8ff2fbf517ad"
+  },
+  "k8s/app/base/sola-reporter-clusterrolebinding.yaml": {
+    "mtime": 1781628957.6840794,
+    "seen": 1787732361.715911,
+    "ast_hash": "6a9de6b2916744ee92b4ae4fce7e6015",
+    "semantic_hash": "6a9de6b2916744ee92b4ae4fce7e6015"
+  },
+  "k8s/app/base/sola-service.yaml": {
+    "mtime": 1781502127.5600228,
+    "seen": 1787732361.7159133,
+    "ast_hash": "52ea0102a89c04b65109d3e389d05042",
+    "semantic_hash": "52ea0102a89c04b65109d3e389d05042"
+  },
+  "k8s/app/overlays/production-lb/kustomization.yaml": {
+    "mtime": 1781502141.7981312,
+    "seen": 1787732361.7159154,
+    "ast_hash": "bcc4b38ffb35804b8344bf5b63f92e9e",
+    "semantic_hash": "bcc4b38ffb35804b8344bf5b63f92e9e"
+  },
+  "k8s/app/overlays/production-lb/service-loadbalancer-patch.yaml": {
+    "mtime": 1781502141.7951312,
+    "seen": 1787732361.7159178,
+    "ast_hash": "bf087c65c1fac229a393efeab91e64ba",
+    "semantic_hash": "bf087c65c1fac229a393efeab91e64ba"
+  },
+  "k8s/cluster/metallb-config.yaml": {
+    "mtime": 1782565319.2794807,
+    "seen": 1787732361.7159204,
+    "ast_hash": "267d4f341c8724ec0a46b55d4475626a",
+    "semantic_hash": "267d4f341c8724ec0a46b55d4475626a"
+  },
+  "requirements-dev.txt": {
+    "mtime": 1786348216.9769256,
+    "seen": 1787732361.7159226,
+    "ast_hash": "2bd2f1fe963e103616600cd5b9358358",
+    "semantic_hash": "2bd2f1fe963e103616600cd5b9358358"
+  },
+  "requirements.txt": {
+    "mtime": 1786367443.984343,
+    "seen": 1787732361.715925,
+    "ast_hash": "50b9e1ff9ae09c6b8d4b5594238a1efd",
+    "semantic_hash": "50b9e1ff9ae09c6b8d4b5594238a1efd"
+  },
+  "scripts/requirements.txt": {
+    "mtime": 1779948499.5909035,
+    "seen": 1787732361.7159276,
+    "ast_hash": "5d607217aadd3a01aec06d791946922e",
+    "semantic_hash": "5d607217aadd3a01aec06d791946922e"
+  },
+  "documentation/diagrams/arhitektura-clustra.png": {
+    "mtime": 1782644236.3106663,
+    "seen": 1787732361.7159297,
+    "ast_hash": "01b308c810554d09ad94d36f2aa02c7f",
+    "semantic_hash": "01b308c810554d09ad94d36f2aa02c7f"
+  },
+  "documentation/diagrams/arhitektura.png": {
+    "mtime": 1782644236.3116665,
+    "seen": 1787732361.7159324,
+    "ast_hash": "165cdbc81dee1f6e16bacb048c6649c0",
+    "semantic_hash": "165cdbc81dee1f6e16bacb048c6649c0"
+  },
+  "documentation/diagrams/audit-log-gumb.png": {
+    "mtime": 1782837142.5718606,
+    "seen": 1787732361.7159348,
+    "ast_hash": "e8c11b1149d28b0d779326edab3f5c76",
+    "semantic_hash": "e8c11b1149d28b0d779326edab3f5c76"
+  },
+  "documentation/diagrams/audit-log-zgodovina.png": {
+    "mtime": 1782827792.5941777,
+    "seen": 1787732361.7159374,
+    "ast_hash": "e8c11b1149d28b0d779326edab3f5c76",
+    "semantic_hash": "e8c11b1149d28b0d779326edab3f5c76"
+  },
+  "documentation/diagrams/cnpg-cluster.drawio.png": {
+    "mtime": 1782740585.960254,
+    "seen": 1787732361.7159395,
+    "ast_hash": "1f828c57f9712029967a090e6b5dc2ae",
+    "semantic_hash": "1f828c57f9712029967a090e6b5dc2ae"
+  },
+  "documentation/diagrams/cnpg-cluster.png": {
+    "mtime": 1782740585.9612541,
+    "seen": 1787732361.7159421,
+    "ast_hash": "1f828c57f9712029967a090e6b5dc2ae",
+    "semantic_hash": "1f828c57f9712029967a090e6b5dc2ae"
+  },
+  "documentation/diagrams/cnpg-cluster.svg": {
+    "mtime": 1782739416.7486634,
+    "seen": 1787732361.7159448,
+    "ast_hash": "c13757823318b9d05cd2dc6cafd01d08",
+    "semantic_hash": "c13757823318b9d05cd2dc6cafd01d08"
+  },
+  "documentation/diagrams/domena-promet.png": {
+    "mtime": 1786339673.6548722,
+    "seen": 1787732361.715948,
+    "ast_hash": "a737518e654daff20bb4fcf4ec5ef3ed",
+    "semantic_hash": "a737518e654daff20bb4fcf4ec5ef3ed"
+  },
+  "documentation/diagrams/domena-promet.svg": {
+    "mtime": 1782644232.3776333,
+    "seen": 1787732361.7159505,
+    "ast_hash": "1eff84349da514cc7a34c8b0ba5fd4df",
+    "semantic_hash": "1eff84349da514cc7a34c8b0ba5fd4df"
+  },
+  "documentation/diagrams/ha-arhitektura.png": {
+    "mtime": 1782644172.8681314,
+    "seen": 1787732361.7159529,
+    "ast_hash": "c9ad3a640cf12984dfc0a4d1bcfd8b26",
+    "semantic_hash": "c9ad3a640cf12984dfc0a4d1bcfd8b26"
+  },
+  "documentation/diagrams/ha-network.png": {
+    "mtime": 1782644236.3126664,
+    "seen": 1787732361.7159555,
+    "ast_hash": "4c7c288061a1e3b217a0739f455102ce",
+    "semantic_hash": "4c7c288061a1e3b217a0739f455102ce"
+  },
+  "documentation/diagrams/ha-network.svg": {
+    "mtime": 1782644232.3776333,
+    "seen": 1787732361.715958,
+    "ast_hash": "799ca6c0893b5f4d9a06860c1b2cd9dc",
+    "semantic_hash": "799ca6c0893b5f4d9a06860c1b2cd9dc"
+  },
+  "documentation/diagrams/ha-prometni-tok.png": {
+    "mtime": 1782644178.0601754,
+    "seen": 1787732361.7159603,
+    "ast_hash": "e7bf878b1408098f1ce643666d8b6d54",
+    "semantic_hash": "e7bf878b1408098f1ce643666d8b6d54"
+  },
+  "documentation/diagrams/k3s-arhitektura.png": {
+    "mtime": 1782644236.3126664,
+    "seen": 1787732361.715963,
+    "ast_hash": "e65c66bef4edc123c2ad01971f031504",
+    "semantic_hash": "e65c66bef4edc123c2ad01971f031504"
+  },
+  "documentation/diagrams/k3s-arhitektura.svg": {
+    "mtime": 1782824471.7351077,
+    "seen": 1787732361.7159653,
+    "ast_hash": "faf686cd3803d2c0d97a896b022f2949",
+    "semantic_hash": "faf686cd3803d2c0d97a896b022f2949"
+  },
+  "documentation/diagrams/k3s-setup-arhitektura.png": {
+    "mtime": 1786339673.6548722,
+    "seen": 1787732361.7159677,
+    "ast_hash": "44844dd113d7ee05357f70e4eb329aa4",
+    "semantic_hash": "44844dd113d7ee05357f70e4eb329aa4"
+  },
+  "documentation/diagrams/odlocitveni-vodic.png": {
+    "mtime": 1782989470.5392954,
+    "seen": 1787732361.71597,
+    "ast_hash": "a24a25d992a3ce47565ff0720207ffd8",
+    "semantic_hash": "a24a25d992a3ce47565ff0720207ffd8"
+  },
+  "documentation/diagrams/odlocitveni-vodic.svg": {
+    "mtime": 1782644232.3776333,
+    "seen": 1787732361.7159727,
+    "ast_hash": "b09b0bc4b848652d3605c04483e94af9",
+    "semantic_hash": "b09b0bc4b848652d3605c04483e94af9"
+  },
+  "documentation/diagrams/prometni-tok.png": {
+    "mtime": 1782644236.3136663,
+    "seen": 1787732361.7159748,
+    "ast_hash": "29374e9616f76a72c71c6b46929c65b5",
+    "semantic_hash": "29374e9616f76a72c71c6b46929c65b5"
+  },
+  "documentation/diagrams/prometni-tok.svg": {
+    "mtime": 1782824471.7361076,
+    "seen": 1787732361.7159774,
+    "ast_hash": "a86ed548f6c7b93b51ce32792fd4163b",
+    "semantic_hash": "a86ed548f6c7b93b51ce32792fd4163b"
+  },
+  "documentation/diagrams/repo-struktura.png": {
+    "mtime": 1782644236.3146665,
+    "seen": 1787732361.7159798,
+    "ast_hash": "b0297d6c49f82e940d28c784ab0175dc",
+    "semantic_hash": "b0297d6c49f82e940d28c784ab0175dc"
+  },
+  "documentation/diagrams/repo-struktura.svg": {
+    "mtime": 1782644232.3786333,
+    "seen": 1787732361.7159824,
+    "ast_hash": "dace3025e57a68ccd3ed8668a76612f8",
+    "semantic_hash": "dace3025e57a68ccd3ed8668a76612f8"
+  },
+  "documentation/slike/ucitelji_img_1.png": {
+    "mtime": 1782901293.71419,
+    "seen": 1787732361.7159848,
+    "ast_hash": "5e601381284b76f103f4b703fb7a81e3",
+    "semantic_hash": "5e601381284b76f103f4b703fb7a81e3"
+  },
+  "documentation/slike/ucitelji_img_2.png": {
+    "mtime": 1782901293.71619,
+    "seen": 1787732361.7159872,
+    "ast_hash": "a91abc5756b406646277407a84fb700e",
+    "semantic_hash": "a91abc5756b406646277407a84fb700e"
+  },
+  "documentation/slike/ucitelji_img_3.png": {
+    "mtime": 1782901293.7241902,
+    "seen": 1787732361.7159898,
+    "ast_hash": "b35eb4e7f4a3b13a4c04a6b45292ab2f",
+    "semantic_hash": "b35eb4e7f4a3b13a4c04a6b45292ab2f"
+  },
+  "documentation/slike/ucitelji_img_4.png": {
+    "mtime": 1782901293.7301903,
+    "seen": 1787732361.715992,
+    "ast_hash": "6be28ab3f970ee94913dd67cd9d17cb8",
+    "semantic_hash": "6be28ab3f970ee94913dd67cd9d17cb8"
+  },
+  "documentation/slike/ucitelji_img_5.png": {
+    "mtime": 1782901293.7311902,
+    "seen": 1787732361.7159946,
+    "ast_hash": "1841f9f1fbfe700dbf507f64f72cb4b1",
+    "semantic_hash": "1841f9f1fbfe700dbf507f64f72cb4b1"
+  },
+  "documentation/slike/ucitelji_img_7.png": {
+    "mtime": 1782901293.7331903,
+    "seen": 1787732361.715997,
+    "ast_hash": "b590b2f67a7693f870cb4883c096d07b",
+    "semantic_hash": "b590b2f67a7693f870cb4883c096d07b"
+  },
+  "documentation/slike/ucitelji_img_8.png": {
+    "mtime": 1782901293.7331903,
+    "seen": 1787732361.7159996,
+    "ast_hash": "158519611aca69d2c5bea9e22faf29f4",
+    "semantic_hash": "158519611aca69d2c5bea9e22faf29f4"
+  },
+  "documentation/slike/ucitelji_img_9.png": {
+    "mtime": 1782901293.7351902,
+    "seen": 1787732361.7160017,
+    "ast_hash": "4067f76b24c905f347cad968927f9365",
+    "semantic_hash": "4067f76b24c905f347cad968927f9365"
+  }
+}
