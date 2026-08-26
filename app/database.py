@@ -59,32 +59,33 @@ def init_db():
     Trenutne migracije:
     - series_id v reservations: dodano za podporo serijskim rezervacijam
       (tedenske in celodnevne serije za admin/vodstvo).
+    - name v reservations: ime serijske rezervacije (prikaz "Dogodek",
+      če je prazno).
     """
     import app.models  # noqa: F401 – ensure models are registered
 
     Base.metadata.create_all(bind=engine)
 
-    # ── Lahka migracija: dodaj series_id v reservations, če manjka ──
-    # try/except namesto IF NOT EXISTS zaradi idempotentnosti —
-    # stavek se izvede ob vsakem zagonu, kolona/index pa obstajata
-    # samo enkrat.
-    with engine.begin() as conn:
-        # Migracija: dodaj stolpec series_id v tabelo reservations
+    # ── Lahke idempotentne migracije ─────────────────────────────────────
+    # Vsak stavek v LASTNI transakciji + IF NOT EXISTS. Zakaj?
+    # PostgreSQL po napaki (npr. DuplicateColumn) označi celotno transakcijo
+    # kot aborted — vsi nadaljnji ukazi v isti transakciji tiho padejo z
+    # InFailedSqlTransaction. Stari pristop (vsi ALTER-ji v enem engine.begin()
+    # + try/except pass) je zato na obstoječi bazi tiho preskočil vse
+    # migracije za prvim že-obstoječim stolpcem.
+    def _migrate(statement: str) -> None:
         try:
-            conn.execute(text(
-                "ALTER TABLE reservations ADD COLUMN series_id VARCHAR"
-            ))
+            with engine.begin() as conn:
+                conn.execute(text(statement))
         except Exception:
-            pass  # Kolona že obstaja — to je OK
+            pass  # Že obstaja / že izvedeno — to je OK
 
-        # Index za series_id (prav tako s try/except)
-        try:
-            conn.execute(text(
-                "CREATE INDEX ix_reservations_series_id "
-                "ON reservations (series_id)"
-            ))
-        except Exception:
-            pass  # Index že obstaja
+    # Migracija: dodaj stolpec series_id v tabelo reservations
+    _migrate("ALTER TABLE reservations ADD COLUMN IF NOT EXISTS series_id VARCHAR")
+    # Index za series_id
+    _migrate("CREATE INDEX IF NOT EXISTS ix_reservations_series_id ON reservations (series_id)")
+    # Migracija: dodaj stolpec name v tabelo reservations (ime serije)
+    _migrate("ALTER TABLE reservations ADD COLUMN IF NOT EXISTS name VARCHAR")
 
 
 def log_audit(db: Session, user_id: int, user_name: str, action: str,

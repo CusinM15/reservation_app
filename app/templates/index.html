@@ -426,6 +426,10 @@
         <select id="weekly-prostor"></select>
       </div>
       <div class="form-group">
+        <label>Ime rezervacije (neobvezno)</label>
+        <input type="text" id="weekly-name" placeholder="npr. Naravoslovni dan — 5. a" maxlength="120">
+      </div>
+      <div class="form-group">
         <label>Ura (0-7)</label>
         <input type="number" id="weekly-hour" min="0" max="7" step="1" value="0">
       </div>
@@ -502,6 +506,10 @@
       <div class="form-group">
         <label>Prostor</label>
         <select id="fullday-prostor"></select>
+      </div>
+      <div class="form-group">
+        <label>Ime rezervacije (neobvezno)</label>
+        <input type="text" id="fullday-name" placeholder="npr. Naravoslovni dan — 5. a" maxlength="120">
       </div>
       <div class="form-group">
         <label>Od datuma</label>
@@ -1179,6 +1187,7 @@
     // tedenske rezervacije (npr. vsak ponedeljek 1. uro v računalnici).
     function openWeeklySeriesModal() {
       document.getElementById('weekly-prostor').value = prostori[0] || '';
+      document.getElementById('weekly-name').value = '';
       document.getElementById('weekly-hour').value = '0';
       document.getElementById('weekly-weekday').value = '0';
       const today = new Date().toISOString().split('T')[0];
@@ -1198,6 +1207,7 @@
       const prostor = document.getElementById('weekly-prostor').value;
       const data = {
         prostor: prostor,
+        name: document.getElementById('weekly-name').value.trim() || null,
         hour: parseInt(document.getElementById('weekly-hour').value),
         weekday: parseInt(document.getElementById('weekly-weekday').value),
         date_from: document.getElementById('weekly-date-from').value,
@@ -1239,7 +1249,7 @@
         const minDate = s.min_date.split('-').reverse().join('.');
         const maxDate = s.max_date.split('-').reverse().join('.');
         html += `<div style="display:flex;align-items:center;justify-content:space-between;padding:4px 0;border-bottom:1px solid #f0f0f0;">
-          <span><strong>${roomLabel}</strong><br>
+          <span><strong>${roomLabel}${s.name ? ' — ' + s.name : ''}</strong><br>
           <span style="font-size:0.8rem;color:#666;">${s.count} terminov (${minDate} - ${maxDate})</span></span>
           <span onclick="deleteSeries('${s.series_id}')" style="cursor:pointer;color:#c00;font-weight:700;padding:2px 6px;">✕</span>
         </div>`;
@@ -1276,6 +1286,8 @@
     function openFullDaySeriesModal() {
       const sel = document.getElementById('fullday-prostor');
       if (sel) sel.value = prostori[0] || '';
+      const nameEl = document.getElementById('fullday-name');
+      if (nameEl) nameEl.value = '';
       const today = new Date().toISOString().split('T')[0];
       const el1 = document.getElementById('fullday-date-from');
       if (el1) el1.value = today;
@@ -1304,6 +1316,7 @@
       }
       const data = {
         prostor: prostor.value,
+        name: document.getElementById('fullday-name')?.value.trim() || null,
         date_from: document.getElementById('fullday-date-from')?.value || '',
         date_to: document.getElementById('fullday-date-to')?.value || '',
       };
@@ -1367,8 +1380,9 @@
     // Ustvari zemljevid (map) rezervacij po ključu 'datum|ura' za
     // hiter dostop. Za tablice vodi ločen seznam zasedenosti (qty)
     // in prikazuje preostalo prosto količino od 28. Vsaka zasedena
-    // celica prikaže ime učitelja (+ količino za tablice) in gumb
-    // za brisanje (če ima uporabnik pravico). Proste celice
+    // celica prikaže ime učitelja (za enkratne) oziroma ime serije
+    // ali "Dogodek" (za serijske rezervacije) + količino za tablice
+    // ter gumb za brisanje (če ima uporabnik pravico). Proste celice
     // prikažejo 'Prosto' in gumb + za hitro dodajanje. Delovni
     // dnevi so pon–pet (5 dni). Navigacija s puščicami (prejšnji/
     // naslednji teden) je vgrajena na vrhu tabele.
@@ -1401,10 +1415,13 @@
           if (resList && resList.length > 0) {
             html += `<td class="slot-taken">`;
             for (const res of resList) {
+              // Serijske rezervacije prikazujejo ime serije (ali "Dogodek"),
+              // enkratne pa ime učitelja — serija ne razkriva ustvarjalca.
+              const label = res.series_id ? (res.name || 'Dogodek') : (res.teacher_name || '?');
               if (prostor === 'tablice') {
-                const parts = []; if (res.qty) parts.push(`${res.qty} kos`); parts.push(res.teacher_name || '?');
+                const parts = []; if (res.qty) parts.push(`${res.qty} kos`); parts.push(label);
                 html += `<div class="rez-label">${parts.join(' : ')}</div>`;
-              } else { html += `<div class="rez-label">${res.teacher_name || '?'}</div>`; }
+              } else { html += `<div class="rez-label">${label}</div>`; }
               if (currentUser && (res.teacher_id === currentUser.id || currentUser.role === 'admin' || currentUser.role === 'vodstvo')) {
                 html += `<span class="del-rez" onclick="deleteReservation(${res.id})">✕</span>`;
               }

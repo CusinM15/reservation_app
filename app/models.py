@@ -82,6 +82,11 @@ class Reservation(Base):
     # "naravoslovni dan: vse ure istega dne") delijo isti series_id.
     series_id = Column(String, nullable=True, index=True)
 
+    # Ime serijske rezervacije (npr. "Naravoslovni dan — 5. a"). Če je
+    # prazno/NULL, se v koledarju prikaže privzeto "Dogodek". Enkratne
+    # rezervacije nimajo imena — prikazujejo ime učitelja (teacher_name).
+    name = Column(String, nullable=True)
+
 
 # ── Ocenjevanje ───────────────────────────────────────────────────────
 # Ocenjevanje pomeni, da učitelj napoveduje ocenjevanje za določen

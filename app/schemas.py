@@ -48,6 +48,7 @@ class ReservationOut(BaseModel):
     qty: Optional[int] = None
     teacher_name: Optional[str] = None  # filled by query join
     series_id: Optional[str] = None
+    name: Optional[str] = None  # ime serijske rezervacije (prikaz "Dogodek", če prazno)
 
     model_config = {"from_attributes": True}
 
@@ -68,6 +69,10 @@ class WeeklySeriesCreate(BaseModel):
     date_from: date
     date_to: date
     qty: Optional[int] = None
+    name: Optional[str] = Field(
+        default=None,
+        description="Ime serijske rezervacije (prikazano v koledarju; privzeto 'Dogodek', če prazno).",
+    )
 
 
 class FullDaySeriesCreate(BaseModel):
@@ -84,6 +89,10 @@ class FullDaySeriesCreate(BaseModel):
         default=None,
         description="Privzeto vse ure 0..7. Lahko se omeji npr. na [0,1,2,3,4,5] za 6 ur.",
     )
+    name: Optional[str] = Field(
+        default=None,
+        description="Ime serijske rezervacije (prikazano v koledarju; privzeto 'Dogodek', če prazno).",
+    )
 
 
 class SeriesResult(BaseModel):
@@ -99,12 +108,13 @@ class SeriesResult(BaseModel):
 
 
 class SeriesListItem(BaseModel):
-    """Povzetek serije za prikaz v seznamu (min/max datum, število)."""
+    """Povzetek serije za prikaz v seznamu (min/max datum, število, ime)."""
     series_id: str
     prostor: str
     count: int
     min_date: date
     max_date: date
+    name: Optional[str] = None  # ime serije (če je bilo vpisano ob ustvarjanju)
 
 
 # ── Ocenjevanja ─────────────────────────────────────────────────────

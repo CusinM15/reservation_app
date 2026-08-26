@@ -414,20 +414,24 @@ def _commit_series(
     creator_name: str,
     creator_id: int,
     qty: Optional[int],
+    name: Optional[str] = None,
 ) -> SeriesResult:
     """Ustvari serijske rezervacije. Obstoječe konfliktne rezervacije se avtomatsko
     pobrišejo, prvotni lastnik pa dobi email obvestilo.
-    
+
     Args:
         planned: Seznam (datum, ura) parov za ustvarjanje.
         prostor: Prostor (tablice, računalnica, ladja, gospodinjstvo).
         teacher_id: ID učitelja, ki bo naveden kot rezervant.
         creator_name: Ime ustvarjalca (za email obvestila).
         qty: Število tablic (samo za tablice).
-    
+        name: Ime serijske rezervacije (prikazano v koledarju; privzeto
+            "Dogodek", če prazno). Enkratne rezervacije prikazujejo ime
+            učitelja, zato name ostane None.
+
     Returns:
         SeriesResult s podatki o ustvarjenih/pobrisanih zapisih.
-    
+
     Zakaj se konfliktne rezervacije brišejo namesto da se serija zavrne?
     Ker admin/vodstvo ustvarja serijo namerno in ima prioriteto pred
     enkratnimi rezervacijami učiteljev. Učitelj dobi obvestilo, da
@@ -451,6 +455,7 @@ def _commit_series(
 
     # 2) Ustvari nove zapise z unikatnim series_id (UUID)
     series_id = str(uuid.uuid4())
+    series_name = (name or "").strip() or None
     for d, h in planned:
         db.add(Reservation(
             prostor=prostor,
@@ -459,6 +464,7 @@ def _commit_series(
             teacher_id=teacher_id,
             qty=qty,
             series_id=series_id,
+            name=series_name,
         ))
 
     try:
@@ -523,6 +529,7 @@ def create_weekly_series(
         creator_name=creator_name,
         creator_id=user.id,
         qty=data.qty,
+        name=data.name,
     )
 
 
@@ -577,6 +584,7 @@ def create_full_day_series(
         creator_name=creator_name,
         creator_id=user.id,
         qty=data.qty,
+        name=data.name,
     )
 
 
@@ -628,6 +636,7 @@ def list_all_series(
             "total_entries": len(items),
             "teacher_name": teacher_name,
             "teacher_id": first.teacher_id,
+            "name": first.name,  # ime serije (prikaz "Dogodek", če prazno)
         })
 
     result.sort(key=lambda x: x["date_from"])
@@ -663,6 +672,7 @@ def list_series_items(
     rows = db.query(
         Reservation.series_id,
         Reservation.prostor,
+        Reservation.name,
         func.count(Reservation.id).label("count"),
         func.min(Reservation.date).label("min_date"),
         func.max(Reservation.date).label("max_date"),
@@ -672,6 +682,7 @@ def list_series_items(
     ).group_by(
         Reservation.series_id,
         Reservation.prostor,
+        Reservation.name,
     ).order_by(
         func.min(Reservation.date).asc()
     ).all()
@@ -683,6 +694,7 @@ def list_series_items(
             count=r.count,
             min_date=r.min_date,
             max_date=r.max_date,
+            name=r.name,
         )
         for r in rows
     ]
@@ -767,10 +779,15 @@ def export_rezervacije_csv(
     writer = csv.writer(output)
     writer.writerow(["Datum", "Ura", "Prostor", "Učitelj", "Razred", "Količina", "ID"])
     for r in rows:
-        teacher_name = ""
-        if r.teacher:
-            full = f"{r.teacher.first_name} {r.teacher.last_name}".strip()
-            teacher_name = full if full else r.teacher.username
+        # Serijske rezervacije prikazujejo ime serije (ali "Dogodek"),
+        # ne imena ustvarjalca. Enkratne rezervacije imajo ime učitelja.
+        if r.series_id is not None:
+            teacher_name = (r.name or "").strip() or "Dogodek"
+        else:
+            teacher_name = ""
+            if r.teacher:
+                full = f"{r.teacher.first_name} {r.teacher.last_name}".strip()
+                teacher_name = full if full else r.teacher.username
         hour_label = settings.SCHEDULE.get(str(r.hour), str(r.hour))
         writer.writerow([r.date, hour_label, r.prostor, teacher_name, r.razred or "", r.qty or "", r.id])
 

@@ -45,6 +45,68 @@ def test_weekly_series_create(client, make_user):
     assert _count_in_db(series_id=data["series_id"]) == data["created"]
 
 
+def test_weekly_series_z_imenom(client, make_user):
+    """Serija z vpisanim imenom — name se shrani na vse termine in vrne v API."""
+    admin = _admin_login(client, make_user)
+    r = client.post("/api/rezervacije/series/weekly", json={
+        "prostor": "racunalnica", "hour": 1, "weekday": TODAY.weekday(),
+        "date_from": FUTURE, "date_to": (TODAY + timedelta(days=21)).isoformat(),
+        "name": "Naravoslovni dan — 5. a",
+    })
+    assert r.status_code == 201, r.text
+    data = r.json()
+    db = SessionLocal()
+    try:
+        rows = db.query(Reservation).filter(Reservation.series_id == data["series_id"]).all()
+        assert len(rows) == data["created"]
+        assert all(row.name == "Naravoslovni dan — 5. a" for row in rows)
+    finally:
+        db.close()
+    # API za koledar vrne name (frontend prikaže ime namesto učitelja)
+    r2 = client.get(f"/api/rezervacije?date_from={FUTURE}&prostor=racunalnica")
+    assert r2.status_code == 200
+    assert any(x.get("name") == "Naravoslovni dan — 5. a" for x in r2.json())
+
+
+def test_weekly_series_brez_imena_je_none(client, make_user):
+    """Serija brez imena (prazen niz) — name ostane None; frontend prikaže 'Dogodek'."""
+    admin = _admin_login(client, make_user)
+    r = client.post("/api/rezervacije/series/weekly", json={
+        "prostor": "racunalnica", "hour": 2, "weekday": TODAY.weekday(),
+        "date_from": FUTURE, "date_to": (TODAY + timedelta(days=14)).isoformat(),
+        "name": "",
+    })
+    assert r.status_code == 201, r.text
+    data = r.json()
+    db = SessionLocal()
+    try:
+        rows = db.query(Reservation).filter(Reservation.series_id == data["series_id"]).all()
+        assert len(rows) == data["created"]
+        assert all(row.name is None for row in rows)
+    finally:
+        db.close()
+
+
+def test_fullday_series_z_imenom(client, make_user):
+    """Celodnevna serija z imenom — name na vseh urah dneva."""
+    admin = _admin_login(client, make_user)
+    r = client.post("/api/rezervacije/series/full-day", json={
+        "prostor": "gospodinjska-ucilnica",
+        "date_from": FUTURE, "date_to": FUTURE,
+        "name": "Naravoslovni dan",
+    })
+    assert r.status_code == 201, r.text
+    data = r.json()
+    assert data["created"] == 8  # vse ure 0-7
+    db = SessionLocal()
+    try:
+        rows = db.query(Reservation).filter(Reservation.series_id == data["series_id"]).all()
+        assert len(rows) == data["created"]
+        assert all(row.name == "Naravoslovni dan" for row in rows)
+    finally:
+        db.close()
+
+
 def test_weekly_series_deletes_conflict(client, make_user):
     """Admin serija čez obstoječo rezervacijo učitelja → avtomatski izbris (db.delete fix)."""
     teacher = make_user()
