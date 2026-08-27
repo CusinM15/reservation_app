@@ -44,7 +44,7 @@ Ko ste geslo nastavili, se prijavite:
 | **Uporabniško ime** | Vaš šolski e-poštni naslov |
 | **Geslo** | Geslo, ki ste ga nastavili |
 
-> ⚠️ Če prijava ne deluje, najprej sami še nekajkrat poskusite spremeniti geslo. Administratorja kontaktirajte šele, ko se težava ne reši.
+> ⚠️ Če prijava ne deluje, najprej sami še nekajkrat poskusite ponastaviti geslo. Administratorja kontaktirajte šele, ko se težava ne reši.
 
 Po uspešni prijavi se odpre stran **Rezervacije**.
 
@@ -80,7 +80,7 @@ V tem oknu izberete **Prostor** iz spustnega menija. Ure so po urniku zadnje tri
 > ⚠️ **Opomba:** Če so tablice za posamezen termin že delno rezervirane, rezervacije prek gumba `+` ni mogoče izvesti — uporabite gumb **Nova rezervacija**.
 
 **Brisanje rezervacije:**
-Vodstvo ima pravico do brisanja **kakršne koli** rezervacije, učitelji pa lahko brišejo **samo lastne**. Vodstvo ima poleg tega na voljo še 2 dodatna načina za ustvarjanje rezervacij. Če imate vi za ta termin že rezerviran prostor, se vaša rezervacija ob tem prekliče (razen pri tablicah, kadar skupna vsota ni presežena).
+Vodstvo ima pravico do brisanja **kakršnekoli** rezervacije, učitelji pa lahko brišejo **samo lastne**. Vodstvo ima poleg tega na voljo še 2 dodatna načina za ustvarjanje rezervacij. Če imate vi za ta termin že rezerviran prostor, se vaša rezervacija ob tem prekliče (razen pri tablicah, kadar skupna vsota ni presežena).
 
 ![Pregled rezervacij](slike/ucitelji_img_3.png)
 

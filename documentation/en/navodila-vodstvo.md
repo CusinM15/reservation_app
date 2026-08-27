@@ -93,6 +93,7 @@ The system **automatically sends email notifications** whenever management:
 |---|---|---|
 | ✅ Marks a date as an **activity day** | All teachers whose reservations were cancelled | So they know they must find another date |
 | ✅ Creates a **series reservation** | Teachers with conflicting reservations | They're notified their reservation was moved/cancelled |
+| ✅ Deletes a **series reservation** | Teachers with conflicting reservations | Same as above |
 
 > **⚠️ Important:** If you just click `✕` (delete) an individual reservation, **no one gets notified**. For automatic notifications, always use **series reservations** or **activity days** — the system notifies all affected teachers automatically.
 

@@ -13,7 +13,7 @@
 
 ## 1. How to access the app?
 
-Go to [the app](https://ostc-app.org). To get a password, click **Pozabljeno geslo** and enter your **school email address** (@guest.arnes.si). You will shortly receive an email from `os-toneta.cufarja-jesenice@guest.arnes.si`.
+Go to [the app](https://ostc-app.org). To get a password, click **Forgot password?** and enter your **school email address** (@guest.arnes.si). You will shortly receive an email from `os-toneta.cufarja-jesenice@guest.arnes.si`.
 
 If the email doesn't arrive, let the administrator know — they will check if your email address is correctly entered in the database (your message should include your correct email address).
 
@@ -59,7 +59,7 @@ There are **4 different rooms** available:
 | 🖥️ **Computer lab** | Only **one** reservation per slot |
 | 🚢 **Ship** | Only **one** reservation per slot |
 | 📱 **Tablets** | Multiple teachers can reserve at the same time — max **28 tablets** total |
-| 🍳 **Home Economics** | Only **one** reservation per slot |
+| 🍳 **Home economics classroom** | Only **one** reservation per slot |
 
 ![Reservations page](../slike/ucitelji_img_2.png)
 
@@ -73,7 +73,7 @@ Fill in all the details in the window that opens.
 
 ![New reservation window](../slike/ucitelji_img_4.png)
 
-In this window, select the **Room** from the dropdown menu. The time slots follow the school schedule's last triad. For the **Computer lab**, **Home Economics** and **Ship**, that's all you need. For **Tablets**, you also need to enter the **number of tablets**. Each field shows how many tablets are still available (format `x/28`).
+In this window, select the **Room** from the dropdown menu. The time slots follow the school schedule's last triad. For the **Computer lab**, **Home economics classroom** and **Ship**, that's all you need. For **Tablets**, you also need to enter the **number of tablets**. Each field shows how many tablets are still available (format `x/28`).
 
 ![Reservation details](../slike/ucitelji_img_5.png)
 
@@ -124,13 +124,13 @@ Management can mark certain dates as **activity days** (e.g. sports day). If you
 The assessment page also has a **filter dropdown**:
 Select a specific class or — for grades 8 and 9 — an entire cohort. Filters help you see which days are still available for testing.
 
-> 💡 **Note:** After selecting a filter, click the **Osveži** button to see the updated data.
+> 💡 **Note:** After selecting a filter, click the **Refresh** button to see the updated data.
 
 ---
 
 ## 7. Changing your password
 
-1. In the menu, click **Spremeni geslo**
+1. In the menu, click **Change password**
 2. Enter your **current password**
 3. Enter your **new password** (follow the rules above)
 4. Confirm your new password
