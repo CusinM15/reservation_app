@@ -3,7 +3,7 @@
 
 > 👋 **Hello, colleagues!**
 >
-> This app lets you reserve rooms (computer lab, ship, tablets) and schedule written tests. This guide is short and to the point — the screenshots will help you figure everything out in no time. 😊
+> This app lets you reserve rooms (computer lab, ship, home economics classroom, and tablets) and schedule written tests. This guide is short and to the point — the screenshots will help you figure everything out in no time. 😊
 
 ---
 
@@ -91,7 +91,7 @@ Management can delete **any** reservation, while teachers can only delete **thei
 You can schedule assessments in **2 ways**:
 
 **Method 1 — click on the desired date in the calendar:**
-Only works if that date isn't marked as **Blocked** for any class. The date is set to the one you clicked on.
+Only works if that date isn't marked as an **activity day** for any class. The date is set to the one you clicked on.
 
 **Method 2 — click the `New assessment` button:**
 Select the class and date manually.
@@ -115,11 +115,11 @@ The window also has a **Retake** checkbox — when checked, the rules change sli
 
 ---
 
-## 6. Blocked dates
+## 6. Activity days
 
-Management can mark certain dates as **blocked** (e.g. sports day). If you already had an assessment scheduled for that day, you will receive an automatic email notification.
+Management can mark certain dates as **activity days** (e.g. sports day). If you already had an assessment scheduled for that day, you will receive an automatic email notification.
 
-![Blocked dates page](../slike/ucitelji_img_9.png)
+![Activity days page](../slike/ucitelji_img_9.png)
 
 The assessment page also has a **filter dropdown**:
 Select a specific class or — for grades 8 and 9 — an entire cohort. Filters help you see which days are still available for testing.
@@ -137,6 +137,13 @@ Select a specific class or — for grades 8 and 9 — an entire cohort. Filters 
 5. Click **Change password**
 
 > Forgot your password? On the login page click **Forgot password?**, enter your email address and follow the instructions in the email.
+
+---
+
+## 8. Accessing these instructions inside the app
+
+![Instructions](../slike/ucitelji_img_10.png)
+On the right side of the **app** there is a `Učitelji` button. When you hover over it with your mouse, these instructions open in a small window that you can scroll through with your mouse. At the bottom of the window there is also a **Download PDF** button, which lets you download the instructions to your computer.
 
 ---
 

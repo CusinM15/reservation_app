@@ -1,8 +1,8 @@
 # 👑 Navodila za vodstvo
 
 > Namenjeno **ravnatelju in pomočnikom ravnatelja**.  
-> Vodstvo ima več moči kot učitelji — lahko brišete tudi tuje rezervacije, upravljate zasedene
-> datume in nadzorujete ocenjevanje. S tem pride tudi **odgovornost**.
+> Vodstvo ima več moči kot učitelji — lahko brišete tudi tuje rezervacije, upravljate dneve dejavnosti in
+> nadzorujete ocenjevanje. S tem pride tudi **odgovornost**.
 >
 > ⚡ **Hitri začetek:** Vstopite v aplikacijo, prijavite se s svojim šolskim računom in
 > uporabljajte meni na vrhu. Vse, kar ni omenjeno spodaj, je enako kot za učitelje.
@@ -15,20 +15,20 @@ Vodstvo ima na voljo **dve dodatni vrsti rezervacij**, ki ju učitelji nimajo.
 
 ### Tedenska serija
 
-> **Ideja:** Kot ponavljajoči se dogodek v koledarju — enkrat nastaviš, velja za več tednov.
+> **Ideja:** Kot ponavljajoči se dogodek v koledarju — enkrat nastavite, velja za več tednov.
 
-Namesto da ročno vnašaš isto rezervacijo 10 ponedeljkov zapored, nastaviš serijo in sistem
+Namesto da ročno vnašate isto rezervacijo 10 ponedeljkov zapored, nastavite serijo in sistem
 poskrbi za vse.
 
 | Polje | Opis |
 |---|---|
-| Ime rezervacije | zakaj se rabi rezervirati, npr izbirni predmet, tehnični dan|
+| Ime rezervacije | Zakaj rezervirate, npr. izbirni predmet, tehnični dan |
 | Prostor | Kateri prostor rezervirate |
 | Ura | Številka ure (0 = predura, 1–7 = ure) |
 | Dan v tednu | 0 = ponedeljek, 1 = torek … 6 = nedelja |
 | Od datuma | Prvi dan serije |
 | Do datuma | Zadnji dan serije |
-| Število tablic | Samo pri rezervaciji tablic tu se večkrat to polje ne pokaže takoj, zgolj zamenjajte prostor in nato nazaj na tablice|
+| Število tablic | Samo pri rezervaciji tablic. Če se polje ne prikaže takoj, zamenjajte prostor in nato znova izberite tablice |
 
 ### Celodnevna serija
 
@@ -36,7 +36,7 @@ Zasede cel dan (vse ure) za več dni zapored.
 
 | Polje | Opis |
 |---|---|
-| Ime rezervacije | zakaj se rabi rezervirati, npr izbirni predmet, tehnični dan|
+| Ime rezervacije | Zakaj rezervirate, npr. izbirni predmet, tehnični dan |
 | Prostor | Kateri prostor rezervirate |
 | Od datuma | Datum začetka |
 | Do datuma | Datum konca |
@@ -72,10 +72,10 @@ To uporabite za:
 | Polje | Opis |
 |---|---|
 | Razred | Izberite enega ali več (držite **Ctrl** za več) |
-| Od datuma | Prvi dan zasedenosti |
-| Do datuma | Zadnji dan zasedenosti |
+| Od datuma | Prvi dan dejavnosti |
+| Do datuma | Zadnji dan dejavnosti |
 
-Prav tako učitelji  ne morejo napovedati ocenjevanja na dan ko ima razred dan dejavnosti.
+Prav tako učitelji ne morejo napovedati ocenjevanja na dan, ko ima razred dan dejavnosti.
 
 **Kaj se zgodi, ko shranite:**
 
@@ -92,13 +92,13 @@ Sistem **samodejno pošilja email obvestila** vedno, ko vodstvo:
 
 | Akcija | Kdo dobi email | Zakaj? |
 |--------|---------------|--------|
-| ✅ Označi datum kot **dan dejavnosti** | Vsi učitelji katerih rezervacija se je odpovedala. | Da vedo da morajo najti drug datum. |
+| ✅ Označi datum kot **dan dejavnosti** | Vsi učitelji, katerih rezervacija se je odpovedala | Da vedo, da morajo najti drug datum |
 | ✅ Ustvari **serijsko rezervacijo** | Učitelji s konfliktnimi rezervacijami | Dobijo obvestilo, da je njihova rezervacija prestavljena/odpovedana |
 | ✅ Izbriše **serijsko rezervacijo** | Učitelji s konfliktnimi rezervacijami | Enako kot zgoraj |
 
-> **⚠️ Pomembno:** Če samo kliknete `✕` (brišete) posamezno rezervacijo, **nihče ne dobi obvestila**. Za avtomatska obvestila vedno uporabite **serijske rezervacije** ali **zasedene datume** — sistem sam obvesti vse prizadete.
+> **⚠️ Pomembno:** Če posamezno rezervacijo izbrišete kar z `✕`, **nihče ne dobi obvestila**. Za avtomatska obvestila vedno uporabite **serijske rezervacije** ali **dneve dejavnosti** — sistem sam obvesti vse prizadete.
 
-**ELI5:** Serijske rezervacije in zasedeni datumi so kot javni razglas na tabli — vsi vidijo in vsi so obveščeni. Brisanje posamezne rezervacije je kot da tiho zbrišeš nekaj s table — nihče ne ve, zakaj je izginilo.
+**ELI5:** Serijske rezervacije in dnevi dejavnosti so kot javni razglas na tabli — vsi vidijo in vsi so obveščeni. Brisanje posamezne rezervacije je kot da tiho zbrišeš nekaj s table — nihče ne ve, zakaj je izginilo.
 
 
 ---
@@ -135,7 +135,7 @@ Sistem **samodejno pošilja email obvestila** vedno, ko vodstvo:
 
 ## Navodila
 
-Kar se tiče navodil za vodstvo, deluje čisto enako kot navodila za učitelje (razložena uporaba v tistih navodilih), le da ima vodstvo na voljo tudi ta navodila (običajen učitelj tem navodil ne vidi).
+Uporaba teh navodil je enaka kot pri navodilih za učitelje (razložena v tistih navodilih), le da ima vodstvo na voljo tudi ta navodila — običajen učitelj jih ne vidi.
 
 
 ---
@@ -144,7 +144,8 @@ Kar se tiče navodil za vodstvo, deluje čisto enako kot navodila za učitelje (
 
 > ⛔ **Vodstvo do tega dela nima dostopa.** Sledi samo za informacijo, kaj dela
 > vaš administrator.
-> ---
+
+---
 
 ## 📋 Audit log — dnevnik sprememb
 
@@ -162,11 +163,12 @@ Audit log omogoča **pregled vseh pomembnih sprememb v sistemu** — kdo je kaj 
 | `delete_series` | Izbrisana celotna serija |
 | `create_ocenjevanje` | Napovedano ocenjevanje |
 | `delete_ocenjevanje` | Izbrisano ocenjevanje |
-| `create_blocked_dates` | Dodani zasedeni datumi |
-| `delete_blocked_date` | Odstranjen zaseden datum |
+| `create_blocked_dates` | Dodani dnevi dejavnosti |
+| `delete_blocked_date` | Odstranjen dan dejavnosti |
 | `create_user` | Ustvarjen nov uporabnik |
 | `update_user` | Posodobljen uporabnik |
 | `delete_user` | Izbrisan uporabnik |
+| `change_password` | Sprememba gesla |
 
 ### Ročni vnos uporabnikov
 
@@ -223,7 +225,7 @@ python3 scripts/import_teachers.py --base-url https://ostc-app.org --include-all
 | Vloga | Kdo naj jo ima | Pravice |
 |---|---|---|
 | **Admin** | Samo administrator sistema | Vse — skrbniška plošča, uporabniki, nastavitve |
-| **Vodstvo** | Ravnatelj, pomočniki | Rezervacije serij, brisanje tujih, zasedeni datumi |
+| **Vodstvo** | Ravnatelj, pomočniki | Rezervacije serij, brisanje tujih, dnevi dejavnosti |
 | **Učitelj** | Vsi pedagoški delavci | Osnovne rezervacije in ocenjevanje |
 
 **Z eno besedo:** Admin skrbi za sistem, vodstvo skrbi za urnik, učitelji

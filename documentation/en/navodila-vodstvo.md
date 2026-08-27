@@ -4,7 +4,7 @@
 
 > Intended for the **principal and assistant principals**.  
 > Management has more power than teachers — you can delete other people's reservations,
-> manage blocked dates, and oversee assessments. 
+> manage activity days, and oversee assessments. 
 >
 > ⚡ **Quick start:** Go to the app, log in with your school account and
 > use the menu at the top. Anything not mentioned below works the same as for teachers.
@@ -23,12 +23,13 @@ Instead of manually entering the same reservation for 10 Mondays in a row, set u
 
 | Field | Description |
 |---|---|
+| Reservation name | Why you are reserving, e.g. elective subject or technical day |
 | Room | Which room to reserve |
 | Period | Period number (0 = before first period, 1–7 = regular periods) |
 | Day of week | 0 = Monday, 1 = Tuesday … 6 = Sunday |
 | From date | First day of the series |
 | To date | Last day of the series |
-| Number of tablets | Only for tablet reservations |
+| Number of tablets | Only for tablet reservations. If the field doesn't appear right away, switch the room and then select tablets again |
 
 ### Full-day Series
 
@@ -36,6 +37,7 @@ Reserves the entire day (all periods) for multiple consecutive days.
 
 | Field | Description |
 |---|---|
+| Reservation name | Why you are reserving, e.g. elective subject or technical day |
 | Room | Which room to reserve |
 | From date | Start date |
 | To date | End date |
@@ -49,15 +51,15 @@ Reserves the entire day (all periods) for multiple consecutive days.
 | Teacher | Only their own reservations |
 | **Management** | **Their own + other people's** reservations |
 
-**Management has more power — you can delete other people's reservations. With this comes responsibility.** Before deleting a teacher's reservation, consider whether they might just need it rescheduled.
+**Management has more power — you can delete other people's reservations. With this comes responsibility.** Before deleting a teacher's reservation, think it over.
 
 ---
 
-## 📝 Assessments
+## 📝 Assessments and Activity Days
 
-### Blocked Dates
+### Activity Days
 
-> When you mark a day as blocked, all existing assessments for that day are automatically deleted
+> When you mark a day as an activity day, all existing assessments for that day are automatically deleted
 > and teachers receive an email — **the system handles the notifications**.
 
 Use this for:
@@ -70,8 +72,10 @@ Use this for:
 | Field | Description |
 |---|---|
 | Class | Select one or more (hold **Ctrl** for multiple) |
-| From date | First blocked day |
-| To date | Last blocked day |
+| From date | First activity day |
+| To date | Last activity day |
+
+Teachers also cannot schedule an assessment on a day when their class has an activity day.
 
 **What happens when you save:**
 
@@ -87,35 +91,12 @@ The system **automatically sends email notifications** whenever management:
 
 | Action | Who gets the email | Why? |
 |---|---|---|
-| ✅ Marks a date as **blocked** | All teachers of affected classes | They need to know no assessments that day |
+| ✅ Marks a date as an **activity day** | All teachers whose reservations were cancelled | So they know they must find another date |
 | ✅ Creates a **series reservation** | Teachers with conflicting reservations | They're notified their reservation was moved/cancelled |
 
-> **⚠️ Important:** If you just click `✕` (delete) an individual reservation, **no one gets notified**. For automatic notifications, always use **series reservations** or **blocked dates** — the system notifies all affected teachers automatically.
+> **⚠️ Important:** If you just click `✕` (delete) an individual reservation, **no one gets notified**. For automatic notifications, always use **series reservations** or **activity days** — the system notifies all affected teachers automatically.
 
-**ELI5:** Series reservations and blocked dates are like a public announcement on the bulletin board — everyone sees it and everyone is informed. Deleting an individual reservation is like quietly erasing something from the board — no one knows why it disappeared.
-
----
-
-## 📋 Audit Log — Change History
-
-![Audit log overview — filter, table, search by action](../diagrams/audit-log-zgodovina.png)
-
-The audit log provides an **overview of all important changes in the system** — who did what and when.
-
-**What is logged:**
-
-| Action | Description |
-|---|---|
-| `create_rezervacija` | One-time reservation created |
-| `delete_rezervacija` | Reservation deleted |
-| `create_series` | Weekly/full-day series created |
-| `delete_series` | Entire series deleted |
-| `create_ocenjevanje` | Assessment scheduled |
-| `delete_ocenjevanje` | Assessment deleted |
-| `create_blocked_dates` | Blocked dates added |
-| `delete_blocked_date` | Blocked date removed |
-
-**Admin** is the only one who can see it, go under **Admin panel** - **Event Log**
+**ELI5:** Series reservations and activity days are like a public announcement on the bulletin board — everyone sees it and everyone is informed. Deleting an individual reservation is like quietly erasing something from the board — no one knows why it disappeared.
 
 ---
 
@@ -149,11 +130,40 @@ The audit log provides an **overview of all important changes in the system** �
 
 > **Tip:** CSV uses semicolons (`;`) as delimiters. Excel (Slovenian locale) recognizes this automatically. If data appears in a single column, choose **semicolon delimiter** during import.
 
+## Instructions
+
+These instructions are used exactly the same way as the teacher instructions (described in that guide), except that management also has access to this guide — regular teachers cannot see it.
+
 ---
 
 ## 🛡️ Admin Panel — ADMIN ONLY
 
 > ⛔ **Management does not have access to this section.** This is just for information about what your administrator does.
+
+---
+
+## 📋 Audit Log — Change History
+
+![Audit log overview — filter, table, search by action](../diagrams/audit-log-zgodovina.png)
+
+The audit log provides an **overview of all important changes in the system** — who did what and when.
+
+**What is logged:**
+
+| Action | Description |
+|---|---|
+| `create_rezervacija` | One-time reservation created |
+| `delete_rezervacija` | Reservation deleted |
+| `create_series` | Weekly/full-day series created |
+| `delete_series` | Entire series deleted |
+| `create_ocenjevanje` | Assessment scheduled |
+| `delete_ocenjevanje` | Assessment deleted |
+| `create_blocked_dates` | Activity days added |
+| `delete_blocked_date` | Activity day removed |
+| `create_user` | User created |
+| `update_user` | User updated |
+| `delete_user` | User deleted |
+| `change_password` | Password changed |
 
 ### Manual User Entry
 
@@ -208,7 +218,7 @@ python3 scripts/import_teachers.py --base-url https://ostc-app.org --include-all
 | Role | Who should have it | Permissions |
 |---|---|---|
 | **Admin** | System administrator only | Everything — admin panel, users, settings |
-| **Management** | Principal, assistant principals | Series reservations, delete others, blocked dates |
+| **Management** | Principal, assistant principals | Series reservations, delete others, activity days |
 | **Teacher** | All teaching staff | Basic reservations and assessments |
 
 **In one sentence:** Admin takes care of the system, management takes care of the schedule, teachers take care of teaching.
