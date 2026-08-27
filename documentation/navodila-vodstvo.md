@@ -22,12 +22,13 @@ poskrbi za vse.
 
 | Polje | Opis |
 |---|---|
+| Ime rezervacije | zakaj se rabi rezervirati, npr izbirni predmet, tehnični dan|
 | Prostor | Kateri prostor rezervirate |
 | Ura | Številka ure (0 = predura, 1–7 = ure) |
 | Dan v tednu | 0 = ponedeljek, 1 = torek … 6 = nedelja |
 | Od datuma | Prvi dan serije |
 | Do datuma | Zadnji dan serije |
-| Število tablic | Samo pri rezervaciji tablic |
+| Število tablic | Samo pri rezervaciji tablic tu se večkrat to polje ne pokaže takoj, zgolj zamenjajte prostor in nato nazaj na tablice|
 
 ### Celodnevna serija
 
@@ -35,6 +36,7 @@ Zasede cel dan (vse ure) za več dni zapored.
 
 | Polje | Opis |
 |---|---|
+| Ime rezervacije | zakaj se rabi rezervirati, npr izbirni predmet, tehnični dan|
 | Prostor | Kateri prostor rezervirate |
 | Od datuma | Datum začetka |
 | Do datuma | Datum konca |
@@ -49,16 +51,15 @@ Zasede cel dan (vse ure) za več dni zapored.
 | **Vodstvo** | **Svoje + tuje** rezervacije |
 
 **Vodstvo ima več moči — lahko brišete tudi tuje rezervacije. S tem pride
-odgovornost.** Preden zbrišete učiteljevo rezervacijo, premislite, če jo
-morda samo potrebuje prestaviti.
+odgovornost.** Preden zbrišete učiteljevo rezervacijo, premislite.
 
 ---
 
-## 📝 Ocenjevanje
+## 📝 Ocenjevanje in dnevi dejavnosti
 
-### Zasedeni datumi
+### Dnevi dejavnosti
 
-> Ko označite dan kot zaseden, se vsa ocenjevanja za ta dan samodejno izbrišejo
+> Ko označite dan kot dan dejavnosti, se vsa ocenjevanja za ta dan samodejno izbrišejo
 > in učitelji dobijo email — **sistem poskrbi za obveščanje**.
 
 To uporabite za:
@@ -73,6 +74,8 @@ To uporabite za:
 | Razred | Izberite enega ali več (držite **Ctrl** za več) |
 | Od datuma | Prvi dan zasedenosti |
 | Do datuma | Zadnji dan zasedenosti |
+
+Prav tako učitelji  ne morejo napovedati ocenjevanja na dan ko ima razred dan dejavnosti.
 
 **Kaj se zgodi, ko shranite:**
 
@@ -89,7 +92,7 @@ Sistem **samodejno pošilja email obvestila** vedno, ko vodstvo:
 
 | Akcija | Kdo dobi email | Zakaj? |
 |--------|---------------|--------|
-| ✅ Označi datum kot **zaseden** | Vsi učitelji prizadetih razredov | Vedeli naj, da ta dan ni ocenjevanja |
+| ✅ Označi datum kot **dan dejavnosti** | Vsi učitelji katerih rezervacija se je odpovedala. | Da vedo da morajo najti drug datum. |
 | ✅ Ustvari **serijsko rezervacijo** | Učitelji s konfliktnimi rezervacijami | Dobijo obvestilo, da je njihova rezervacija prestavljena/odpovedana |
 | ✅ Izbriše **serijsko rezervacijo** | Učitelji s konfliktnimi rezervacijami | Enako kot zgoraj |
 
@@ -97,7 +100,51 @@ Sistem **samodejno pošilja email obvestila** vedno, ko vodstvo:
 
 **ELI5:** Serijske rezervacije in zasedeni datumi so kot javni razglas na tabli — vsi vidijo in vsi so obveščeni. Brisanje posamezne rezervacije je kot da tiho zbrišeš nekaj s table — nihče ne ve, zakaj je izginilo.
 
+
 ---
+
+## 📥 **Izvoz podatkov v CSV**
+
+> **Kaj je to?** Izvoz podatkov v CSV (Excelu prijazna oblika) — enostaven način, da podatke iz aplikacije prenesete na svoj računalnik in jih odprete v Excelu, Google Sheets ali podobnem programu.
+
+### Kaj lahko izvozite?
+
+| Vrsta izvoza | Kam kliknete | Kateri podatki |
+|---|---|---|
+| **Rezervacije prostorov** | 📥 Izvoz rezervacij (v meniju) | Datum, ura, prostor, razred, učitelj |
+| **Ocenjevanja in dnevi dejavnosti** | 📥 Izvoz ocenjevanj (v meniju) | Datum, razred, tip ocenjevanja, učitelj |
+
+### Kako to naredite?
+
+1. V zgornjem meniju kliknite **📥 Izvoz rezervacij** ali **📥 Izvoz ocenjevanj**
+2. Izberite **obdobje** (privzeto zadnji mesec):
+   - **Od datuma** — začetek obdobja
+   - **Do datuma** — konec obdobja
+3. Pri rezervacijah lahko izberete tudi **prostor** (ali pustite "Vsi prostori")
+4. Kliknite **📥 Prenesi CSV**
+
+> **ELI5:** Kot da bi iz knjižnice izposodili knjigo in si naredili kopijo strani, ki vas zanimajo. CSV je univerzalni jezik, ki ga razumejo vsi pisarniški programi.
+
+### Kaj narediti s CSV?
+
+- Odprite v **Excelu** (File → Open)
+- Odprite v **Google Sheets** (File → Import)
+- Uvozite v **katerikoli podatkovni program**
+
+> **Namig:** CSV uporablja podpičje (`;`) kot ločilo, kar Excel v slovenščini samodejno prepozna. Če se vam zdi zmešano v en stolpec, pri uvozu izberite **ločilo: podpičje**.
+
+## Navodila
+
+Kar se tiče navodil za vodstvo, deluje čisto enako kot navodila za učitelje (razložena uporaba v tistih navodilih), le da ima vodstvo na voljo tudi ta navodila (običajen učitelj tem navodil ne vidi).
+
+
+---
+
+## 🛡️ Skrbniška plošča — SAMO ADMIN
+
+> ⛔ **Vodstvo do tega dela nima dostopa.** Sledi samo za informacijo, kaj dela
+> vaš administrator.
+> ---
 
 ## 📋 Audit log — dnevnik sprememb
 
@@ -120,57 +167,6 @@ Audit log omogoča **pregled vseh pomembnih sprememb v sistemu** — kdo je kaj 
 | `create_user` | Ustvarjen nov uporabnik |
 | `update_user` | Posodobljen uporabnik |
 | `delete_user` | Izbrisan uporabnik |
-| `change_password` | Sprememba gesla |
-
-### Kako dostopa vodstvo do audit loga?
-
-Ker audit log ni viden v običajnem meniju (vidljiv je samo adminu), lahko do njega dostopate prek skrivne povezave s posebnim žetonom (tokenom):
-
-1. **Administrator vam bo dal povezavo** v obliki:
-   `https://ostc-app.org/history?token=SKRIVNI_ZETON`
-2. To povezavo **preprosto prilepite v brskalnik** (ni treba biti prijavljen)
-3. Odpre se **enak pregled kot ga vidi admin** — tabela z vsemi spremembami
-
-> 💡 **ELI5:** Kot da bi imeli poseben ključ, ki odpre vrata v arhiv. Ta ključ ne odpira ničesar drugega — samo arhiv sprememb. Če ključ izgubite ali vam ga kdo ukrade, naj administrator ustvari novega.
-
----
-
-## 📥 **Izvoz podatkov v CSV**
-
-> **Kaj je to?** Izvoz podatkov v CSV (Excelu prijazna oblika) — enostaven način, da podatke iz aplikacije prenesete na svoj računalnik in jih odprete v Excelu, Google Sheets ali podobnem programu.
-
-### Kaj lahko izvozite?
-
-| Vrsta izvoza | Kam kliknete | Kateri podatki |
-|---|---|---|
-| **Rezervacije prostorov** | 📥 Izvoz rezervacij (v meniju) | Datum, ura, prostor, razred, učitelj |
-| **Ocenjevanja** | 📥 Izvoz ocenjevanj (v meniju) | Datum, razred, tip ocenjevanja, učitelj |
-
-### Kako to naredite?
-
-1. V zgornjem meniju kliknite **📥 Izvoz rezervacij** ali **📥 Izvoz ocenjevanj**
-2. Izberite **obdobje** (privzeto zadnji mesec):
-   - **Od datuma** — začetek obdobja
-   - **Do datuma** — konec obdobja
-3. Pri rezervacijah lahko izberete tudi **prostor** (ali pustite "Vsi prostori")
-4. Kliknite **📥 Prenesi CSV**
-
-> **ELI5:** Kot da bi iz knjižnice izposodili knjigo in si naredili kopijo strani, ki vas zanimajo. CSV je univerzalni jezik, ki ga razumejo vsi pisarniški programi.
-
-### Kaj narediti s CSV?
-
-- Odprite v **Excelu** (File → Open)
-- Odprite v **Google Sheets** (File → Import)
-- Uvozite v **katerikoli podatkovni program**
-
-> **Namig:** CSV uporablja podpičje (`;`) kot ločilo, kar Excel v slovenščini samodejno prepozna. Če se vam zdi zmešano v en stolpec, pri uvozu izberite **ločilo: podpičje**.
-
----
-
-## 🛡️ Skrbniška plošča — SAMO ADMIN
-
-> ⛔ **Vodstvo do tega dela nima dostopa.** Sledi samo za informacijo, kaj dela
-> vaš administrator.
 
 ### Ročni vnos uporabnikov
 

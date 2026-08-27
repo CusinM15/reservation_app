@@ -3,7 +3,7 @@
 
 > 👋 **Pozdravljeni, kolegice in kolegi!**
 >
-> Aplikacija za rezervacijo prostorov (računalnice, ladje in tablic) in za napoved pisnih testov. Tale vodnik je kratek in jedrnat — skozi slike boste v trenutku ugotovili, kako vse deluje. 😊
+> Aplikacija za rezervacijo prostorov (računalnice, ladje, učilnice za gospodinjstvo in tablic) in za napoved pisnih testov. Tale vodnik je kratek in jedrnat — skozi slike boste v trenutku ugotovili, kako vse deluje. 😊
 
 ---
 
@@ -91,7 +91,7 @@ Vodstvo ima pravico do brisanja **kakršne koli** rezervacije, učitelji pa lahk
 Ocenjevanje lahko napoveste na **2 načina**:
 
 **Način 1 — s pritiskom na polje pri želenem datumu:**
-Deluje samo, kadar datum za noben razred ni označen kot **Zaseden**. Datum se nastavi skladno s poljem, na katerega ste pritisnili.
+Deluje samo, kadar datum za noben razred ni označen kot **Dejavnost:**. Datum se nastavi skladno s poljem, na katerega ste pritisnili.
 
 **Način 2 — z gumbom `Novo ocenjevanje`:**
 Ročno izberete razred in datum.
@@ -115,9 +115,9 @@ V oknu je na voljo tudi **Ponavljanje** – ko ga obkljukate, se spremenijo prav
 
 ---
 
-## 6. Zasedeni datumi
+## 6. Dnevi dejavnosti 
 
-Vodstvo lahko določene datume označi kot **zasedene** (npr. športni dan). Če ste imeli za ta dan že napovedano ocenjevanje, boste prejeli samodejno e-poštno obvestilo.
+Vodstvo lahko določene datume označi kot **dan dejavnosti** (npr. športni dan). Če ste imeli za ta dan že napovedano ocenjevanje, boste prejeli samodejno e-poštno obvestilo.
 
 ![Stran z zasedenimi datumi](slike/ucitelji_img_9.png)
 
@@ -139,7 +139,12 @@ Izberete posamezen razred ali — za 8. in 9. razred — celotno generacijo. S f
 > Ste pozabili geslo? Na prijavni strani kliknite **Pozabljeno geslo?**, vnesite svoj e-poštni naslov in sledite navodilom v e-pošti.
 
 ---
+## 8. Dostop do teh navodil znotraj aplikacije
 
+![Navodila](slike/ucitelji_img_10.png)
+Na desni strani **aplikacije** je polje kjer piše `Učitelj`, če greste z miško na to polje se odprejo ta navodila v manjšem oknu, lahko scrolate z miško (na koncu tega manjšega okna, je tudi gumb `Prenesi PDF`, da lahko ta navodila tudi prenesete na svoj računalnik.
+
+---
 > 🫶 **Upam, da vam bo aplikacija v pomoč. Želim vam vse dobro pri uporabi!**
 >
 > **Avtor:** Matej Čušin
