@@ -604,7 +604,7 @@
        ocenjevanj na ta dan. Prikaže tudi seznam obstoječih blokad.
        ================================================================ -->
   <div class="modal-overlay" id="block-modal">
-    <div class="modal" style="max-width:500px;">
+    <div class="modal" style="max-width:660px;">
       <h3>🚫 Dnevi dejavnosti</h3>
       <div class="form-group">
         <label>Razredi (držite Ctrl za več)</label>
@@ -1132,9 +1132,9 @@
       let html = '<h4 style="margin-bottom:8px;">Dnevi dejavnosti od danes naprej:</h4>';
       const sorted = [...filtered].sort((a,b) => a.date.localeCompare(b.date));
       for (const b of sorted) {
-        html += `<div style="display:flex;justify-content:space-between;padding:4px 0;border-bottom:1px solid #eee;">
+        html += `<div style="display:flex;justify-content:space-between;align-items:center;padding:4px 8px 4px 0;border-bottom:1px solid #eee;">
           <span>${b.razred} - ${b.date}</span>
-          <span class="del-asm" onclick="deleteBlockedDate(${b.id})" style="cursor:pointer;">✕</span>
+          <span class="del-asm" onclick="deleteBlockedDate(${b.id})" style="cursor:pointer;padding:2px 6px;">✕</span>
         </div>`;
       }
       container.innerHTML = html;
