@@ -17,6 +17,14 @@
 #   - "9. 2. 2027 ali 10. 2. 2027" -> oba datuma
 #   - "(rezervna datuma: ...)" -> samo primarni datum
 #   - "februar" / "tekom leta"  -> brez datuma -> preskočeno
+#   - dejavnosti, ki so "zgolj za kakšno uro" (npr. "1 ura", "2 uri",
+#     filmi, predstave — glej --exclude) NISO dan dejavnosti:
+#     ne blokiramo dneva, prostore z X pa še vedno rezerviramo.
+#
+# SINHRONIZACIJA: skripta je idempotentna — ponovni zagon z --commit
+# popolnoma uskladi stanje z Excelom: pobriše zastarele blokade (v Excel
+# obsegu) in serije tega lastnika (--owner-user-id), nato ustvari načrt na
+# novo. Sprememb v Excelu ni treba vnašati ročno — samo ponovi zagon.
 #
 # PRIVZETO je DRY-RUN (samo načrt). Za dejanski vnos: --commit
 #
@@ -46,6 +54,9 @@ ROOM_COLS = {6: "racunalnica", 7: "tablice", 8: "ladja", 9: "gospodinjska-ucilni
 
 BAND_RE = re.compile(r"^(PREGLED DEJAVNOSTI|KULTURNI DNEVI|NARAVOSLOVNI DNEVI|TEHNIŠKI DNEVI|ŠPORTNI DNEVI)")
 CLS_LIST_RE = re.compile(r"^\d{1,2}\. [a-zč](, \d{1,2}\. [a-zč])*$")
+# Dejavnosti, ki so "zgolj za kakšno uro" (npr. "1 ura", "2 uri", "3 ure", filmi, predstave)
+# -> NISO dan dejavnosti (ne blokiramo dneva), lahko pa še vedno rezervirajo prostore.
+DEFAULT_EXCLUDE = r"\d+\s*ur[aei]|film|predstava"
 # "22. 12. 2026", "14. 9. 2026 - 16. 9. 2026", "(2. a, 2. b)" za datumom
 DATE_RE = re.compile(
     r"(\d{1,2})\.\s*(\d{1,2})\.\s*(\d{4})"
@@ -164,12 +175,13 @@ def split_ranges(days: list[date]) -> list[tuple[date, date]]:
 
 # ── Branje Excela ─────────────────────────────────────────────────────
 
-def read_plan(xlsx_path: Path, razredi: list[str], today: date) -> tuple[list[dict], list[str]]:
+def read_plan(xlsx_path: Path, razredi: list[str], today: date) -> tuple[list[dict], list[str], set[date]]:
     from openpyxl import load_workbook  # počasen import — samo ob zagonu
 
     wb = load_workbook(xlsx_path, read_only=True, data_only=True)
     activities = []
     warnings: list[str] = []
+    excel_dates: set[date] = set()
 
     for ws in wb.worksheets:
         if ws.title == "Navodila":
@@ -192,6 +204,9 @@ def read_plan(xlsx_path: Path, razredi: list[str], today: date) -> tuple[list[di
             if a == "DEJAVNOST":
                 continue
             termin = str(row[1]).strip() if row[1] is not None else ""
+            for spec in parse_termin(termin):
+                excel_dates.add(spec["date_from"])
+                excel_dates.add(spec["date_to"])
             rooms = [ROOM_COLS[i] for i in ROOM_COLS
                      if row[i - 1] is not None and str(row[i - 1]).strip().upper() == "X"]
             activities.append({
@@ -202,20 +217,22 @@ def read_plan(xlsx_path: Path, razredi: list[str], today: date) -> tuple[list[di
                 "rooms": rooms,
             })
     wb.close()
-    return activities, warnings
+    return activities, warnings, excel_dates
 
 
 # ── Gradnja načrta ────────────────────────────────────────────────────
 
-def build_actions(activities, razredi, today, hours, tablice_qty):
-    """Vrni (block_plan, reserve_plan, skipped, conflicts).
+def build_actions(activities, razredi, today, hours, tablice_qty, exclude_re):
+    """Vrni (block_plan, reserve_plan, skipped, conflicts, excluded).
     block_plan: {date: set(oddelki)}
     reserve_plan: [{prostor, date_from, date_to, qty, name, label}]
+    excluded: dejavnosti, ki so 'zgolj za kakšno uro' (nimajo blokade dneva).
     """
     block_plan: dict[date, set[str]] = {}
     reserve_plan: list[dict] = []
     skipped: list[str] = []
     conflicts: list[str] = []
+    excluded: list[str] = []
     reserve_keys: dict[tuple[str, date, date], str] = {}  # (prostor, od, do) -> label
 
     for act in activities:
@@ -224,6 +241,7 @@ def build_actions(activities, razredi, today, hours, tablice_qty):
             skipped.append(f"{act['grade']}. razred | {act['dejavnost'][:45]} | termin: {act['termin'][:40] or '(prazen)'}")
             continue
         label = f"{act['grade']}. razred | {act['dejavnost'][:45]} | termin: {act['termin'][:45]}"
+        short = bool(exclude_re.search(act["dejavnost"]))
         all_days: set[date] = set()
         scope_oddelki: set[str] = set()
         for spec in specs:
@@ -238,8 +256,12 @@ def build_actions(activities, razredi, today, hours, tablice_qty):
                 skipped.append(f"{label} | datum v preteklosti: {d} — preskočen")
             for d in days:
                 if d >= today:
-                    block_plan.setdefault(d, set()).update(oddelki)
+                    if not short:
+                        block_plan.setdefault(d, set()).update(oddelki)
                     all_days.add(d)
+        if short and all_days:
+            excluded.append(f"{act['grade']}. razred | {act['dejavnost'][:55]} | {act['termin'][:45]} "
+                            f"({'NI dan dejavnosti — kratka dejavnost'})")
         # rezervacije prostorov — vsak neprekinjen niz dni je svoj full-day klic
         for prostor in act["rooms"]:
             days = sorted(all_days)
@@ -268,7 +290,7 @@ def build_actions(activities, razredi, today, hours, tablice_qty):
                     "label": label,
                     "hours": hours,
                 })
-    return block_plan, reserve_plan, skipped, conflicts
+    return block_plan, reserve_plan, skipped, conflicts, excluded
 
 
 # ── Izvedba preko API-ja ──────────────────────────────────────────────
@@ -296,15 +318,46 @@ def api_post(session, url, payload):
     return r.json(), None
 
 
+def api_get(session, url):
+    import requests
+    r = session.get(url, timeout=60)
+    if r.status_code >= 400:
+        try:
+            detail = r.json().get("detail", r.text[:200])
+        except Exception:
+            detail = r.text[:200]
+        return None, f"HTTP {r.status_code}: {detail}"
+    return r.json(), None
+
+
+def api_delete(session, url):
+    import requests
+    r = session.delete(url, timeout=60)
+    if r.status_code >= 400 and r.status_code != 404:  # 404 = že ne obstaja, OK
+        try:
+            detail = r.json().get("detail", r.text[:200])
+        except Exception:
+            detail = r.text[:200]
+        return None, f"HTTP {r.status_code}: {detail}"
+    return r.json() if r.status_code == 200 else {}, None
+
+
 def main(argv=None) -> int:
     p = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     p.add_argument("--xlsx", default=str(DEFAULT_XLSX), help=f"Excel datoteka (privzeto {DEFAULT_XLSX.name})")
     p.add_argument("--base-url", default="https://ostc-app.org")
     p.add_argument("--admin-user", default="admin")
     p.add_argument("--admin-pass", default="")
+    p.add_argument("--cookie", default="",
+                   help="Podpisan user_id cookie (če nimaš gesla) — generiraj v podu: "
+                        "kubectl exec -n sola-app <pod> -- sh -c 'cd /app && PYTHONPATH=/app python3 -c \"from app.security import sign_user_id; print(sign_user_id(1))\"'")
     p.add_argument("--razredi", default=None, help="Vejica-ločen seznam oddelkov (privzeto iz .env)")
     p.add_argument("--hours", default="0-4", help="Ure za rezervacijo prostorov, 0-indeksirano (privzeto 0-4 = 1.-5. ura)")
     p.add_argument("--tablice-qty", type=int, default=28, help="Št. tablic pri rezervaciji (privzeto 28 = TABLICE_MAX)")
+    p.add_argument("--exclude", default=DEFAULT_EXCLUDE,
+                   help=f"Regex: dejavnosti, ki NISO dan dejavnosti (privzeto: {DEFAULT_EXCLUDE!r})")
+    p.add_argument("--owner-user-id", type=int, default=1,
+                   help="user_id, čigar serije naj skripta ob ponovnem zagonu zbriše in nadomesti (privzeto 1 = admin)")
     p.add_argument("--commit", action="store_true", help="Dejansko vstavi (brez tega = samo načrt/dry-run)")
     args = p.parse_args(argv)
 
@@ -318,7 +371,7 @@ def main(argv=None) -> int:
     print(f"RAZREDI ({len(razredi)} oddelkov): {', '.join(razredi[:12])} ...\n")
 
     try:
-        activities, warnings = read_plan(xlsx, razredi, today)
+        activities, warnings, excel_dates = read_plan(xlsx, razredi, today)
     except ImportError:
         print("Manjka openpyxl: pip install openpyxl"); return 2
 
@@ -326,8 +379,9 @@ def main(argv=None) -> int:
         print("⚠️", w)
 
     hours = parse_hours(args.hours)
-    block_plan, reserve_plan, skipped, conflicts = build_actions(
-        activities, razredi, today, hours, args.tablice_qty)
+    exclude_re = re.compile(args.exclude, re.IGNORECASE)
+    block_plan, reserve_plan, skipped, conflicts, excluded = build_actions(
+        activities, razredi, today, hours, args.tablice_qty, exclude_re)
 
     # ── Poročilo ─────────────────────────────────────────────────────
     print("=" * 70)
@@ -354,6 +408,10 @@ def main(argv=None) -> int:
     print(f"Dejavnosti z datumom: {n_dated} | brez datuma (preskočene): {len(skipped)}")
     print(f"Blokade dni dejavnosti: {total_blocked} (na {len(block_plan)} datumov, {len(block_plan)} klicov)")
     print(f"Rezervacije prostorov: {len(reserve_plan)} (ure {hours}, tablice qty={args.tablice_qty})")
+    if excluded:
+        print(f"\nNI dan dejavnosti — kratke dejavnosti, brez blokade dneva ({len(excluded)}):")
+        for e in excluded:
+            print("  -", e[:120])
     if conflicts:
         print(f"\nKONFLIKTI v načrtu ({len(conflicts)}):")
         for c in conflicts:
@@ -368,33 +426,91 @@ def main(argv=None) -> int:
         return 0
 
     # ── Dejanski vnos ────────────────────────────────────────────────
-    if not args.admin_pass:
-        print("\nNapaka: --admin-pass je obvezen ob --commit"); return 2
     print("\nPrijava ...")
-    try:
-        session = api_login(args.base_url, args.admin_user, args.admin_pass)
-    except Exception as e:
-        print(f"Napaka pri prijavi: {e}"); return 1
+    if args.cookie:
+        import requests
+        session = requests.Session()
+        session.headers["Cookie"] = f"user_id={args.cookie}"
+        print("  (uporabljen podpisan cookie)")
+    else:
+        if not args.admin_pass:
+            print("\nNapaka: --admin-pass (ali --cookie) je obvezen ob --commit"); return 2
+        try:
+            session = api_login(args.base_url, args.admin_user, args.admin_pass)
+        except Exception as e:
+            print(f"Napaka pri prijavi: {e}"); return 1
 
-    print(f"\n[1/2] Dnevi dejavnosti ({len(block_plan)} datumov) ...")
+    base = args.base_url.rstrip("/")
+
+    # ── [1/2] Sinhronizacija dni dejavnosti ───────────────────────────
+    # Načelo: ponovni zagon = popolna sinhronizacija z Excelom.
+    # Pobrišemo blokade v Excel obsegu, ki jih načrt ne vsebuje več
+    # (npr. "1 ura" dejavnosti iz prejšnjega zagona), nato dodamo manjkajoče.
+    print(f"\n[1/2] Sinhronizacija dni dejavnosti ...")
+    existing = []
+    res, err = api_get(session, base + "/api/blocked-dates")
+    if err or res is None:
+        print(f"  ✗ napaka pri branju obstoječih blokad: {err}"); return 1
+    existing = res if isinstance(res, list) else []
+    existing_set = {(str(r.get("razred", "")), r.get("date")) for r in existing}
+    expected = {(oddelek, d.isoformat())
+                for d, oddelki in block_plan.items() for oddelek in oddelki}
+    excel_dates_iso = {d.isoformat() for d in excel_dates}
+    to_delete = [
+        r["id"] for r in existing
+        if LETTER_ODDELEK_RE.match(str(r.get("razred", "")))
+        and r.get("date") in excel_dates_iso
+        and (str(r.get("razred", "")), r.get("date")) not in expected
+    ]
+    del_errs = 0
+    for bid in to_delete:
+        r2, err2 = api_delete(session, base + f"/api/blocked-dates/{bid}")
+        if err2:
+            print(f"  ✗ brisanje blokade {bid}: {err2}")
+            del_errs += 1
+    print(f"  Zastarelih blokad za brisanje: {len(to_delete)} ({del_errs} napak)")
+
     created = deleted_asm = errs = 0
     for d in sorted(block_plan):
-        oddelki = sorted(block_plan[d])
-        res, err = api_post(session, args.base_url.rstrip("/") + "/api/blocked-dates",
+        oddelki = sorted(o for o in block_plan[d] if (o, d.isoformat()) not in existing_set)
+        if not oddelki:
+            continue
+        res, err = api_post(session, base + "/api/blocked-dates",
                             {"razredi": oddelki, "date_from": d.isoformat(), "date_to": d.isoformat()})
         if err or res is None:
             print(f"  ✗ {d} ({', '.join(oddelki)}): {err}")
             errs += 1
         else:
-            created += res.get("created", 0)
+            # endpoint vrača število v 'message' ("Dodanih X dni dejavnosti")
+            m = re.search(r"(\d+)", res.get("message", "0"))
+            n_created = int(m.group(1)) if m else 0
+            created += n_created
             deleted_asm += res.get("deleted_assessments", 0)
-            print(f"  ✓ {d}: {res.get('created', 0)} blokad ({', '.join(oddelki)})")
-    print(f"  Skupaj: {created} blokad, {deleted_asm} pobrisanih ocenjevanj, {errs} napak")
+            print(f"  ✓ {d}: +{n_created} blokad ({', '.join(oddelki)})")
+    print(f"  Skupaj: +{created} novih blokad, {len(to_delete)} odstranjenih, "
+          f"{deleted_asm} pobrisanih ocenjevanj, {errs + del_errs} napak")
 
-    print(f"\n[2/2] Rezervacije prostorov ({len(reserve_plan)}) ...")
+    # ── [2/2] Sinhronizacija rezervacij prostorov ─────────────────────
+    # Pobrišemo VSE serije tega lastnika (--owner-user-id), nato ustvarimo
+    # načrt na novo — spremembe (X-i, datumi, ure) se tako same posodobijo.
+    print(f"\n[2/2] Sinhronizacija rezervacij prostorov ...")
+    res, err = api_get(session, base + "/api/rezervacije/series")
+    my_series = []
+    if err or res is None:
+        print(f"  ✗ napaka pri branju serij: {err}")
+    else:
+        my_series = [s for s in res if s.get("teacher_id") == args.owner_user_id]
+    s_del_errs = 0
+    for s in my_series:
+        r2, err2 = api_delete(session, base + f"/api/rezervacije/series/{s['series_id']}")
+        if err2:
+            print(f"  ✗ brisanje serije {s['series_id']} ({s.get('prostor')}): {err2}")
+            s_del_errs += 1
+    print(f"  Starih serij za brisanje: {len(my_series)} ({s_del_errs} napak)")
+
     r_created = r_removed = r_errs = 0
     for rp in reserve_plan:
-        url = args.base_url.rstrip("/") + "/api/rezervacije/series/full-day"
+        url = base + "/api/rezervacije/series/full-day"
         payload = {
             "prostor": rp["prostor"],
             "date_from": rp["date_from"].isoformat(),
@@ -413,9 +529,10 @@ def main(argv=None) -> int:
             r_removed += res.get("removed", 0)
             print(f"  ✓ {rp['label'][:65]} | {rp['prostor']}: {res.get('created', 0)} terminov, "
                   f"{res.get('removed', 0)} preklicanih konfliktov")
-    print(f"  Skupaj: {r_created} rezervacij, {r_removed} preklicanih konfliktov, {r_errs} napak")
-    print("\nKONEC.")
-    return 0 if (errs == 0 and r_errs == 0) else 1
+    print(f"  Skupaj: {r_created} rezervacij, {r_removed} preklicanih konfliktov, "
+          f"{r_errs + s_del_errs} napak")
+    print("\nKONEC. Ponovni zagon skripte vedno sinhronizira stanje z Excelom.")
+    return 0 if (errs == 0 and r_errs == 0 and del_errs == 0 and s_del_errs == 0) else 1
 
 
 if __name__ == "__main__":
