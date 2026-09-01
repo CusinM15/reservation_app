@@ -352,7 +352,7 @@ def main(argv=None) -> int:
                    help="Podpisan user_id cookie (če nimaš gesla) — generiraj v podu: "
                         "kubectl exec -n sola-app <pod> -- sh -c 'cd /app && PYTHONPATH=/app python3 -c \"from app.security import sign_user_id; print(sign_user_id(1))\"'")
     p.add_argument("--razredi", default=None, help="Vejica-ločen seznam oddelkov (privzeto iz .env)")
-    p.add_argument("--hours", default="0-4", help="Ure za rezervacijo prostorov, 0-indeksirano (privzeto 0-4 = 1.-5. ura)")
+    p.add_argument("--hours", default="1-5", help="Ure za rezervacijo prostorov (privzeto 1-5 = 1.-5. ura; 0 = predura, izpuščena)")
     p.add_argument("--tablice-qty", type=int, default=28, help="Št. tablic pri rezervaciji (privzeto 28 = TABLICE_MAX)")
     p.add_argument("--exclude", default=DEFAULT_EXCLUDE,
                    help=f"Regex: dejavnosti, ki NISO dan dejavnosti (privzeto: {DEFAULT_EXCLUDE!r})")
