@@ -491,15 +491,24 @@ def main(argv=None) -> int:
           f"{deleted_asm} pobrisanih ocenjevanj, {errs + del_errs} napak")
 
     # ── [2/2] Sinhronizacija rezervacij prostorov ─────────────────────
-    # Pobrišemo VSE serije tega lastnika (--owner-user-id), nato ustvarimo
-    # načrt na novo — spremembe (X-i, datumi, ure) se tako same posodobijo.
+    # POZOR: pobrišemo SAMO serije, ki jih skripta sama ustvari (full-day
+    # dnevi dejavnosti — razpoznavne po imenu v načrtu). Tedenskih (urnik)
+    # in ročno vnesenih serij se NE dotikamo!
     print(f"\n[2/2] Sinhronizacija rezervacij prostorov ...")
     res, err = api_get(session, base + "/api/rezervacije/series")
+    # Imena serij, ki jih skripta ustvari iz Excela (za identifikacijo lastnih)
+    plan_names = {rp["name"] for rp in reserve_plan}
     my_series = []
     if err or res is None:
         print(f"  ✗ napaka pri branju serij: {err}")
     else:
-        my_series = [s for s in res if s.get("teacher_id") == args.owner_user_id]
+        # Tvoja serija = pripada lastniku (--owner-user-id) IN ime se ujema
+        # z imenom, ki ga skripta ustvari — torej sigurno naša, ne urnik.
+        my_series = [s for s in res
+                     if s.get("teacher_id") == args.owner_user_id
+                     and s.get("name") in plan_names]
+    print(f"  Naših serij (dnevi dejavnosti) za brisanje: {len(my_series)} "
+          f"(druge serije/urnik lastnika so PUŠČENE pri miru)")
     s_del_errs = 0
     for s in my_series:
         r2, err2 = api_delete(session, base + f"/api/rezervacije/series/{s['series_id']}")
