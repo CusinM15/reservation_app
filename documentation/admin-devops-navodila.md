@@ -104,7 +104,11 @@ network:
 ```bash
 sudo netplan apply
 ```
-
+Kopirati ssh ključ, za lažjo ssh povezavo:
+```bash
+Get-Content "$env:USERPROFILE\.ssh\id_ed25519.pub" | ssh admin_os@193.2.171.251 "umask 077; mkdir -p ~/.ssh; cat >> ~/.ssh/authorized_keys"
+```
+****
 **Kaj se zgodi?** Računalnik dobi fiksen naslov v omrežju. Drugi računalniki ga vedno najdejo na istem mestu.
 
 ### Nastavitev laptopa kot strežnik
