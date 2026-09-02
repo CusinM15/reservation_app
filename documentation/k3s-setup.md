@@ -94,7 +94,7 @@ To je kot **geslo za vstop v cluster**. Drugi node ga rabi, da se lahko pridruž
 ### 1.3 Namesti k3s na drugem nodu (k3s-2)
 
 ```bash
-curl -sfL https://get.k3s.io | sh -s - server --server https://193.2.171.250:6443 --token 'K10288bafa16aaf4a9779be18a1c44e96cc32a9305c9ad9bb4d93a3a44e14c718c6::server:07336f2868280ebca0365a11841971bd' --disable=traefik --disable=servicelb --write-kubeconfig-mode=644 --node-ip=193.2.171.251
+curl -sfL https://get.k3s.io | INSTALL_K3S_VERSION=v1.35.5+k3s1 sh -s - server --server https://193.2.171.250:6443 --token                                                                        'K10288bafa16aaf4a9779be18a1c44e96cc32a9305c9ad9bb4d93a3a44e14c718c6::server:07336f2868280ebca0365a11841971bd' --disable=traefik --disable=servicelb --write-kubeconfig-mode=644   --node-ip=193.2.171.251  
     
 ```
 
