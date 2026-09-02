@@ -95,12 +95,12 @@ To je kot **geslo za vstop v cluster**. Drugi node ga rabi, da se lahko pridruž
 
 ```bash
 curl -sfL https://get.k3s.io | sh -s - server \
-  --server https://{{K3S_1_IP}}:6443 \  # Poveži se na prvi node (k3s-1) na vratih 6443 — to so privzeta Kubernetes API vrata.
-  --token <TOKEN> \                     # Token iz prejšnjega koraka — dokazilo, da smeš vstopiti v cluster.
+  --server https://193.2.171.250:6443 \  # Poveži se na prvi node (k3s-1) na vratih 6443 — to so privzeta Kubernetes API vrata.
+  --token K10288bafa16aaf4a9779be18a1c44e96cc32a9305c9ad9bb4d93a3a44e14c718c6::server:07336f2868280ebca0365a11841971bd \                     # Token iz prejšnjega koraka — dokazilo, da smeš vstopiti v cluster.
   --disable=traefik \                   # Isti razlog kot na prvem nodu — ne rabimo Traefika.
   --disable=servicelb \                 # Tudi Servicelb ne rabimo.
   --write-kubeconfig-mode=644 \
-  --node-ip={{K3S_2_IP}}               # IP drugega laptopa.
+  --node-ip=193.2.171.251               # IP drugega laptopa.
 ```
 
 **Pomembno:** `--server https://{{K3S_1_IP}}:6443` pomeni "ne zaženi novega clustra, ampak se pridruži obstoječemu". Brez tega bi drugi node poskusil postati svoj lasten cluster — in imel bi 2 ločena clustra namesto enega.
