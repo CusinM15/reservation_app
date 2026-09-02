@@ -87,18 +87,18 @@ Primer konfiguracije (zamenjaj `{{VAR}}` z dejanskimi vrednostmi):
 
 ```yaml
 network:
-  ethernets:
-    eth0:
-      addresses:
-        - {{LB_IP}}/24
-      routes:
-        - to: default
-          via: {{GATEWAY_IP}}
-      nameservers:
-        addresses:
-          - {{LB_IP}}
-          - 8.8.8.8
-  version: 2
+    ethernets:
+        enp1s0:
+            dhcp4: false
+            addresses:
+              - 193.2.171.251/24
+            routes:
+              - to: default
+                via: 193.2.171.194
+            nameservers:
+              addresses:
+                - 8.8.8.8
+                - 8.8.4.4 
 ```
 
 ```bash
