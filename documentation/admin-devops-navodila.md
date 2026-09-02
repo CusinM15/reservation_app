@@ -112,7 +112,10 @@ Get-Content "$env:USERPROFILE\.ssh\id_ed25519.pub" | ssh admin_os@193.2.171.251 
 Kopiram ssh ključ tudi iz računalnikov ki so že v strežniku, da lahko Hermes pomaga:
 ```bash
          ssh-copy-id -i ~/.ssh/id_ed25519.pub admin_os@193.2.171.251
-```                                                                                                                                   ```
+```
+```bash
+scp ~/.ssh/id_ed25519 ~/.ssh/id_ed25519.pub admin_os@193.2.171.251:~/.ssh/
+```
 ****
 **Kaj se zgodi?** Računalnik dobi fiksen naslov v omrežju. Drugi računalniki ga vedno najdejo na istem mestu.
 
