@@ -104,10 +104,15 @@ network:
 ```bash
 sudo netplan apply
 ```
-Kopirati ssh ključ, za lažjo ssh povezavo:
+Kopirati ssh ključ, za lažjo ssh povezavo: (iz windovs računalnika)
 ```bash
 Get-Content "$env:USERPROFILE\.ssh\id_ed25519.pub" | ssh admin_os@193.2.171.251 "umask 077; mkdir -p ~/.ssh; cat >> ~/.ssh/authorized_keys"
 ```
+
+Kopiram ssh ključ tudi iz računalnikov ki so že v strežniku, da lahko Hermes pomaga:
+```bash
+         ssh-copy-id -i ~/.ssh/id_ed25519.pub admin_os@193.2.171.251
+```                                                                                                                                   ```
 ****
 **Kaj se zgodi?** Računalnik dobi fiksen naslov v omrežju. Drugi računalniki ga vedno najdejo na istem mestu.
 
