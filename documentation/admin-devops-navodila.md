@@ -114,7 +114,9 @@ Kopiram ssh ključ tudi iz računalnikov ki so že v strežniku, da lahko Hermes
          ssh-copy-id -i ~/.ssh/id_ed25519.pub admin_os@193.2.171.251
 ```
 ```bash
-scp ~/.ssh/id_ed25519 ~/.ssh/id_ed25519.pub admin_os@193.2.171.251:~/.ssh/
+scp ~/.ssh/id_ed25519 ~/.ssh/id_ed25519.pub  admin_os@193.2.171.251:~/.ssh/
+git clone git@github.com:os-tc-jesenice/reservation_app.git
+scp .env admin_os@193.2.171.251:~/reservation_app/
 ```
 ****
 **Kaj se zgodi?** Računalnik dobi fiksen naslov v omrežju. Drugi računalniki ga vedno najdejo na istem mestu.
