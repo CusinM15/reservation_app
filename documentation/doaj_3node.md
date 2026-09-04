@@ -4,7 +4,7 @@
 > 1. **Najprej:** kako pravilno **odstranimo** obstoječi `k3s-3` iz clustra (control-plane + etcd član).
 > 2. **Nato:** kako **na istem računalniku po sveži namestitvi OS** dodamo nov node nazaj kot control-plane (master + worker) z istim IP-jem.
 >
-> Dokument uporablja `{{VAR}}` mesta za občutljive vrednosti — spodaj je preglednica aktualne topologije.
+> Dokument uporablja `[občutljiva vrednost]` mesta za občutljive vrednosti — spodaj je preglednica aktualne topologije.
 
 ---
 
@@ -12,12 +12,12 @@
 
 | node | IP | vloga | OS | status |
 |------|-----|-------|-----|--------|
-| `k3s-1` | `{{K3S_1_IP}}` | control-plane, etcd | Ubuntu 24.04 LTS | aktiven |
-| `k3s-2` | `{{K3S_2_IP}}` | control-plane, etcd | Ubuntu 24.04 LTS | aktiven |
-| `k3s-3` | `{{K3S_3_IP}}` | control-plane, etcd | (bo ponovno) | **odstranjujemo** |
+| `k3s-1` | `193.2.171.250` | control-plane, etcd | Ubuntu 24.04 LTS | aktiven |
+| `k3s-2` | `193.2.171.249` | control-plane, etcd | Ubuntu 24.04 LTS | aktiven |
+| `k3s-3` | `193.2.171.251` | control-plane, etcd | (bo ponovno) | **odstranjujemo** |
 
-- **MetalLB IP pool:** `{{METALLB_POOL_START}}-{{METALLB_POOL_END}}` (glej `k8s/cluster/metallb-config.yaml`). LoadBalancer sola-app drži `{{LB_IP}}`. **Nikoli** ne uporabi IP-ja iz poola kot node-IP.
-- **Verzija clustra:** `{{K3S_VERSION}}` (npr. `v1.35.5+k3s1`; preberi z `kubectl get nodes`). Pri dodajanju mora biti nova namestitev **zaklenjena na to isto verzijo**.
+- **MetalLB IP pool:** `193.2.171.200-193.2.171.210` (glej `k8s/cluster/metallb-config.yaml`). LoadBalancer sola-app drži `193.2.171.250`. **Nikoli** ne uporabi IP-ja iz poola kot node-IP.
+- **Verzija clustra:** `v1.35.5+k3s1` (npr. `v1.35.5+k3s1`; preberi z `kubectl get nodes`). Pri dodajanju mora biti nova namestitev **zaklenjena na to isto verzijo**.
 
 ---
 
@@ -116,7 +116,7 @@ Potem lahko stroj ugasneš in ponovno namesti OS.
 ## 2.0 Namesti OS + statični IP + SSH
 
 - Namesti **Ubuntu Server 24.04 LTS** (uskladi z ostalimi nodi).
-- **Statični IP:** `{{K3S_3_IP}}` (enako kot prej — zunaj MetalLB poola `{{METALLB_POOL_START}}-{{METALLB_POOL_END}}`).
+- **Statični IP:** `193.2.171.251` (enako kot prej — zunaj MetalLB poola `193.2.171.200-193.2.171.210`).
 - Omogoči SSH (`openssh-server`), da delaš prek terminala.
 
 > ℹ️ Glej **[admin-devops-navodila.md](admin-devops-navodila.md) → »0. Namestitev Ubuntu Server 24.04 LTS«**.
@@ -158,9 +158,9 @@ Ustvari `config.yaml` (heredoc — prelomi vrstic mu ne škodijo):
 ```bash
 sudo mkdir -p /etc/rancher/k3s
 sudo tee /etc/rancher/k3s/config.yaml >/dev/null <<'EOF'
-server: https://{{K3S_1_IP}}:6443
-token: "{{NODE_TOKEN}}"
-node-ip: {{K3S_3_IP}}
+server: https://193.2.171.250:6443
+token: "K10288bafa16aaf4a9779be18a1c44e96cc32a9305c9ad9bb4d93a3a44e14c718c6::server:07336f2868280ebca0365a11841971bd"
+node-ip: 193.2.171.251
 disable:
   - traefik
   - servicelb
@@ -176,7 +176,7 @@ cat /etc/rancher/k3s/config.yaml    # ← PREVERI: token cel na ENA vrstici
 **Obvezno** zakleni `INSTALL_K3S_VERSION` na verzijo clustra (sicer node vleče najnovejšo, kar lahko prepreči join):
 
 ```bash
-curl -sfL https://get.k3s.io | INSTALL_K3S_VERSION={{K3S_VERSION}} sh -s - server
+curl -sfL https://get.k3s.io | INSTALL_K3S_VERSION=v1.35.5+k3s1 sh -s - server
 ```
 
 k3s pri zagonu prebere `config.yaml` — ni dolgih flag-ov na ukazni vrstici, torej se ne more zlomiti.
@@ -198,7 +198,7 @@ k3s-3   Ready    control-plane,etcd   1m    v1.35.5+k3s1   ← SPET nazaj!
 
 Če je `NotReady`, počakaj 1–2 min. Po 5 min: `journalctl -u k3s --no-pager -n 50 | grep -iE "fatal|error|etcd|token"`.
 
-> ⚠️ **Nasvet:** če node ne registrira, poženi na novem nodu `curl -sk https://{{K3S_1_IP}}:6443/healthz` — če vrne `401`, je API dosegljiv (problem je drugje); če nič, točki 2.2 (požarni zid) še enkrat.
+> ⚠️ **Nasvet:** če node ne registrira, poženi na novem nodu `curl -sk https://193.2.171.250:6443/healthz` — če vrne `401`, je API dosegljiv (problem je drugje); če nič, točki 2.2 (požarni zid) še enkrat.
 
 ## 2.7 Longhorn — replika na novem nodu
 
@@ -221,7 +221,7 @@ HPA naj drži 6 replik (3 node × 2): glej **[HA.md](HA.md) → »1. Aplikacija 
 
 ## 2.9 MetalLB preveri
 
-`node-ip` {{K3S_3_IP}} je zunaj poola — dobro. Preveri še speaker na vsakem nodu:
+`node-ip` 193.2.171.251 je zunaj poola — dobro. Preveri še speaker na vsakem nodu:
 
 ```bash
 kubectl get pods -n metallb-system -o wide     # speaker Running na VSAKEM nodu (tudi novem)
