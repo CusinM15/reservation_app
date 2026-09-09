@@ -5,3 +5,7 @@ metadata:
   namespace: sola-app
 spec:
   type: LoadBalancer
+  ports:
+  - port: 80
+    name: cloudflare
+    targetPort: http

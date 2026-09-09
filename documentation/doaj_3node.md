@@ -169,7 +169,9 @@ EOF
 cat /etc/rancher/k3s/config.yaml    # ← PREVERI: token cel na ENA vrstici
 ```
 
-> 💡 Ključi v config.yaml so dolge oblike flag imen (`server`, `token`, `node-ip`, `disable`, `write-kubeconfig-mode`). `write-kubeconfig-mode: "644"` reši tudi znano past »kubectl permission denied« po restartu.
+> 💡 **Ključi v config.yaml so dolge oblike flag imen** (`server`, `token`, `node-ip`, `disable`, `write-kubeconfig-mode`). `write-kubeconfig-mode: "644"` reši tudi znano past »kubectl permission denied« po restartu.
+
+> ⚠️ **⚠️ NAJPOMEMBNEJŠA PAST — TOKEN:** Token spodaj je **zgolj primer** in je lahko zastarel. Po **vsakem popolnem rebuildu clustra** (npr. po etcd brisanju / `rm -rf /var/lib/rancher/k3s/server/db`) se token **spremeni**. Če uporabiš star/napačen token, se node sploh ne more pridružiti — install sicer steče in service se zažene, ampak `k3s.service` pade z `control process exited with error code`. **ZATO POŽENI KORAK 2.1 PRED 2.4 IN SKOPIRAJ TOČEN IZHOD `sudo cat /var/lib/rancher/k3s/server/node-token` V `config.yaml`.** Če node ni v clustru po 5 min, je z 90% verjetnostjo napačen token.
 
 ## 2.5 (Na novem nodu) Kratek install — zakleni verzijo
 
@@ -215,9 +217,17 @@ kubectl -n longhorn-system get pods -o wide | grep longhorn   # manager+csi na n
 > kubectl patch settings.longhorn -n longhorn-system replica-auto-balance --type='merge' -p '{"value":"least-effort"}'
 > ```
 
-## 2.8 Razširi replike aplikacije (2 na node)
+## 2.8 Razširi replike aplikacije (3 na node)
 
-HPA naj drži 6 replik (3 node × 2): glej **[HA.md](HA.md) → »1. Aplikacija (sola-app)«**. Preveri `kubectl get pods -n sola-app -o wide` → 2 poda na vsakem nodu.
+Aplikacija ima `replicas: 3` z `topologySpreadConstraints: maxSkew: 1 / whenUnsatisfiable: DoNotSchedule` → po en pod je porazdeljen na vsak node (najmanj po eden na node). HPA: `minReplicas: 3`, `maxReplicas: 9` (ob večji aktivnosti skali na do 3 poda na node). Manifesta:
+
+- `k8s/app/base/sola-deployment.yaml`
+- `k8s/app/base/sola-hpa.yaml`
+
+```bash
+kubectl apply -k k8s/app/overlays/production-lb
+kubectl get pods -n sola-app -o wide    # po eden na vsakem nodu (k3s-1, k3s-2, k3s-3)
+```
 
 ## 2.9 MetalLB preveri
 
@@ -241,7 +251,7 @@ Neškodljiv log artefakt ob priklopu novega speakerja: `ServiceL2Status ... valu
 # 1. Trije nodi, vsi control-plane
 kubectl get nodes -o wide
 
-# 2. Aplikacija — 2 poda na vsakem nodu
+# 2. Aplikacija — po en pod na vsakem nodu (HPA skali navzdol/gor)
 kubectl get pods -n sola-app -o wide
 
 # 3. Longhorn — nov node viden, volume imajo 3 replike

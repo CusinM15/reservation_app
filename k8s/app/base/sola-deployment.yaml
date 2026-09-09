@@ -6,7 +6,7 @@ metadata:
   labels:
     app: sola-app
 spec:
-  replicas: 2  # minimum 2 replicas; HPA can add up to 2 more (total 4)
+  replicas: 3
   strategy:
     type: RollingUpdate
     rollingUpdate:
@@ -20,6 +20,13 @@ spec:
       labels:
         app: sola-app
     spec:
+      topologySpreadConstraints:
+        - maxSkew: 1
+          topologyKey: kubernetes.io/hostname
+          whenUnsatisfiable: DoNotSchedule
+          labelSelector:
+            matchLabels:
+              app: sola-app
       affinity:
         podAntiAffinity:
           preferredDuringSchedulingIgnoredDuringExecution:
