@@ -191,36 +191,63 @@ cat /etc/rancher/k3s/config.yaml    # ← PREVERI: token cel na ENA vrstici
 > sudo cat /var/lib/rancher/k3s/server/node-token      # na k3s-1 — private vir, vedno svež
 > ```
 
-## 2.5 (Na k3s-1) Odstrani zastarelega etcd člana — PREJ, če je k3s-3 že kdaj bil v clustru
+## 2.5 (Najprej na k3s-3: USTAVI! — nato na k3s-1) Odstrani zastarelega etcd člana
 
-> ⚠️ **Najpogostejši razlog, da rejoin po reinstalaciji pade na `EOF`:** ko poskušaš dodati k3s-3 **znova** (po neuspelem poskusu ali po odstranitvi), v embedded-etcd clustru **ostane zastareli `unstarted` član za `193.2.171.251`**. Pri novem poskusu k3s-3 ne more prevzeti — obstoječa člana (k3s-1/k3s-2) zavrneta njegov nov peer cert → `EOF`.
+> ⚠️ **Najpogostejši razlog, da rejoin po reinstalaciji pade na `EOF` in se node nikoli ne registrira:** ko poskušaš dodati k3s-3 **znova**, k3s-3 teče v **restart zanki** (npr. po neuspelem poskusu je `k3s.service` pustil da se vedno znova zažene). Vsakič, ko se znova zažene, clusterju **doda NOVEGA `unstarted` learner člana** za `193.2.171.251` (zato se ID vsakič spremeni: `f95bbc…` → `fdf142…` → `3f1fcc…`). Dokler k3s-3 teče, odstranjevanje članov **nikoli ne pobegne** — pojavi se vedno nov. **ZATO moraš k3s-3 NAJPREJ POPOLNOMA USTAVITI** in šele potem počistiti člane.
 >
-> **Simptom v journalu k3s-3:**
+> **Simptom v journalu k3s-3 (restart zanka):**
 > ```
 > msg="bootstrap failed", error="cannot fetch cluster info from peer urls: could not retrieve cluster information from the given URLs"
 > msg="failed to get cluster response", address="https://193.2.171.249:2380/members", error="Get ...: EOF"
 > msg="failed to get cluster response", address="https://193.2.171.250:2380/members", error="Get ...: EOF"
 > ```
-> To **ni** težava s tokenom niti z omrežjem (TCP se poveže, a TLS zavrne). Kriv je ravno stari member.
+>
+> **Preveri zanko:** `systemctl show k3s -p NRestarts` na k3s-3 → velik števil (npr. `NRestarts=43`) je zanesljiv znak stale/kaos identitete.
 
-Na **k3s-1** (ali katerem koli živečem control-plane nodu) preveri člane in odstrani zastarelega za `193.2.171.251`:
+### Korak 2.5a — (Na k3s-3) POPOLNOMA USTAVI k3s in prenehi zanko
+
+```bash
+sudo systemctl stop k3s              # ustavi zdaj
+sudo systemctl disable k3s           # prenehi avtomatski start pri rebootu (zaenkrat)
+sudo pkill -9 -f '/usr/local/bin/k3s' || true
+systemctl is-active k3s              # mora dati: inactive (NE activating!)
+```
+
+### Korak 2.5b — (Na k3s-1) Odstrani VSE zastarelega člana za .251
+
+Na **k3s-1** (ali katerem koli živečem control-plane nodu). Ker je k3s-3 zdaj stopan, ne bo novih članov — petlja dokler jih je **vse** pobriše:
 
 ```bash
 ETCDARGS="--cacert=/var/lib/rancher/k3s/server/tls/etcd/server-ca.crt --cert=/var/lib/rancher/k3s/server/tls/etcd/client.crt --key=/var/lib/rancher/k3s/server/tls/etcd/client.key --endpoints=https://127.0.0.1:2379"
 
-# 1. Pokaži člane — poišči tistega z 193.2.171.251:2380 (bo "unstarted")
+# 1. Pokaži člane — poišči vstale z 193.2.171.251:2380 (bo "unstarted")
 sudo ETCDCTL_API=3 etcdctl $ETCDARGS member list
 
-# 2. Odstrani zastarelega člana za k3s-3 (ID avtomatsko izpiše)
-STALE_ID=$(sudo ETCDCTL_API=3 etcdctl $ETCDARGS member list | awk '/193.2.171.251:2380/{print $1}')
-echo "Zastareli član za k3s-3: ${STALE_ID:-<ni ga>}"
-sudo ETCDCTL_API=3 etcdctl $ETCDARGS member remove "$STALE_ID"
+# 2. Petlja: odstrani vsak .251 člana, dokler jih ni več.
+# OPOMBA: član IDField vsebuje VEJICO (npr. "f95bbc2f16c635f7,") — tr -d ',' jo odstrani,
+#          sicer member remove javi "bad member ID arg (… parsing …,: invalid syntax)".
+while STALE_ID=$(sudo ETCDCTL_API=3 etcdctl $ETCDARGS member list | awk '/193.2.171.251:2380/{print $1}' | tr -d ','); [ -n "$STALE_ID" ]; do
+  echo "Odstranjujem zastarelega člana: $STALE_ID"
+  sudo ETCDCTL_API=3 etcdctl $ETCDARGS member remove "$STALE_ID"
+done
 
-# 3. Preveri: ostaneta samo 2 started člana (k3s-1, k3s-2); člana z .251 ne sme biti več
+# 3. Preveri: ostaneta SAMO 2 started člana (k3s-1, k3s-2); nobenega .251 ne sme biti več
 sudo ETCDCTL_API=3 etcdctl $ETCDARGS member list
 ```
 
-> ℹ️ Če `etcdctl` ni nameščen: `sudo apt-get install -y etcd-client`. Varno je ta ukaz poženi tudi, če člana z `.251` ni — preprosto ne bo nič odstranil (`STALE_ID` prazno).
+> ℹ️ Če `etcdctl` ni nameščen: `sudo apt-get install -y etcd-client`.
+
+### Korak 2.5c — (Na k3s-3) Počisti lokalno etcd identiteto
+
+Ker je k3s-3 težal v zanki z kaos identitet, počisti lokalni etcd podatke (config.yaml /etc/rancher/k3s/config.yaml **ostane** — ne briši ga). Nato **enkrat** zaženi:
+
+```bash
+sudo rm -rf /var/lib/rancher/k3s/server/db
+sudo systemctl daemon-reload
+sudo systemctl start k3s        # enkrat — pusti da teče, ne poskušaj ga zaenkrat ustaviti
+```
+
+Počakaj **~90 s**, da etcd uskladi članstvo 2→3, nato na k3s-1 preveri korak 2.7. Če je spet član .251 + EOF: ker si poskusil ponoviti prejšnji korak med tem, ko je node še težal → ponovi 2.5a→2.5c v popolnem zapored (k3s-3 mora biti **inactive** med korakom 2.5b).
 
 ## 2.6 (Na novem nodu) Kratek install — zakleni verzijo
 
