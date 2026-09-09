@@ -131,13 +131,18 @@ Token je kot **geslo za vstop v cluster**.
 
 ## 2.2 (Na novem nodu) Odpri vrata požarnega zidu
 
-Če je UFW aktiven, odpri `6443/tcp` (API) in `9345/tcp` (k3s supervisor) — sicer se node ne more pridružiti (najpogostejši razlog, da namestitev steče, a node nikoli ni viden v clustru).
+K3s-3 bo **control-plane (etcd)** → komunicirati mora z API-jem **in** z etcd-članskimi nodi (embedded-etcd), ne samo z API-jem. Če je UFW aktiven, odpri **vsa** spodnja vrata (sicer se node ne more pridružiti — najpogostejši razlog, da instalacija steče, a node nikoli ni viden v clustru):
 
 ```bash
 sudo ufw status
-sudo ufw allow 6443/tcp
-sudo ufw allow 9345/tcp
+sudo ufw allow 6443/tcp    # Kubernetes API
+sudo ufw allow 9345/tcp    # k3s supervisor
+sudo ufw allow 2379/tcp    # etcd client — obvezen za control-plane/etcd node
+sudo ufw allow 2380/tcp    # etcd peer   — embedded-etcd članstvo, brez tega node ne dokonča joina
+sudo ufw allow 10250/tcp   # kubelet     — kube-apiserver bere metrike/loge
 ```
+
+> ℹ️ Na k3s-1/k3s-2 je UFW **inactive** — če je tudi na novem nodu izklopljen, ta korak preskoči (preventivno je seznam vseeno tu, da te ne ugrizne).
 
 ## 2.3 (Na novem nodu) Longhorn predpogoji
 
@@ -171,7 +176,20 @@ cat /etc/rancher/k3s/config.yaml    # ← PREVERI: token cel na ENA vrstici
 
 > 💡 **Ključi v config.yaml so dolge oblike flag imen** (`server`, `token`, `node-ip`, `disable`, `write-kubeconfig-mode`). `write-kubeconfig-mode: "644"` reši tudi znano past »kubectl permission denied« po restartu.
 
-> ⚠️ **⚠️ NAJPOMEMBNEJŠA PAST — TOKEN:** Token spodaj je **zgolj primer** in je lahko zastarel. Po **vsakem popolnem rebuildu clustra** (npr. po etcd brisanju / `rm -rf /var/lib/rancher/k3s/server/db`) se token **spremeni**. Če uporabiš star/napačen token, se node sploh ne more pridružiti — install sicer steče in service se zažene, ampak `k3s.service` pade z `control process exited with error code`. **ZATO POŽENI KORAK 2.1 PRED 2.4 IN SKOPIRAJ TOČEN IZHOD `sudo cat /var/lib/rancher/k3s/server/node-token` V `config.yaml`.** Če node ni v clustru po 5 min, je z 90% verjetnostjo napačen token.
+> ⚠️ **⚠️ NAJPOMEMBNEJŠA PAST — TOKEN:** Token spodaj je **zgolj primer** in je lahko zastarel. Po **vsakem popolnem rebuildu clustra** (npr. po etcd brisanju / `rm -rf /var/lib/rancher/k3s/server/db`) se token **spremeni**. Če uporabiš star/napačen token, se node sploh ne more pridružiti — install sicer steče in service se zažene, ampak `k3s.service` pade z `control process exited with error code`. **Ker je več Hermes agentov/jih je bilo več, NE zaupaj klj-precopiranemu tokenu iz kakšne druge seje/Discord pogovora — vsakič znova poženi 2.1.**
+>
+> ➡️ **Kako NATANČNO prepoznaš zastarel token v `journalctl -u k3s --no-pager -n 40`** (tvoj trenutni simptom, 9. 9. 2026):
+> ```
+> level=fatal ... failed to validate token: token CA hash does not match the Cluster CA certificate hash:
+>   <HASH_DIR_NAPAČNEGA_TOKENA> != <PRAVI_CLUSTER_CA_HASH>
+> ```
+> To pomeni: token v `config.yaml` je **iz drugega (starejšega) clustra** → pojdi nazaj v **2.1**, poberi **svež** `sudo cat /var/lib/rancher/k3s/server/node-token` in ga zamenjaj v `config.yaml`, nato `sudo systemctl restart k3s`.
+>
+> Po prepisu tokena v 2.4 navzkrižno preveri, da si v `config.yaml` dobesedno prenesel izhod 2.1 (morata biti **povsem enaki vrstici**):
+> ```bash
+> grep '^token:' /etc/rancher/k3s/config.yaml          # na novem nodu — mora biti IDENTIČNO izhodu 2.1
+> sudo cat /var/lib/rancher/k3s/server/node-token      # na k3s-1 — private vir, vedno svež
+> ```
 
 ## 2.5 (Na novem nodu) Kratek install — zakleni verzijo
 
@@ -199,6 +217,8 @@ k3s-3   Ready    control-plane,etcd   1m    v1.35.5+k3s1   ← SPET nazaj!
 ```
 
 Če je `NotReady`, počakaj 1–2 min. Po 5 min: `journalctl -u k3s --no-pager -n 50 | grep -iE "fatal|error|etcd|token"`.
+
+> ⚠️ **Če journal pokaže `token CA hash does not match the Cluster CA certificate hash`** → token v `config.yaml` je **zastarel/napačen** (iz starejšega clustra). To ni težava z omrežjem ali verzijo — pojdi nazaj v **2.1**, poberi svež token in ga zamenjaj v 2.4, potem `sudo systemctl restart k3s`.
 
 > ⚠️ **Nasvet:** če node ne registrira, poženi na novem nodu `curl -sk https://193.2.171.250:6443/healthz` — če vrne `401`, je API dosegljiv (problem je drugje); če nič, točki 2.2 (požarni zid) še enkrat.
 
