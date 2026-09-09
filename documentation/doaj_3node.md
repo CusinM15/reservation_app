@@ -237,17 +237,28 @@ sudo ETCDCTL_API=3 etcdctl $ETCDARGS member list
 
 > ℹ️ Če `etcdctl` ni nameščen: `sudo apt-get install -y etcd-client`.
 
-### Korak 2.5c — (Na k3s-3) Počisti lokalno etcd identiteto
+### Korak 2.5c — (Na k3s-3) Počisti lokalno etcd identiteto + STARE PEER CERTE
 
-Ker je k3s-3 težal v zanki z kaos identitet, počisti lokalni etcd podatke (config.yaml /etc/rancher/k3s/config.yaml **ostane** — ne briši ga). Nato **enkrat** zaženi:
+> ⚠️ **Glavni razlog, da se zanka raztegne v nedogled:** prej smo brisali samo `server/db`, a k3s-3 ohrani stare **etcd peer certifikate** v `server/tls/etcd/`, podpisane z njegovo staro identiteto/IP. Obstoječi člani te certifikate zavržejo → `rejected connection on peer endpoint ... does not match DNSNames ...` → `EOF` → zanka. **Zato izbriši tudi `server/tls/etcd/`**, da jih k3s pri naslednjem zagonu na novo generira iz cluster CA-ja.
+
+**K3s-3 mora biti `inactive` pred spodnjim. Preveri: `systemctl is-active k3s` → `inactive`.** Nato:
 
 ```bash
+sudo systemctl stop k3s
+sudo systemctl disable k3s
+sudo pkill -9 -f '/usr/local/bin/k3s' || true
+
+# Zbriši lokalno etcd članstvo IN stare peer certifikate (server/tls/etcd/)
 sudo rm -rf /var/lib/rancher/k3s/server/db
+sudo rm -rf /var/lib/rancher/k3s/server/tls/etcd
+# config.yaml v /etc/rancher/k3s/ OSTANE — ne briši ga
+
 sudo systemctl daemon-reload
-sudo systemctl start k3s        # enkrat — pusti da teče, ne poskušaj ga zaenkrat ustaviti
+sudo systemctl enable k3s
+sudo systemctl start k3s        # ENKRAT — pusti da teče, ~90 s
 ```
 
-Počakaj **~90 s**, da etcd uskladi članstvo 2→3, nato na k3s-1 preveri korak 2.7. Če je spet član .251 + EOF: ker si poskusil ponoviti prejšnji korak med tem, ko je node še težal → ponovi 2.5a→2.5c v popolnem zapored (k3s-3 mora biti **inactive** med korakom 2.5b).
+Preveri, da ni še v zanki: `systemctl show k3s -p NRestarts` → po nekaj minutah naj **neha naraščati** (če še narašča, najdi zadnji error: `journalctl -u k3s --no-pager -n 50 | grep -iE "bootstrap|fetch cluster|cannot fetch|EOF|reject"`).
 
 ## 2.6 (Na novem nodu) Kratek install — zakleni verzijo
 
