@@ -371,7 +371,7 @@ kubectl get events -n sola-app --sort-by='.lastTimestamp'
 
 > **ELI5:** Ne paničari. Kubernetes je zasnovan tako, da se sam popravlja. Večino težav reši z enim ukazom `kubectl get ...` — poglej, kaj je narobe, in ukrepaj po spodnjih navodilih.
 
-#### **Če sam Pod crkne (aplikacija ne dela)**
+#### **Če sam Pod crkne (aplikacija dela)**
 
 ```bash
 # Poišči problematičen Pod
