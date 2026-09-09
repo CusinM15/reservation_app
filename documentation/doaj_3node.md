@@ -159,7 +159,7 @@ Ustvari `config.yaml` (heredoc — prelomi vrstic mu ne škodijo):
 sudo mkdir -p /etc/rancher/k3s
 sudo tee /etc/rancher/k3s/config.yaml >/dev/null <<'EOF'
 server: https://193.2.171.250:6443
-token: "K10288bafa16aaf4a9779be18a1c44e96cc32a9305c9ad9bb4d93a3a44e14c718c6::server:07336f2868280ebca0365a11841971bd"
+token: "K10126dfa574bbc9644fd63c1534b24a41d9b4c7e4a35d49e5771b35e7d213b8f1e::server:2d4fc811b3447e13eabf305d8e59d19a"
 node-ip: 193.2.171.251
 disable:
   - traefik
