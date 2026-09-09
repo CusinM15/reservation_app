@@ -191,7 +191,38 @@ cat /etc/rancher/k3s/config.yaml    # ← PREVERI: token cel na ENA vrstici
 > sudo cat /var/lib/rancher/k3s/server/node-token      # na k3s-1 — private vir, vedno svež
 > ```
 
-## 2.5 (Na novem nodu) Kratek install — zakleni verzijo
+## 2.5 (Na k3s-1) Odstrani zastarelega etcd člana — PREJ, če je k3s-3 že kdaj bil v clustru
+
+> ⚠️ **Najpogostejši razlog, da rejoin po reinstalaciji pade na `EOF`:** ko poskušaš dodati k3s-3 **znova** (po neuspelem poskusu ali po odstranitvi), v embedded-etcd clustru **ostane zastareli `unstarted` član za `193.2.171.251`**. Pri novem poskusu k3s-3 ne more prevzeti — obstoječa člana (k3s-1/k3s-2) zavrneta njegov nov peer cert → `EOF`.
+>
+> **Simptom v journalu k3s-3:**
+> ```
+> msg="bootstrap failed", error="cannot fetch cluster info from peer urls: could not retrieve cluster information from the given URLs"
+> msg="failed to get cluster response", address="https://193.2.171.249:2380/members", error="Get ...: EOF"
+> msg="failed to get cluster response", address="https://193.2.171.250:2380/members", error="Get ...: EOF"
+> ```
+> To **ni** težava s tokenom niti z omrežjem (TCP se poveže, a TLS zavrne). Kriv je ravno stari member.
+
+Na **k3s-1** (ali katerem koli živečem control-plane nodu) preveri člane in odstrani zastarelega za `193.2.171.251`:
+
+```bash
+ETCDARGS="--cacert=/var/lib/rancher/k3s/server/tls/etcd/server-ca.crt --cert=/var/lib/rancher/k3s/server/tls/etcd/client.crt --key=/var/lib/rancher/k3s/server/tls/etcd/client.key --endpoints=https://127.0.0.1:2379"
+
+# 1. Pokaži člane — poišči tistega z 193.2.171.251:2380 (bo "unstarted")
+sudo ETCDCTL_API=3 etcdctl $ETCDARGS member list
+
+# 2. Odstrani zastarelega člana za k3s-3 (ID avtomatsko izpiše)
+STALE_ID=$(sudo ETCDCTL_API=3 etcdctl $ETCDARGS member list | awk '/193.2.171.251:2380/{print $1}')
+echo "Zastareli član za k3s-3: ${STALE_ID:-<ni ga>}"
+sudo ETCDCTL_API=3 etcdctl $ETCDARGS member remove "$STALE_ID"
+
+# 3. Preveri: ostaneta samo 2 started člana (k3s-1, k3s-2); člana z .251 ne sme biti več
+sudo ETCDCTL_API=3 etcdctl $ETCDARGS member list
+```
+
+> ℹ️ Če `etcdctl` ni nameščen: `sudo apt-get install -y etcd-client`. Varno je ta ukaz poženi tudi, če člana z `.251` ni — preprosto ne bo nič odstranil (`STALE_ID` prazno).
+
+## 2.6 (Na novem nodu) Kratek install — zakleni verzijo
 
 **Obvezno** zakleni `INSTALL_K3S_VERSION` na verzijo clustra (sicer node vleče najnovejšo, kar lahko prepreči join):
 
@@ -201,7 +232,7 @@ curl -sfL https://get.k3s.io | INSTALL_K3S_VERSION=v1.35.5+k3s1 sh -s - server
 
 k3s pri zagonu prebere `config.yaml` — ni dolgih flag-ov na ukazni vrstici, torej se ne more zlomiti.
 
-## 2.6 (Na k3s-1) Preveri
+## 2.7 (Na k3s-1) Preveri
 
 ```bash
 kubectl get nodes -o wide
@@ -220,9 +251,11 @@ k3s-3   Ready    control-plane,etcd   1m    v1.35.5+k3s1   ← SPET nazaj!
 
 > ⚠️ **Če journal pokaže `token CA hash does not match the Cluster CA certificate hash`** → token v `config.yaml` je **zastarel/napačen** (iz starejšega clustra). To ni težava z omrežjem ali verzijo — pojdi nazaj v **2.1**, poberi svež token in ga zamenjaj v 2.4, potem `sudo systemctl restart k3s`.
 
+> ⚠️ **Če journal pokaže `cannot fetch cluster info from peer urls ... EOF`** → **ni** token (ta je pravilen, k3s-3 je šel skozi verifikacijo), ampak v clustru je **ostal zastareli etcd član** za `193.2.171.251`. Pojdi nazaj v **2.5** in ga odstrani iz etcd, potem `sudo systemctl restart k3s` na k3s-3.
+
 > ⚠️ **Nasvet:** če node ne registrira, poženi na novem nodu `curl -sk https://193.2.171.250:6443/healthz` — če vrne `401`, je API dosegljiv (problem je drugje); če nič, točki 2.2 (požarni zid) še enkrat.
 
-## 2.7 Longhorn — replika na novem nodu
+## 2.8 Longhorn — replika na novem nodu
 
 Node samodejno registrira Longhorn v ~10–15 min. Preveri:
 
@@ -237,7 +270,7 @@ kubectl -n longhorn-system get pods -o wide | grep longhorn   # manager+csi na n
 > kubectl patch settings.longhorn -n longhorn-system replica-auto-balance --type='merge' -p '{"value":"least-effort"}'
 > ```
 
-## 2.8 Razširi replike aplikacije (3 na node)
+## 2.9 Razširi replike aplikacije (3 na node)
 
 Aplikacija ima `replicas: 3` z `topologySpreadConstraints: maxSkew: 1 / whenUnsatisfiable: DoNotSchedule` → po en pod je porazdeljen na vsak node (najmanj po eden na node). HPA: `minReplicas: 3`, `maxReplicas: 9` (ob večji aktivnosti skali na do 3 poda na node). Manifesta:
 
@@ -249,7 +282,7 @@ kubectl apply -k k8s/app/overlays/production-lb
 kubectl get pods -n sola-app -o wide    # po eden na vsakem nodu (k3s-1, k3s-2, k3s-3)
 ```
 
-## 2.9 MetalLB preveri
+## 2.10 MetalLB preveri
 
 `node-ip` 193.2.171.251 je zunaj poola — dobro. Preveri še speaker na vsakem nodu:
 
@@ -259,7 +292,7 @@ kubectl get pods -n metallb-system -o wide     # speaker Running na VSAKEM nodu 
 
 Neškodljiv log artefakt ob priklopu novega speakerja: `ServiceL2Status ... value is immutable` — ignoriraj (kozmetičen).
 
-## 2.10 (Opcijsko) Hermes agent na novem nodu
+## 2.11 (Opcijsko) Hermes agent na novem nodu
 
 Če naj nov node vodi tudi Hermes agenta z isto memory/zgodovino: glej **[dodajanje-noda.md](dodajanje-noda.md) → korak 6** (export/import profila + prenos `.env`). ⚠️ Discord dopušča **eno aktivno povezavo na bot token** — bodisi nov agent s svojim tokenom, bodisi samo eden online.
 
