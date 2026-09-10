@@ -204,6 +204,14 @@ cat /etc/rancher/k3s/config.yaml    # ← PREVERI: token cel na ENA vrstici
 >
 > **Preveri zanko:** `systemctl show k3s -p NRestarts` na k3s-3 → velik števil (npr. `NRestarts=43`) je zanesljiv znak stale/kaos identitete.
 
+> 🚨 **RES PRAVI VZROK (ko ID-ji kar spremenijo: `4b584689`→`0d645250`→`fa5c1e80`…):** k3s-3 ima **dodaten DHCP IP na interface**, ki je znotraj MetalLB poola `200–210`. Preveri:
+> ```bash
+> ip -4 addr show enp1s0            # če sta DVA inet (npr. 193.2.171.251/24 + 193.2.171.207/26) — problem!
+> ip rule show
+> networkctl status enp1s0 | grep -i dhcp   # "DHCP4 Address= ..." → kriv je DHCP
+> ```
+> k3s-1 zavrne rokovanje s sporočilom: `rejected connection ... tls: "193.2.171.207" does not match DNSNames [kine.sock localhost k3s-3]`. Vzrok: **DHCP IP iz poola postane primarni source**, s katerim k3s-3 izvaja etcd peer-TLS (join) — clustrr ga zavrne. To NI token, NI članovi, NI `server/db`. Popravi omrežje (spodaj) in restartaj k3s-3.
+
 ### Korak 2.5a — (Na k3s-3) POPOLNOMA USTAVI k3s in prenehi zanko
 
 ```bash
