@@ -131,31 +131,12 @@ async function loadGrade(grade){
 // — sinhronizirano z bazo (isti vir kot koledar).
 async function loadExisting(grade){
   try{
-    const [series, blocked] = await Promise.all([
-      api('/api/rezervacije/series-list').catch(()=>[]),
-      api('/api/blocked-dates').catch(()=>[]),
-    ]);
+    const series = await api('/api/rezervacije/series-list').catch(()=>[]);
     const cont = document.getElementById('existing-container');
     if(!cont) return;
-    const letterSet = new Set(letterOddelki(grade));
-    let html = `<h3 style="margin-top:28px;">🗄️ Obstoječi (ročni) dogodki za ${(GRADE_LABELS[grade]||grade).toUpperCase()}</h3>`;
-
-    // Dnevi dejavnosti (BlockedDate) za ta razred
-    const blockedThis = blocked.filter(b => letterSet.has(b.razred));
-    html += `<div class="section-title">Dnevi dejavnosti (${blockedThis.length})</div>`;
-    if(blockedThis.length === 0){
-      html += `<p class="muted">Ni ročno blokiranih dni za to generacijo.</p>`;
-    }else{
-      html += `<table><thead><tr><th>Datum</th><th>Razred</th></tr></thead><tbody>`;
-      blockedThis.sort((a,b)=>a.date.localeCompare(b.date));
-      blockedThis.forEach(b => {
-        html += `<tr><td>${b.date}</td><td>${esc(b.razred)}</td></tr>`;
-      });
-      html += `</tbody></table>`;
-    }
-
-    // Serijske rezervacije (po prostoru/obdobju)
-    html += `<div class="section-title">Serijske rezervacije (${series.length})</div>`;
+    // Samo serijske rezervacije (tedenske redne ure), ki niso del dnevov
+    // dejavnosti — dnevov dejavnosti ni več tukaj, so v sekcijah zgoraj.
+    let html = `<h3 style="margin-top:28px;">🗄️ Serijske rezervacije (${series.length})</h3>`;
     if(series.length === 0){
       html += `<p class="muted">Ni serijskih rezervacij.</p>`;
     }else{
@@ -204,8 +185,9 @@ function renderGrade(grade){
     }else{
       html += renderSectionTable(grade, '', rows, true);
     }
+    // IP/POUK: serijske rezervacije, ki niso povezane z dejavnostmi
+    html += `<div id="existing-container"></div>`;
   }
-  html += `<div id="existing-container"></div>`;
   cont.innerHTML = html;
 }
 
