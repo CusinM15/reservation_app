@@ -185,6 +185,7 @@ class ActivityDayCreate(BaseModel):
     vodja: str = ""
     opomba: str = ""
     source: str = "manual"  # "xlsx" (iz datoteke) ali "manual"
+    parent_title: str = ""  # glavni naslov skupine, če je to poddejavnost (npr. "TEHNIŠKI DAN")
 
 
 class ActivityDayOut(BaseModel):
@@ -207,6 +208,7 @@ class ActivityDayOut(BaseModel):
     vodja: str
     opomba: str
     source: str = "manual"
+    parent_title: str = ""
     created_at: Optional[object] = None
 
     model_config = {"from_attributes": True}

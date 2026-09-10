@@ -227,18 +227,40 @@ function renderSectionTable(grade, section, rows, isManual){
   </tr></thead><tbody>`;
   if(!rows || rows.length === 0){
     html += `<tr><td colspan="10" class="muted">Ni vnesenih dejavnosti za to sekcijo.</td></tr>`;
+    html += `</tbody></table>`;
+    return html;
   }
+  // Združimo: iteriramo vrstice, ko se spremeni parent_title, izpišemo glavno
+  // vrstico (parent_title) in pod njo pod-dejavnosti.
+  let currentParent = null;
   rows.forEach(r => {
+    const isParent = r.parent_title && r.parent_title === r.title;
+    const isSub = r.parent_title && r.parent_title !== r.title;
+    if(!r.parent_title) currentParent = null;
+    if(isParent || (isSub)){
+      // v pod-skupini
+      if(currentParent !== r.parent_title){
+        // začetek nove pod-skupine — izpiši glavno vrstico (parent_title) kot pasico
+        html += `<tr class="parent-row" style="background:#eef4ff;font-weight:bold;">
+          <td colspan="10">🗂️ ${esc(r.parent_title)}</td>
+        </tr>`;
+        currentParent = r.parent_title;
+      }
+    } else {
+      currentParent = null;
+    }
     const sel = (r.prostori||'').split(',').map(x=>x.trim());
     const roomCells = rooms.map(room => {
       const on = sel.includes(room);
       return `<td style="text-align:center;">${on ? '❌' : ''}</td>`;
     }).join('');
-    // Naslov: glavni + pod dejavnost (če obstaja)
-    const sub = r.subtitle ? `<div class="muted">${esc(r.subtitle)}</div>` : '';
+    // Naslov: pod-dejavnost pod glavno; drugače samostojna dejavnost
+    const isGrouped = isSub;
+    const titleHtml = (isGrouped ? '<span style="margin-left:14px;color:#333;">• ' : '') + esc(r.title) + (isGrouped ? '</span>' : '');
+    const timeHtml = fullTime(r);
     html += `<tr data-id="${r.id}">
-      <td>${esc(r.title)}${sub}</td>
-      <td>${fmtDateRange(r)}</td>
+      <td>${titleHtml}${r.subtitle ? '<div class="muted" style="margin-left:14px;">' + esc(r.subtitle) + '</div>' : ''}</td>
+      <td>${timeHtml}</td>
       <td>${esc(r.vodja || '')}</td>
       <td>${esc(r.cena || '')}</td>
       <td>${r.date_undetermined ? '<div class="muted">📍 ' + esc(r.date_text||'') + '</div>' : ''}${esc(r.opomba || '')}</td>
@@ -251,6 +273,15 @@ function renderSectionTable(grade, section, rows, isManual){
   });
   html += `</tbody></table>`;
   return html;
+}
+
+// Poln okvirni čas: upošteva polje date_text (ki vsebuje npr. "9. 2. 2027 (6. a)"),
+// drugače pa izpelje iz datumov.
+function fullTime(r){
+  if(r.date_undetermined) return '<span class="muted">ni določen → ' + esc(r.date_text||'') + '</span>';
+  // date_text iz uvoza vsebuje okvirni čas z razredom, če obstaja
+  if(r.date_text && !/^\s*-/.test(r.date_text)) return esc(r.date_text);
+  return fmtDateRange(r);
 }
 
 // ── Modal / inline za dodajanje in urejanje ────────────────────────

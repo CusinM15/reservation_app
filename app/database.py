@@ -93,6 +93,9 @@ def init_db():
     _migrate("CREATE INDEX IF NOT EXISTS ix_activity_days_section ON activity_days (section)")
     _migrate("ALTER TABLE activity_days ADD COLUMN IF NOT EXISTS source VARCHAR NOT NULL DEFAULT 'manual'")
     _migrate("CREATE INDEX IF NOT EXISTS ix_activity_days_source ON activity_days (source)")
+    # parent_title: združevanje poddejavnosti pod glavni naslov (npr. TEHNIŠKI DAN)
+    _migrate("ALTER TABLE activity_days ADD COLUMN IF NOT EXISTS parent_title VARCHAR")
+    _migrate("CREATE INDEX IF NOT EXISTS ix_activity_days_parent_title ON activity_days (parent_title)")
 
 
 def log_audit(db: Session, user_id: int, user_name: str, action: str,

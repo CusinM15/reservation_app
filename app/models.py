@@ -175,6 +175,7 @@ class ActivityDay(Base):
     cena = Column(String, nullable=True, default="")  # besedilo (lahko "3", "225,00 EVR" ipd.)
     vodja = Column(String, nullable=True, default="")
     opomba = Column(Text, nullable=True, default="")
+    parent_title = Column(String, nullable=True, default="", index=True)  # glavni naslov skupine (npr. "TEHNIŠKI DAN"), če so to poddejavnosti
     source = Column(String, nullable=False, default="manual", index=True)  # "xlsx" (iz datoteke) ali "manual"
 
     created_by_id = Column(Integer, ForeignKey("users.id"), nullable=True)

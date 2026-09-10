@@ -212,6 +212,7 @@ def create_dejavnost(data: ActivityDayCreate, request: Request, db: Session = De
         all_classes=data.all_classes, classes=data.classes or "",
         prostori=data.prostori or "", cena=data.cena or "", vodja=data.vodja or "",
         opomba=data.opomba or "", created_by_id=user.id, source=source,
+        parent_title=(data.parent_title or "").strip(),
     )
     db.add(rec)
     db.commit()
@@ -253,6 +254,7 @@ def update_dejavnost(dej_id: int, data: ActivityDayCreate, request: Request, db:
     rec.cena = data.cena or ""
     rec.vodja = data.vodja or ""
     rec.opomba = data.opomba or ""
+    rec.parent_title = (data.parent_title or "").strip()
     db.commit()
     db.refresh(rec)
     log_audit(db, user.id, f"{user.first_name} {user.last_name}".strip(),
@@ -367,6 +369,57 @@ async def import_dejavnosti(
             ))
             count += 1
     db.commit()
+
+    # ── Združevanje poddejavnosti ────────────────────────────────────
+    # V isti sekciji + istem prostoru so lahko večkratne vrste istega
+    # "dneva" razdeljene na pod-dejavnosti (npr. TEHNIŠKI DAN: Oblak 365,
+    # Power Point, El. pošta) — vsaka s svojim vodjo in razredom. Združimo
+    # vrste, ki si sledijo v istem razredu/sekciji/prostoru.
+    _apply_grouping(db)
+
     log_audit(db, user.id, f"{user.first_name} {user.last_name}".strip(),
               "import_dejavnosti", f"imported={count}, skipped={skipped}")
     return {"message": f"Uvoženih {count} vrstic", "skipped": skipped}
+
+
+def _apply_grouping(db: Session):
+    """Po uvozu združi pod-dejavnosti v isto (grade, section, prostori).
+
+    Vstavi parent_title = f"{section} {grade}. razred" za vse vrste, ki
+    delijo isti grade+section+prostori in imajo datum znotraj istega ~15-dnevnega
+    okna (tipično pod-dejavnosti enega dneva dejavnosti). Vrsta z najzgodnejšim
+    datumom je "glavna", ostale postanejo pod-vrste (parent_title).
+    """
+    from itertools import groupby
+    from datetime import timedelta
+    rows = db.query(ActivityDay).filter(ActivityDay.source == "xlsx").all()
+    # grupiraj po (grade, section, prostori)
+    from collections import defaultdict
+    groups = defaultdict(list)
+    for r in rows:
+        key = (r.grade, r.section, r.prostori or "_")
+        groups[key].append(r)
+    for key, items in groups.items():
+        dated = [x for x in items if x.date_from]
+        if len(dated) < 2:
+            continue
+        dated.sort(key=lambda x: x.date_from)
+        # razporedi v "pobite" nize: sosednji datumi znotraj 15 dni
+        cluster: list[ActivityDay] = []
+        for item in dated:
+            if cluster and (item.date_from - cluster[-1].date_from).days <= 15:
+                cluster.append(item)
+            else:
+                _emit_cluster(cluster)  # finaliziraj prejšnji
+                cluster = [item]
+        _emit_cluster(cluster)
+    db.commit()
+
+
+def _emit_cluster(cluster: list):
+    if len(cluster) < 2:
+        return
+    main_title = f"{cluster[0].section} {cluster[0].grade}. razred"
+    # prvi (po datumu) je glavni; ostali dobijo parent_title glavnega
+    for item in cluster:
+        item.parent_title = main_title
