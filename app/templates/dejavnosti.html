@@ -190,7 +190,7 @@ function renderGrade(grade){
     html += `</div>`;
     SECTIONS.forEach(s => {
       const rows = (sectionsData[grade] && sectionsData[grade][s]) || [];
-      html += `<div class="section-title">${s}</div>`;
+      html += `<div class="section-title">${s} DNEVI (${rows.length})</div>`;
       html += renderSectionTable(grade, s, rows);
     });
   }else{
@@ -209,33 +209,40 @@ function renderGrade(grade){
   cont.innerHTML = html;
 }
 
-function renderSectionTable(grade, section, rows){
+function renderSectionTable(grade, section, rows, isManual){
+  // Prikaz po vzoru xlsx predloge: Dejavnost | čas | vodja | cena | opomba |
+  // Računalnica | Tablice | Ladja | Gospodinjska učilnica | Akcije
+  const rooms = ['racunalnica', 'tablice', 'ladja', 'gospodinjska-ucilnica'];
   let html = `<table><thead><tr>
-    <th style="width:210px;">Dejavnost (pod dejavnost)</th>
-    <th style="width:70px;">Celoten dan</th>
-    <th style="width:120px;">Datum</th>
-    <th style="width:170px;">Razredi</th>
-    <th style="width:170px;">Prostori</th>
-    <th style="width:80px;">Cena (€)</th>
-    <th style="width:140px;">Vodja</th>
-    <th style="width:130px;">Akcije</th>
+    <th>Dejavnost</th>
+    <th>Okvirni čas izvedbe</th>
+    <th>Vodja</th>
+    <th>Pribl. cena (€)</th>
+    <th>Opomba</th>
+    <th title="Računalnica">Rač.</th>
+    <th title="Tablice">Tab.</th>
+    <th title="Ladja">Ladja</th>
+    <th title="Gospodinjska učilnica">Gosp.</th>
+    <th>Akcije</th>
   </tr></thead><tbody>`;
-  if(rows.length === 0){
-    html += `<tr><td colspan="8" class="muted">Ni vnesenih dejavnosti za to sekcijo.</td></tr>`;
+  if(!rows || rows.length === 0){
+    html += `<tr><td colspan="10" class="muted">Ni vnesenih dejavnosti za to sekcijo.</td></tr>`;
   }
   rows.forEach(r => {
+    const sel = (r.prostori||'').split(',').map(x=>x.trim());
+    const roomCells = rooms.map(room => {
+      const on = sel.includes(room);
+      return `<td style="text-align:center;">${on ? '❌' : ''}</td>`;
+    }).join('');
+    // Naslov: glavni + pod dejavnost (če obstaja)
+    const sub = r.subtitle ? `<div class="muted">${esc(r.subtitle)}</div>` : '';
     html += `<tr data-id="${r.id}">
-      <td>${esc(r.title)}${r.subtitle ? '<div class="muted">' + esc(r.subtitle) + '</div>' : ''}
-          ${r.date_undetermined && r.date_text ? '<div class="muted">📍 ' + esc(r.date_text) + '</div>' : ''}
-          ${r.cena ? '<div class="muted">Cena: ' + esc(r.cena) + ' €</div>' : ''}
-          ${r.wodja ? '<div class="muted">Vodja: ' + esc(r.wodja) + '</div>' : ''}
-          ${r.opomba ? '<div class="muted">' + esc(r.opomba) + '</div>' : ''}</td>
-      <td>${r.full_day ? '✅' : '—'}</td>
+      <td>${esc(r.title)}${sub}</td>
       <td>${fmtDateRange(r)}</td>
-      <td>${r.all_classes ? 'Vsi (' + label + ')' : (r.classes || '—')}</td>
-      <td>${r.prostori || '—'}</td>
-      <td>${r.cena || ''}</td>
       <td>${esc(r.vodja || '')}</td>
+      <td>${esc(r.cena || '')}</td>
+      <td>${r.date_undetermined ? '<div class="muted">📍 ' + esc(r.date_text||'') + '</div>' : ''}${esc(r.opomba || '')}</td>
+      ${roomCells}
       <td class="row-actions">
         <button class="btn btn-warning btn-sm" onclick="editRow(${r.id})">✏️ Uredi</button>
         <button class="btn btn-danger btn-sm" onclick="delRow(${r.id})">🗑 Zbriši</button>
