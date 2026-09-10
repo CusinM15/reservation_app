@@ -149,6 +149,7 @@ def _apply_sync(db: Session, data: ActivityDayCreate, user):
 def list_dejavnosti(
     grade: Optional[str] = Query(None),
     section: Optional[str] = Query(None),
+    source: Optional[str] = Query(None),
     db: Session = Depends(get_db),
 ):
     query = db.query(ActivityDay).order_by(ActivityDay.section, ActivityDay.id)
@@ -156,6 +157,8 @@ def list_dejavnosti(
         query = query.filter(ActivityDay.grade == grade)
     if section:
         query = query.filter(ActivityDay.section == section)
+    if source:
+        query = query.filter(ActivityDay.source == source)
     return query.all()
 
 
@@ -165,7 +168,8 @@ def list_dejavnosti(
 def dejavnosti_meta(request: Request, db: Session = Depends(get_db)):
     """Vrni razrede, prostore, sekcije in vse razpoložljive grade-e."""
     _check_allowed(get_current_user_id(request), db)
-    grades = [str(i) for i in range(1, 10)] + ["ip", "pouk"]
+    # Razredi 1..9 so "dnevi dejavnosti" (iz xlsx). IP/POUK je en sam zavíhek.
+    grades = [str(i) for i in range(1, 10)] + ["ip"]
     return {
         "grades": grades,
         "razredi": settings.RAZREDI,
@@ -181,10 +185,12 @@ def dejavnosti_meta(request: Request, db: Session = Depends(get_db)):
 def create_dejavnost(data: ActivityDayCreate, request: Request, db: Session = Depends(get_db)):
     uid = _check_allowed(get_current_user_id(request), db)
     user = db.query(User).filter(User.id == uid).first()
-    if data.section not in SECTIONS:
+    is_num = data.grade.isdigit() and 1 <= int(data.grade) <= 9
+    if is_num and data.section not in SECTIONS:
         raise HTTPException(status_code=400, detail=f"Neveljavna sekcija: {data.section}")
     stat = _apply_sync(db, data, user)
     title = (data.title or "").strip() or f"{data.section} {data.grade}. razred"
+    source = data.source if data.source in ("xlsx", "manual") else "manual"
     rec = ActivityDay(
         grade=data.grade, section=data.section, title=title,
         subtitle=data.subtitle or "", full_day=data.full_day, recurring=data.recurring,
@@ -192,14 +198,14 @@ def create_dejavnost(data: ActivityDayCreate, request: Request, db: Session = De
         date_undetermined=data.date_undetermined, date_text=data.date_text or "",
         all_classes=data.all_classes, classes=data.classes or "",
         prostori=data.prostori or "", cena=data.cena or "", vodja=data.vodja or "",
-        opomba=data.opomba or "", created_by_id=user.id,
+        opomba=data.opomba or "", created_by_id=user.id, source=source,
     )
     db.add(rec)
     db.commit()
     db.refresh(rec)
     log_audit(db, user.id, f"{user.first_name} {user.last_name}".strip(),
               "create_dejavnost",
-              f"grade={data.grade}, section={data.section}, title={title}, "
+              f"grade={data.grade}, section={data.section}, title={title}, source={source}, "
               f"sync={stat}")
     return rec
 
@@ -213,7 +219,8 @@ def update_dejavnost(dej_id: int, data: ActivityDayCreate, request: Request, db:
     rec = db.query(ActivityDay).filter(ActivityDay.id == dej_id).first()
     if not rec:
         raise HTTPException(status_code=404, detail="Dejavnost ne obstaja")
-    if data.section not in SECTIONS:
+    is_num = data.grade.isdigit() and 1 <= int(data.grade) <= 9
+    if is_num and data.section not in SECTIONS:
         raise HTTPException(status_code=400, detail=f"Neveljavna sekcija: {data.section}")
     stat = _apply_sync(db, data, user)
     title = (data.title or "").strip() or f"{data.section} {data.grade}. razred"
@@ -343,6 +350,7 @@ async def import_dejavnosti(
                 date_undetermined=undetermined, date_text=termin,
                 all_classes=True, classes="", prostori=",".join(prostori),
                 cena=cena, vodja=vodja, opomba=opomba, created_by_id=user.id,
+                source="xlsx",
             ))
             count += 1
     db.commit()

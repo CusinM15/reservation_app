@@ -68,7 +68,7 @@
 <script>
 const SECTIONS = ['KULTURNI', 'NARAVOSLOVNI', 'TEHNIŠKI', 'ŠPORTNI'];
 const GRADE_LABELS = {1:'1. razred',2:'2. razred',3:'3. razred',4:'4. razred',5:'5. razred',
-                      6:'6. razred',7:'7. razred',8:'8. razred',9:'9. razred',ip:'IP/POUK',pouk:'POUK'};
+                      6:'6. razred',7:'7. razred',8:'8. razred',9:'9. razred',ip:'IP/POUK'};
 let META = null;        // razredi, prostori, razpored ...
 let currentGrade = '1';
 let sectionsData = {};  // grade -> section -> rows[]
@@ -82,6 +82,8 @@ function api(path, opts){
     return data;
   });
 }
+
+function isGradeNumeric(g){ return /^[1-9]$/.test(g); }
 
 async function init(){
   try{
@@ -110,9 +112,17 @@ function buildTabs(){
 
 async function loadGrade(grade){
   $('msg').className = 'msg';
-  const rows = await api('/api/dejavnosti?grade=' + encodeURIComponent(grade));
+  // 1–9 razred: samo dejavnosti iz xlsx (dnevi dejavnosti).
+  // IP/POUK: ročne (manual) dejavnosti + tedenske rezervacije.
+  const source = isGradeNumeric(grade) ? 'xlsx' : 'manual';
+  const url = '/api/dejavnosti?grade=' + encodeURIComponent(grade) + '&source=' + source;
+  const rows = await api(url).catch(() => []);
   sectionsData[grade] = {};
-  SECTIONS.forEach(s => sectionsData[grade][s] = rows.filter(r => r.section === s));
+  if(isGradeNumeric(grade)){
+    SECTIONS.forEach(s => sectionsData[grade][s] = rows.filter(r => r.section === s));
+  }else{
+    sectionsData[grade]['_all'] = rows;
+  }
   renderGrade(grade);
   loadExisting(grade);
 }
@@ -170,18 +180,31 @@ function renderGrade(grade){
   const label = GRADE_LABELS[grade] || grade;
   let html = `<h3>PREGLED DEJAVNOSTI ${label.toUpperCase()}</h3>`;
 
-  // Gumbi za dodajanje po sekcijah
-  html += `<div class="toolbar">`;
-  SECTIONS.forEach(s => {
-    html += `<button class="btn btn-success" onclick="addRow('${s}')">＋ ${s} DAN</button>`;
-  });
-  html += `</div>`;
-
-  SECTIONS.forEach(s => {
-    const rows = (sectionsData[grade] && sectionsData[grade][s]) || [];
-    html += `<div class="section-title">${s}</div>`;
-    html += renderSectionTable(grade, s, rows);
-  });
+  if(isGradeNumeric(grade)){
+    // 1–9 razred: sekcije (dnevi dejavnosti iz xlsx)
+    html += `<p class="hint">Dejavnosti iz predloge (dnevi_dejavnosti_v_evrih.xlsx). Za urejanje shrani vrstico — blokade/rezervacije se izvedejo pri datum+celoten dan+prostori.</p>`;
+    html += `<div class="toolbar">`;
+    SECTIONS.forEach(s => {
+      html += `<button class="btn btn-success" onclick="addRow('${s}','xlsx')">＋ ${s} DAN</button>`;
+    });
+    html += `</div>`;
+    SECTIONS.forEach(s => {
+      const rows = (sectionsData[grade] && sectionsData[grade][s]) || [];
+      html += `<div class="section-title">${s}</div>`;
+      html += renderSectionTable(grade, s, rows);
+    });
+  }else{
+    // IP/POUK: brez sekcij — ročne dejavnosti + tedenske rezervacije
+    const rows = (sectionsData[grade] && sectionsData[grade]['_all']) || [];
+    html += `<p class="hint">Sem sodijo sami ročno dodani dogodki in tedenske rezervacije, ki niso v Excel predlogi.</p>`;
+    html += `<div class="toolbar"><button class="btn btn-success" onclick="openEditor({grade:'${grade}', section:'', title:'', subtitle:'', full_day:false, recurring:true, date_from:'', date_to:'', date_undetermined:false, date_text:'', all_classes:false, classes:'', prostori:'', cena:'', vodja:'', opomba:''})">＋ Dodaj dogodek / tedensko rezervacijo</button></div>`;
+    html += `<div class="section-title">Ročne dejavnosti (${rows.length})</div>`;
+    if(rows.length === 0){
+      html += `<p class="muted">Ni ročno dodanih dejavnosti.</p>`;
+    }else{
+      html += renderSectionTable(grade, '', rows, true);
+    }
+  }
   html += `<div id="existing-container"></div>`;
   cont.innerHTML = html;
 }
@@ -246,6 +269,7 @@ function openEditor(r){
   // poenostavljen modal napolnjen s podatki
   const classes = letterOddelki(r.grade);
   const prostoriAvail = META.prostori;
+  const isNum = isGradeNumeric(r.grade);
   const sectionSel = SECTIONS.map(s=>`<option value="${s}" ${s===r.section?'selected':''}>${s}</option>`).join('');
   const classChecks = classes.map(c => {
     const inClasses = (r.classes||'').split(',').map(x=>x.trim()).includes(c);
@@ -263,11 +287,13 @@ function openEditor(r){
   overlay.innerHTML = `
     <div style="background:white;padding:22px;border-radius:10px;width:720px;max-width:95%;max-height:90vh;overflow:auto;">
       <h3 style="margin-top:0;">${r.id ? 'Uredi dejavnost' : 'Nova dejavnost'}</h3>
-      <div class="toolbar"><label>Razred (generacija): <b>${GRADE_LABELS[r.grade]||r.grade}</b></label></div>
+      <div class="toolbar"><label>Razred (generacija): <b>${GRADE_LABELS[r.grade]||r.grade}</b></label>
+        <input type="hidden" id="e-source" value="${r.source || (isNum ? 'xlsx' : 'manual')}">
+      </div>
       <div class="toolbar">
-        <label>Sekcija:
+        ${isNum ? `<label>Sekcija:
           <select id="e-section" style="min-width:170px;">${sectionSel}</select>
-        </label>
+        </label>` : `<input type="hidden" id="e-section" value="">`}
         <label>Glavni naslov:
           <input type="text" id="e-title" value="${escAttr(r.title)}" style="width:260px;" placeholder="(privzeto: SEKCIJA X. razred)">
         </label>
@@ -285,7 +311,7 @@ function openEditor(r){
       <div class="toolbar" id="date-fields">
         <label>Od: <input type="date" id="e-dfrom" value="${r.date_from||''}"></label>
         <label>Do: <input type="date" id="e-dto" value="${r.date_to||''}"></label>
-        <span class="hint">(pusti "do" prazno za en dan)</span>
+        <span class="hint">(pusti "do" prazno za en dan; za tedensko določi datum začetka in konca)</span>
       </div>
       <div class="toolbar hide" id="date-text-field">
         <label>Ocena termina: <input type="text" id="e-dtext" value="${escAttr(r.date_text)}" style="width:300px;" placeholder="npr. oktober–november"></label>
@@ -293,7 +319,7 @@ function openEditor(r){
       <div class="toolbar" style="align-items:flex-start;">
         <div style="margin-right:20px;">
           <b>Razredi:</b>
-          ${classChecks}
+          ${classChecks || '<span class="muted">(IP/POUK — ni črkovnih oddelkov)</span>'}
           <label style="display:block;margin-top:4px;"><input type="checkbox" id="e-allcls" ${r.all_classes?'checked':''} onchange="toggleAllCls(this)"> <b>Vsi razredi</b></label>
         </div>
         <div>
@@ -334,6 +360,7 @@ function saveRow(id){
   const payload = {
     grade: currentGrade,
     section: $('e-section').value,
+    source: $('e-source').value || 'manual',
     title: $('e-title').value,
     subtitle: $('e-subtitle').value,
     full_day: $('e-full').checked,

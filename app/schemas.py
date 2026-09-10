@@ -184,6 +184,7 @@ class ActivityDayCreate(BaseModel):
     cena: str = ""
     vodja: str = ""
     opomba: str = ""
+    source: str = "manual"  # "xlsx" (iz datoteke) ali "manual"
 
 
 class ActivityDayOut(BaseModel):
@@ -205,6 +206,7 @@ class ActivityDayOut(BaseModel):
     cena: str
     vodja: str
     opomba: str
+    source: str = "manual"
     created_at: Optional[object] = None
 
     model_config = {"from_attributes": True}

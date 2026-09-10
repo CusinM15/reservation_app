@@ -171,10 +171,11 @@ class ActivityDay(Base):
     date_text = Column(String, nullable=True, default="")  # npr. "oktober–november"
     all_classes = Column(Boolean, default=False, nullable=False)  # "vsi" razredi generacije
     classes = Column(Text, nullable=True, default="")  # vejica-ločen seznam izbranih črkovnih oddelkov
-    prostori = Column(Text, nullable=True, default="")  # vejica-ločen seznam izbranih prostorov
+    prostori = Column(Text, nullable=True, default="")  # vejica-ločeni prostori
     cena = Column(String, nullable=True, default="")  # besedilo (lahko "3", "225,00 EVR" ipd.)
     vodja = Column(String, nullable=True, default="")
     opomba = Column(Text, nullable=True, default="")
+    source = Column(String, nullable=False, default="manual", index=True)  # "xlsx" (iz datoteke) ali "manual"
 
     created_by_id = Column(Integer, ForeignKey("users.id"), nullable=True)
     created_by = relationship("User")
