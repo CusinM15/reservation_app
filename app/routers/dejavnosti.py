@@ -145,6 +145,12 @@ def _apply_sync(db: Session, data: ActivityDayCreate, user):
 
 # ── Seznam dejavnosti (po razredu) ───────────────────────────────────
 
+# Vrstni red sekcij mora slediti Excel predlogi: KULTURNI → NARAVOSLOVNI
+# → TEHNIŠKI → ŠPORTNI. Privzeti lexikografski ORDER BY section bi dal
+# TEHNIŠKI za ŠPORTNIM (Š < T), zato uporabimo eksplicitno prioriteto.
+_SECTION_ORDER = {"KULTURNI": 0, "NARAVOSLOVNI": 1, "TEHNIŠKI": 2, "ŠPORTNI": 3}
+
+
 @router.get("", response_model=list[ActivityDayOut])
 def list_dejavnosti(
     grade: Optional[str] = Query(None),
@@ -152,13 +158,20 @@ def list_dejavnosti(
     source: Optional[str] = Query(None),
     db: Session = Depends(get_db),
 ):
-    query = db.query(ActivityDay).order_by(ActivityDay.section, ActivityDay.id)
+    query = db.query(ActivityDay)
     if grade:
         query = query.filter(ActivityDay.grade == grade)
     if section:
         query = query.filter(ActivityDay.section == section)
     if source:
         query = query.filter(ActivityDay.source == source)
+    from sqlalchemy import case
+    section_priority = case(
+        {k: v for k, v in _SECTION_ORDER.items()},
+        value=ActivityDay.section,
+        else_=99,
+    )
+    query = query.order_by(section_priority, ActivityDay.id)
     return query.all()
 
 
