@@ -114,9 +114,52 @@ async function loadGrade(grade){
   sectionsData[grade] = {};
   SECTIONS.forEach(s => sectionsData[grade][s] = rows.filter(r => r.section === s));
   renderGrade(grade);
+  loadExisting(grade);
 }
 
-// razredi: črkovni oddelki generacije
+// Prikaz obstoječih (ročno vnesenih) serijskih rezervacij in dni dejavnosti
+// — sinhronizirano z bazo (isti vir kot koledar).
+async function loadExisting(grade){
+  try{
+    const [series, blocked] = await Promise.all([
+      api('/api/rezervacije/series-list').catch(()=>[]),
+      api('/api/blocked-dates').catch(()=>[]),
+    ]);
+    const cont = document.getElementById('existing-container');
+    if(!cont) return;
+    const letterSet = new Set(letterOddelki(grade));
+    let html = `<h3 style="margin-top:28px;">🗄️ Obstoječi (ročni) dogodki za ${(GRADE_LABELS[grade]||grade).toUpperCase()}</h3>`;
+
+    // Dnevi dejavnosti (BlockedDate) za ta razred
+    const blockedThis = blocked.filter(b => letterSet.has(b.razred));
+    html += `<div class="section-title">Dnevi dejavnosti (${blockedThis.length})</div>`;
+    if(blockedThis.length === 0){
+      html += `<p class="muted">Ni ročno blokiranih dni za to generacijo.</p>`;
+    }else{
+      html += `<table><thead><tr><th>Datum</th><th>Razred</th></tr></thead><tbody>`;
+      blockedThis.sort((a,b)=>a.date.localeCompare(b.date));
+      blockedThis.forEach(b => {
+        html += `<tr><td>${b.date}</td><td>${esc(b.razred)}</td></tr>`;
+      });
+      html += `</tbody></table>`;
+    }
+
+    // Serijske rezervacije (po prostoru/obdobju)
+    html += `<div class="section-title">Serijske rezervacije (${series.length})</div>`;
+    if(series.length === 0){
+      html += `<p class="muted">Ni serijskih rezervacij.</p>`;
+    }else{
+      html += `<table><thead><tr><th>Ime</th><th>Prostor</th><th>Obdobje</th><th>Terminov</th></tr></thead><tbody>`;
+      series.forEach(s => {
+        html += `<tr><td>${esc(s.name || 'Dogodek')}</td><td>${prostLabel(s.prostor)}</td>` +
+                `<td>${s.min_date} → ${s.max_date}</td><td>${s.count}</td></tr>`;
+      });
+      html += `</tbody></table>`;
+    }
+    cont.innerHTML = html;
+  }catch(e){ /* tiho — ni kritično */ }
+}
+
 function letterOddelki(grade){
   if(grade === 'ip' || grade === 'pouk') return [];
   return (META.razredi||[]).filter(r => r.startsWith(grade + '.') && /^\d+\.[a-zč]$/.test(r));
@@ -136,10 +179,10 @@ function renderGrade(grade){
 
   SECTIONS.forEach(s => {
     const rows = (sectionsData[grade] && sectionsData[grade][s]) || [];
-    html += `<div class="section-title">${s} (${
-      s==='KULTURNI'?'15':'15' /* kategorija v xlsx se razlikuje, tu brez trdo */ })</div>`;
+    html += `<div class="section-title">${s}</div>`;
     html += renderSectionTable(grade, s, rows);
   });
+  html += `<div id="existing-container"></div>`;
   cont.innerHTML = html;
 }
 
