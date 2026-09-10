@@ -52,13 +52,6 @@
 
   <div id="msg" class="msg"></div>
 
-  <!-- UVOZ iz Excel -->
-  <div class="toolbar" style="margin-bottom:14px;">
-    <input type="file" id="xlsx-import" accept=".xlsx" style="font-size:13px;">
-    <button class="btn btn-warning" onclick="doImport()">📥 Uvozi iz Excel</button>
-    <span class="hint">(dnevi_dejavnosti_v_evrih.xlsx — listi "1. razred" ... "9. razred")</span>
-  </div>
-
   <!-- Zavihki podstrani -->
   <div class="tabs" id="grade-tabs"></div>
 
@@ -404,18 +397,6 @@ function saveRow(id){
       document.body.removeChild(document.getElementById('editor'));
       loadGrade(currentGrade);
     }).catch(e => showMsg(e.message, 'error'));
-}
-
-// ── UVOZ ───────────────────────────────────────────────────────────
-function doImport(){
-  const f = $('xlsx-import').files[0];
-  if(!f){ showMsg('Izberi Excel datoteko', 'error'); return; }
-  if(!confirm('Uvoz bo pregledal liste in dodal vrstice dejavnosti. Nadaljuj?')) return;
-  const fd = new FormData();
-  fd.append('file', f);
-  api('/api/dejavnosti/import', {method:'POST', body: fd})
-    .then(res => { showMsg(res.message || 'Uvoženo', 'success'); loadGrade(currentGrade); })
-    .catch(e => showMsg(e.message, 'error'));
 }
 
 // ── pomožne ────────────────────────────────────────────────────────
