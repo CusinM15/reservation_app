@@ -11,7 +11,7 @@
 
 from datetime import date, datetime
 
-from sqlalchemy import Boolean, Column, Integer, String, Date, DateTime, Text, ForeignKey, Enum as SAEnum, BigInteger
+from sqlalchemy import Boolean, Column, Integer, String, Date, DateTime, Text, ForeignKey, Float, Enum as SAEnum, BigInteger
 from sqlalchemy.orm import relationship
 import enum
 
@@ -138,3 +138,45 @@ class AuditLog(Base):
     timestamp = Column(DateTime, default=datetime.utcnow, nullable=False, index=True)
 
     user = relationship("User")
+
+
+# ── Dnevi dejavnosti (UI "Vnos dejavnosti") ──────────────────────────
+# Nova tabela za vizualni vnos vseh daljših dejavnosti (kulturni,
+# naravoslovni, tehniški, športni dnevi) po razredih, s pregledom in
+# CRUD po vrsticah. Stran je namenjena vodstvu/adminu; učitelji jo
+# ne vidijo (vendar posledice — blokirani datumi, rezervacije,
+# preklini ocenjevanj — so vidne vsem).
+#
+# Uvoz iz Excel predloge (dnevi_dejavnosti_v_evrih.xlsx, listi po razredih)
+# polni VEČ vrstic za isti grade iz enega lista — zato ni unikatne omejitve
+# na (grade, section, title).
+#
+# Sync: ob shranjevanju z izpolnjenim datumom, full_day in prostori router
+# ustvari BlockedDate (za izbrane razrede/datum) in serijske rezervacije
+# (ure 1–5) ter pošlje učiteljem email za preklicana ocenjevanja —
+# enaka logika kot obstoječi blocked_dates / series.
+class ActivityDay(Base):
+    __tablename__ = "activity_days"
+
+    id = Column(Integer, primary_key=True, index=True)
+    grade = Column(String, nullable=False, index=True)  # "1".."9", "ip" (IP/POUK), "pouk"
+    section = Column(String, nullable=False, index=True)  # KULTURNI/NARAVOSLOVNI/TEHNIŠKI/ŠPORTNI
+    title = Column(String, nullable=False, default="")  # glavni naslov; če prazen → "{section} {grade}. razred"
+    subtitle = Column(String, nullable=True, default="")  # "pod dejavnost" (npr. "Oblak 365, Powerpoint")
+    full_day = Column(Boolean, default=False, nullable=False)  # Celoten dan (rezervira ure 1–5 + blokira dan)
+    recurring = Column(Boolean, default=False, nullable=False)  # tedensko ponavljanje (za nedeterminiran termin)
+    date_from = Column(Date, nullable=True)  # točen začetek; None = "ni še določen"
+    date_to = Column(Date, nullable=True)    # konec; None = en dan
+    date_undetermined = Column(Boolean, default=False, nullable=False)  # checkpoint "datum ni še določen"
+    date_text = Column(String, nullable=True, default="")  # npr. "oktober–november"
+    all_classes = Column(Boolean, default=False, nullable=False)  # "vsi" razredi generacije
+    classes = Column(Text, nullable=True, default="")  # vejica-ločen seznam izbranih črkovnih oddelkov
+    prostori = Column(Text, nullable=True, default="")  # vejica-ločen seznam izbranih prostorov
+    cena = Column(String, nullable=True, default="")  # besedilo (lahko "3", "225,00 EVR" ipd.)
+    vodja = Column(String, nullable=True, default="")
+    opomba = Column(Text, nullable=True, default="")
+
+    created_by_id = Column(Integer, ForeignKey("users.id"), nullable=True)
+    created_by = relationship("User")
+    created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)

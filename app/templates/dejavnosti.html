@@ -1,0 +1,349 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Vnos dejavnosti - Šolski App</title>
+<style>
+  body { font-family: Arial, sans-serif; margin: 20px; background: #f5f5f5; }
+  .container { max-width: 1500px; margin: auto; background: white; padding: 20px; border-radius: 10px; }
+  .nav { margin-bottom: 20px; }
+  .nav a { margin-right: 12px; font-size: 14px; color: #007bff; text-decoration: none; }
+  .nav a:hover { text-decoration: underline; }
+  h2 { margin-top: 0; }
+  .tabs { display: flex; flex-wrap: wrap; gap: 6px; margin: 16px 0; }
+  .tab { padding: 8px 14px; background: #e9ecef; border: 1px solid #ced4da; border-radius: 6px;
+         cursor: pointer; font-size: 13px; user-select: none; }
+  .tab.active { background: #007bff; color: white; border-color: #007bff; }
+  .section-title { background: #007bff; color: white; padding: 10px 14px; border-radius: 6px;
+                   margin: 24px 0 12px; font-size: 16px; font-weight: bold; }
+  table { width: 100%; border-collapse: collapse; }
+  th, td { border: 1px solid #dee2e6; padding: 6px 8px; font-size: 13px; text-align: left; vertical-align: top; }
+  th { background: #f1f3f5; }
+  .btn { padding: 5px 10px; background: #007bff; color: white; border: none; border-radius: 4px;
+         cursor: pointer; font-size: 12px; display: inline-block; }
+  .btn-danger { background: #dc3545; }
+  .btn-success { background: #28a745; }
+  .btn-warning { background: #ffc107; color: #000; }
+  .btn-sm { padding: 2px 7px; font-size: 11px; }
+  .msg { padding: 10px; border-radius: 6px; margin: 12px 0; display: none; font-size: 14px; }
+  .msg.error { background: #f8d7da; color: #721c24; display: block; }
+  .msg.success { background: #d4edda; color: #155724; display: block; }
+  .row-actions button { margin-right: 4px; }
+  .muted { color: #6c757d; font-style: italic; font-size: 12px; }
+  input[type=text], input[type=number], select, textarea {
+    padding: 4px 6px; border: 1px solid #ced4da; border-radius: 4px; font-size: 13px; }
+  .checkbox-list { display: flex; flex-wrap: wrap; gap: 8px; font-size: 13px; }
+  .checks label { margin-right: 8px; white-space: nowrap; }
+  .toolbar { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; margin-bottom: 6px; }
+  .hint { font-size: 12px; color: #555; }
+  .hide { display: none !important; }
+</style>
+</head>
+<body>
+<div class="container">
+  <div class="nav">
+    <a href="/">← Domov (urnik)</a>
+  </div>
+  <h2>📋 Vnos dejavnosti (dnevi dejavnosti)</h2>
+  <p class="hint">Samo vodstvo/admin. Vsaka generacija ima svojo podstran. Ob shranjevanju z izbranim datumom,
+    "celoten dan" in prostori se samodejno ustvarijo blokirani datumi, rezervacije (ure 1–5) in prekličejo
+    ocenjevanja + email učiteljem.</p>
+
+  <div id="msg" class="msg"></div>
+
+  <!-- UVOZ iz Excel -->
+  <div class="toolbar" style="margin-bottom:14px;">
+    <input type="file" id="xlsx-import" accept=".xlsx" style="font-size:13px;">
+    <button class="btn btn-warning" onclick="doImport()">📥 Uvozi iz Excel</button>
+    <span class="hint">(dnevi_dejavnosti_v_evrih.xlsx — listi "1. razred" ... "9. razred")</span>
+  </div>
+
+  <!-- Zavihki podstrani -->
+  <div class="tabs" id="grade-tabs"></div>
+
+  <div id="content"></div>
+</div>
+
+<script>
+const SECTIONS = ['KULTURNI', 'NARAVOSLOVNI', 'TEHNIŠKI', 'ŠPORTNI'];
+const GRADE_LABELS = {1:'1. razred',2:'2. razred',3:'3. razred',4:'4. razred',5:'5. razred',
+                      6:'6. razred',7:'7. razred',8:'8. razred',9:'9. razred',ip:'IP/POUK',pouk:'POUK'};
+let META = null;        // razredi, prostori, razpored ...
+let currentGrade = '1';
+let sectionsData = {};  // grade -> section -> rows[]
+
+const $ = id => document.getElementById(id);
+
+function api(path, opts){
+  return fetch(path, opts).then(async r => {
+    const data = await r.json().catch(() => ({}));
+    if(!r.ok) throw new Error(data.detail || ('Napaka ' + r.status));
+    return data;
+  });
+}
+
+async function init(){
+  try{
+    META = await api('/api/dejavnosti/meta');
+  }catch(e){
+    // meta vrne 403, če uporabnik ni vodstvo/admin — stran bi morala preprečiti, a vseeno obdelaj
+    alert('Napaka pri nalaganju konfiguracije: ' + e.message);
+    return;
+  }
+  buildTabs();
+  await loadGrade(currentGrade);
+}
+
+function buildTabs(){
+  const tabs = $('grade-tabs');
+  tabs.innerHTML = '';
+  META.grades.forEach(g => {
+    const div = document.createElement('div');
+    div.className = 'tab' + (g === currentGrade ? ' active' : '');
+    div.textContent = GRADE_LABELS[g] || g;
+    div.dataset.grade = g;
+    div.onclick = () => { currentGrade = g; document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active')); div.classList.add('active'); loadGrade(g); };
+    tabs.appendChild(div);
+  });
+}
+
+async function loadGrade(grade){
+  $('msg').className = 'msg';
+  const rows = await api('/api/dejavnosti?grade=' + encodeURIComponent(grade));
+  sectionsData[grade] = {};
+  SECTIONS.forEach(s => sectionsData[grade][s] = rows.filter(r => r.section === s));
+  renderGrade(grade);
+}
+
+// razredi: črkovni oddelki generacije
+function letterOddelki(grade){
+  if(grade === 'ip' || grade === 'pouk') return [];
+  return (META.razredi||[]).filter(r => r.startsWith(grade + '.') && /^\d+\.[a-zč]$/.test(r));
+}
+
+function renderGrade(grade){
+  const cont = $('content');
+  const label = GRADE_LABELS[grade] || grade;
+  let html = `<h3>PREGLED DEJAVNOSTI ${label.toUpperCase()}</h3>`;
+
+  // Gumbi za dodajanje po sekcijah
+  html += `<div class="toolbar">`;
+  SECTIONS.forEach(s => {
+    html += `<button class="btn btn-success" onclick="addRow('${s}')">＋ ${s} DAN</button>`;
+  });
+  html += `</div>`;
+
+  SECTIONS.forEach(s => {
+    const rows = (sectionsData[grade] && sectionsData[grade][s]) || [];
+    html += `<div class="section-title">${s} (${
+      s==='KULTURNI'?'15':'15' /* kategorija v xlsx se razlikuje, tu brez trdo */ })</div>`;
+    html += renderSectionTable(grade, s, rows);
+  });
+  cont.innerHTML = html;
+}
+
+function renderSectionTable(grade, section, rows){
+  let html = `<table><thead><tr>
+    <th style="width:210px;">Dejavnost (pod dejavnost)</th>
+    <th style="width:70px;">Celoten dan</th>
+    <th style="width:120px;">Datum</th>
+    <th style="width:170px;">Razredi</th>
+    <th style="width:170px;">Prostori</th>
+    <th style="width:80px;">Cena (€)</th>
+    <th style="width:140px;">Vodja</th>
+    <th style="width:130px;">Akcije</th>
+  </tr></thead><tbody>`;
+  if(rows.length === 0){
+    html += `<tr><td colspan="8" class="muted">Ni vnesenih dejavnosti za to sekcijo.</td></tr>`;
+  }
+  rows.forEach(r => {
+    html += `<tr data-id="${r.id}">
+      <td>${esc(r.title)}${r.subtitle ? '<div class="muted">' + esc(r.subtitle) + '</div>' : ''}
+          ${r.date_undetermined && r.date_text ? '<div class="muted">📍 ' + esc(r.date_text) + '</div>' : ''}
+          ${r.cena ? '<div class="muted">Cena: ' + esc(r.cena) + ' €</div>' : ''}
+          ${r.wodja ? '<div class="muted">Vodja: ' + esc(r.wodja) + '</div>' : ''}
+          ${r.opomba ? '<div class="muted">' + esc(r.opomba) + '</div>' : ''}</td>
+      <td>${r.full_day ? '✅' : '—'}</td>
+      <td>${fmtDateRange(r)}</td>
+      <td>${r.all_classes ? 'Vsi (' + label + ')' : (r.classes || '—')}</td>
+      <td>${r.prostori || '—'}</td>
+      <td>${r.cena || ''}</td>
+      <td>${esc(r.vodja || '')}</td>
+      <td class="row-actions">
+        <button class="btn btn-warning btn-sm" onclick="editRow(${r.id})">✏️ Uredi</button>
+        <button class="btn btn-danger btn-sm" onclick="delRow(${r.id})">🗑 Zbriši</button>
+      </td>
+    </tr>`;
+  });
+  html += `</tbody></table>`;
+  return html;
+}
+
+// ── Modal / inline za dodajanje in urejanje ────────────────────────
+let editMode = null; // {id}
+function addRow(section){
+  openEditor({grade: currentGrade, section, title:'', subtitle:'', full_day:true, recurring:false,
+    date_from:'', date_to:'', date_undetermined:false, date_text:'', all_classes:true,
+    classes:'', prostori:'', cena:'', vodja:'', opomba:''});
+}
+function editRow(id){
+  const rows = Object.values(sectionsData[currentGrade]||{}).flat();
+  const r = rows.find(x => x.id === id);
+  if(r) openEditor(r);
+}
+function delRow(id){
+  if(!confirm('Zbrisati to dejavnost?')) return;
+  api('/api/dejavnosti/' + id, {method:'DELETE'}).then(()=>{
+    showMsg('Dejavnost izbrisana', 'success'); loadGrade(currentGrade);
+  }).catch(e=>showMsg(e.message,'error'));
+}
+
+function openEditor(r){
+  // poenostavljen modal napolnjen s podatki
+  const classes = letterOddelki(r.grade);
+  const prostoriAvail = META.prostori;
+  const sectionSel = SECTIONS.map(s=>`<option value="${s}" ${s===r.section?'selected':''}>${s}</option>`).join('');
+  const classChecks = classes.map(c => {
+    const inClasses = (r.classes||'').split(',').map(x=>x.trim()).includes(c);
+    const checked = r.all_classes ? 'checked' : (inClasses ? 'checked' : '');
+    return `<label><input type="checkbox" class="cls" value="${c}" ${checked}> ${c}</label>`;
+  }).join('');
+  const prostCheck = prostoriAvail.map(p => {
+    const checked = (r.prostori||'').split(',').map(x=>x.trim()).includes(p);
+    return `<label><input type="checkbox" class="prost" value="${p}" ${checked?'checked':''}> ${prostLabel(p)}</label>`;
+  }).join('');
+
+  const overlay = document.createElement('div');
+  overlay.id = 'editor';
+  overlay.style.cssText = 'position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,.45);z-index:50;display:flex;align-items:center;justify-content:center;';
+  overlay.innerHTML = `
+    <div style="background:white;padding:22px;border-radius:10px;width:720px;max-width:95%;max-height:90vh;overflow:auto;">
+      <h3 style="margin-top:0;">${r.id ? 'Uredi dejavnost' : 'Nova dejavnost'}</h3>
+      <div class="toolbar"><label>Razred (generacija): <b>${GRADE_LABELS[r.grade]||r.grade}</b></label></div>
+      <div class="toolbar">
+        <label>Sekcija:
+          <select id="e-section" style="min-width:170px;">${sectionSel}</select>
+        </label>
+        <label>Glavni naslov:
+          <input type="text" id="e-title" value="${escAttr(r.title)}" style="width:260px;" placeholder="(privzeto: SEKCIJA X. razred)">
+        </label>
+      </div>
+      <div class="toolbar">
+        <label>Pod dejavnost:
+          <input type="text" id="e-subtitle" value="${escAttr(r.subtitle)}" style="width:400px;" placeholder="npr. Oblak 365, Powerpoint">
+        </label>
+      </div>
+      <div class="toolbar">
+        <label><input type="checkbox" id="e-full" ${r.full_day?'checked':''}> Celoten dan (rezervira 1.–5. uro)</label>
+        <label><input type="checkbox" id="e-recurring" ${r.recurring?'checked':''}> Tedensko ponavljanje</label>
+        <label><input type="checkbox" id="e-undet" ${r.date_undetermined?'checked':''} onchange="toggleUndet(this)"> Datum ni še določen</label>
+      </div>
+      <div class="toolbar" id="date-fields">
+        <label>Od: <input type="date" id="e-dfrom" value="${r.date_from||''}"></label>
+        <label>Do: <input type="date" id="e-dto" value="${r.date_to||''}"></label>
+        <span class="hint">(pusti "do" prazno za en dan)</span>
+      </div>
+      <div class="toolbar hide" id="date-text-field">
+        <label>Ocena termina: <input type="text" id="e-dtext" value="${escAttr(r.date_text)}" style="width:300px;" placeholder="npr. oktober–november"></label>
+      </div>
+      <div class="toolbar" style="align-items:flex-start;">
+        <div style="margin-right:20px;">
+          <b>Razredi:</b>
+          ${classChecks}
+          <label style="display:block;margin-top:4px;"><input type="checkbox" id="e-allcls" ${r.all_classes?'checked':''} onchange="toggleAllCls(this)"> <b>Vsi razredi</b></label>
+        </div>
+        <div>
+          <b>Prostori:</b> ${prostCheck || '<span class="muted">(ni razpoložljivih prostorov)</span>'}
+        </div>
+      </div>
+      <div class="toolbar">
+        <label>Cena (€): <input type="text" id="e-cena" value="${escAttr(r.cena)}" style="width:120px;" placeholder="npr. 3 ali 225,00 EVR"></label>
+        <label>Vodja: <input type="text" id="e-vodja" value="${escAttr(r.vodja)}" style="width:240px;"></label>
+      </div>
+      <div class="toolbar">
+        <label>Opomba: <input type="text" id="e-opomba" value="${escAttr(r.opomba)}" style="width:100%;"></label>
+      </div>
+      <div style="text-align:right;margin-top:16px;">
+        <button class="btn btn-danger" onclick="document.body.removeChild(this.closest('#editor'))" style="margin-right:6px;">Prekliči</button>
+        <button class="btn btn-success" onclick="saveRow(${r.id || 'null'})">💾 Shrani</button>
+      </div>
+    </div>`;
+  document.body.appendChild(overlay);
+  toggleUndet($('e-undet'));
+  toggleAllCls($('e-allcls'));
+  editMode = {id: r.id || null};
+}
+
+function toggleUndet(cb){
+  if(cb.checked){ $('date-fields').classList.add('hide'); $('date-text-field').classList.remove('hide'); }
+  else { $('date-fields').classList.remove('hide'); $('date-text-field').classList.add('hide'); }
+}
+function toggleAllCls(cb){
+  document.querySelectorAll('#editor input.cls').forEach(x => x.checked = cb.checked);
+}
+
+function saveRow(id){
+  const undet = $('e-undet').checked;
+  const all = $('e-allcls').checked;
+  const classes = Array.from(document.querySelectorAll('#editor input.cls:checked')).map(x=>x.value);
+  const prost = Array.from(document.querySelectorAll('#editor input.prost:checked')).map(x=>x.value);
+  const payload = {
+    grade: currentGrade,
+    section: $('e-section').value,
+    title: $('e-title').value,
+    subtitle: $('e-subtitle').value,
+    full_day: $('e-full').checked,
+    recurring: $('e-recurring').checked,
+    date_from: undet ? null : ($('e-dfrom').value || null),
+    date_to: undet ? null : ($('e-dto').value || null),
+    date_undetermined: undet,
+    date_text: undet ? $('e-dtext').value : '',
+    all_classes: all,
+    classes: all ? '' : classes.join(','),
+    prostori: prost.join(','),
+    cena: $('e-cena').value,
+    vodja: $('e-vodja').value,
+    opomba: $('e-opomba').value,
+  };
+  const method = id ? 'PUT' : 'POST';
+  const url = id ? '/api/dejavnosti/' + id : '/api/dejavnosti';
+  api(url, {method, headers:{'Content-Type':'application/json'}, body: JSON.stringify(payload)})
+    .then(res => {
+      showMsg('Dejavnost shranjena.', 'success');
+      document.body.removeChild(document.getElementById('editor'));
+      loadGrade(currentGrade);
+    }).catch(e => showMsg(e.message, 'error'));
+}
+
+// ── UVOZ ───────────────────────────────────────────────────────────
+function doImport(){
+  const f = $('xlsx-import').files[0];
+  if(!f){ showMsg('Izberi Excel datoteko', 'error'); return; }
+  if(!confirm('Uvoz bo pregledal liste in dodal vrstice dejavnosti. Nadaljuj?')) return;
+  const fd = new FormData();
+  fd.append('file', f);
+  api('/api/dejavnosti/import', {method:'POST', body: fd})
+    .then(res => { showMsg(res.message || 'Uvoženo', 'success'); loadGrade(currentGrade); })
+    .catch(e => showMsg(e.message, 'error'));
+}
+
+// ── pomožne ────────────────────────────────────────────────────────
+function esc(s){ return (s||'').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+function escAttr(s){ return esc(s); }
+function fmtDateRange(r){
+  if(r.date_undetermined) return '<span class="muted">ni določen</span>';
+  if(!r.date_from) return '—';
+  if(r.date_to && r.date_to !== r.date_from) return r.date_from + ' → ' + r.date_to;
+  return r.date_from;
+}
+function prostLabel(p){
+  return {tablice:'Tablice', racunalnica:'Računalnica', ladja:'Ladja', 'gospodinjska-ucilnica':'Gospod. uč.'}[p] || p;
+}
+function showMsg(t, type){ const m=$('msg'); m.textContent=t; m.className='msg '+type; setTimeout(()=>{m.className='msg';},6000); }
+
+// message popup iz save (povemo statistiko) — API vrne rec, zato dodaj tekst
+init();
+</script>
+</body>
+</html>

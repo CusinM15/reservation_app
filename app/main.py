@@ -20,7 +20,7 @@ from sqlalchemy.orm import Session
 
 from app.config import settings
 from app.database import init_db, get_db
-from app.routers import rezervacije, ocenjevanja, auth, blocked_dates, audit_log, export, docs
+from app.routers import rezervacije, ocenjevanja, auth, blocked_dates, audit_log, export, docs, dejavnosti
 from app.audit import log_audit
 from app.models import User, RoleEnum
 from passlib.context import CryptContext
@@ -150,6 +150,22 @@ def get_schedule():
 # Zakaj posebna pot /history namesto /api/audit-log/page?
 # Zgodovinska ujemanje — prejšnja verzija je uporabljala /history in
 # uporabniki so se navadili. Oba endpointa obstajata.
+@app.get("/dejavnosti", response_class=HTMLResponse)
+def dejavnosti_page(request: Request):
+    """Stran 'Vnos dejavnosti' — SAMO za vodstvo/admin."""
+    user_id = get_current_user_id(request)
+    if not user_id:
+        return RedirectResponse(url="/auth/login")
+    from app.database import SessionLocal
+    db = SessionLocal()
+    user = db.query(User).filter(User.id == int(user_id)).first()
+    allowed = user and user.role in (RoleEnum.admin, RoleEnum.vodstvo)
+    db.close()
+    if not allowed:
+        return HTMLResponse("Dostop samo za vodstvo/admin. Prijavite se z ustreznim računom.", status_code=403)
+    return templates.TemplateResponse("dejavnosti.html", {"request": request})
+
+
 @app.get("/history", response_class=HTMLResponse)
 def history_page(request: Request):
     """Pokaži audit log — samo za prijavljenega admina."""
@@ -181,6 +197,7 @@ app.include_router(blocked_dates.router)
 app.include_router(audit_log.router)
 app.include_router(export.router)
 app.include_router(docs.router)
+app.include_router(dejavnosti.router)
 
 # ── Statične datoteke za dokumentacijo ────────────────────────────────
 # Slike iz dokumentacije (v /documentation/slike/) serviramo kot statične

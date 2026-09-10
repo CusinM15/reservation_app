@@ -160,3 +160,51 @@ class UserOut(BaseModel):
     full_name: Optional[str] = None
 
     model_config = {"from_attributes": True}
+
+
+# ── Dnevi dejavnosti (UI "Vnos dejavnosti") ─────────────────────────
+# Vhodni in izhodni podatki za ActivityDay. Uporabljamo string za datum
+# (None = "ni še določen"), ker UI dovoljuje nedeterminirane termine.
+
+class ActivityDayCreate(BaseModel):
+    """Vhodni podatki za ustvarjanje/posodobitev vrste dejavnosti."""
+    grade: str
+    section: str
+    title: str = ""
+    subtitle: str = ""
+    full_day: bool = False
+    recurring: bool = False
+    date_from: Optional[date] = None
+    date_to: Optional[date] = None
+    date_undetermined: bool = False
+    date_text: str = ""
+    all_classes: bool = False
+    classes: str = ""       # vejica-ločen seznam črkovnih oddelkov
+    prostori: str = ""      # vejica-ločen seznam prostorov
+    cena: str = ""
+    vodja: str = ""
+    opomba: str = ""
+
+
+class ActivityDayOut(BaseModel):
+    """Izhodni podatki za vrsto dejavnosti."""
+    id: int
+    grade: str
+    section: str
+    title: str
+    subtitle: str
+    full_day: bool
+    recurring: bool
+    date_from: Optional[date] = None
+    date_to: Optional[date] = None
+    date_undetermined: bool
+    date_text: str
+    all_classes: bool
+    classes: str
+    prostori: str
+    cena: str
+    vodja: str
+    opomba: str
+    created_at: Optional[object] = None
+
+    model_config = {"from_attributes": True}

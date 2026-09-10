@@ -369,7 +369,10 @@
                ID 1-4 ali vlogo admin/vodstvo. Omejitev zato, ker
                blokiranje datumov vpliva na celoten urnik in zahteva
                pooblastila. -->
-          <span id="block-btn-container"><button class="btn btn-outline" onclick="openBlockModal()">🚫 Dnevi dejavnosti</button></span>
+          <span id="block-btn-container">
+            <button class="btn btn-outline" onclick="openBlockModal()">🚫 Dnevi dejavnosti</button>
+            <button class="btn btn-outline" onclick="location.href='/dejavnosti'">📋 Vnos dejavnosti</button>
+          </span>
         </div>
         <!-- KOLEDAR — dinamično generiran mesečni pregled. -->
         <div id="oc-calendar-container">

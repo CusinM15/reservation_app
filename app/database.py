@@ -81,11 +81,42 @@ def init_db():
             pass  # Že obstaja / že izvedeno — to je OK
 
     # Migracija: dodaj stolpec series_id v tabelo reservations
-    _migrate("ALTER TABLE reservations ADD COLUMN IF NOT EXISTS series_id VARCHAR")
-    # Index za series_id
-    _migrate("CREATE INDEX IF NOT EXISTS ix_reservations_series_id ON reservations (series_id)")
-    # Migracija: dodaj stolpec name v tabelo reservations (ime serije)
-    _migrate("ALTER TABLE reservations ADD COLUMN IF NOT EXISTS name VARCHAR")
+        _migrate("ALTER TABLE reservations ADD COLUMN IF NOT EXISTS series_id VARCHAR")
+        # Index za series_id
+        _migrate("CREATE INDEX IF NOT EXISTS ix_reservations_series_id ON reservations (series_id)")
+        # Migracija: dodaj stolpec name v tabelo reservations (ime serije)
+        _migrate("ALTER TABLE reservations ADD COLUMN IF NOT EXISTS name VARCHAR")
+
+        # ── Nova tabela: activity_days (UI "Vnos dejavnosti") ─────────────
+        # Idempotenten CREATE TABLE, da ne pade na obstoječi bazi. Base.metadata
+        # create_all() zgoraj že ustvari tabelo, če model obstaja — ta blok je
+        # zgolj varnostna mreža za čiste/obstoječe baze brez Alembic.
+        _migrate(
+            "CREATE TABLE IF NOT EXISTS activity_days ("
+            "id SERIAL PRIMARY KEY,"
+            "grade VARCHAR NOT NULL,"
+            "section VARCHAR NOT NULL,"
+            "title VARCHAR NOT NULL DEFAULT '',"
+            "subtitle VARCHAR DEFAULT '',"
+            "full_day BOOLEAN NOT NULL DEFAULT FALSE,"
+            "recurring BOOLEAN NOT NULL DEFAULT FALSE,"
+            "date_from DATE,"
+            "date_to DATE,"
+            "date_undetermined BOOLEAN NOT NULL DEFAULT FALSE,"
+            "date_text VARCHAR DEFAULT '',"
+            "all_classes BOOLEAN NOT NULL DEFAULT FALSE,"
+            "classes TEXT DEFAULT '',"
+            "prostori TEXT DEFAULT '',"
+            "cena VARCHAR DEFAULT '',"
+            "vodja VARCHAR DEFAULT '',"
+            "opomba TEXT DEFAULT '',"
+            "created_by_id INTEGER REFERENCES users(id),"
+            "created_at TIMESTAMP WITHOUT TIME ZONE NOT NULL DEFAULT now(),"
+            "updated_at TIMESTAMP WITHOUT TIME ZONE NOT NULL DEFAULT now()"
+            ")"
+        )
+        _migrate("CREATE INDEX IF NOT EXISTS ix_activity_days_grade ON activity_days (grade)")
+        _migrate("CREATE INDEX IF NOT EXISTS ix_activity_days_section ON activity_days (section)")
 
 
 def log_audit(db: Session, user_id: int, user_name: str, action: str,

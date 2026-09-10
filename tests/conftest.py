@@ -59,7 +59,7 @@ def clean_db():
     yield
     db = SessionLocal()
     try:
-        db.execute(text("TRUNCATE users, reservations, assessments, audit_log, blocked_dates RESTART IDENTITY CASCADE"))
+        db.execute(text("TRUNCATE users, reservations, assessments, audit_log, blocked_dates, activity_days RESTART IDENTITY CASCADE"))
         db.commit()
     finally:
         db.close()
