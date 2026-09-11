@@ -59,7 +59,7 @@
 </div>
 
 <script>
-const SECTIONS = ['KULTURNI', 'NARAVOSLOVNI', 'TEHNIŠKI', 'ŠPORTNI'];
+const SECTIONS = ['KULTURNI', 'NARAVOSLOVNI', 'TEHNIŠKI', 'ŠPORTNI', 'DRUGO'];
 const GRADE_LABELS = {1:'1. razred',2:'2. razred',3:'3. razred',4:'4. razred',5:'5. razred',
                       6:'6. razred',7:'7. razred',8:'8. razred',9:'9. razred',ip:'IP/POUK'};
 let META = null;        // razredi, prostori, razpored ...
@@ -241,7 +241,8 @@ function fullTime(r){
   if(r.date_undetermined) return '<span class="muted">ni določen → ' + esc(r.date_text||'') + '</span>';
   if(r.termini && Array.isArray(r.termini) && r.termini.length > 0){
     const lines = r.termini.map(t => {
-      const ds = t.date || '';
+      let ds = t.date || '';
+      if(t.date_to && t.date_to !== t.date) ds += ' → ' + t.date_to;
       const cl = t.classes ? ' (' + t.classes.replace(/,/g, ', ') + ')' : '';
       return '<div>• ' + esc(ds + cl) + '</div>';
     }).join('');
@@ -309,11 +310,9 @@ function openEditor(r){
       </div>
       <div class="toolbar" id="date-fields">
         <div style="width:100%;">
-          <b>Datumi</b> <span class="hint">(določi več datumov — npr. vsak razred na svoj dan)</span>
+          <b>Datumi</b> <span class="hint">(datume dodaš samo tukaj; za isti razred na več zaporednih dni označi »Več dni« in vpiši še »Do«)</span>
           <div id="termini-list" style="margin:6px 0;"></div>
           <button type="button" class="btn" onclick="addTerminRow()">＋ Dodaj datum</button>
-          <label style="margin-left:12px;">Od: <input type="date" id="e-dfrom" value="${r.date_from||''}"></label>
-          <label>Do: <input type="date" id="e-dto" value="${r.date_to||''}"></label>
         </div>
       </div>
       <div class="toolbar hide" id="date-text-field">
@@ -339,19 +338,29 @@ function openEditor(r){
   document.body.appendChild(overlay);
   toggleUndet($('e-undet'));
   editMode = {id: r.id || null};
-  populateTermini(r.termini || []);
+  // Stari zapisi so hranili datume v date_from/date_to; preselimo jih v
+  // termin vrstice, ker se datumi zdaj vnašajo samo tam.
+  const legacyTerm = (r.termini && r.termini.length) ? r.termini
+    : (r.date_from ? [{date: r.date_from, date_to: r.date_to || null, classes: r.classes || ''}] : []);
+  populateTermini(legacyTerm);
 }
 
 // ── Termini: več datumov pod eno dejavnost ─────────────────────────
-// Vsaka vrstica ima datum + izbrane razrede (vsi črkovni oddelki generacije).
+// Vsaka vrstica ima datum (od), izbiro razredov (vsi ali po en), in
+// opcijsko »Več dni«, ki ko je označeno doda še polje »Do« (obseg dni).
 function terminRowHtml(term, idx){
   const classes = letterOddelki(term.grade || currentGrade);
+  const allChecked = classes.length > 0 && (term.classes||'').split(',').map(x=>x.trim()).filter(Boolean).length === classes.length;
   const pick = classes.map(c => {
     const on = (term.classes||'').split(',').map(x=>x.trim()).includes(c);
-    return `<label><input type="checkbox" class="t-cls" value="${c}" ${on?'checked':''}> ${c}</label>`;
+    return `<label><input type="checkbox" class="t-cls" value="${c}" ${on?'checked':''} ${allChecked?'disabled':''}> ${c}</label>`;
   }).join('');
+  const hasTo = !!(term.date_to && term.date_to !== term.date);
   return `<div class="t-row" data-idx="${idx}" style="border:1px solid #ddd;border-radius:4px;padding:6px;margin-bottom:4px;display:flex;gap:10px;align-items:flex-start;flex-wrap:wrap;">
-    <label>Datum: <input type="date" class="t-date" value="${term.date||''}"></label>
+    <label>Od: <input type="date" class="t-date" value="${term.date||''}"></label>
+    <label style="white-space:nowrap;"><input type="checkbox" class="t-multi" ${hasTo?'checked':''} onchange="toggleMulti(this)"> Več dni</label>
+    <label>Do: <input type="date" class="t-date-to" value="${term.date_to||''}" ${hasTo?'':'disabled'}></label>
+    <label style="white-space:nowrap;"><input type="checkbox" class="t-all" ${allChecked?'checked':''} onchange="toggleAllClasses(this)"> Vsi razredi generacije</label>
     <div><b>Razredi:</b> ${pick || '<span class="muted">(ni črkovnih oddelkov)</span>'}</div>
     <button type="button" class="btn btn-danger btn-sm" onclick="delTerminRow(this)">✕</button>
   </div>`;
@@ -365,6 +374,16 @@ function addTerminRow(term){
 function delTerminRow(btn){
   btn.closest('.t-row').remove();
 }
+function toggleMulti(cb){
+  const row = cb.closest('.t-row');
+  const until = row.querySelector('.t-date-to');
+  if(until) until.disabled = !cb.checked;
+}
+function toggleAllClasses(cb){
+  const row = cb.closest('.t-row');
+  const make = cb.checked ? true : false;
+  row.querySelectorAll('.t-cls').forEach(c => { c.checked = make; c.disabled = make; });
+}
 function populateTermini(terms){
   (terms||[]).forEach(t => addTerminRow(t));
   if(!terms || terms.length===0) addTerminRow({});
@@ -373,8 +392,12 @@ function collectTermini(){
   const out = [];
   document.querySelectorAll('#termini-list .t-row').forEach(row => {
     const date = row.querySelector('.t-date').value;
+    const dateToEl = row.querySelector('.t-date-to');
+    const multi = row.querySelector('.t-multi').checked;
+    // date_to upoštevano samo ko je »Več dni« označeno (Do ni onemogočeno).
+    const dateTo = (multi && dateToEl && !dateToEl.disabled) ? dateToEl.value : null;
     const cls = Array.from(row.querySelectorAll('.t-cls:checked')).map(x=>x.value);
-    if(date) out.push({date, classes: cls.join(',')});
+    if(date) out.push({date, date_to: dateTo, classes: cls.join(',')});
   });
   return out;
 }
@@ -395,8 +418,6 @@ function saveRow(id){
     subtitle: $('e-subtitle').value,
     full_day: $('e-full').checked,
     recurring: $('e-recurring').checked,
-    date_from: undet ? null : ($('e-dfrom').value || null),
-    date_to: undet ? null : ($('e-dto').value || null),
     date_undetermined: undet,
     date_text: undet ? $('e-dtext').value : '',
     all_classes: false,

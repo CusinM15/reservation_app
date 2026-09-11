@@ -113,6 +113,25 @@ def test_multi_datum_sync_via_termini(client, make_user):
     assert len(dej["termini"]) == 2
 
 
+def test_termini_range_expands_dates(client, make_user):
+    """Termin z date_to (obseg) ustvari blokade + rezervacije za VSE dni v obsegu."""
+    _admin_login(client, make_user)
+    d1 = (date.today() + timedelta(days=15)).isoformat()
+    d2 = (date.today() + timedelta(days=17)).isoformat()  # 3 dni: d1, d1+1, d2
+    r = client.post("/api/dejavnosti", json={
+        "grade": "7", "section": "TEHNIŠKI", "title": "Obseg",
+        "full_day": True, "prostori": "racunalnica",
+        "all_classes": False, "classes": "7.a", "date_undetermined": False,
+        "termini": [{"date": d1, "date_to": d2, "classes": "7.a"}],
+    })
+    assert r.status_code == 201, r.text
+    # blocked: 7.a na vseh 3 dneh = 3
+    assert _count(BlockedDate, razred="7.a") == 3
+    # rezervacije: 1 prostor * 5 ur * 3 dni = 15
+    assert _count(Reservation, date=date.fromisoformat(d1)) == 5
+    assert _count(Reservation, date=date.fromisoformat(d2)) == 5
+
+
 def test_reservations_not_duplicated_on_resave(client, make_user):
     """Večkratno shranjevanje iste dejavnosti (isto ime/datum/uro) ne sme podvojiti rezervacij."""
     _admin_login(client, make_user)

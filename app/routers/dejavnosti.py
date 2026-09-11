@@ -36,7 +36,7 @@ from app.routers.blocked_dates import _send_email
 
 router = APIRouter(prefix="/api/dejavnosti", tags=["dejavnosti"])
 
-SECTIONS = ["KULTURNI", "NARAVOSLOVNI", "TEHNIŠKI", "ŠPORTNI"]
+SECTIONS = ["KULTURNI", "NARAVOSLOVNI", "TEHNIŠKI", "ŠPORTNI", "DRUGO"]
 HOURS_FULLDAY = [1, 2, 3, 4, 5]  # 1.–5. ura (ne predura 0)
 ALLOWED_USER_IDS = {1, 2, 3, 4}  # enako kot blocked_dates
 
@@ -61,6 +61,17 @@ def _split_csv(s: str | None) -> list[str]:
     return [x.strip() for x in (s or "").split(",") if x.strip()]
 
 
+def _iter_dates(from_: date, to_: date | None):
+    """Vrne vse datume med from_ in to_ (vključno). Če to_ manjka → samo from_."""
+    if not to_ or to_ < from_:
+        yield from_
+        return
+    cur = from_
+    while cur <= to_:
+        yield cur
+        cur += timedelta(days=1)
+
+
 def _apply_sync(db: Session, data: ActivityDayCreate, user):
     """Ustvari blokade + rezervacije + prekli z obstoječimi podatki.
 
@@ -77,18 +88,25 @@ def _apply_sync(db: Session, data: ActivityDayCreate, user):
     if not data.prostori:
         return {"blocked": 0, "deleted_assessments": 0, "emails_sent": 0, "reservations": 0}
 
-    # Zberi seznam (datum, oddelki) parov
+    # Zberi seznam (datum, oddelki) parov — termini lahko vsebujejo obseg
+    # (date+date_to) za isti razred na več zaporednih dni.
     pairs = []
     if getattr(data, "termini", None):
         for t in data.termini:
-            d = t.get("date") or data.date_from
-            if not d:
+            d_raw = t.get("date") or data.date_from
+            if not d_raw:
                 continue
+            d = d_raw if isinstance(d_raw, date) else date.fromisoformat(d_raw)
             if t.get("classes"):
                 oddelki = [o for o in (t["classes"] or "").split(",") if o.strip() in settings.RAZREDI]
             else:
                 oddelki = _resolve_letter_oddelki(data.grade, settings.RAZREDI) if data.all_classes else _split_csv(data.classes)
-            pairs.append((d, oddelki, t.get("vodja") or data.vodja))
+            d_to_raw = t.get("date_to")
+            d_to = None
+            if d_to_raw and isinstance(d_to_raw, str):
+                d_to = date.fromisoformat(d_to_raw)
+            for dd in _iter_dates(d, d_to):
+                pairs.append((dd, oddelki, t.get("vodja") or data.vodja))
     else:
         d = data.date_from
         if d:
@@ -163,7 +181,7 @@ def _apply_sync(db: Session, data: ActivityDayCreate, user):
 # Vrstni red sekcij mora slediti Excel predlogi: KULTURNI → NARAVOSLOVNI
 # → TEHNIŠKI → ŠPORTNI. Privzeti lexikografski ORDER BY section bi dal
 # TEHNIŠKI za ŠPORTNIM (Š < T), zato uporabimo eksplicitno prioriteto.
-_SECTION_ORDER = {"KULTURNI": 0, "NARAVOSLOVNI": 1, "TEHNIŠKI": 2, "ŠPORTNI": 3}
+_SECTION_ORDER = {"KULTURNI": 0, "NARAVOSLOVNI": 1, "TEHNIŠKI": 2, "ŠPORTNI": 3, "DRUGO": 4}
 
 
 @router.get("", response_model=list[ActivityDayOut])
