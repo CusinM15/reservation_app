@@ -80,14 +80,14 @@ def _apply_sync(db: Session, data: ActivityDayCreate, user):
       (npr. Računalniško opismenjevanje: 8.10 (7.a), 9.10 (7.b), ...). NULL/[] = en sam.
     - zaledni (date_from, date_to + classes): en obseg datumov z istimi razredi.
 
-    Izvede se le, ko je full_day in so izbrani razredi/prostori. Vrne dict
-    s statistiko (blocked, deleted_assessments, emails, reservations).
-    """
-    if not data.full_day:
-        return {"blocked": 0, "deleted_assessments": 0, "emails_sent": 0, "reservations": 0}
-    if not data.prostori:
-        return {"blocked": 0, "deleted_assessments": 0, "emails_sent": 0, "reservations": 0}
+    Blokade dni dejavnosti (BlockedDate + preklic obstoječih ocenjevanj + email)
+    se izvedejo VEDNO, ko je določen datum + razred — dan dejavnosti pomeni,
+    da razred ta dan ni na voljo za ocenjevanja, neodvisno od full_day/prostorov.
 
+    Rezervacije prostorov (ure 1–5) pa le, ko je full_day in izbran prostor.
+
+    Vrne dict s statistiko (blocked, deleted_assessments, emails, reservations).
+    """
     # Zberi seznam (datum, oddelki) parov — termini lahko vsebujejo obseg
     # (date+date_to) za isti razred na več zaporednih dni.
     pairs = []
@@ -120,7 +120,9 @@ def _apply_sync(db: Session, data: ActivityDayCreate, user):
     stat = {"blocked": 0, "deleted_assessments": 0, "emails_sent": 0, "reservations": 0}
     title = (data.title or "").strip() or f"{data.section} {data.grade}. razred"
 
-    # 1) BlockedDate + preklic ocenjevanj za vsak (datum, razred) par
+    # 1) BlockedDate + preklic ocenjevanj za vsak (datum, razred) par.
+    #    To se zgodi VEDNO (dan dejavnosti = razred zaseden), tudi ko ni
+    #    full_day ali ni izbran prostor.
     for d, oddelki, _v in pairs:
         for odd in oddelki:
             exists = db.query(BlockedDate).filter(
@@ -147,30 +149,31 @@ def _apply_sync(db: Session, data: ActivityDayCreate, user):
                     stat["emails_sent"] += 1
 
     # 2) Rezervacije prostorov (ure 1–5) za vsak izbran prostor in datum.
-    #    Deduplikacija: če rezervacija z istim imenom (name), prostor, datum
-    #    in uro že obstaja, je ne ustvarjamo znova (prepreči podvajanje ob
-    #    ponovnem shranjevanju iste dejavnosti).
-    import uuid
-    prostori = _split_csv(data.prostori)
-    for prostor in prostori:
-        if prostor not in settings.PROSTORI:
-            continue
-        for d, _o, _v in pairs:
-            for h in HOURS_FULLDAY:
-                exists = db.query(Reservation).filter(
-                    Reservation.name == title,
-                    Reservation.prostor == prostor,
-                    Reservation.date == d,
-                    Reservation.hour == h,
-                ).first()
-                if exists:
-                    continue
-                db.add(Reservation(
-                    prostor=prostor, date=d, hour=h,
-                    teacher_id=user.id, qty=None,
-                    series_id=str(uuid.uuid4()), name=title,
-                ))
-                stat["reservations"] += 1
+    #    Samo ko je full_day in izbran prostor. Deduplikacija: če rezervacija z
+    #    istim imenom (name), prostor, datum in uro že obstaja, je ne ustvarjamo
+    #    znova (prepreči podvajanje ob ponovnem shranjevanju iste dejavnosti).
+    if data.full_day and data.prostori:
+        import uuid
+        prostori = _split_csv(data.prostori)
+        for prostor in prostori:
+            if prostor not in settings.PROSTORI:
+                continue
+            for d, _o, _v in pairs:
+                for h in HOURS_FULLDAY:
+                    exists = db.query(Reservation).filter(
+                        Reservation.name == title,
+                        Reservation.prostor == prostor,
+                        Reservation.date == d,
+                        Reservation.hour == h,
+                    ).first()
+                    if exists:
+                        continue
+                    db.add(Reservation(
+                        prostor=prostor, date=d, hour=h,
+                        teacher_id=user.id, qty=None,
+                        series_id=str(uuid.uuid4()), name=title,
+                    ))
+                    stat["reservations"] += 1
 
     db.commit()
     return stat

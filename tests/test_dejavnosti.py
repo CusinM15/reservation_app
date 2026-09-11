@@ -132,6 +132,28 @@ def test_termini_range_expands_dates(client, make_user):
     assert _count(Reservation, date=date.fromisoformat(d2)) == 5
 
 
+def test_sync_blocks_even_without_rooms_or_allday(client, make_user):
+    """Dan dejavnosti mora blokirati datum za razred TUDI, ko ni full_day ali
+    ni izbran prostor — razred je ta dan zaseden in učitelji ne morejo
+    napovedati ocenjevanj (tako se prikaže na koledarju)."""
+    _admin_login(client, make_user)
+    r = client.post("/api/dejavnosti", json={
+        "grade": "5", "section": "DRUGO", "title": "Posebna dejavnost",
+        "full_day": False, "prostori": "", "all_classes": False,
+        "classes": "5.a", "date_undetermined": False,
+        "termini": [{"date": FUTURE, "classes": "5.a"}],
+    })
+    assert r.status_code == 201, r.text
+    # blokada je ustvarjena tudi brez prostorov/full_day
+    assert _count(BlockedDate, razred="5.a", date=date.fromisoformat(FUTURE)) == 1
+    # učitelji ne morejo napovedati ocenjevanja
+    t = _teacher_login(client, make_user)
+    ra = client.post("/api/ocenjevanja", json={
+        "razred": "5.a", "date": FUTURE, "ponavljanje": False, "teacher_id": t.id,
+    })
+    assert ra.status_code == 400, ra.text
+
+
 def test_reservations_not_duplicated_on_resave(client, make_user):
     """Večkratno shranjevanje iste dejavnosti (isto ime/datum/uro) ne sme podvojiti rezervacij."""
     _admin_login(client, make_user)
