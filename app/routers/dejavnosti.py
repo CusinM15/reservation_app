@@ -128,19 +128,29 @@ def _apply_sync(db: Session, data: ActivityDayCreate, user):
                              f"Lep pozdrav,\nŠolski App")
                     stat["emails_sent"] += 1
 
-    # 2) Rezervacije prostorov (ure 1–5) za vsak izbran prostor in datum
+    # 2) Rezervacije prostorov (ure 1–5) za vsak izbran prostor in datum.
+    #    Deduplikacija: če rezervacija z istim imenom (name), prostor, datum
+    #    in uro že obstaja, je ne ustvarjamo znova (prepreči podvajanje ob
+    #    ponovnem shranjevanju iste dejavnosti).
     import uuid
     prostori = _split_csv(data.prostori)
     for prostor in prostori:
         if prostor not in settings.PROSTORI:
             continue
-        series_id = str(uuid.uuid4())
         for d, _o, _v in pairs:
             for h in HOURS_FULLDAY:
+                exists = db.query(Reservation).filter(
+                    Reservation.name == title,
+                    Reservation.prostor == prostor,
+                    Reservation.date == d,
+                    Reservation.hour == h,
+                ).first()
+                if exists:
+                    continue
                 db.add(Reservation(
                     prostor=prostor, date=d, hour=h,
                     teacher_id=user.id, qty=None,
-                    series_id=series_id, name=title,
+                    series_id=str(uuid.uuid4()), name=title,
                 ))
                 stat["reservations"] += 1
 

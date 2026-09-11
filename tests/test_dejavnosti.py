@@ -113,6 +113,30 @@ def test_multi_datum_sync_via_termini(client, make_user):
     assert len(dej["termini"]) == 2
 
 
+def test_reservations_not_duplicated_on_resave(client, make_user):
+    """Večkratno shranjevanje iste dejavnosti (isto ime/datum/uro) ne sme podvojiti rezervacij."""
+    _admin_login(client, make_user)
+    from datetime import timedelta
+    d1 = (date.today() + timedelta(days=10)).isoformat()
+    body = {
+        "grade": "7", "section": "TEHNIŠKI", "title": "Oblak 365",
+        "full_day": True, "prostori": "racunalnica",
+        "all_classes": False, "classes": "7.a", "date_undetermined": False,
+        "termini": [{"date": d1, "classes": "7.a"}],
+    }
+    r1 = client.post("/api/dejavnosti", json=body)
+    assert r1.status_code == 201, r1.text
+    first = _count(Reservation, date=date.fromisoformat(d1))
+    assert first == 5  # 1 prostor * 5 ur
+
+    # shrani znova (ista vsebina) → rezervacije se ne smejo podvojiti
+    r2 = client.post("/api/dejavnosti", json=body)
+    assert r2.status_code == 201, r2.text
+    second = _count(Reservation, date=date.fromisoformat(d1))
+    assert second == first, f"rezervacije so se podvojile: {first} → {second}"
+    assert second == 5
+
+
 def test_sync_cancels_assessment_and_emails(client, make_user):
     admin = _admin_login(client, make_user)
     teacher = make_user(role="teacher", email="teacher@test.si")
