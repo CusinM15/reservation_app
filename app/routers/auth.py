@@ -200,8 +200,16 @@ def forgot_password(
     user.reset_token = token
     db.commit()
     
-    # Uporabi trenutno zahtevan URL — deluje na vsaki domeni (ngrok, ostc.si, localhost)
-    reset_link = f"{request.base_url}auth/reset-password?token={token}&email={email}"
+    # Zgradi javno dosegljivo povezavo za ponastavitev. Upoštevamo
+    # X-Forwarded-Proto/Host (ki pošlje Cloudflare/proxy), da uporabnik
+    # dobi JAVNO povezavo (ne notranjo IP). Če proxy ni, pade nazaj na
+    # request.url.scheme/netloc. Email URL-encodiramo, da povezava dela
+    # tudi za posebne znake v emailu.
+    import urllib.parse
+    fproto = request.headers.get("x-forwarded-proto") or request.url.scheme
+    fhost = request.headers.get("x-forwarded-host") or request.url.netloc
+    base = f"{fproto}://{fhost}/"
+    reset_link = f"{base}auth/reset-password?token={token}&email={urllib.parse.quote(email)}"
     
     _send_email(
         to_email=email,
