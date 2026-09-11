@@ -81,13 +81,14 @@ def _apply_sync(db: Session, data: ActivityDayCreate, user):
     - zaledni (date_from, date_to + classes): en obseg datumov z istimi razredi.
 
     Blokade dni dejavnosti (BlockedDate + preklic obstoječih ocenjevanj + email)
-    se izvedejo VEDNO, ko je določen datum + razred — dan dejavnosti pomeni,
-    da razred ta dan ni na voljo za ocenjevanja, neodvisno od full_day/prostorov.
-
-    Rezervacije prostorov (ure 1–5) pa le, ko je full_day in izbran prostor.
+    in rezervacije prostorov se izvedejo LE, ko je »Celoten dan« (full_day)
+    označen. Ko full_day ni označen, dejavnost za tisti dan NE gre na koledar
+    (ni blokade ocenjevanj). Blokada gre neodvisno od izbranih prostorov.
 
     Vrne dict s statistiko (blocked, deleted_assessments, emails, reservations).
     """
+    if not data.full_day:
+        return {"blocked": 0, "deleted_assessments": 0, "emails_sent": 0, "reservations": 0}
     # Zberi seznam (datum, oddelki) parov — termini lahko vsebujejo obseg
     # (date+date_to) za isti razred na več zaporednih dni.
     pairs = []

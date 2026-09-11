@@ -132,19 +132,28 @@ def test_termini_range_expands_dates(client, make_user):
     assert _count(Reservation, date=date.fromisoformat(d2)) == 5
 
 
-def test_sync_blocks_even_without_rooms_or_allday(client, make_user):
-    """Dan dejavnosti mora blokirati datum za razred TUDI, ko ni full_day ali
-    ni izbran prostor — razred je ta dan zaseden in učitelji ne morejo
-    napovedati ocenjevanj (tako se prikaže na koledarju)."""
+def test_sync_requires_full_day(client, make_user):
+    """Dejavnost gre na koledar (blokada) LE, ko je »Celoten dan« (full_day)
+    označen. Ko ni, se dan NE blokira in učitelji lahko napovedajo ocenjevanja.
+    Blokada gre tudi brez izbranih prostorov (full_day=True + prost='')."""
     _admin_login(client, make_user)
-    r = client.post("/api/dejavnosti", json={
+    # full_day=False → brez blokade
+    r1 = client.post("/api/dejavnosti", json={
         "grade": "5", "section": "DRUGO", "title": "Posebna dejavnost",
         "full_day": False, "prostori": "", "all_classes": False,
         "classes": "5.a", "date_undetermined": False,
         "termini": [{"date": FUTURE, "classes": "5.a"}],
     })
-    assert r.status_code == 201, r.text
-    # blokada je ustvarjena tudi brez prostorov/full_day
+    assert r1.status_code == 201, r1.text
+    assert _count(BlockedDate, razred="5.a", date=date.fromisoformat(FUTURE)) == 0
+    # full_day=True (brez prostorov) → blokada gre
+    r2 = client.post("/api/dejavnosti", json={
+        "grade": "5", "section": "DRUGO", "title": "Posebna dejavnost 2",
+        "full_day": True, "prostori": "", "all_classes": False,
+        "classes": "5.a", "date_undetermined": False,
+        "termini": [{"date": FUTURE, "classes": "5.a"}],
+    })
+    assert r2.status_code == 201, r2.text
     assert _count(BlockedDate, razred="5.a", date=date.fromisoformat(FUTURE)) == 1
     # učitelji ne morejo napovedati ocenjevanja
     t = _teacher_login(client, make_user)
@@ -155,12 +164,13 @@ def test_sync_blocks_even_without_rooms_or_allday(client, make_user):
 
 
 def test_termini_empty_classes_blocks_whole_generation(client, make_user):
-    """Če v terminski vrstici ni izbran noben razred, se privzeto blokirajo
-    vsi črkovni oddelki generacije (dan dejavnosti za celo generacijo)."""
+    """Če v terminski vrstici ni izbran noben razred (full_day=True), se
+    privzeto blokirajo vsi črkovni oddelki generacije (dan dejavnosti za celo
+    generacijo) in tako na koledarju."""
     _admin_login(client, make_user)
     r = client.post("/api/dejavnosti", json={
         "grade": "4", "section": "DRUGO", "title": "Zdr pregled",
-        "full_day": False, "prostori": "",
+        "full_day": True, "prostori": "",
         "date_undetermined": False,
         "termini": [{"date": FUTURE, "classes": "", "date_to": None}],
     })
