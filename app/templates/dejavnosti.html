@@ -272,15 +272,9 @@ function delRow(id){
 
 function openEditor(r){
   // poenostavljen modal napolnjen s podatki
-  const classes = letterOddelki(r.grade);
   const prostoriAvail = META.prostori;
   const isNum = isGradeNumeric(r.grade);
   const sectionSel = SECTIONS.map(s=>`<option value="${s}" ${s===r.section?'selected':''}>${s}</option>`).join('');
-  const classChecks = classes.map(c => {
-    const inClasses = (r.classes||'').split(',').map(x=>x.trim()).includes(c);
-    const checked = r.all_classes ? 'checked' : (inClasses ? 'checked' : '');
-    return `<label><input type="checkbox" class="cls" value="${c}" ${checked}> ${c}</label>`;
-  }).join('');
   const prostCheck = prostoriAvail.map(p => {
     const checked = (r.prostori||'').split(',').map(x=>x.trim()).includes(p);
     return `<label><input type="checkbox" class="prost" value="${p}" ${checked?'checked':''}> ${prostLabel(p)}</label>`;
@@ -326,11 +320,6 @@ function openEditor(r){
         <label>Ocena termina: <input type="text" id="e-dtext" value="${escAttr(r.date_text)}" style="width:300px;" placeholder="npr. oktober–november"></label>
       </div>
       <div class="toolbar" style="align-items:flex-start;">
-        <div style="margin-right:20px;">
-          <b>Razredi:</b>
-          ${classChecks || '<span class="muted">(IP/POUK — ni črkovnih oddelkov)</span>'}
-          <label style="display:block;margin-top:4px;"><input type="checkbox" id="e-allcls" ${r.all_classes?'checked':''} onchange="toggleAllCls(this)"> <b>Vsi razredi</b></label>
-        </div>
         <div>
           <b>Prostori:</b> ${prostCheck || '<span class="muted">(ni razpoložljivih prostorov)</span>'}
         </div>
@@ -349,7 +338,6 @@ function openEditor(r){
     </div>`;
   document.body.appendChild(overlay);
   toggleUndet($('e-undet'));
-  toggleAllCls($('e-allcls'));
   editMode = {id: r.id || null};
   populateTermini(r.termini || []);
 }
@@ -395,14 +383,9 @@ function toggleUndet(cb){
   if(cb.checked){ $('date-fields').classList.add('hide'); $('date-text-field').classList.remove('hide'); }
   else { $('date-fields').classList.remove('hide'); $('date-text-field').classList.add('hide'); }
 }
-function toggleAllCls(cb){
-  document.querySelectorAll('#editor input.cls').forEach(x => x.checked = cb.checked);
-}
 
 function saveRow(id){
   const undet = $('e-undet').checked;
-  const all = $('e-allcls').checked;
-  const classes = Array.from(document.querySelectorAll('#editor input.cls:checked')).map(x=>x.value);
   const prost = Array.from(document.querySelectorAll('#editor input.prost:checked')).map(x=>x.value);
   const payload = {
     grade: currentGrade,
@@ -416,8 +399,8 @@ function saveRow(id){
     date_to: undet ? null : ($('e-dto').value || null),
     date_undetermined: undet,
     date_text: undet ? $('e-dtext').value : '',
-    all_classes: all,
-    classes: all ? '' : classes.join(','),
+    all_classes: false,
+    classes: '',
     prostori: prost.join(','),
     cena: $('e-cena').value,
     vodja: $('e-vodja').value,
