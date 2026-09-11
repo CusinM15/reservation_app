@@ -368,8 +368,19 @@ function terminRowHtml(term, idx){
 function addTerminRow(term){
   const list = $('termini-list');
   if(!list) return;
+  const isNew = !term || (!term.date && !term.classes);
   const idx = list.children.length;
   list.insertAdjacentHTML('beforeend', terminRowHtml(term || {}, idx));
+  // Nova vrstica: privzeto označi »Vsi razredi generacije«, da je takoj
+  // jasno, da je dejavnost za celo generacijo (uporabnik lahko odznači).
+  if(isNew && isGradeNumeric(currentGrade)){
+    const row = list.lastElementChild;
+    if(row){
+      row.querySelectorAll('.t-cls').forEach(c => { c.checked = true; c.disabled = true; });
+      const all = row.querySelector('.t-all');
+      if(all) all.checked = true;
+    }
+  }
 }
 function delTerminRow(btn){
   btn.closest('.t-row').remove();

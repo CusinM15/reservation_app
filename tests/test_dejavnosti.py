@@ -154,6 +154,23 @@ def test_sync_blocks_even_without_rooms_or_allday(client, make_user):
     assert ra.status_code == 400, ra.text
 
 
+def test_termini_empty_classes_blocks_whole_generation(client, make_user):
+    """Če v terminski vrstici ni izbran noben razred, se privzeto blokirajo
+    vsi črkovni oddelki generacije (dan dejavnosti za celo generacijo)."""
+    _admin_login(client, make_user)
+    r = client.post("/api/dejavnosti", json={
+        "grade": "4", "section": "DRUGO", "title": "Zdr pregled",
+        "full_day": False, "prostori": "",
+        "date_undetermined": False,
+        "termini": [{"date": FUTURE, "classes": "", "date_to": None}],
+    })
+    assert r.status_code == 201, r.text
+    # celo 4. generacijo na ta dan (4.a, 4.b, 4.c, 4.č)
+    blocked = _count(BlockedDate, date=date.fromisoformat(FUTURE))
+    assert blocked >= 4, blocked
+    assert _count(BlockedDate, razred="4.č", date=date.fromisoformat(FUTURE)) == 1
+
+
 def test_reservations_not_duplicated_on_resave(client, make_user):
     """Večkratno shranjevanje iste dejavnosti (isto ime/datum/uro) ne sme podvojiti rezervacij."""
     _admin_login(client, make_user)

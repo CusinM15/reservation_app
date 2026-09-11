@@ -100,7 +100,10 @@ def _apply_sync(db: Session, data: ActivityDayCreate, user):
             if t.get("classes"):
                 oddelki = [o for o in (t["classes"] or "").split(",") if o.strip() in settings.RAZREDI]
             else:
-                oddelki = _resolve_letter_oddelki(data.grade, settings.RAZREDI) if data.all_classes else _split_csv(data.classes)
+                # Če v terminski vrstici ni izbran noben razred, privzeto
+                # uporabimo vse črkovne oddelke generacije (dan dejavnosti
+                # za celo generacijo). Za IP/POUK to vrne []. 
+                oddelki = _resolve_letter_oddelki(data.grade, settings.RAZREDI)
             d_to_raw = t.get("date_to")
             d_to = None
             if d_to_raw and isinstance(d_to_raw, str):
