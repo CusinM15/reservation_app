@@ -235,11 +235,18 @@ function renderSectionTable(grade, section, rows, isManual){
   return html;
 }
 
-// Poln okvirni čas: upošteva polje date_text (ki vsebuje npr. "9. 2. 2027 (6. a)"),
-// drugače pa izpelje iz datumov.
+// Poln okvirni čas: upošteva termini (več datumov z razredi), date_text
+// (vsebuje npr. "9. 2. 2027 (6. a)"), drugače izpelje iz date_from/date_to.
 function fullTime(r){
   if(r.date_undetermined) return '<span class="muted">ni določen → ' + esc(r.date_text||'') + '</span>';
-  // date_text iz uvoza vsebuje okvirni čas z razredom, če obstaja
+  if(r.termini && r.termini.length > 0){
+    const lines = r.termini.map(t => {
+      const ds = t.date || '';
+      const cl = t.classes ? ' (' + t.classes.replace(/,/g, ', ') + ')' : '';
+      return '<div>• ' + esc(ds + cl) + '</div>';
+    }).join('');
+    return lines;
+  }
   if(r.date_text && !/^\s*-/.test(r.date_text)) return esc(r.date_text);
   return fmtDateRange(r);
 }
@@ -307,9 +314,13 @@ function openEditor(r){
         <label><input type="checkbox" id="e-undet" ${r.date_undetermined?'checked':''} onchange="toggleUndet(this)"> Datum ni še določen</label>
       </div>
       <div class="toolbar" id="date-fields">
-        <label>Od: <input type="date" id="e-dfrom" value="${r.date_from||''}"></label>
-        <label>Do: <input type="date" id="e-dto" value="${r.date_to||''}"></label>
-        <span class="hint">(pusti "do" prazno za en dan; za tedensko določi datum začetka in konca)</span>
+        <div style="width:100%;">
+          <b>Datumi</b> <span class="hint">(določi več datumov — npr. vsak razred na svoj dan)</span>
+          <div id="termini-list" style="margin:6px 0;"></div>
+          <button type="button" class="btn" onclick="addTerminRow()">＋ Dodaj datum</button>
+          <label style="margin-left:12px;">Od: <input type="date" id="e-dfrom" value="${r.date_from||''}"></label>
+          <label>Do: <input type="date" id="e-dto" value="${r.date_to||''}"></label>
+        </div>
       </div>
       <div class="toolbar hide" id="date-text-field">
         <label>Ocena termina: <input type="text" id="e-dtext" value="${escAttr(r.date_text)}" style="width:300px;" placeholder="npr. oktober–november"></label>
@@ -340,6 +351,44 @@ function openEditor(r){
   toggleUndet($('e-undet'));
   toggleAllCls($('e-allcls'));
   editMode = {id: r.id || null};
+  populateTermini(r.termini || []);
+}
+
+// ── Termini: več datumov pod eno dejavnost ─────────────────────────
+// Vsaka vrstica ima datum + izbrane razrede (vsi črkovni oddelki generacije).
+function terminRowHtml(term, idx){
+  const classes = letterOddelki(term.grade || currentGrade);
+  const pick = classes.map(c => {
+    const on = (term.classes||'').split(',').map(x=>x.trim()).includes(c);
+    return `<label><input type="checkbox" class="t-cls" value="${c}" ${on?'checked':''}> ${c}</label>`;
+  }).join('');
+  return `<div class="t-row" data-idx="${idx}" style="border:1px solid #ddd;border-radius:4px;padding:6px;margin-bottom:4px;display:flex;gap:10px;align-items:flex-start;flex-wrap:wrap;">
+    <label>Datum: <input type="date" class="t-date" value="${term.date||''}"></label>
+    <div><b>Razredi:</b> ${pick || '<span class="muted">(ni črkovnih oddelkov)</span>'}</div>
+    <button type="button" class="btn btn-danger btn-sm" onclick="delTerminRow(this)">✕</button>
+  </div>`;
+}
+function addTerminRow(term){
+  const list = $('termini-list');
+  if(!list) return;
+  const idx = list.children.length;
+  list.insertAdjacentHTML('beforeend', terminRowHtml(term || {}, idx));
+}
+function delTerminRow(btn){
+  btn.closest('.t-row').remove();
+}
+function populateTermini(terms){
+  (terms||[]).forEach(t => addTerminRow(t));
+  if(!terms || terms.length===0) addTerminRow({});
+}
+function collectTermini(){
+  const out = [];
+  document.querySelectorAll('#termini-list .t-row').forEach(row => {
+    const date = row.querySelector('.t-date').value;
+    const cls = Array.from(row.querySelectorAll('.t-cls:checked')).map(x=>x.value);
+    if(date) out.push({date, classes: cls.join(',')});
+  });
+  return out;
 }
 
 function toggleUndet(cb){
@@ -373,6 +422,7 @@ function saveRow(id){
     cena: $('e-cena').value,
     vodja: $('e-vodja').value,
     opomba: $('e-opomba').value,
+    termini: collectTermini(),
   };
   const method = id ? 'PUT' : 'POST';
   const url = id ? '/api/dejavnosti/' + id : '/api/dejavnosti';

@@ -85,6 +85,34 @@ def test_full_day_sync_creates_blocked_and_reservations(client, make_user):
     assert _count(Reservation, date=date.fromisoformat(FUTURE)) == 10
 
 
+def test_multi_datum_sync_via_termini(client, make_user):
+    """Termini (več datumov, vsak s svojimi razredi) ustvari blokade + rezervacije za vsak datum."""
+    _admin_login(client, make_user)
+    from datetime import timedelta
+    d1 = (date.today() + timedelta(days=10)).isoformat()
+    d2 = (date.today() + timedelta(days=11)).isoformat()
+    r = client.post("/api/dejavnosti", json={
+        "grade": "7", "section": "TEHNIŠKI", "title": "Računalniško opismenjevanje",
+        "full_day": True, "prostori": "racunalnica",
+        "all_classes": False, "classes": "7.a",
+        "date_undetermined": False,
+        "termini": [
+            {"date": d1, "classes": "7.a"},
+            {"date": d2, "classes": "7.b"},
+        ],
+    })
+    assert r.status_code == 201, r.text
+    # blocked: 7.a na d1 + 7.b na d2 = 2
+    assert _count(BlockedDate, date=date.fromisoformat(d1), razred="7.a") == 1
+    assert _count(BlockedDate, date=date.fromisoformat(d2), razred="7.b") == 1
+    # rezervacije: 1 prostor * 5 ur za 2 datuma = 10
+    assert _count(Reservation, date=date.fromisoformat(d1)) == 5
+    assert _count(Reservation, date=date.fromisoformat(d2)) == 5
+    # termini so shranjeni na zapis
+    dej = r.json()
+    assert len(dej["termini"]) == 2
+
+
 def test_sync_cancels_assessment_and_emails(client, make_user):
     admin = _admin_login(client, make_user)
     teacher = make_user(role="teacher", email="teacher@test.si")

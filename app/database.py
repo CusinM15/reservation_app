@@ -96,6 +96,8 @@ def init_db():
     # parent_title: združevanje poddejavnosti pod glavni naslov (npr. TEHNIŠKI DAN)
     _migrate("ALTER TABLE activity_days ADD COLUMN IF NOT EXISTS parent_title VARCHAR")
     _migrate("CREATE INDEX IF NOT EXISTS ix_activity_days_parent_title ON activity_days (parent_title)")
+    # termini
+    _migrate("ALTER TABLE activity_days ADD COLUMN IF NOT EXISTS termini JSONB")
 
 
 def log_audit(db: Session, user_id: int, user_name: str, action: str,

@@ -186,6 +186,7 @@ class ActivityDayCreate(BaseModel):
     opomba: str = ""
     source: str = "manual"  # "xlsx" (iz datoteke) ali "manual"
     parent_title: str = ""  # glavni naslov skupine, če je to poddejavnost (npr. "TEHNIŠKI DAN")
+    termini: list = Field(default_factory=list)  # [{date, classes, vodja}] — več datumov za iste dejavnosti pod eno vrstico
 
 
 class ActivityDayOut(BaseModel):
@@ -209,6 +210,7 @@ class ActivityDayOut(BaseModel):
     opomba: str
     source: str = "manual"
     parent_title: Optional[str] = None  # None iz baze (NULL) ali prazen string — oboje veljavno
+    termini: list = Field(default_factory=list)  # [{date, classes, vodja}]
     created_at: Optional[object] = None
 
     model_config = {"from_attributes": True}

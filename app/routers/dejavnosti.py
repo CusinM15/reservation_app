@@ -64,80 +64,85 @@ def _split_csv(s: str | None) -> list[str]:
 def _apply_sync(db: Session, data: ActivityDayCreate, user):
     """Ustvari blokade + rezervacije + prekli z obstoječimi podatki.
 
-    Izvede se le, ko je datum determiniran (date_from), full_day in so izbrani
-    razredi. Vrne dict s statistiko (blocked, deleted_assessments, emails,
-    reservations), sicer prazno statistiko.
+    Podpira dva načina datumov:
+    - termini (seznam [{date, classes}]): več datumov, vsak s svojimi razredi
+      (npr. Računalniško opismenjevanje: 8.10 (7.a), 9.10 (7.b), ...). NULL/[] = en sam.
+    - zaledni (date_from, date_to + classes): en obseg datumov z istimi razredi.
+
+    Izvede se le, ko je full_day in so izbrani razredi/prostori. Vrne dict
+    s statistiko (blocked, deleted_assessments, emails, reservations).
     """
-    if not data.date_from:
-        return {"blocked": 0, "deleted_assessments": 0, "emails_sent": 0, "reservations": 0}
     if not data.full_day:
         return {"blocked": 0, "deleted_assessments": 0, "emails_sent": 0, "reservations": 0}
+    if not data.prostori:
+        return {"blocked": 0, "deleted_assessments": 0, "emails_sent": 0, "reservations": 0}
 
-    date_to = data.date_to or data.date_from
-    if date_to < data.date_from:
-        raise HTTPException(status_code=400, detail="Končni datum mora biti po začetnem")
-
-    # Razredi
-    if data.all_classes:
-        oddelki = _resolve_letter_oddelki(data.grade, settings.RAZREDI)
+    # Zberi seznam (datum, oddelki) parov
+    pairs = []
+    if getattr(data, "termini", None):
+        for t in data.termini:
+            d = t.get("date") or data.date_from
+            if not d:
+                continue
+            if t.get("classes"):
+                oddelki = [o for o in (t["classes"] or "").split(",") if o.strip() in settings.RAZREDI]
+            else:
+                oddelki = _resolve_letter_oddelki(data.grade, settings.RAZREDI) if data.all_classes else _split_csv(data.classes)
+            pairs.append((d, oddelki, t.get("vodja") or data.vodja))
     else:
-        oddelki = _split_csv(data.classes)
-    oddelki = [o for o in oddelki if o in settings.RAZREDI]
-    if not oddelki:
+        d = data.date_from
+        if d:
+            oddelki = _resolve_letter_oddelki(data.grade, settings.RAZREDI) if data.all_classes else _split_csv(data.classes)
+            pairs.append((d, oddelki, data.vodja or ""))
+
+    if not pairs:
         return {"blocked": 0, "deleted_assessments": 0, "emails_sent": 0, "reservations": 0}
 
     creator_name = f"{user.first_name} {user.last_name}".strip() or user.username
     stat = {"blocked": 0, "deleted_assessments": 0, "emails_sent": 0, "reservations": 0}
-
-    # 1) BlockedDate za vsak delovnik v obsegu in vsak razred + preklic ocenjevanj
-    cur = data.date_from
-    while cur <= date_to:
-        if cur.weekday() < 5:
-            for odd in oddelki:
-                exists = db.query(BlockedDate).filter(
-                    BlockedDate.razred == odd, BlockedDate.date == cur).first()
-                if not exists:
-                    db.add(BlockedDate(razred=odd, date=cur, created_by_id=user.id))
-                    stat["blocked"] += 1
-                # preklic ocenjevanj
-                for a in db.query(Assessment).filter(
-                        Assessment.razred == odd, Assessment.date == cur).all():
-                    teacher = db.query(User).filter(User.id == a.teacher_id).first()
-                    log_audit(db, user.id, creator_name, "delete_assessment",
-                              f"Avtomatsko izbrisano ocenjevanje (dejavnost): {odd}, {cur}")
-                    db.delete(a)
-                    stat["deleted_assessments"] += 1
-                    if teacher and teacher.email:
-                        ds = cur.strftime("%d.%m.%Y")
-                        _send_email(
-                            to_email=teacher.email,
-                            subject=f"Ocenjevanje za {odd} na dan {ds} prestavljeno",
-                            body=f"Pozdravljeni,\n\n{creator_name} je razred {odd} na dan {ds} "
-                                 f"označil(a) kot dan dejavnosti, zato je bilo vaše ocenjevanje "
-                                 f"za ta dan samodejno preklicano. Prosimo, da izberete nov datum.\n\n"
-                                 f"Lep pozdrav,\nŠolski App")
-                        stat["emails_sent"] += 1
-        cur += timedelta(days=1)
-
-    # 2) Rezervacije prostorov (ure 1–5) za vsak izbran prostor in delovnik
     title = (data.title or "").strip() or f"{data.section} {data.grade}. razred"
+
+    # 1) BlockedDate + preklic ocenjevanj za vsak (datum, razred) par
+    for d, oddelki, _v in pairs:
+        for odd in oddelki:
+            exists = db.query(BlockedDate).filter(
+                BlockedDate.razred == odd, BlockedDate.date == d).first()
+            if not exists:
+                db.add(BlockedDate(razred=odd, date=d, created_by_id=user.id))
+                stat["blocked"] += 1
+            for a in db.query(Assessment).filter(
+                    Assessment.razred == odd, Assessment.date == d).all():
+                teacher = db.query(User).filter(User.id == a.teacher_id).first()
+                log_audit(db, user.id, creator_name, "delete_assessment",
+                          f"Avtomatsko izbrisano ocenjevanje (dejavnost): {odd}, {d}")
+                db.delete(a)
+                stat["deleted_assessments"] += 1
+                if teacher and teacher.email:
+                    ds = d.strftime("%d.%m.%Y")
+                    _send_email(
+                        to_email=teacher.email,
+                        subject=f"Ocenjevanje za {odd} na dan {ds} prestavljeno",
+                        body=f"Pozdravljeni,\n\n{creator_name} je razred {odd} na dan {ds} "
+                             f"označil(a) kot dan dejavnosti, zato je bilo vaše ocenjevanje "
+                             f"za ta dan samodejno preklicano. Prosimo, da izberete nov datum.\n\n"
+                             f"Lep pozdrav,\nŠolski App")
+                    stat["emails_sent"] += 1
+
+    # 2) Rezervacije prostorov (ure 1–5) za vsak izbran prostor in datum
     import uuid
     prostori = _split_csv(data.prostori)
     for prostor in prostori:
         if prostor not in settings.PROSTORI:
             continue
         series_id = str(uuid.uuid4())
-        d = data.date_from
-        while d <= date_to:
-            if d.weekday() < 5:
-                for h in HOURS_FULLDAY:
-                    db.add(Reservation(
-                        prostor=prostor, date=d, hour=h,
-                        teacher_id=user.id, qty=None,
-                        series_id=series_id, name=title,
-                    ))
-                    stat["reservations"] += 1
-            d += timedelta(days=1)
+        for d, _o, _v in pairs:
+            for h in HOURS_FULLDAY:
+                db.add(Reservation(
+                    prostor=prostor, date=d, hour=h,
+                    teacher_id=user.id, qty=None,
+                    series_id=series_id, name=title,
+                ))
+                stat["reservations"] += 1
 
     db.commit()
     return stat
@@ -213,6 +218,7 @@ def create_dejavnost(data: ActivityDayCreate, request: Request, db: Session = De
         prostori=data.prostori or "", cena=data.cena or "", vodja=data.vodja or "",
         opomba=data.opomba or "", created_by_id=user.id, source=source,
         parent_title=(data.parent_title or "").strip(),
+        termini=data.termini,
     )
     db.add(rec)
     db.commit()
@@ -255,6 +261,7 @@ def update_dejavnost(dej_id: int, data: ActivityDayCreate, request: Request, db:
     rec.vodja = data.vodja or ""
     rec.opomba = data.opomba or ""
     rec.parent_title = (data.parent_title or "").strip()
+    rec.termini = data.termini
     db.commit()
     db.refresh(rec)
     log_audit(db, user.id, f"{user.first_name} {user.last_name}".strip(),

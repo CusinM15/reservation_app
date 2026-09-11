@@ -12,6 +12,7 @@
 from datetime import date, datetime
 
 from sqlalchemy import Boolean, Column, Integer, String, Date, DateTime, Text, ForeignKey, Float, Enum as SAEnum, BigInteger
+from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import relationship
 import enum
 
@@ -177,6 +178,7 @@ class ActivityDay(Base):
     opomba = Column(Text, nullable=True, default="")
     parent_title = Column(String, nullable=True, default="", index=True)  # glavni naslov skupine (npr. "TEHNIŠKI DAN"), če so to poddejavnosti
     source = Column(String, nullable=False, default="manual", index=True)  # "xlsx" (iz datoteke) ali "manual"
+    termini = Column(JSONB, nullable=True, default=list)  # seznam [{date, classes}] — več datumov (po razredih) pod eno dejavnost
 
     created_by_id = Column(Integer, ForeignKey("users.id"), nullable=True)
     created_by = relationship("User")
