@@ -52,11 +52,11 @@ class Settings:
     # ── Seznami razredov in prostorov ───────────────────────────────
     # Shranjeni kot vejica-ločen niz v okoljski spremenljivki.
     # Npr.: RAZREDI="1.a,1.b,2.a,2.b,3.a,..."
-    # V kodi jih razdelimo in filtriramo prazne vnose.
-    RAZREDI = os.getenv("RAZREDI", "").split(",")
-    RAZREDI = [r for r in RAZREDI if r]  # filtriramo prazne
-    PROSTORI = os.getenv("PROSTORI", "").split(",")
-    PROSTORI = [p for p in PROSTORI if p]  # filtriramo prazne
+    # Vrednosti lahko vsebujejo slučajne presledke (npr. iz YAML ConfigMap),
+    # zato vsak element stripmamo in odfiltriramo prazne vnose (po trimu),
+    # da ne dobimo lažnih vrednost (npr. ' 9.b' namesto '9.b').
+    RAZREDI = [r.strip() for r in os.getenv("RAZREDI", "").split(",") if r.strip()]
+    PROSTORI = [p.strip() for p in os.getenv("PROSTORI", "").split(",") if p.strip()]
 
     # ── URL in timeout ──────────────────────────────────────────────
     # BASE_URL se uporablja za generiranje povezav v emailih.
