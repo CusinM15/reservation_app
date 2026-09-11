@@ -210,7 +210,7 @@ class ActivityDayOut(BaseModel):
     opomba: str
     source: str = "manual"
     parent_title: Optional[str] = None  # None iz baze (NULL) ali prazen string — oboje veljavno
-    termini: list = Field(default_factory=list)  # [{date, classes, vodja}]
+    termini: Optional[list] = None  # None iz baze (NULL) — seznam [{date, classes}]
     created_at: Optional[object] = None
 
     model_config = {"from_attributes": True}

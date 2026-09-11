@@ -239,7 +239,7 @@ function renderSectionTable(grade, section, rows, isManual){
 // (vsebuje npr. "9. 2. 2027 (6. a)"), drugače izpelje iz date_from/date_to.
 function fullTime(r){
   if(r.date_undetermined) return '<span class="muted">ni določen → ' + esc(r.date_text||'') + '</span>';
-  if(r.termini && r.termini.length > 0){
+  if(r.termini && Array.isArray(r.termini) && r.termini.length > 0){
     const lines = r.termini.map(t => {
       const ds = t.date || '';
       const cl = t.classes ? ' (' + t.classes.replace(/,/g, ', ') + ')' : '';
