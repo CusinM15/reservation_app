@@ -237,14 +237,22 @@ function renderSectionTable(grade, section, rows, isManual){
 
 // Poln okvirni čas: upošteva termini (več datumov z razredi), date_text
 // (vsebuje npr. "9. 2. 2027 (6. a)"), drugače izpelje iz date_from/date_to.
+// VEDNO prikaže kateri razred(i) v oklepaju; če classes manjka za numerično
+// generacijo, izpiše vse črkovne oddelke (isti fallback kot backend).
+function gradeClasses(r){
+  let cl = (r.classes || '').trim();
+  if(!cl && isGradeNumeric(r.grade)) cl = letterOddelki(r.grade).join(', ');
+  return cl;
+}
 function fullTime(r){
   if(r.date_undetermined) return '<span class="muted">ni določen → ' + esc(r.date_text||'') + '</span>';
   if(r.termini && Array.isArray(r.termini) && r.termini.length > 0){
     const lines = r.termini.map(t => {
       let ds = t.date || '';
       if(t.date_to && t.date_to !== t.date) ds += ' → ' + t.date_to;
-      const cl = t.classes ? ' (' + t.classes.replace(/,/g, ', ') + ')' : '';
-      return '<div>• ' + esc(ds + cl) + '</div>';
+      let cl = (t.classes || '').trim();
+      if(!cl) cl = gradeClasses(r);
+      return '<div>• ' + esc(ds) + (cl ? ' (' + esc(cl) + ')' : '') + '</div>';
     }).join('');
     return lines;
   }
@@ -455,8 +463,10 @@ function escAttr(s){ return esc(s); }
 function fmtDateRange(r){
   if(r.date_undetermined) return '<span class="muted">ni določen</span>';
   if(!r.date_from) return '—';
-  if(r.date_to && r.date_to !== r.date_from) return r.date_from + ' → ' + r.date_to;
-  return r.date_from;
+  let s = r.date_from;
+  if(r.date_to && r.date_to !== r.date_from) s += ' → ' + r.date_to;
+  const cl = gradeClasses(r);
+  return s + (cl ? ' (' + esc(cl) + ')' : '');
 }
 function prostLabel(p){
   return {tablice:'Tablice', racunalnica:'Računalnica', ladja:'Ladja', 'gospodinjska-ucilnica':'Gospod. uč.'}[p] || p;
