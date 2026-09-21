@@ -21,9 +21,15 @@ spec:
         app: sola-app
     spec:
       topologySpreadConstraints:
+        # ScheduleAnyway (ne DoNotSchedule): razporejanje po vozliščih je želja,
+        # ne trda zahteva. Z DoNotSchedule je bil rollout blokiran, ko je k3s-3
+        # padel (NotReady od 18. 9. 2026) — na voljo sta le k3s-1 in k3s-2,
+        # tretje vozlišče pa kot domena z 0 pod-i postavi minCount=0 in s tem
+        # onemogoči razporejanje tudi na zdravi vozlišči.
+        # Ko bo k3s-3 spet zdrav, lahko vrneš DoNotSchedule.
         - maxSkew: 1
           topologyKey: kubernetes.io/hostname
-          whenUnsatisfiable: DoNotSchedule
+          whenUnsatisfiable: ScheduleAnyway
           labelSelector:
             matchLabels:
               app: sola-app
