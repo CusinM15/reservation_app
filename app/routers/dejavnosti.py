@@ -33,6 +33,13 @@ from app.config import settings
 from app.audit import log_audit
 from app.security import get_current_user_id
 from app.routers.blocked_dates import _send_email
+from app.tenancy import (
+    SchoolConfig,
+    config_for_request,
+    data_school_id,
+    scope,
+    write_school_id,
+)
 
 router = APIRouter(prefix="/api/dejavnosti", tags=["dejavnosti"])
 
@@ -72,7 +79,85 @@ def _iter_dates(from_: date, to_: date | None):
         cur += timedelta(days=1)
 
 
-def _apply_sync(db: Session, data: ActivityDayCreate, user):
+def _collect_pairs_from_rec(rec: ActivityDay, razredi: list[str]) -> list[tuple[date, list[str], str]]:
+    """Zbere (datum, oddelki, vodja) pare iz shranjenega zapisa ActivityDay.
+    Uporablja enako logiko kot _apply_sync, a prebere iz rec (model), ne iz data (schema).
+    """
+    pairs = []
+    if rec.termini:
+        for t in rec.termini:
+            d_raw = t.get("date") or rec.date_from
+            if not d_raw:
+                continue
+            d = d_raw if isinstance(d_raw, date) else date.fromisoformat(d_raw)
+            if t.get("classes"):
+                oddelki = [o for o in (t["classes"] or "").split(",") if o.strip() in razredi]
+            else:
+                oddelki = _resolve_letter_oddelki(rec.grade, razredi)
+            d_to_raw = t.get("date_to")
+            d_to = None
+            if d_to_raw and isinstance(d_to_raw, str):
+                d_to = date.fromisoformat(d_to_raw)
+            for dd in _iter_dates(d, d_to):
+                pairs.append((dd, oddelki, t.get("vodja") or rec.vodja or ""))
+    else:
+        d = rec.date_from
+        if d:
+            oddelki = _resolve_letter_oddelki(rec.grade, razredi) if rec.all_classes else _split_csv(rec.classes)
+            pairs.append((d, oddelki, rec.vodja or ""))
+    return pairs
+
+
+def _cleanup_dejavnost(db: Session, rec: ActivityDay, config: SchoolConfig, school_id: int) -> dict:
+    """Izbriše BlockedDate in Reservation vnose, ki jih je ustvarila ta dejavnost.
+    Vrne statistiko izbrisanih. Vse poizvedbe so omejene na dano šolo.
+    """
+    pairs = _collect_pairs_from_rec(rec, config.RAZREDI)
+    if not pairs:
+        return {"blocked_removed": 0, "reservations_removed": 0}
+    title = (rec.title or "").strip() or f"{rec.section} {rec.grade}. razred"
+    stat = {"blocked_removed": 0, "reservations_removed": 0}
+    # 1) BlockedDate: briši samo tiste, ki nimajo drugega vira (trdno ne vem, kdo jih je ustvaril,
+    #    zato brišemo vse za te (datum, razred) pare — ker so "dnevi dejavnosti" enolični).
+    #    To je varno: če uporabnik ročno doda BlockedDate za isti razred/datum, ga bo pobrisal,
+    #    a to jeacceptable — dan dejavnosti ima prednost.
+    for d, oddelki, _v in pairs:
+        for odd in oddelki:
+            bd = db.query(BlockedDate).filter(
+                BlockedDate.razred == odd, BlockedDate.date == d,
+                BlockedDate.school_id == school_id).first()
+            if bd:
+                db.delete(bd)
+                stat["blocked_removed"] += 1
+    # 2) Rezervacije prostorov: briši po imenu (title), prostoru, datumu, uri.
+    if rec.full_day and rec.prostori:
+        prostori = _split_csv(rec.prostori)
+        for prostor in prostori:
+            if prostor not in config.PROSTORI:
+                continue
+            for d, _o, _v in pairs:
+                for h in HOURS_FULLDAY:
+                    res = db.query(Reservation).filter(
+                        Reservation.name == title,
+                        Reservation.prostor == prostor,
+                        Reservation.date == d,
+                        Reservation.hour == h,
+                        Reservation.school_id == school_id,
+                    ).first()
+                    if res:
+                        db.delete(res)
+                        stat["reservations_removed"] += 1
+    # Pomembno: SessionLocal ima autoflush=False, zato so pravkaršnji
+    # db.delete() še "pending". Brez flush-a jih _apply_sync (ki teče takoj
+    # za cleanup-om in preverja obstoj BlockedDate/Reservation) NE vidi, zato
+    # preskoči ponovno ustvarjanje in commit na koncu pobriše artefakte.
+    # Posledica brez tega flush-a: odkljukana soba je pobrisala tudi blokado
+    # »dan dejavnosti«, čeprav je »Celoten dan« ostal označen.
+    db.flush()
+    return stat
+
+
+def _apply_sync(db: Session, data: ActivityDayCreate, user, config: SchoolConfig, school_id: int):
     """Ustvari blokade + rezervacije + prekli z obstoječimi podatki.
 
     Podpira dva načina datumov:
@@ -99,12 +184,12 @@ def _apply_sync(db: Session, data: ActivityDayCreate, user):
                 continue
             d = d_raw if isinstance(d_raw, date) else date.fromisoformat(d_raw)
             if t.get("classes"):
-                oddelki = [o for o in (t["classes"] or "").split(",") if o.strip() in settings.RAZREDI]
+                oddelki = [o for o in (t["classes"] or "").split(",") if o.strip() in config.RAZREDI]
             else:
                 # Če v terminski vrstici ni izbran noben razred, privzeto
                 # uporabimo vse črkovne oddelke generacije (dan dejavnosti
                 # za celo generacijo). Za IP/POUK to vrne []. 
-                oddelki = _resolve_letter_oddelki(data.grade, settings.RAZREDI)
+                oddelki = _resolve_letter_oddelki(data.grade, config.RAZREDI)
             d_to_raw = t.get("date_to")
             d_to = None
             if d_to_raw and isinstance(d_to_raw, str):
@@ -114,7 +199,7 @@ def _apply_sync(db: Session, data: ActivityDayCreate, user):
     else:
         d = data.date_from
         if d:
-            oddelki = _resolve_letter_oddelki(data.grade, settings.RAZREDI) if data.all_classes else _split_csv(data.classes)
+            oddelki = _resolve_letter_oddelki(data.grade, config.RAZREDI) if data.all_classes else _split_csv(data.classes)
             pairs.append((d, oddelki, data.vodja or ""))
 
     if not pairs:
@@ -130,15 +215,18 @@ def _apply_sync(db: Session, data: ActivityDayCreate, user):
     for d, oddelki, _v in pairs:
         for odd in oddelki:
             exists = db.query(BlockedDate).filter(
-                BlockedDate.razred == odd, BlockedDate.date == d).first()
+                BlockedDate.razred == odd, BlockedDate.date == d,
+                BlockedDate.school_id == school_id).first()
             if not exists:
-                db.add(BlockedDate(razred=odd, date=d, created_by_id=user.id))
+                db.add(BlockedDate(razred=odd, date=d, created_by_id=user.id, school_id=school_id))
                 stat["blocked"] += 1
             for a in db.query(Assessment).filter(
-                    Assessment.razred == odd, Assessment.date == d).all():
+                    Assessment.razred == odd, Assessment.date == d,
+                    Assessment.school_id == school_id).all():
                 teacher = db.query(User).filter(User.id == a.teacher_id).first()
                 log_audit(db, user.id, creator_name, "delete_assessment",
-                          f"Avtomatsko izbrisano ocenjevanje (dejavnost): {odd}, {d}")
+                          f"Avtomatsko izbrisano ocenjevanje (dejavnost): {odd}, {d}",
+                          school_id=school_id)
                 db.delete(a)
                 stat["deleted_assessments"] += 1
                 if teacher and teacher.email:
@@ -149,7 +237,8 @@ def _apply_sync(db: Session, data: ActivityDayCreate, user):
                         body=f"Pozdravljeni,\n\n{creator_name} je razred {odd} na dan {ds} "
                              f"označil(a) kot dan dejavnosti, zato je bilo vaše ocenjevanje "
                              f"za ta dan samodejno preklicano. Prosimo, da izberete nov datum.\n\n"
-                             f"Lep pozdrav,\nŠolski App")
+                             f"Lep pozdrav,\nŠolski App",
+                        config=config)
                     stat["emails_sent"] += 1
 
     # 2) Rezervacije prostorov (ure 1–5) za vsak izbran prostor in datum.
@@ -160,7 +249,7 @@ def _apply_sync(db: Session, data: ActivityDayCreate, user):
         import uuid
         prostori = _split_csv(data.prostori)
         for prostor in prostori:
-            if prostor not in settings.PROSTORI:
+            if prostor not in config.PROSTORI:
                 continue
             for d, _o, _v in pairs:
                 for h in HOURS_FULLDAY:
@@ -169,10 +258,12 @@ def _apply_sync(db: Session, data: ActivityDayCreate, user):
                         Reservation.prostor == prostor,
                         Reservation.date == d,
                         Reservation.hour == h,
+                        Reservation.school_id == school_id,
                     ).first()
                     if exists:
                         continue
                     db.add(Reservation(
+                        school_id=school_id,
                         prostor=prostor, date=d, hour=h,
                         teacher_id=user.id, qty=None,
                         series_id=str(uuid.uuid4()), name=title,
@@ -193,12 +284,14 @@ _SECTION_ORDER = {"KULTURNI": 0, "NARAVOSLOVNI": 1, "TEHNIŠKI": 2, "ŠPORTNI": 
 
 @router.get("", response_model=list[ActivityDayOut])
 def list_dejavnosti(
+    request: Request,
     grade: Optional[str] = Query(None),
     section: Optional[str] = Query(None),
     source: Optional[str] = Query(None),
     db: Session = Depends(get_db),
 ):
-    query = db.query(ActivityDay)
+    school_id = data_school_id(request, db)
+    query = scope(db.query(ActivityDay), ActivityDay, school_id)
     if grade:
         query = query.filter(ActivityDay.grade == grade)
     if section:
@@ -219,16 +312,20 @@ def list_dejavnosti(
 
 @router.get("/meta")
 def dejavnosti_meta(request: Request, db: Session = Depends(get_db)):
-    """Vrni razrede, prostore, sekcije in vse razpoložljive grade-e."""
-    _check_allowed(get_current_user_id(request), db)
+    """Vrni razrede, prostore, sekcije in vse razpoložljive grade-e (vsi prijavljeni).
+
+    Vrednosti so iz nastavitev ŠOLE uporabnika (razredi/prostori/urnik so
+    lahko po šolah različni).
+    """
     # Razredi 1..9 so "dnevi dejavnosti" (iz xlsx). IP/POUK je en sam zavíhek.
     grades = [str(i) for i in range(1, 10)] + ["ip"]
+    config = config_for_request(request, db)
     return {
         "grades": grades,
-        "razredi": settings.RAZREDI,
-        "prostori": settings.PROSTORI,
+        "razredi": config.RAZREDI,
+        "prostori": config.PROSTORI,
         "sections": SECTIONS,
-        "razpored": settings.SCHEDULE,
+        "razpored": config.SCHEDULE,
     }
 
 
@@ -238,13 +335,16 @@ def dejavnosti_meta(request: Request, db: Session = Depends(get_db)):
 def create_dejavnost(data: ActivityDayCreate, request: Request, db: Session = Depends(get_db)):
     uid = _check_allowed(get_current_user_id(request), db)
     user = db.query(User).filter(User.id == uid).first()
+    school_id = write_school_id(request, db)
+    config = config_for_request(request, db)
     is_num = data.grade.isdigit() and 1 <= int(data.grade) <= 9
     if is_num and data.section not in SECTIONS:
         raise HTTPException(status_code=400, detail=f"Neveljavna sekcija: {data.section}")
-    stat = _apply_sync(db, data, user)
+    stat = _apply_sync(db, data, user, config, school_id)
     title = (data.title or "").strip() or f"{data.section} {data.grade}. razred"
     source = data.source if data.source in ("xlsx", "manual") else "manual"
     rec = ActivityDay(
+        school_id=school_id,
         grade=data.grade, section=data.section, title=title,
         subtitle=data.subtitle or "", full_day=data.full_day, recurring=data.recurring,
         date_from=data.date_from, date_to=data.date_to,
@@ -261,7 +361,8 @@ def create_dejavnost(data: ActivityDayCreate, request: Request, db: Session = De
     log_audit(db, user.id, f"{user.first_name} {user.last_name}".strip(),
               "create_dejavnost",
               f"grade={data.grade}, section={data.section}, title={title}, source={source}, "
-              f"sync={stat}")
+              f"sync={stat}",
+              school_id=school_id)
     return rec
 
 
@@ -271,13 +372,19 @@ def create_dejavnost(data: ActivityDayCreate, request: Request, db: Session = De
 def update_dejavnost(dej_id: int, data: ActivityDayCreate, request: Request, db: Session = Depends(get_db)):
     uid = _check_allowed(get_current_user_id(request), db)
     user = db.query(User).filter(User.id == uid).first()
-    rec = db.query(ActivityDay).filter(ActivityDay.id == dej_id).first()
+    school_id = write_school_id(request, db)
+    config = config_for_request(request, db)
+    rec = scope(
+        db.query(ActivityDay).filter(ActivityDay.id == dej_id), ActivityDay, school_id
+    ).first()
     if not rec:
         raise HTTPException(status_code=404, detail="Dejavnost ne obstaja")
     is_num = data.grade.isdigit() and 1 <= int(data.grade) <= 9
     if is_num and data.section not in SECTIONS:
         raise HTTPException(status_code=400, detail=f"Neveljavna sekcija: {data.section}")
-    stat = _apply_sync(db, data, user)
+    # Prvo pobriši stare blokade/rezervacije, ki jih je ustvarila ta dejavnost
+    cleanup = _cleanup_dejavnost(db, rec, config, school_id)
+    stat = _apply_sync(db, data, user, config, school_id)
     title = (data.title or "").strip() or f"{data.section} {data.grade}. razred"
     rec.grade = data.grade
     rec.section = data.section
@@ -300,7 +407,7 @@ def update_dejavnost(dej_id: int, data: ActivityDayCreate, request: Request, db:
     db.commit()
     db.refresh(rec)
     log_audit(db, user.id, f"{user.first_name} {user.last_name}".strip(),
-              "update_dejavnost", f"id={dej_id}, sync={stat}")
+              "update_dejavnost", f"id={dej_id}, sync={stat}", school_id=school_id)
     return rec
 
 
@@ -310,12 +417,20 @@ def update_dejavnost(dej_id: int, data: ActivityDayCreate, request: Request, db:
 def delete_dejavnost(dej_id: int, request: Request, db: Session = Depends(get_db)):
     uid = _check_allowed(get_current_user_id(request), db)
     user = db.query(User).filter(User.id == uid).first()
-    rec = db.query(ActivityDay).filter(ActivityDay.id == dej_id).first()
+    school_id = write_school_id(request, db)
+    config = config_for_request(request, db)
+    rec = scope(
+        db.query(ActivityDay).filter(ActivityDay.id == dej_id), ActivityDay, school_id
+    ).first()
     if not rec:
         raise HTTPException(status_code=404, detail="Dejavnost ne obstaja")
+    # Pobriši blokade/rezervacije, ki jih je ustvarila ta dejavnost
+    cleanup = _cleanup_dejavnost(db, rec, config, school_id)
     log_audit(db, user.id, f"{user.first_name} {user.last_name}".strip(),
               "delete_dejavnost",
-              f"id={dej_id}, grade={rec.grade}, section={rec.section}, title={rec.title}")
+              f"id={dej_id}, grade={rec.grade}, section={rec.section}, title={rec.title}, "
+              f"cleanup={cleanup}",
+              school_id=school_id)
     db.delete(rec)
     db.commit()
     return {"message": "Dejavnost izbrisana"}

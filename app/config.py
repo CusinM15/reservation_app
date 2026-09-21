@@ -94,6 +94,29 @@ class Settings:
     # dostop do audit loga nekomu, ki ni admin.
     AUDIT_TOKEN = os.getenv("AUDIT_TOKEN", "")
 
+    # ── Večšolska (multi-tenant) konfiguracija ──────────────────────
+    # DEFAULT_SCHOOL_SLUG: oznaka privzete (obstoječe) šole. Vsi podatki
+    #   iz obdobja pred večšolsko prenovo se pripišejo tej šoli.
+    # SCHOOL_NAME: polno ime privzete šole (prikaz v UI glavnega admina).
+    # DEFAULT_SCHOOL_ALIASES: dodatni (zgodovinski) URL-aliasi privzete
+    #   šole, vejica-ločeno. Privzeti aliasi se sicer generirajo iz sluga
+    #   (npr. "ocenjevanje_ostcj"), tu pa so navedeni še stari (npr.
+    #   "rezervacije_ostc"), ki jih šola že uporablja.
+    # MAIN_ADMIN_*: račun glavnega admina, ki vidi vse šole. Geslo je
+    #   treba takoj po prvi prijavi spremeniti!
+    DEFAULT_SCHOOL_SLUG = os.getenv("DEFAULT_SCHOOL_SLUG", "ostcj")
+    SCHOOL_NAME = os.getenv("SCHOOL_NAME", "OŠ Toneta Čufarja Jesenice")
+    DEFAULT_SCHOOL_ALIASES = [
+        a.strip() for a in os.getenv("DEFAULT_SCHOOL_ALIASES", "rezervacije_ostc").split(",") if a.strip()
+    ]
+    MAIN_ADMIN_USERNAME = os.getenv("MAIN_ADMIN_USERNAME", "mainadmin")
+    MAIN_ADMIN_PASSWORD = os.getenv("MAIN_ADMIN_PASSWORD", "Admin123")
+    MAIN_ADMIN_EMAIL = os.getenv("MAIN_ADMIN_EMAIL", "")
+
+    # Privzeto geslo za uporabnike, uvožene iz CSV brez gesla. Uporabnik
+    # naj ga takoj zamenja (ali uporabi "pozabljeno geslo").
+    DEFAULT_IMPORT_PASSWORD = os.getenv("DEFAULT_IMPORT_PASSWORD", "Ucitelj123")
+
 
 settings = Settings()
 

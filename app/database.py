@@ -58,6 +58,18 @@ def init_db():
         except Exception:
             pass  # Že obstaja / že izvedeno — to je OK
 
+    def _migrate_autocommit(statement: str) -> None:
+        """Za stavke, ki se ne smejo izvajati v transakciji (ALTER TYPE ...).
+
+        PostgreSQL zahteva, da ALTER TYPE ... ADD VALUE teče zunaj
+        transakcijskega bloka — zato uporabimo AUTOCOMMIT povezavo.
+        """
+        try:
+            with engine.connect().execution_options(isolation_level="AUTOCOMMIT") as conn:
+                conn.execute(text(statement))
+        except Exception:
+            pass
+
     # ── Reservacije ─────────────────────────────────────────────────────
     _migrate("ALTER TABLE reservations ADD COLUMN IF NOT EXISTS series_id VARCHAR")
     _migrate("CREATE INDEX IF NOT EXISTS ix_reservations_series_id ON reservations (series_id)")
@@ -96,8 +108,47 @@ def init_db():
     # parent_title: združevanje poddejavnosti pod glavni naslov (npr. TEHNIŠKI DAN)
     _migrate("ALTER TABLE activity_days ADD COLUMN IF NOT EXISTS parent_title VARCHAR")
     _migrate("CREATE INDEX IF NOT EXISTS ix_activity_days_parent_title ON activity_days (parent_title)")
-    # termini
+        # termini
     _migrate("ALTER TABLE activity_days ADD COLUMN IF NOT EXISTS termini JSONB")
+
+    # ── Večšolska (multi-tenant) prenova ────────────────────────────────
+    # 0) Nova vloga main_admin (glavni admin, vidi vse šole). Vloga je v
+    #    PostgreSQL naravni ENUM tip 'roleenum' — dodati ji moramo vrednost.
+    #    ALTER TYPE ... ADD VALUE mora teči zunaj transakcije.
+    _migrate_autocommit("ALTER TYPE roleenum ADD VALUE IF NOT EXISTS 'main_admin'")
+
+    # Tabele schools / school_aliases / school_settings ustvari
+    # Base.metadata.create_all (modeli so registrirani zgoraj). Tu samo
+    # dodamo school_id na obstoječe tabele in uredimo indekse.
+    #
+    # Zakaj school_id na vsaki tabeli? To je meja izolacije: vsaka
+    # poizvedba šolskega uporabnika se filtrira po njegovi šoli.
+    for _table in (
+        "reservations",
+        "assessments",
+        "blocked_dates",
+        "activity_days",
+        "audit_log",
+        "users",
+    ):
+        _migrate(
+            f"ALTER TABLE {_table} ADD COLUMN IF NOT EXISTS school_id INTEGER REFERENCES schools(id)"
+        )
+        _migrate(
+            f"CREATE INDEX IF NOT EXISTS ix_{_table}_school_id ON {_table} (school_id)"
+        )
+
+    # Unikatnost uporabniškega imena/e-pošte je od zdaj ZNOTRAJ šole, ne
+    # globalna (dve šoli lahko imata vsaka svojega "jnovak").
+    # Vrstni red: najprej ustvari sestavljena unikatna indeksa, šele nato
+    # sprosti globalna — če sestavljeni indeks ne uspe (npr. podvojeni
+    # podatki), globalna unikatnost ostane in nič se ne pokvari.
+    _migrate("CREATE UNIQUE INDEX IF NOT EXISTS uq_users_school_username ON users (school_id, username)")
+    _migrate("DROP INDEX IF EXISTS ix_users_username")
+    _migrate("CREATE INDEX IF NOT EXISTS ix_users_username ON users (username)")
+    _migrate("CREATE UNIQUE INDEX IF NOT EXISTS uq_users_school_email ON users (school_id, email)")
+    _migrate("DROP INDEX IF EXISTS ix_users_email")
+    _migrate("CREATE INDEX IF NOT EXISTS ix_users_email ON users (email)")
 
 
 def log_audit(db: Session, user_id: int, user_name: str, action: str,

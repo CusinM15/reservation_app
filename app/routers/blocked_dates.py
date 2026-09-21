@@ -34,6 +34,12 @@ from app.models import BlockedDate, User, Assessment, RoleEnum
 from app.config import settings
 from app.audit import log_audit
 from app.security import get_current_user_id
+from app.tenancy import (
+    config_for_request,
+    data_school_id,
+    scope,
+    write_school_id,
+)
 
 router = APIRouter(prefix="/api/blocked-dates", tags=["blocked-dates"])
 
@@ -74,21 +80,30 @@ def _check_allowed(user_id, db: Session):
 
 # ── Pošiljanje emailov ────────────────────────────────────────────────
 # Ločena funkcija za pošiljanje emailov, ker jo uporabljajo tudi drugi
-# routerji (auth, rezervacije). Če MAIL_PASSWORD ni nastavljen, se emaili
-# ne pošiljajo (tiho ignoriranje napak).
-def _send_email(to_email: str, subject: str, body: str):
-    """Pošlji email preko Arnes SMTP. Best-effort — napake se ignorirajo."""
-    if not settings.MAIL_PASSWORD or not to_email:
+# routerji (auth, rezervacije, dejavnosti). Če MAIL_PASSWORD ni nastavljen,
+# se emaili ne pošiljajo (tiho ignoriranje napak).
+#
+# config: SchoolConfig — nastavitve šole, iz katere naj gre pošta (SMTP
+# strežnik, pošiljatelj). Če ni podan, se uporabijo vrednosti iz .env
+# (zato starim klicem ni treba nič spremeniti).
+def _send_email(to_email: str, subject: str, body: str, config=None):
+    """Pošlji email preko SMTP šole. Best-effort — napake se ignorirajo."""
+    server = config.MAIL_SERVER if config is not None else settings.MAIL_SERVER
+    port = config.MAIL_PORT if config is not None else settings.MAIL_PORT
+    sender = config.MAIL_FROM if config is not None else settings.MAIL_FROM
+    username = config.MAIL_USERNAME if config is not None else settings.MAIL_USERNAME
+    password = config.MAIL_PASSWORD if config is not None else settings.MAIL_PASSWORD
+    if not password or not to_email:
         return
     try:
         msg = MIMEText(body)
         msg["Subject"] = subject
-        msg["From"] = settings.MAIL_FROM
+        msg["From"] = sender
         msg["To"] = to_email
         context = ssl.create_default_context()
-        with smtplib.SMTP(settings.MAIL_SERVER, settings.MAIL_PORT) as s:
+        with smtplib.SMTP(server, port) as s:
             s.starttls(context=context)
-            s.login(settings.MAIL_USERNAME, settings.MAIL_PASSWORD)
+            s.login(username, password)
             s.send_message(msg)
     except Exception:
         pass  # best-effort
@@ -98,11 +113,16 @@ def _send_email(to_email: str, subject: str, body: str):
 
 @router.get("", response_model=List[BlockedDateOut])
 def list_blocked_dates(
+    request: Request,
     month: Optional[str] = Query(None, description="Format: YYYY-MM"),
     db: Session = Depends(get_db)
 ):
-    """Vrni seznam zasedenih datumov za določen mesec (ali vse)."""
-    query = db.query(BlockedDate)
+    """Vrni seznam zasedenih datumov za določen mesec (ali vse).
+
+    Vrne samo datume šole trenutnega uporabnika (izolacija med šolami).
+    """
+    school_id = data_school_id(request, db)
+    query = scope(db.query(BlockedDate), BlockedDate, school_id)
     if month:
         try:
             year, month_num = map(int, month.split('-'))
@@ -140,6 +160,8 @@ def create_blocked_dates(
     if not user_id:
         raise HTTPException(status_code=401, detail="Niste prijavljeni")
     uid = _check_allowed(user_id, db)
+    school_id = write_school_id(request, db)
+    config = config_for_request(request, db)
     creator = db.query(User).filter(User.id == uid).first()
     creator_name = f"{creator.first_name} {creator.last_name}".strip() or creator.username
 
@@ -157,28 +179,31 @@ def create_blocked_dates(
             continue
 
         for razred in data.razredi:
-            # Skip if already blocked
+            # Skip if already blocked (znotraj iste šole)
             existing = db.query(BlockedDate).filter(
                 BlockedDate.razred == razred,
-                BlockedDate.date == current
+                BlockedDate.date == current,
+                BlockedDate.school_id == school_id,
             ).first()
             if existing:
                 continue
 
-            bd = BlockedDate(razred=razred, date=current, created_by_id=uid)
+            bd = BlockedDate(razred=razred, date=current, created_by_id=uid, school_id=school_id)
             db.add(bd)
             created_count += 1
 
             # Find and delete assessments for this class on this date
             assessments = db.query(Assessment).filter(
                 Assessment.razred == razred,
-                Assessment.date == current
+                Assessment.date == current,
+                Assessment.school_id == school_id,
             ).all()
             for a in assessments:
                 teacher = db.query(User).filter(User.id == a.teacher_id).first()
                 log_audit(
                     db, uid, creator_name, "delete_assessment",
-                    f"Avtomatsko izbrisano ocenjevanje (dan dejavnosti): {razred}, {current}"
+                    f"Avtomatsko izbrisano ocenjevanje (dan dejavnosti): {razred}, {current}",
+                    school_id=school_id,
                 )
                 db.delete(a)
                 deleted_assessments += 1
@@ -193,7 +218,8 @@ def create_blocked_dates(
                              f"{creator_name} je razred {razred} na dan {date_str} označil(a) kot dan dejavnosti, "
                              f"zato je bilo vaše ocenjevanje za ta dan samodejno preklicano. "
                              f"Prosimo, da izberete nov datum.\n\n"
-                             f"Lep pozdrav,\nŠolski App"
+                             f"Lep pozdrav,\nŠolski App",
+                        config=config,
                     )
                     emails_sent += 1
 
@@ -202,7 +228,8 @@ def create_blocked_dates(
     db.commit()
     log_audit(db, user_id=uid, username=f"{creator.first_name} {creator.last_name}".strip() or "?",
               action="create_blocked_dates",
-              details=f"razredi={data.razredi}, date_from={data.date_from}, date_to={data.date_to}, created={created_count}, deleted_assessments={deleted_assessments}")
+              details=f"razredi={data.razredi}, date_from={data.date_from}, date_to={data.date_to}, created={created_count}, deleted_assessments={deleted_assessments}",
+              school_id=school_id)
     return {
         "message": f"Dodanih {created_count} dni dejavnosti",
         "deleted_assessments": deleted_assessments,
@@ -228,17 +255,23 @@ def delete_blocked_date(
     if not user_id:
         raise HTTPException(status_code=401, detail="Niste prijavljeni")
     uid = _check_allowed(user_id, db)
+    school_id = data_school_id(request, db)
     user = db.query(User).filter(User.id == uid).first()
     if not user:
         raise HTTPException(status_code=401, detail="Uporabnik ne obstaja")
 
-    bd = db.query(BlockedDate).filter(BlockedDate.id == id).first()
+    # Iskanje je omejeno na šolo uporabnika (šolski admin ne more brisati
+    # dni dejavnosti druge šole).
+    bd = scope(
+        db.query(BlockedDate).filter(BlockedDate.id == id), BlockedDate, school_id
+    ).first()
     if not bd:
         raise HTTPException(status_code=404, detail="Dan dejavnosti ne obstaja")
     user_name = f"{user.first_name} {user.last_name}".strip() or user.username
     log_audit(
         db, user_id=user.id, username=user_name, action="delete_blocked_date",
-        details=f"Odstranjen dan dejavnosti: {bd.razred}, {bd.date}"
+        details=f"Odstranjen dan dejavnosti: {bd.razred}, {bd.date}",
+        school_id=bd.school_id,
     )
     db.delete(bd)
     db.commit()

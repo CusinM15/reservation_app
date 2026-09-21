@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Vnos dejavnosti - Šolski App</title>
+<title>Dejavnosti - Šolski App</title>
 <style>
   body { font-family: Arial, sans-serif; margin: 20px; background: #f5f5f5; }
   .container { max-width: 1500px; margin: auto; background: white; padding: 20px; border-radius: 10px; }
@@ -43,10 +43,10 @@
 <body>
 <div class="container">
   <div class="nav">
-    <a href="/">← Domov (urnik)</a>
+    <a href="/rezervacije">← Domov (urnik)</a>
   </div>
-  <h2>📋 Vnos dejavnosti (dnevi dejavnosti)</h2>
-  <p class="hint">Samo vodstvo/admin. Vsaka generacija ima svojo podstran. Ob shranjevanju z izbranim datumom,
+  <h2>📋 Dejavnosti</h2>
+  <p class="hint">Učitelji lahko pregledujejo; vodstvo/admin ureja. Ob shranjevanju z izbranim datumom,
     "celoten dan" in prostori se samodejno ustvarijo blokirani datumi, rezervacije (ure 1–5) in prekličejo
     ocenjevanja + email učiteljem.</p>
 
@@ -63,6 +63,7 @@ const SECTIONS = ['KULTURNI', 'NARAVOSLOVNI', 'TEHNIŠKI', 'ŠPORTNI', 'DRUGO'];
 const GRADE_LABELS = {1:'1. razred',2:'2. razred',3:'3. razred',4:'4. razred',5:'5. razred',
                       6:'6. razred',7:'7. razred',8:'8. razred',9:'9. razred',ip:'IP/POUK'};
 let META = null;        // razredi, prostori, razpored ...
+const USER_ROLE = "{{ user_role }}";  // "teacher" | "vodstvo" | "admin"
 let currentGrade = '1';
 let sectionsData = {};  // grade -> section -> rows[]
 
@@ -106,10 +107,21 @@ function buildTabs(){
 async function loadGrade(grade){
   $('msg').className = 'msg';
   // 1–9 razred: samo dejavnosti iz xlsx (dnevi dejavnosti).
-  // IP/POUK: ročne (manual) dejavnosti + tedenske rezervacije.
-  const source = isGradeNumeric(grade) ? 'xlsx' : 'manual';
-  const url = '/api/dejavnosti?grade=' + encodeURIComponent(grade) + '&source=' + source;
-  const rows = await api(url).catch(() => []);
+  // IP/POUK: vse ročne dejavnosti (source=manual) iz vseh razredov,
+  // ki nimajo sekcije (KULTURNI/…) — torej niso v Excel predlogi.
+  let url, rows;
+  if (isGradeNumeric(grade)) {
+    url = '/api/dejavnosti?grade=' + encodeURIComponent(grade) + '&source=xlsx';
+    rows = await api(url).catch(() => []);
+  } else {
+    // IP/POUK: naloži VSE ročne dejavnosti, nato jih prefiltriraj.
+    const all = await api('/api/dejavnosti?source=manual').catch(() => []);
+    rows = all.filter(r => {
+      if (r.grade === 'ip') return true;          // vedno v IP/POUK
+      if (isGradeNumeric(r.grade) && !r.section) return true;  // 1–9 brez sekcije
+      return false;
+    });
+  }
   sectionsData[grade] = {};
   if(isGradeNumeric(grade)){
     SECTIONS.forEach(s => sectionsData[grade][s] = rows.filter(r => r.section === s));
@@ -159,7 +171,7 @@ function renderGrade(grade){
     html += `<p class="hint">Dejavnosti iz predloge (dnevi_dejavnosti_v_evrih.xlsx). Za urejanje shrani vrstico — blokade/rezervacije se izvedejo pri datum+celoten dan+prostori.</p>`;
     html += `<div class="toolbar">`;
     SECTIONS.forEach(s => {
-      html += `<button class="btn btn-success" onclick="addRow('${s}','xlsx')">＋ ${s} DAN</button>`;
+      if (USER_ROLE !== 'teacher') html += `<button class="btn btn-success" onclick="addRow('${s}','xlsx')">＋ ${s} DAN</button>`;
     });
     html += `</div>`;
     SECTIONS.forEach(s => {
@@ -171,7 +183,7 @@ function renderGrade(grade){
     // IP/POUK: brez sekcij — ročne dejavnosti + tedenske rezervacije
     const rows = (sectionsData[grade] && sectionsData[grade]['_all']) || [];
     html += `<p class="hint">Sem sodijo sami ročno dodani dogodki in tedenske rezervacije, ki niso v Excel predlogi.</p>`;
-    html += `<div class="toolbar"><button class="btn btn-success" onclick="openEditor({grade:'${grade}', section:'', title:'', subtitle:'', full_day:false, recurring:true, date_from:'', date_to:'', date_undetermined:false, date_text:'', all_classes:false, classes:'', prostori:'', cena:'', vodja:'', opomba:''})">＋ Dodaj dogodek / tedensko rezervacijo</button></div>`;
+    if (USER_ROLE !== 'teacher') html += `<div class="toolbar"><button class="btn btn-success" onclick="openEditor({grade:'${grade}', section:'', title:'', subtitle:'', full_day:false, recurring:true, date_from:'', date_to:'', date_undetermined:false, date_text:'', all_classes:false, classes:'', prostori:'', cena:'', vodja:'', opomba:''})">＋ Dodaj dogodek / tedensko rezervacijo</button></div>`;
     html += `<div class="section-title">Ročne dejavnosti (${rows.length})</div>`;
     if(rows.length === 0){
       html += `<p class="muted">Ni ročno dodanih dejavnosti.</p>`;
@@ -194,6 +206,7 @@ function renderSectionTable(grade, section, rows, isManual){
     <th>Vodja</th>
     <th>Pribl. cena (€)</th>
     <th>Opomba</th>
+    <th title="Celoten dan (blokira dan dejavnosti + rezervira ure 1–5)">Cel. dan</th>
     <th title="Računalnica">Rač.</th>
     <th title="Tablice">Tab.</th>
     <th title="Ladja">Ladja</th>
@@ -201,7 +214,7 @@ function renderSectionTable(grade, section, rows, isManual){
     <th>Akcije</th>
   </tr></thead><tbody>`;
   if(!rows || rows.length === 0){
-    html += `<tr><td colspan="10" class="muted">Ni vnesenih dejavnosti za to sekcijo.</td></tr>`;
+    html += `<tr><td colspan="11" class="muted">Ni vnesenih dejavnosti za to sekcijo.</td></tr>`;
     html += `</tbody></table>`;
     return html;
   }
@@ -224,10 +237,13 @@ function renderSectionTable(grade, section, rows, isManual){
       <td>${esc(r.vodja || '')}</td>
       <td>${esc(r.cena || '')}</td>
       <td>${r.date_undetermined ? '<div class="muted">📍 ' + esc(r.date_text||'') + '</div>' : ''}${esc(r.opomba || '')}</td>
+      <td style="text-align:center;font-weight:700;color:${r.full_day ? '#1a7f37' : '#c9c9c9'};" title="${r.full_day ? 'Celoten dan: DA' : 'Celoten dan: ne'}">${r.full_day ? '✔' : '—'}</td>
       ${roomCells}
       <td class="row-actions">
+        ${USER_ROLE !== 'teacher' ? `
         <button class="btn btn-warning btn-sm" onclick="editRow(${r.id})">✏️ Uredi</button>
         <button class="btn btn-danger btn-sm" onclick="delRow(${r.id})">🗑 Zbriši</button>
+        ` : ''}
       </td>
     </tr>`;
   });
@@ -239,6 +255,15 @@ function renderSectionTable(grade, section, rows, isManual){
 // (vsebuje npr. "9. 2. 2027 (6. a)"), drugače izpelje iz date_from/date_to.
 // VEDNO prikaže kateri razred(i) v oklepaju; če classes manjka za numerično
 // generacijo, izpiše vse črkovne oddelke (isti fallback kot backend).
+function toSlovenianDate(iso){
+  if(!iso) return '';
+  // ISO: "YYYY-MM-DD" → "DD. MM. YYYY"
+  const parts = iso.split('-');
+  if(parts.length !== 3) return iso;
+  const d = parts[2].padStart(2, '0');
+  const m = parts[1].padStart(2, '0');
+  return `${d}. ${m}. ${parts[0]}`;
+}
 function gradeClasses(r){
   let cl = (r.classes || '').trim();
   if(!cl && isGradeNumeric(r.grade)) cl = letterOddelki(r.grade).join(', ');
@@ -248,8 +273,8 @@ function fullTime(r){
   if(r.date_undetermined) return '<span class="muted">ni določen → ' + esc(r.date_text||'') + '</span>';
   if(r.termini && Array.isArray(r.termini) && r.termini.length > 0){
     const lines = r.termini.map(t => {
-      let ds = t.date || '';
-      if(t.date_to && t.date_to !== t.date) ds += ' → ' + t.date_to;
+      let ds = t.date ? toSlovenianDate(t.date) : '';
+      if(t.date_to && t.date_to !== t.date) ds += ' → ' + toSlovenianDate(t.date_to);
       let cl = (t.classes || '').trim();
       if(!cl) cl = gradeClasses(r);
       return '<div>• ' + esc(ds) + (cl ? ' (' + esc(cl) + ')' : '') + '</div>';
@@ -436,6 +461,7 @@ function saveRow(id){
     title: $('e-title').value,
     subtitle: $('e-subtitle').value,
     full_day: $('e-full').checked,
+
     recurring: $('e-recurring').checked,
     date_undetermined: undet,
     date_text: undet ? $('e-dtext').value : '',
@@ -463,8 +489,8 @@ function escAttr(s){ return esc(s); }
 function fmtDateRange(r){
   if(r.date_undetermined) return '<span class="muted">ni določen</span>';
   if(!r.date_from) return '—';
-  let s = r.date_from;
-  if(r.date_to && r.date_to !== r.date_from) s += ' → ' + r.date_to;
+  let s = toSlovenianDate(r.date_from);
+  if(r.date_to && r.date_to !== r.date_from) s += ' → ' + toSlovenianDate(r.date_to);
   const cl = gradeClasses(r);
   return s + (cl ? ' (' + esc(cl) + ')' : '');
 }

@@ -11,7 +11,7 @@
 
 from datetime import date, datetime
 
-from sqlalchemy import Boolean, Column, Integer, String, Date, DateTime, Text, ForeignKey, Float, Enum as SAEnum, BigInteger
+from sqlalchemy import Boolean, Column, Integer, String, Date, DateTime, Text, ForeignKey, Float, Enum as SAEnum, BigInteger, UniqueConstraint
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import relationship
 import enum
@@ -19,12 +19,72 @@ import enum
 from app.database import Base
 
 
+# ── Šola (tenant) ─────────────────────────────────────────────────────
+# Vsaka šola je ločen tenant: ima svoje uporabnike, rezervacije,
+# ocenjevanja, dneve dejavnosti in svoje nastavitve. Podatki se filtrirajo
+# po school_id — šolski uporabniki vidijo izključno svojo šolo.
+#
+# slug: kratka oznaka (npr. "ostcj"), iz katere se generirajo URL-aliasi.
+class School(Base):
+    __tablename__ = "schools"
+
+    id = Column(Integer, primary_key=True, index=True)
+    slug = Column(String, unique=True, nullable=False, index=True)
+    name = Column(String, nullable=False)
+    is_active = Column(Boolean, default=True, nullable=False)
+    created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
+
+    aliases = relationship("SchoolAlias", back_populates="school", cascade="all, delete-orphan")
+    settings = relationship("SchoolSetting", back_populates="school", cascade="all, delete-orphan")
+
+
+# ── URL-alias šole ────────────────────────────────────────────────────
+# Alias je prvi segment poti, vezan na šolo. Primeri:
+#   /ocenjevanje_ostcj          → /ocenjevanje
+#   /rezervacije_ostc           → /rezervacije
+#   /ocenjevanje_ostcj/dejavnosti → /ocenjevanje/dejavnosti
+# kind ("ocenjevanje" | "rezervacije") pove, v katero kanonično pot se
+# alias prevede. Novi šoli se aliasi generirajo iz sluga (glej tenancy.py).
+class SchoolAlias(Base):
+    __tablename__ = "school_aliases"
+
+    id = Column(Integer, primary_key=True, index=True)
+    school_id = Column(Integer, ForeignKey("schools.id"), nullable=False, index=True)
+    alias = Column(String, unique=True, nullable=False, index=True)
+    kind = Column(String, nullable=False, index=True)
+
+    school = relationship("School", back_populates="aliases")
+
+
+# ── Nastavitve šole (prej v .env) ─────────────────────────────────────
+# Ključ/vrednost par na šolo. Vrednosti so shranjene kot besedilo, ker
+# imajo različne tipe (int, CSV, JSON). Tip se interpretira v
+# app/tenancy.SchoolConfig. Šolski admin jih kasneje ureja v UI.
+class SchoolSetting(Base):
+    __tablename__ = "school_settings"
+
+    id = Column(Integer, primary_key=True, index=True)
+    school_id = Column(Integer, ForeignKey("schools.id"), nullable=False, index=True)
+    key = Column(String, nullable=False, index=True)
+    value = Column(Text, nullable=True, default="")
+
+    __table_args__ = (
+        UniqueConstraint("school_id", "key", name="uq_school_settings_school_key"),
+    )
+
+    school = relationship("School", back_populates="settings")
+
+
 # ── Vloge uporabnikov ─────────────────────────────────────────────────
-# Definiramo tri vloge z naraščajočimi pravicami:
-# - teacher: lahko ustvarja in briše lastne rezervacije in ocenjevanja
-# - vodstvo: enako kot teacher + upravlja zasedene datume, serijske rezervacije
-# - admin: polne pravice vključno z upravljanjem uporabnikov in audit logom
+# Definiramo vloge z naraščajočimi pravicami:
+# - teacher:      lahko ustvarja in briše lastne rezervacije in ocenjevanja
+# - vodstvo:      enako kot teacher + upravlja zasedene datume, serijske rezervacije
+# - admin:        ŠOLSKI admin — polne pravice v svoji šoli (uporabniki,
+#                 nastavitve šole, audit log). Vidi SAMO svojo šolo.
+# - main_admin:   GLAVNI admin (mi) — vidi in upravlja vse šole, ustvarja
+#                 nove šole. Nima school_id (globalni račun).
 class RoleEnum(str, enum.Enum):
+    main_admin = "main_admin"
     admin = "admin"
     vodstvo = "vodstvo"
     teacher = "teacher"
@@ -35,12 +95,19 @@ class RoleEnum(str, enum.Enum):
 # Password_hash hrani bcrypt hash (nikoli čistega gesla).
 # Reset_token je začasen — uporablja se za ponastavitev gesla.
 # is_active omogoča deaktivacijo brez brisanja (ohranimo zgodovino).
+#
+# school_id: kateri šoli uporabnik pripada. NULL = globalni račun
+# (glavni admin), ki ni vezan na nobeno šolo.
+# Unikatnost username/email je ZNOTRAJ šole (ne globalno) — dve šoli
+# lahko imata vsaka svojega "jnovak". Zato ni več unique=True na stolpcih,
+# ampak sestavljeni unikatni indeks (glej migracijo v database.py).
 class User(Base):
     __tablename__ = "users"
 
     id = Column(Integer, primary_key=True, index=True)
-    username = Column(String, unique=True, nullable=False, index=True)
-    email = Column(String, unique=True, nullable=True, index=True)
+    school_id = Column(Integer, ForeignKey("schools.id"), nullable=True, index=True)
+    username = Column(String, nullable=False, index=True)
+    email = Column(String, nullable=True, index=True)
     first_name = Column(String, nullable=False, default="")
     last_name = Column(String, nullable=False, default="")
     password_hash = Column(String, nullable=False)
@@ -69,6 +136,7 @@ class Reservation(Base):
     __tablename__ = "reservations"
 
     id = Column(Integer, primary_key=True, index=True)
+    school_id = Column(Integer, ForeignKey("schools.id"), nullable=True, index=True)
     prostor = Column(String, nullable=False, index=True)
     date = Column(Date, nullable=False, index=True)
     hour = Column(Integer, nullable=False)  # 0–7
@@ -103,6 +171,7 @@ class Assessment(Base):
     __tablename__ = "assessments"
 
     id = Column(Integer, primary_key=True, index=True)
+    school_id = Column(Integer, ForeignKey("schools.id"), nullable=True, index=True)
     razred = Column(String, nullable=False, index=True)
     date = Column(Date, nullable=False, index=True)
     ponavljanje = Column(Boolean, default=False, nullable=False)
@@ -118,6 +187,7 @@ class BlockedDate(Base):
     __tablename__ = "blocked_dates"
 
     id = Column(Integer, primary_key=True, index=True)
+    school_id = Column(Integer, ForeignKey("schools.id"), nullable=True, index=True)
     razred = Column(String, nullable=False, index=True)
     date = Column(Date, nullable=False, index=True)
     created_by_id = Column(Integer, ForeignKey("users.id"), nullable=False)
@@ -132,6 +202,7 @@ class AuditLog(Base):
     __tablename__ = "audit_log"
 
     id = Column(Integer, primary_key=True, index=True, autoincrement=True)
+    school_id = Column(Integer, ForeignKey("schools.id"), nullable=True, index=True)
     user_id = Column(Integer, ForeignKey("users.id"), nullable=True, index=True)
     username = Column(String, nullable=True)
     action = Column(String, nullable=False, index=True)
@@ -160,6 +231,7 @@ class ActivityDay(Base):
     __tablename__ = "activity_days"
 
     id = Column(Integer, primary_key=True, index=True)
+    school_id = Column(Integer, ForeignKey("schools.id"), nullable=True, index=True)
     grade = Column(String, nullable=False, index=True)  # "1".."9", "ip" (IP/POUK), "pouk"
     section = Column(String, nullable=False, index=True)  # KULTURNI/NARAVOSLOVNI/TEHNIŠKI/ŠPORTNI
     title = Column(String, nullable=False, default="")  # glavni naslov; če prazen → "{section} {grade}. razred"

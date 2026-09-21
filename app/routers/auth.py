@@ -29,10 +29,68 @@ from app.models import User, RoleEnum
 from app.config import settings, validate_password_strength
 from app.routers.blocked_dates import _send_email
 from app.security import sign_user_id, get_current_user_id
+from app.tenancy import (
+    MAIN_ADMIN_ROLE,
+    config_for_request,
+    find_user_for_login,
+    get_request_user,
+    is_main_admin,
+    is_school_admin,
+    request_school_id,
+    write_school_id,
+)
 
 router = APIRouter(prefix="/auth", tags=["auth"])
 templates = Jinja2Templates(directory="app/templates")
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+
+
+# ── Pomožne funkcije za upravljanje uporabnikov (večšolsko) ─────────
+# Uporabnike lahko upravlja ŠOLSKI admin (samo svoja šola) ali GLAVNI admin
+# (izbrana šola ali vse šole). Vračamo par (uporabnik, school_id) — None
+# pomeni »vse šole« (samo glavni admin).
+
+def _user_admin_scope(request: Request, db: Session):
+    """Vrni (current_user, school_id, error_response).
+
+    error_response je HTMLResponse(403), če uporabnik ni admin — s tem
+    ohranimo dosedanje vedenje (stran vrne 403, ne JSON napake).
+    """
+    current = get_request_user(request, db)
+    if not current:
+        return None, None, HTMLResponse("Nimate admin pravic", status_code=403)
+    if is_main_admin(current):
+        return current, request_school_id(request), None
+    if not is_school_admin(current):
+        return current, None, HTMLResponse("Nimate admin pravic", status_code=403)
+    return current, current.school_id, None
+
+
+def _scoped_users(db: Session, school_id: int | None):
+    """Poizvedba po uporabnikih, omejena na šolo.
+
+    school_id=None (glavni admin brez izbrane šole) vrne vse ŠOLSKE
+    uporabnike — globalnih (glavni admin) ne prikazujemo.
+    """
+    query = db.query(User)
+    if school_id is None:
+        return query.filter(User.school_id.isnot(None))
+    return query.filter(User.school_id == school_id)
+
+
+def _find_user_by_email(db: Session, request: Request, email: str, reset_token: str | None = None):
+    """Poišči uporabnika po e-pošti (za pozabljeno geslo).
+
+    Če je zahtevek vezan na šolo (URL-alias), iščemo znotraj nje; sicer
+    globalno (za eno šolo je zadetek natanko eden — vedenje nespremenjeno).
+    """
+    query = db.query(User).filter(User.email == email)
+    if reset_token is not None:
+        query = query.filter(User.reset_token == reset_token)
+    school_id = request_school_id(request)
+    if school_id is not None:
+        query = query.filter((User.school_id == school_id) | (User.school_id.is_(None)))
+    return query.first()
 
 
 # ── Pomožne funkcije za ponastavitev gesla ──────────────────────────
@@ -41,14 +99,20 @@ pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 # — če je timestamp potekel, token takoj zavržemo.
 # RESET_TOKEN_EXPIRATION_MINUTES = 120 (2 uri) je nastavljeno v config.
 
-def _reset_token_expires_at() -> datetime:
-    """Vrne čas, ko token poteče (sedaj + konfiguriran timeout)."""
-    return datetime.now(timezone.utc) + timedelta(minutes=settings.RESET_TOKEN_EXPIRATION_MINUTES)
+def _reset_token_expires_at(config=None) -> datetime:
+    """Vrne čas, ko token poteče (sedaj + konfiguriran timeout).
+
+    Timeout je lahko nastavitev šole (SchoolConfig); če ni podana,
+    se uporabi vrednost iz .env.
+    """
+    minutes = config.RESET_TOKEN_EXPIRATION_MINUTES if config is not None \
+        else settings.RESET_TOKEN_EXPIRATION_MINUTES
+    return datetime.now(timezone.utc) + timedelta(minutes=minutes)
 
 
-def _encode_reset_token(raw_token: str) -> str:
+def _encode_reset_token(raw_token: str, config=None) -> str:
     """Zakodira token s časom poteka: 'token:unix_timestamp'."""
-    return f"{raw_token}:{int(_reset_token_expires_at().timestamp())}"
+    return f"{raw_token}:{int(_reset_token_expires_at(config).timestamp())}"
 
 
 def _decode_reset_token(stored_token: str | None) -> str | None:
@@ -97,27 +161,40 @@ def login(
     
     Dovoljena je prijava z uporabniškim imenom ALI emailom (v username polje).
     To je priročno, ker si učitelji pogosto zapomnijo email namesto username-a.
+
+    Večšolsko: uporabnik se išče v šoli, ki ji pripada zahtevek (URL-alias),
+    sicer globalno. Če enako uporabniško ime obstaja v več šolah, prijava
+    zahteva pot konkretne šole (jasno sporočilo).
     
     Piškotke nastavimo brez max_age — pomeni, da se izbrišejo ob zaprtju
     brskalnika (session cookies). To je varnostna praksa za javne računalnike.
     """
     # Allow login with either username or email
-    user = db.query(User).filter(
-        ((User.username == username) | (User.email == username)),
-        User.is_active == True
-    ).first()
+    try:
+        user = find_user_for_login(db, request, username)
+    except HTTPException as exc:
+        return templates.TemplateResponse(
+            "login.html",
+            {"request": request, "error": exc.detail},
+        )
     if not user or not verify_password(password, user.password_hash):
         return templates.TemplateResponse(
             "login.html", 
             {"request": request, "error": "Napačno uporabniško ime ali geslo"}
         )
     
-    response = RedirectResponse(url="/", status_code=303)
+    # Glavnega admina peljemo na pregled šol (nima svoje šole/urnika).
+    target = "/schools" if is_main_admin(user) else "/rezervacije"
+    response = RedirectResponse(url=target, status_code=303)
     # Session cookies - no max_age, deleted on browser close
     # ⚠️ user_id je PODPISAN (itsdangerous) — brez podpisa bi lahko vsak
     # nastavil user_id=1 in postal admin (auth bypass).
     response.set_cookie(key="user_id", value=sign_user_id(user.id), httponly=True, samesite="lax")
     response.set_cookie(key="role", value=user.role, httponly=True, samesite="lax")
+    # Če je prijava tekla prek poti šole, si glavni admin zapomni izbrano šolo.
+    school_id = request_school_id(request)
+    if school_id is not None:
+        response.set_cookie(key="school_ctx", value=str(school_id), httponly=True, samesite="lax")
     return response
 
 
@@ -136,14 +213,18 @@ def get_current_user(request: Request, db: Session = Depends(get_db)):
     
     Uporablja se iz JavaScript-a za prikaz imena in vloge v UI.
     full_name se izračuna iz first_name + last_name.
+    school_id/school_name povesta, kateri šoli uporabnik pripada (glavni
+    admin ima school_id = null).
     """
-    user_id = get_current_user_id(request)
-    if not user_id:
-        raise HTTPException(status_code=401, detail="Ni prijavljen")
-    user = db.query(User).filter(User.id == int(user_id)).first()
+    user = get_request_user(request, db)
     if not user:
-        raise HTTPException(status_code=401, detail="Uporabnik ne obstaja")
+        raise HTTPException(status_code=401, detail="Ni prijavljen")
     full_name = f"{user.first_name} {user.last_name}".strip() or user.username
+    school_name = None
+    if user.school_id:
+        from app.models import School
+        school = db.query(School).filter(School.id == user.school_id).first()
+        school_name = school.name if school else None
     return {
         "id": user.id,
         "username": user.username,
@@ -152,6 +233,9 @@ def get_current_user(request: Request, db: Session = Depends(get_db)):
         "last_name": user.last_name,
         "full_name": full_name,
         "role": user.role,
+        "school_id": user.school_id,
+        "school_name": school_name,
+        "is_main_admin": is_main_admin(user),
     }
 
 
@@ -187,7 +271,7 @@ def forgot_password(
     Vedno vrne enako sporočilo, tudi če email ne obstaja (varnost —
     ne razkrijemo, kateri emaili so v bazi).
     """
-    user = db.query(User).filter(User.email == email).first()
+    user = _find_user_by_email(db, request, email)
     if not user:
         return templates.TemplateResponse("login.html", {
             "request": request,
@@ -195,8 +279,10 @@ def forgot_password(
             "show_forgot": True,
         })
     
+    config = config_for_request(request, db)
+
     # Generate a reset token. Stored as "<token>:<unix_expires_at>" so old links expire after 30 minutes.
-    token = _encode_reset_token(secrets.token_urlsafe(32))
+    token = _encode_reset_token(secrets.token_urlsafe(32), config)
     user.reset_token = token
     db.commit()
     
@@ -219,7 +305,8 @@ def forgot_password(
              f"Za ponastavitev gesla kliknite na spodnjo povezavo:\n"
              f"{reset_link}\n\n"
              f"Če niste zahtevali ponastavitve gesla, to sporočilo ignorirajte.\n\n"
-             f"Lep pozdrav,\nŠolski App"
+             f"Lep pozdrav,\nŠolski App",
+        config=config,
     )
     
     return templates.TemplateResponse("login.html", {
@@ -238,7 +325,7 @@ def reset_password_page(
 ):
     """Prikaži obrazec za novo geslo (če je token veljaven)."""
     stored_token = request.query_params.get("token", "")
-    user = db.query(User).filter(User.email == email, User.reset_token == stored_token).first()
+    user = _find_user_by_email(db, request, email, reset_token=stored_token)
     if not user or _decode_reset_token(user.reset_token) is None:
         return templates.TemplateResponse("login.html", {
             "request": request,
@@ -275,7 +362,7 @@ def reset_password(
             "reset_token": token,
             "reset_email": email,
         })
-    user = db.query(User).filter(User.email == email, User.reset_token == token).first()
+    user = _find_user_by_email(db, request, email, reset_token=token)
     if not user or _decode_reset_token(user.reset_token) is None:
         return templates.TemplateResponse("login.html", {
             "request": request,
@@ -342,21 +429,34 @@ def change_password(
 # ═══════════════════════════════════════════════════════════════════════
 # Admin endpointi za upravljanje uporabnikov
 # ═══════════════════════════════════════════════════════════════════════
-# Samo uporabniki z vlogo 'admin' lahko dostopajo do teh endpointov.
-# Vodstvo nima pravic za upravljanje uporabnikov (samo admin).
+# Uporabnike upravlja ŠOLSKI admin (samo svoja šola) ali GLAVNI admin
+# (izbrana šola oz. vse šole). Vodstvo in učitelji nimajo dostopa.
+#
+# Izolacija: vsaka poizvedba in vsak zapis je omejen na šolo (school_id),
+# zato šolski admin ne more videti ali spreminjati uporabnikov druge šole.
+
+# Vloge, ki jih sme podeliti šolski admin. main_admin lahko podeli samo
+# glavni admin (globalna vloga).
+_SCHOOL_ROLES = {RoleEnum.teacher.value, RoleEnum.vodstvo.value, RoleEnum.admin.value}
+
 
 @router.get("/admin/users", response_class=HTMLResponse)
 def admin_users_page(request: Request, db: Session = Depends(get_db)):
-    """Prikaži seznam vseh uporabnikov za admin-a."""
+    """Prikaži seznam uporabnikov šole, ki jo admin upravlja."""
     user_id = get_current_user_id(request)
     if not user_id:
         return RedirectResponse(url="/auth/login")
-    current_user = db.query(User).filter(User.id == int(user_id)).first()
-    if current_user.role != RoleEnum.admin:
-        return HTMLResponse("Nimate admin pravic", status_code=403)
-    
-    users = db.query(User).all()
-    return templates.TemplateResponse("admin_users.html", {"request": request, "users": users})
+    current_user, school_id, error = _user_admin_scope(request, db)
+    if error is not None:
+        return error
+
+    users = _scoped_users(db, school_id).order_by(User.first_name).all()
+    return templates.TemplateResponse("admin_users.html", {
+        "request": request,
+        "users": users,
+        "is_main_admin": is_main_admin(current_user),
+        "school_id": school_id,
+    })
 
 
 @router.post("/admin/users")
@@ -370,21 +470,32 @@ def create_user(
     role: str = Form(...),
     db: Session = Depends(get_db)
 ):
-    """Ustvari novega uporabnika (samo admin).
+    """Ustvari novega uporabnika (šolski admin svoje šole, glavni admin poljubne).
     
-    Preveri moč gesla in unikatnost uporabniškega imena.
+    Preveri moč gesla in unikatnost uporabniškega imena ZNOTRAJ šole.
     Če email ni podan, shranimo None (ni obvezen).
     """
-    user_id = get_current_user_id(request)
-    current_user = db.query(User).filter(User.id == int(user_id)).first()
-    if current_user.role != RoleEnum.admin:
-        return HTMLResponse("Nimate admin pravic", status_code=403)
-    
+    current_user, school_id, error = _user_admin_scope(request, db)
+    if error is not None:
+        return error
+
+    if role not in _SCHOOL_ROLES and not is_main_admin(current_user):
+        return RedirectResponse(url="/auth/admin/users?error=Neveljavna vloga", status_code=303)
+
+    target_school_id = school_id
+    if target_school_id is None and role != MAIN_ADMIN_ROLE:
+        return RedirectResponse(
+            url="/auth/admin/users?error=Najprej izberite šolo (pot šole).", status_code=303
+        )
+
     err = validate_password_strength(password)
     if err:
         return RedirectResponse(url=f"/auth/admin/users?error={err}", status_code=303)
     
-    existing = db.query(User).filter(User.username == username).first()
+    # Unikatnost velja ZNOTRAJ šole.
+    existing = db.query(User).filter(
+        User.username == username, User.school_id == target_school_id
+    ).first()
     if existing:
         return RedirectResponse(url="/auth/admin/users?error=Uporabnik že obstaja", status_code=303)
     
@@ -397,13 +508,81 @@ def create_user(
         password_hash=hashed,
         role=role,
         is_active=True,
+        school_id=target_school_id,
     )
     db.add(new_user)
     db.commit()
     log_audit(db, user_id=current_user.id, username=current_user.username,
               action="create_user",
-              details=f"username={username}, email={email}, role={role}")
+              details=f"username={username}, email={email}, role={role}, school_id={target_school_id}",
+              school_id=target_school_id)
     return RedirectResponse(url="/auth/admin/users", status_code=303)
+
+
+@router.post("/admin/users/import")
+async def import_users_csv(request: Request, db: Session = Depends(get_db)):
+    """Uvozi uporabnike iz CSV datoteke (šolski admin svoje šole).
+
+    Pripravljeno za UI (gumb »Uvozi CSV«), ki ga lahko dodamo kasneje.
+    Pričakovane glave stolpcev (neobčutljivo na velikost črk, vrstni red
+    dowoln): username, email, first_name, last_name, role, password.
+    Če gesla ni, se uporabniku nastavi privzeto geslo, ki ga mora zamenjati.
+
+    Vrne JSON povzetek: {created, skipped, errors}.
+    """
+    import csv
+    import io
+
+    current_user, school_id, error = _user_admin_scope(request, db)
+    if error is not None:
+        raise HTTPException(status_code=403, detail="Nimate admin pravic")
+    if school_id is None:
+        raise HTTPException(status_code=400, detail="Najprej izberite šolo (pot šole).")
+
+    form = await request.form()
+    upload = form.get("file")
+    if upload is None or not hasattr(upload, "read"):
+        raise HTTPException(status_code=400, detail="Manjka datoteka (polje 'file').")
+
+    raw = await upload.read()
+    text = raw.decode("utf-8-sig", errors="replace")
+    reader = csv.DictReader(io.StringIO(text))
+
+    created, skipped, errors = 0, 0, []
+    for i, row in enumerate(reader, start=2):  # 2 = prva vrstica pod glavo
+        norm = {(k or "").strip().lower(): (v or "").strip() for k, v in row.items()}
+        username = norm.get("username", "")
+        if not username:
+            errors.append(f"vrstica {i}: manjka username")
+            continue
+        role = norm.get("role") or RoleEnum.teacher.value
+        if role not in _SCHOOL_ROLES:
+            errors.append(f"vrstica {i}: neveljavna vloga '{role}'")
+            continue
+        exists = db.query(User).filter(
+            User.username == username, User.school_id == school_id
+        ).first()
+        if exists:
+            skipped += 1
+            continue
+        password = norm.get("password") or settings.DEFAULT_IMPORT_PASSWORD
+        db.add(User(
+            school_id=school_id,
+            username=username,
+            email=norm.get("email") or None,
+            first_name=norm.get("first_name", ""),
+            last_name=norm.get("last_name", ""),
+            password_hash=get_password_hash(password),
+            role=role,
+            is_active=True,
+        ))
+        created += 1
+
+    db.commit()
+    log_audit(db, user_id=current_user.id, username=current_user.username,
+              action="import_users", details=f"school_id={school_id}, created={created}, skipped={skipped}",
+              school_id=school_id)
+    return {"created": created, "skipped": skipped, "errors": errors}
 
 
 @router.post("/admin/users/{id}/deactivate")
@@ -414,36 +593,36 @@ def deactivate_user(id: int, request: Request, db: Session = Depends(get_db)):
     (rezervacije ostanejo v bazi). Deaktiviran uporabnik se ne more
     prijaviti, vendar njegove rezervacije ostanejo vidne.
     """
-    user_id = get_current_user_id(request)
-    current_user = db.query(User).filter(User.id == int(user_id)).first()
-    if current_user.role != RoleEnum.admin:
-        return HTMLResponse("Nimate admin pravic", status_code=403)
+    current_user, school_id, error = _user_admin_scope(request, db)
+    if error is not None:
+        return error
     
-    user = db.query(User).filter(User.id == id).first()
+    user = _scoped_users(db, school_id).filter(User.id == id).first()
     if user:
         user.is_active = False
         db.commit()
         log_audit(db, user_id=current_user.id, username=current_user.username,
                   action="deactivate_user",
-                  details=f"user_id={id}, username={user.username}")
+                  details=f"user_id={id}, username={user.username}",
+                  school_id=user.school_id)
     return RedirectResponse(url="/auth/admin/users", status_code=303)
 
 
 @router.post("/admin/users/{id}/activate")
 def activate_user(id: int, request: Request, db: Session = Depends(get_db)):
     """Ponovno aktiviraj deaktiviranega uporabnika."""
-    user_id = get_current_user_id(request)
-    current_user = db.query(User).filter(User.id == int(user_id)).first()
-    if current_user.role != RoleEnum.admin:
-        return HTMLResponse("Nimate admin pravic", status_code=403)
+    current_user, school_id, error = _user_admin_scope(request, db)
+    if error is not None:
+        return error
     
-    user = db.query(User).filter(User.id == id).first()
+    user = _scoped_users(db, school_id).filter(User.id == id).first()
     if user:
         user.is_active = True
         db.commit()
         log_audit(db, user_id=current_user.id, username=current_user.username,
                   action="activate_user",
-                  details=f"user_id={id}, username={user.username}")
+                  details=f"user_id={id}, username={user.username}",
+                  school_id=user.school_id)
     return RedirectResponse(url="/auth/admin/users", status_code=303)
 
 
@@ -453,28 +632,33 @@ def delete_user(id: int, request: Request, db: Session = Depends(get_db)):
     
     OPOZORILO: Brisanje je trajno! Pred brisanjem pobrišemo tudi vse
     rezervacije in ocenjevanja, ki jih je uporabnik ustvaril.
-    Admin ne more izbrisati samega sebe (zaščita).
+    Admin ne more izbrisati samega sebe (zaščita). Šolski admin ne more
+    izbrisati uporabnika druge šole (iskanje je omejeno na njegovo šolo).
     """
-    user_id = get_current_user_id(request)
-    current_user = db.query(User).filter(User.id == int(user_id)).first()
-    if current_user.role != RoleEnum.admin:
-        return HTMLResponse("Nimate admin pravic", status_code=403)
+    current_user, school_id, error = _user_admin_scope(request, db)
+    if error is not None:
+        return error
     if current_user.id == id:
         return HTMLResponse("Ne morete izbrisati samega sebe", status_code=400)
     
-    user = db.query(User).filter(User.id == id).first()
+    user = _scoped_users(db, school_id).filter(User.id == id).first()
     if not user:
         return RedirectResponse(url="/auth/admin/users?error=Uporabnik ne obstaja", status_code=303)
     
-    # Delete user's reservations and assessments first
+    # Delete user's reservations and assessments first (znotraj njegove šole).
     from app.models import Reservation, Assessment
-    db.query(Reservation).filter(Reservation.teacher_id == id).delete()
-    db.query(Assessment).filter(Assessment.teacher_id == id).delete()
+    db.query(Reservation).filter(
+        Reservation.teacher_id == id, Reservation.school_id == user.school_id
+    ).delete()
+    db.query(Assessment).filter(
+        Assessment.teacher_id == id, Assessment.school_id == user.school_id
+    ).delete()
     db.delete(user)
     db.commit()
     log_audit(db, user_id=current_user.id, username=current_user.username,
               action="delete_user",
-              details=f"user_id={id}, username={user.username}, role={user.role}")
+              details=f"user_id={id}, username={user.username}, role={user.role}",
+              school_id=user.school_id)
     return RedirectResponse(url="/auth/admin/users", status_code=303)
 
 
@@ -490,17 +674,19 @@ def update_user(
     new_password: str = Form(""),
     db: Session = Depends(get_db)
 ):
-    """Posodobi podatke uporabnika (samo admin).
+    """Posodobi podatke uporabnika (šolski admin svoje šole).
     
     Če new_password ni prazen, spremeni tudi geslo.
     Sicer geslo ostane nespremenjeno.
     """
-    user_id = get_current_user_id(request)
-    current_user = db.query(User).filter(User.id == int(user_id)).first()
-    if current_user.role != RoleEnum.admin:
-        return HTMLResponse("Nimate admin pravic", status_code=403)
+    current_user, school_id, error = _user_admin_scope(request, db)
+    if error is not None:
+        return error
+
+    if role not in _SCHOOL_ROLES and not is_main_admin(current_user):
+        return RedirectResponse(url="/auth/admin/users?error=Neveljavna vloga", status_code=303)
     
-    user = db.query(User).filter(User.id == id).first()
+    user = _scoped_users(db, school_id).filter(User.id == id).first()
     if not user:
         return RedirectResponse(url="/auth/admin/users?error=Uporabnik ne obstaja", status_code=303)
     
@@ -518,5 +704,6 @@ def update_user(
     db.commit()
     log_audit(db, user_id=current_user.id, username=current_user.username,
               action="update_user",
-              details=f"user_id={id}, username={username}, email={email}, role={role}, password_changed={'yes' if new_password else 'no'}")
+              details=f"user_id={id}, username={username}, email={email}, role={role}, password_changed={'yes' if new_password else 'no'}",
+              school_id=user.school_id)
     return RedirectResponse(url="/auth/admin/users", status_code=303)

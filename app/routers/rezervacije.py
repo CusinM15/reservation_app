@@ -40,6 +40,14 @@ from app.race import register_intent, check_and_raise, cleanup, get_lock
 from app.routers.blocked_dates import _send_email
 from app.audit import log_audit
 from app.security import get_current_user_id
+from app.tenancy import (
+    SchoolConfig,
+    config_for_request,
+    data_school_id,
+    role_value,
+    scope,
+    write_school_id,
+)
 
 router = APIRouter(prefix="/api/rezervacije", tags=["rezervacije"])
 
@@ -47,16 +55,19 @@ router = APIRouter(prefix="/api/rezervacije", tags=["rezervacije"])
 # ── Validacijske funkcije ─────────────────────────────────────────────
 # Ločene pomožne funkcije za preverjanje vnosov. Zakaj ločene?
 # Da so enostavno testabilne in ponovno uporabne v serijskih rezervacijah.
+#
+# Pomembno: razredi, prostori in kapaciteta tablic so nastavitve ŠOLE
+# (school_settings), ne globalne — zato vsaka funkcija prejme SchoolConfig.
 
-def _validate_prostor(prostor: str):
-    """Preveri, ali prostor obstaja v konfiguraciji (settings.PROSTORI)."""
-    if prostor not in settings.PROSTORI:
+def _validate_prostor(prostor: str, config: SchoolConfig):
+    """Preveri, ali prostor obstaja v konfiguraciji šole."""
+    if prostor not in config.PROSTORI:
         raise HTTPException(status_code=400, detail=f"Neveljaven prostor: {prostor}")
 
 
-def _validate_razred(razred: str):
-    """Preveri, ali razred obstaja v konfiguraciji (settings.RAZREDI)."""
-    if razred not in settings.RAZREDI:
+def _validate_razred(razred: str, config: SchoolConfig):
+    """Preveri, ali razred obstaja v konfiguraciji šole."""
+    if razred not in config.RAZREDI:
         raise HTTPException(status_code=400, detail=f"Neveljaven razred: {razred}")
 
 
@@ -66,12 +77,13 @@ def _validate_hour(hour: int):
         raise HTTPException(status_code=400, detail="Ura mora biti med 0 in 7")
 
 
-def _check_tablice_capacity(db: Session, prostor: str, date: DateType, hour: int, qty: int):
-    """Preveri kapaciteto tablic za določeno uro.
+def _check_tablice_capacity(db: Session, school_id: int | None, config: SchoolConfig,
+                            prostor: str, date: DateType, hour: int, qty: int):
+    """Preveri kapaciteto tablic za določeno uro (znotraj šole).
     
     Zakaj posebno preverjanje za tablice? Ker tablice niso ekskluzivne
     — več učiteljev lahko hkrati uporablja tablice v isti uri. Skupno
-    število ne sme preseči TABLICE_MAX (privzeto 28).
+    število ne sme preseči TABLICE_MAX (nastavitev šole, privzeto 28).
     
     Za ostale prostore (računalnica, ladja, gospodinjstvo) je prostor
     ekskluziven — preverja _check_unique_space.
@@ -79,22 +91,22 @@ def _check_tablice_capacity(db: Session, prostor: str, date: DateType, hour: int
     if prostor != "tablice":
         return
     
-    existing = db.query(Reservation).filter(
+    existing = scope(db.query(Reservation).filter(
         Reservation.prostor == "tablice",
         Reservation.date == date,
         Reservation.hour == hour
-    ).all()
+    ), Reservation, school_id).all()
     
     total_used = sum(r.qty or 0 for r in existing)
-    if total_used + qty > settings.TABLICE_MAX:
+    if total_used + qty > config.TABLICE_MAX:
         raise HTTPException(
             status_code=400,
-            detail=f"Skupno število tablet ({total_used + qty}) presega kapaciteto ({settings.TABLICE_MAX})"
+            detail=f"Skupno število tablet ({total_used + qty}) presega kapaciteto ({config.TABLICE_MAX})"
         )
 
 
-def _check_unique_space(db: Session, prostor: str, date: DateType, hour: int):
-    """Preveri, ali je prostor že zaseden v določeni uri.
+def _check_unique_space(db: Session, school_id: int | None, prostor: str, date: DateType, hour: int):
+    """Preveri, ali je prostor že zaseden v določeni uri (znotraj šole).
     
     Za tablice preskočimo (lahko jih uporablja več učiteljev hkrati).
     Za vse ostale prostore velja ekskluzivnost.
@@ -102,11 +114,11 @@ def _check_unique_space(db: Session, prostor: str, date: DateType, hour: int):
     if prostor == "tablice":
         return
     
-    existing = db.query(Reservation).filter(
+    existing = scope(db.query(Reservation).filter(
         Reservation.prostor == prostor,
         Reservation.date == date,
         Reservation.hour == hour
-    ).first()
+    ), Reservation, school_id).first()
     
     if existing:
         raise HTTPException(status_code=400, detail="Ta termin je že zaseden.")
@@ -116,6 +128,7 @@ def _check_unique_space(db: Session, prostor: str, date: DateType, hour: int):
 
 @router.get("", response_model=list[ReservationOut])
 def list_rezervacije(
+    request: Request,
     date: Optional[DateType] = Query(None),
     date_from: Optional[DateType] = Query(None),
     date_to: Optional[DateType] = Query(None),
@@ -125,10 +138,11 @@ def list_rezervacije(
     """Vrni seznam rezervacij z opcijskimi filtri.
     
     Podpira filtriranje po datumu (točen ali razpon) in prostoru.
-    Rezultati so urejeni po datumu in uri.
+    Rezultati so urejeni po datumu in uri ter omejeni na šolo uporabnika.
     Poleg osnovnih podatkov vrne tudi ime učitelja (teacher_name).
     """
-    query = db.query(Reservation).options(joinedload(Reservation.teacher))
+    school_id = data_school_id(request, db)
+    query = scope(db.query(Reservation).options(joinedload(Reservation.teacher)), Reservation, school_id)
     if date:
         query = query.filter(Reservation.date == date)
     if date_from:
@@ -172,9 +186,10 @@ def create_rezervacija(data: ReservationCreate, request: Request, db: Session = 
     v bazo pri tablicah). Z race zaščito oba dobita napako z imenom
     sočasnega uporabnika.
     """
-    _validate_prostor(data.prostor)
+    config = config_for_request(request, db)
+    _validate_prostor(data.prostor, config)
     if data.razred:
-        _validate_razred(data.razred)
+        _validate_razred(data.razred, config)
     _validate_hour(data.hour)
 
     # Datum ne sme biti v preteklosti — UI to prepreči, API pa mora
@@ -187,18 +202,21 @@ def create_rezervacija(data: ReservationCreate, request: Request, db: Session = 
     if data.prostor == "tablice" and data.qty is None:
         raise HTTPException(status_code=400, detail="Za tablice morate navesti število (qty)")
     
+    school_id = write_school_id(request, db)
+
     # Get current user name
     user_id = get_current_user_id(request)
     current_user = db.query(User).filter(User.id == int(user_id)).first() if user_id else None
     user_name = f"{current_user.first_name} {current_user.last_name}".strip() if current_user else "?"
     
-    # Build a resource key for race detection
+    # Build a resource key for race detection. Šola je del ključa, da se
+    # ista ura v dveh šolah ne šteje kot medsebojni race condition.
     # Za tablice je ključ 'tablice:<date>:<hour>' (ker več učiteljev lahko
     # sočasno rezervira tablice, vendar želimo še vedno detektirati race).
     # Za ostale prostore je ključ 'rezervacija:<prostor>:<date>:<hour>'.
-    resource_key = f"rezervacija:{data.prostor}:{data.date}:{data.hour}"
+    resource_key = f"school:{school_id}:rezervacija:{data.prostor}:{data.date}:{data.hour}"
     if data.prostor == "tablice":
-        resource_key = f"tablice:{data.date}:{data.hour}"
+        resource_key = f"school:{school_id}:tablice:{data.date}:{data.hour}"
     
     lock = get_lock(resource_key)
     register_intent(resource_key, user_id, user_name)
@@ -213,21 +231,23 @@ def create_rezervacija(data: ReservationCreate, request: Request, db: Session = 
             )
         
         # Now do the actual checks
-        _check_tablice_capacity(db, data.prostor, data.date, data.hour, data.qty or 0)
-        _check_unique_space(db, data.prostor, data.date, data.hour)
+        _check_tablice_capacity(db, school_id, config, data.prostor, data.date, data.hour, data.qty or 0)
+        _check_unique_space(db, school_id, data.prostor, data.date, data.hour)
 
         # Varnost: teacher_id vedno iz seje (prijavljeni uporabnik), NIKOLI
         # od clienta. Prej je client lahko poslal poljuben teacher_id in s tem
         # ustvaril rezervacijo v imenu drugega učitelja (spoofing/IDOR).
         payload = data.model_dump()
         payload["teacher_id"] = current_user.id if current_user else None
+        payload["school_id"] = school_id
         reservation = Reservation(**payload)
         db.add(reservation)
         
         # Audit log — pred commitom, da je v isti transakciji
         log_audit(db, user_id=get_current_user_id(request) or 0, username=user_name,
                   action="create_rezervacija",
-                  details=f"prostor={data.prostor}, date={data.date}, hour={data.hour}, razred={data.razred}, qty={data.qty}")
+                  details=f"prostor={data.prostor}, date={data.date}, hour={data.hour}, razred={data.razred}, qty={data.qty}",
+                  school_id=school_id)
 
         try:
             db.commit()
@@ -262,12 +282,16 @@ def delete_rezervacija(id: int, request: Request, db: Session = Depends(get_db))
     if not current_user:
         raise HTTPException(status_code=401, detail="Uporabnik ne obstaja")
     
-    reservation = db.query(Reservation).filter(Reservation.id == id).first()
+    # Iskanje omejeno na šolo uporabnika (prepreči brisanje tujih zapisov).
+    school_id = data_school_id(request, db)
+    reservation = scope(
+        db.query(Reservation).filter(Reservation.id == id), Reservation, school_id
+    ).first()
     if not reservation:
         raise HTTPException(status_code=404, detail="Rezervacija ne obstaja")
     
     # Only the creator, admin or vodstvo can delete
-    if reservation.teacher_id != current_user.id and current_user.role not in (RoleEnum.admin, RoleEnum.vodstvo):
+    if reservation.teacher_id != current_user.id and role_value(current_user) not in (RoleEnum.admin.value, RoleEnum.vodstvo.value):
         raise HTTPException(status_code=403, detail="Samo avtor, admin ali vodstvo lahko briše rezervacijo")
     
     user_name = f"{current_user.first_name} {current_user.last_name}".strip() or current_user.username
@@ -275,7 +299,8 @@ def delete_rezervacija(id: int, request: Request, db: Session = Depends(get_db))
     # Audit log pred brisanjem (v isti transakciji)
     log_audit(db, user_id=current_user.id, username=user_name,
               action="delete_rezervacija",
-              details=f"id={id}, prostor={reservation.prostor}, date={reservation.date}, hour={reservation.hour}, teacher_id={reservation.teacher_id}")
+              details=f"id={id}, prostor={reservation.prostor}, date={reservation.date}, hour={reservation.hour}, teacher_id={reservation.teacher_id}",
+              school_id=reservation.school_id)
 
     db.delete(reservation)
     db.commit()
@@ -308,7 +333,7 @@ def _require_admin_or_vodstvo(request: Request, db: Session) -> User:
     user = db.query(User).filter(User.id == int(user_id)).first()
     if not user:
         raise HTTPException(status_code=401, detail="Uporabnik ne obstaja")
-    if user.role not in (RoleEnum.admin, RoleEnum.vodstvo):
+    if role_value(user) not in (RoleEnum.admin.value, RoleEnum.vodstvo.value):
         raise HTTPException(
             status_code=403,
             detail="Serijske rezervacije lahko ustvarja samo admin ali vodstvo.",
@@ -320,6 +345,8 @@ def _resolve_conflicts_and_notify(
     db: Session,
     planned: list[tuple[DateType, int]],
     *,
+    school_id: int,
+    config: SchoolConfig,
     prostor: str,
     creator_name: str,
     creator_id: int,
@@ -337,30 +364,33 @@ def _resolve_conflicts_and_notify(
     - Prostor je ekskluziven, zato pobrišemo celotno obstoječo rezervacijo.
     
     V obeh primerih pošljemo email prvotnemu lastniku z obvestilom.
+    Iskanje konfliktov je omejeno na šolo — serija ene šole ne posega v
+    rezervacije druge šole.
     """
     removed = 0
     for d, h in planned:
         if prostor == "tablice":
-            existing = db.query(Reservation).options(joinedload(Reservation.teacher)).filter(
+            existing = scope(db.query(Reservation).options(joinedload(Reservation.teacher)).filter(
                 Reservation.prostor == "tablice",
                 Reservation.date == d,
                 Reservation.hour == h,
-            ).all()
+            ), Reservation, school_id).all()
             need = qty or 0
             if existing:
                 still_used = sum(r.qty or 0 for r in existing)
             else:
                 still_used = 0
-            while still_used + need > settings.TABLICE_MAX and existing:
+            while still_used + need > config.TABLICE_MAX and existing:
                 res = existing.pop(0)
                 db.delete(res)  # ⚠️ dejansko pobriši iz baze — prej je manjkal!
                 teacher = res.teacher
                 date_str = d.strftime("%d.%m.%Y")
                 hour_key = str(h)
-                hour_label = settings.SCHEDULE.get(hour_key, f"ura {h}")
+                hour_label = config.SCHEDULE.get(hour_key, f"ura {h}")
                 log_audit(
                     db, user_id=creator_id, username=creator_name, action="delete",
-                    details=f"Avtomatsko izbrisana rezervacija (serija id={res.id}): tablice, {d}, {h}. ura"
+                    details=f"Avtomatsko izbrisana rezervacija (serija id={res.id}): tablice, {d}, {h}. ura",
+                    school_id=school_id,
                 )
                 removed += 1
                 still_used = sum(r.qty or 0 for r in existing)
@@ -372,24 +402,26 @@ def _resolve_conflicts_and_notify(
                              f"vaša rezervacija za tablice na dan {date_str} ob {hour_label} "
                              f"je bila preklicana, ker je {creator_name} ustvaril(a) serijsko "
                              f"rezervacijo, ki pokriva ta termin.\n\n"
-                             f"Lep pozdrav,\nŠolski App"
+                             f"Lep pozdrav,\nŠolski App",
+                        config=config,
                     )
         else:
-            existing = db.query(Reservation).options(joinedload(Reservation.teacher)).filter(
+            existing = scope(db.query(Reservation).options(joinedload(Reservation.teacher)).filter(
                 Reservation.prostor == prostor,
                 Reservation.date == d,
                 Reservation.hour == h,
-            ).first()
+            ), Reservation, school_id).first()
             if existing:
                 teacher = existing.teacher
                 date_str = d.strftime("%d.%m.%Y")
                 hour_key = str(h)
-                hour_label = settings.SCHEDULE.get(hour_key, f"ura {h}")
+                hour_label = config.SCHEDULE.get(hour_key, f"ura {h}")
                 prostor_label = {"tablice": "tablice", "racunalnica": "računalnico", "ladja": "ladjo"}.get(prostor, prostor)
                 db.delete(existing)
                 log_audit(
                     db, user_id=creator_id, username=creator_name, action="delete",
-                    details=f"Avtomatsko izbrisana rezervacija (serija id={existing.id}): {prostor_label}, {d}, {h}. ura"
+                    details=f"Avtomatsko izbrisana rezervacija (serija id={existing.id}): {prostor_label}, {d}, {h}. ura",
+                    school_id=school_id,
                 )
                 removed += 1
                 if teacher and teacher.email:
@@ -400,7 +432,8 @@ def _resolve_conflicts_and_notify(
                              f"vaša rezervacija za {prostor_label} na dan {date_str} ob {hour_label} "
                              f"je bila preklicana, ker je {creator_name} ustvaril(a) serijsko "
                              f"rezervacijo, ki pokriva ta termin.\n\n"
-                             f"Lep pozdrav,\nŠolski App"
+                             f"Lep pozdrav,\nŠolski App",
+                        config=config,
                     )
     return removed
 
@@ -409,6 +442,8 @@ def _commit_series(
     db: Session,
     planned: list[tuple[DateType, int]],
     *,
+    school_id: int,
+    config: SchoolConfig,
     prostor: str,
     teacher_id: int,
     creator_name: str,
@@ -421,6 +456,8 @@ def _commit_series(
 
     Args:
         planned: Seznam (datum, ura) parov za ustvarjanje.
+        school_id: Kateri šoli pripadajo nove rezervacije.
+        config: Nastavitve šole (prostori, urnik, kapaciteta tablic).
         prostor: Prostor (tablice, računalnica, ladja, gospodinjstvo).
         teacher_id: ID učitelja, ki bo naveden kot rezervant.
         creator_name: Ime ustvarjalca (za email obvestila).
@@ -437,27 +474,32 @@ def _commit_series(
     enkratnimi rezervacijami učiteljev. Učitelj dobi obvestilo, da
     naj poišče drug termin.
     """
-    _validate_prostor(prostor)
+    _validate_prostor(prostor, config)
     for _, h in planned:
         _validate_hour(h)
     if prostor == "tablice" and qty is None:
         raise HTTPException(status_code=400, detail="Za tablice morate navesti število (qty)")
     # ⚠️ Preveri kapaciteto PRED brisanjem konfliktov — če qty že sam presega
     # TABLICE_MAX, zavrni takoj, da ne izgubimo obstoječih rezervacij.
-    if prostor == "tablice" and qty is not None and qty > settings.TABLICE_MAX:
+    if prostor == "tablice" and qty is not None and qty > config.TABLICE_MAX:
         raise HTTPException(
             status_code=400,
-            detail=f"Skupno število tablet ({qty}) presega kapaciteto ({settings.TABLICE_MAX})",
+            detail=f"Skupno število tablet ({qty}) presega kapaciteto ({config.TABLICE_MAX})",
         )
 
     # 1) Pobriši konfliktne rezervacije in pošlji obvestila
-    removed = _resolve_conflicts_and_notify(db, planned, prostor=prostor, creator_name=creator_name, creator_id=creator_id, qty=qty)
+    removed = _resolve_conflicts_and_notify(
+        db, planned,
+        school_id=school_id, config=config,
+        prostor=prostor, creator_name=creator_name, creator_id=creator_id, qty=qty,
+    )
 
     # 2) Ustvari nove zapise z unikatnim series_id (UUID)
     series_id = str(uuid.uuid4())
     series_name = (name or "").strip() or None
     for d, h in planned:
         db.add(Reservation(
+            school_id=school_id,
             prostor=prostor,
             date=d,
             hour=h,
@@ -475,7 +517,8 @@ def _commit_series(
 
     log_audit(db, user_id=teacher_id, username=creator_name,
               action="create_series",
-              details=f"series_id={series_id}, prostor={prostor}, dates={len(planned)}x, removed={removed}")
+              details=f"series_id={series_id}, prostor={prostor}, dates={len(planned)}x, removed={removed}",
+              school_id=school_id)
     return SeriesResult(series_id=series_id, created=len(planned), skipped=[], removed=removed)
 
 
@@ -500,6 +543,9 @@ def create_weekly_series(
     """
     user = _require_admin_or_vodstvo(request, db)
     creator_name = f"{user.first_name} {user.last_name}".strip() or user.username
+    school_id = write_school_id(request, db)
+    config = config_for_request(request, db)
+    _validate_prostor(data.prostor, config)
 
     if data.date_to < data.date_from:
         raise HTTPException(status_code=400, detail="date_to mora biti >= date_from")
@@ -524,6 +570,8 @@ def create_weekly_series(
 
     return _commit_series(
         db, planned,
+        school_id=school_id,
+        config=config,
         prostor=data.prostor,
         teacher_id=user.id,
         creator_name=creator_name,
@@ -552,6 +600,9 @@ def create_full_day_series(
     """
     user = _require_admin_or_vodstvo(request, db)
     creator_name = f"{user.first_name} {user.last_name}".strip() or user.username
+    school_id = write_school_id(request, db)
+    config = config_for_request(request, db)
+    _validate_prostor(data.prostor, config)
 
     if data.date_to < data.date_from:
         raise HTTPException(status_code=400, detail="date_to mora biti >= date_from")
@@ -579,6 +630,8 @@ def create_full_day_series(
 
     return _commit_series(
         db, planned,
+        school_id=school_id,
+        config=config,
         prostor=data.prostor,
         teacher_id=user.id,
         creator_name=creator_name,
@@ -606,10 +659,11 @@ def list_all_series(
     """
     from datetime import date
     today = date.today()
-    rows = db.query(Reservation).options(joinedload(Reservation.teacher)).filter(
+    school_id = data_school_id(request, db)
+    rows = scope(db.query(Reservation).options(joinedload(Reservation.teacher)).filter(
         Reservation.series_id.isnot(None),
         Reservation.date >= today,
-    ).order_by(Reservation.date).all()
+    ), Reservation, school_id).order_by(Reservation.date).all()
 
     # Group by series_id
     groups = defaultdict(list)
@@ -644,11 +698,12 @@ def list_all_series(
 
 
 @router.get("/series/{series_id}", response_model=list[ReservationOut])
-def list_series(series_id: str, db: Session = Depends(get_db)):
-    """Vrni vse rezervacije, ki pripadajo dani seriji."""
-    rows = db.query(Reservation).options(joinedload(Reservation.teacher)).filter(
+def list_series(series_id: str, request: Request, db: Session = Depends(get_db)):
+    """Vrni vse rezervacije, ki pripadajo dani seriji (znotraj šole uporabnika)."""
+    school_id = data_school_id(request, db)
+    rows = scope(db.query(Reservation).options(joinedload(Reservation.teacher)).filter(
         Reservation.series_id == series_id
-    ).order_by(Reservation.date, Reservation.hour).all()
+    ), Reservation, school_id).order_by(Reservation.date, Reservation.hour).all()
     for r in rows:
         t = r.teacher
         if t:
@@ -668,8 +723,9 @@ def list_series_items(
     prikaz. Ne nalaga vseh posameznih rezervacij v spomin.
     """
     _require_admin_or_vodstvo(request, db)
+    school_id = data_school_id(request, db)
 
-    rows = db.query(
+    rows = scope(db.query(
         Reservation.series_id,
         Reservation.prostor,
         Reservation.name,
@@ -679,7 +735,7 @@ def list_series_items(
     ).filter(
         Reservation.series_id.isnot(None),
         Reservation.date >= date.today(),
-    ).group_by(
+    ), Reservation, school_id).group_by(
         Reservation.series_id,
         Reservation.prostor,
         Reservation.name,
@@ -721,11 +777,12 @@ def delete_series(
     if not current:
         raise HTTPException(status_code=401, detail="Uporabnik ne obstaja")
 
-    rows = db.query(Reservation).filter(Reservation.series_id == series_id).all()
+    school_id = data_school_id(request, db)
+    rows = scope(db.query(Reservation).filter(Reservation.series_id == series_id), Reservation, school_id).all()
     if not rows:
         raise HTTPException(status_code=404, detail="Serija ne obstaja")
 
-    is_priv = current.role in (RoleEnum.admin, RoleEnum.vodstvo)
+    is_priv = role_value(current) in (RoleEnum.admin.value, RoleEnum.vodstvo.value)
     is_owner = all(r.teacher_id == current.id for r in rows)
     if not (is_priv or is_owner):
         raise HTTPException(status_code=403, detail="Samo admin/vodstvo ali avtor serije lahko briše.")
@@ -736,7 +793,8 @@ def delete_series(
     for r in rows:
         db.delete(r)
     db.commit()
-    log_audit(db, user_id=current.id, username=username, action="delete_series", details=details)
+    log_audit(db, user_id=current.id, username=username, action="delete_series", details=details,
+              school_id=rows[0].school_id)
     return {"message": f"Serija izbrisana ({n} terminov)", "deleted": n}
 
 
@@ -762,10 +820,12 @@ def export_rezervacije_csv(
     if not user_id:
         raise HTTPException(status_code=401, detail="Niste prijavljeni")
     user = db.query(User).filter(User.id == int(user_id)).first()
-    if not user or user.role not in (RoleEnum.admin, RoleEnum.vodstvo):
+    if not user or role_value(user) not in (RoleEnum.admin.value, RoleEnum.vodstvo.value):
         raise HTTPException(status_code=403, detail="Samo admin in vodstvo lahko izvažata CSV.")
 
-    query = db.query(Reservation).options(joinedload(Reservation.teacher))
+    school_id = data_school_id(request, db)
+    config = config_for_request(request, db)
+    query = scope(db.query(Reservation).options(joinedload(Reservation.teacher)), Reservation, school_id)
     if date_from:
         query = query.filter(Reservation.date >= date_from)
     if date_to:
@@ -788,7 +848,7 @@ def export_rezervacije_csv(
             if r.teacher:
                 full = f"{r.teacher.first_name} {r.teacher.last_name}".strip()
                 teacher_name = full if full else r.teacher.username
-        hour_label = settings.SCHEDULE.get(str(r.hour), str(r.hour))
+        hour_label = config.SCHEDULE.get(str(r.hour), str(r.hour))
         writer.writerow([r.date, hour_label, r.prostor, teacher_name, r.razred or "", r.qty or "", r.id])
 
     from fastapi.responses import StreamingResponse

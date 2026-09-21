@@ -27,8 +27,10 @@
 <body>
     <div class="container">
         <div class="nav">
-            <a href="/">Domov</a>
+            <a href="/rezervacije">Domov</a>
             <a href="/auth/admin/users">Uporabniki</a>
+            {% if is_main_admin %}<a href="/schools">Šole</a>{% endif %}
+            <a href="/settings">Nastavitve šole</a>
             <a href="/history">Dnevnik dogodkov</a>
             <a href="/auth/logout">Odjava</a>
         </div>

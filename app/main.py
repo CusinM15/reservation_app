@@ -11,25 +11,60 @@
 # znotraj šole, kjer so piškotki enostavnejši za implementacijo.
 # ─────────────────────────────────────────────────────────────────────────
 
-from fastapi import FastAPI, Request, Query
+from fastapi import FastAPI, Request, Query, Depends
 from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.templating import Jinja2Templates
 from fastapi.staticfiles import StaticFiles
 from starlette.middleware.base import BaseHTTPMiddleware
 from sqlalchemy.orm import Session
 
-from app.config import settings
 from app.database import init_db, get_db
-from app.routers import rezervacije, ocenjevanja, auth, blocked_dates, audit_log, export, docs, dejavnosti
-from app.audit import log_audit
+from app.routers import rezervacije, ocenjevanja, auth, blocked_dates, audit_log, export, docs, dejavnosti, schools
 from app.models import User, RoleEnum
-from passlib.context import CryptContext
+from app.tenancy import (
+    MAIN_ADMIN_ROLE,
+    bootstrap_tenancy,
+    config_for_request,
+    parse_alias_path,
+    lookup_alias_school_id,
+    role_value,
+)
 
 # ── Inicializacija aplikacije ──────────────────────────────────────────
 # Ustvarimo FastAPI instanco z naslovom "Šolski App". Predpone /api/*
 # uporabljajo routerji; korenske poti (/ , /health, /history) so definirane tukaj.
 app = FastAPI(title="Šolski App", version="0.1.0")
 templates = Jinja2Templates(directory="app/templates")
+
+
+# ── Middleware: šolski URL-aliasi ──────────────────────────────────────
+# Vsaka šola ima svoje poti (npr. /ocenjevanje_ostcj, /rezervacije_ostc).
+# Ta middleware prvi segment prevede na kanonično pot in v scope zapiše
+# school_id. Kanonične poti (/rezervacije, /ocenjevanje, ...) ostanejo
+# nespremenjene — zato se za obstoječo šolo vidno nič ne spremeni.
+#
+# Zakaj ASGI middleware in ne BaseHTTPMiddleware? Ker želimo pot
+# prepisati PRED usmerjanjem (routing), kar je v čistem ASGI sloju
+# najbolj neposredno.
+class SchoolAliasMiddleware:
+    def __init__(self, app):
+        self.app = app
+
+    async def __call__(self, scope, receive, send):
+        if scope.get("type") == "http":
+            alias, canonical = parse_alias_path(scope.get("path", ""))
+            if alias and canonical:
+                school_id = lookup_alias_school_id(alias)
+                if school_id is not None:
+                    scope["path"] = canonical
+                    scope["raw_path"] = canonical.encode("utf-8")
+                    state = scope.setdefault("state", {})
+                    state["school_id"] = school_id
+                    state["school_alias"] = alias
+        await self.app(scope, receive, send)
+
+
+app.add_middleware(SchoolAliasMiddleware)
 
 # ── Auth middleware ────────────────────────────────────────────────────
 # Zakaj lastni middleware namesto OAuth2/JWT?
@@ -56,34 +91,25 @@ app.add_middleware(AuthMiddleware)
 
 # ── Zagon aplikacije (startup event) ────────────────────────────────────
 # Ob zagonu:
-# 1. Inicializiramo bazo (ustvari tabele, če ne obstajajo)
-# 2. Ustvarimo admin uporabnika, če še ne obstaja (privzeto geslo: admin123)
+# 1. Inicializiramo bazo (ustvari tabele, če ne obstajajo, + migracije)
+# 2. Zaženemo večšolski bootstrap (app/tenancy.bootstrap_tenancy):
+#      - privzeta šola (ostcj) z URL-aliasi
+#      - glavni admin (main_admin) za upravljanje vseh šol
+#      - šolski admin 'admin' pripada privzeti šoli
+#      - obstoječi podatki (school_id IS NULL) se pripišejo privzeti šoli
 #
-# Zakaj ustvarjamo admina ob zagonu namesto s seed skripto?
+# Zakaj bootstrap ob zagonu namesto seed skripte?
 # Ker želimo, da aplikacija deluje 'out of the box' — ko se prvič
-# zažene (lokalno ali v k8s), je admin že na voljo. To je v pomoč
-# pri razvoju in testiranju.
+# zažene (lokalno ali v k8s), sta računa in šola že na voljo.
 @app.on_event("startup")
 def on_startup():
     init_db()
-    # Create admin user if not exists
     from app.database import SessionLocal
     db = SessionLocal()
-    admin = db.query(User).filter(User.username == "admin").first()
-    if not admin:
-        pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
-        admin = User(
-            username="admin",
-            email=settings.ADMIN_EMAIL,
-            first_name="Admin",
-            last_name="OŠ",
-            password_hash=pwd_context.hash("admin123"),
-            role=RoleEnum.admin,
-            is_active=True
-        )
-        db.add(admin)
-        db.commit()
-    db.close()
+    try:
+        bootstrap_tenancy(db)
+    finally:
+        db.close()
 
 # ── Health check ──────────────────────────────────────────────────────
 # Uporablja ga Kubernetes za preverjanje, ali aplikacija živi.
@@ -101,25 +127,57 @@ def health():
 # (brisanje uporabnikov, audit log), zato želimo hitrejšo avtomatsko
 # odjavo. Navadni učitelji imajo daljši timeout, ker urejajo urnike
 # in pogosto dlje časa razmišljajo med vnosom.
-@app.get("/")
-def root(request: Request):
+def _render_index(request: Request, active_tab: str):
+    """Skupna logika za prikaz glavne strani z izbranim zavihkom.
+
+    active_tab: "rezervacije" ali "ocenjevanja" — pove front-endu, kateri
+    zavihek naj bo aktiven ob nalaganju (glej ACTIVE_TAB v index.html).
+
+    Timeout neaktivnosti pride iz nastavitev ŠOLE (school_settings), s
+    fallbackom na .env — tako ga lahko šolski admin ureja v UI.
+    """
     user_id = get_current_user_id(request)
-    if user_id:
-        from app.database import SessionLocal
-        db = SessionLocal()
+    if not user_id:
+        return RedirectResponse(url="/auth/login")
+
+    from app.database import SessionLocal
+    db = SessionLocal()
+    try:
         user = db.query(User).filter(User.id == int(user_id)).first()
+        config = config_for_request(request, db)
+    finally:
         db.close()
 
-        if user and user.role in (RoleEnum.admin, RoleEnum.vodstvo):
-            timeout_ms = settings.INACTIVITY_TIMEOUT_ADMIN_MINUTES * 60 * 1000
-        else:
-            timeout_ms = settings.INACTIVITY_TIMEOUT_MINUTES * 60 * 1000
+    # Admin/vodstvo (in glavni admin) imajo strožji timeout.
+    is_privileged = user and role_value(user) in (RoleEnum.admin.value, RoleEnum.vodstvo.value, MAIN_ADMIN_ROLE)
+    if is_privileged:
+        timeout_ms = config.INACTIVITY_TIMEOUT_ADMIN_MINUTES * 60 * 1000
+    else:
+        timeout_ms = config.INACTIVITY_TIMEOUT_MINUTES * 60 * 1000
 
-        return templates.TemplateResponse("index.html", {
-            "request": request,
-            "inactivity_timeout_ms": timeout_ms
-        })
-    return RedirectResponse(url="/auth/login")
+    return templates.TemplateResponse("index.html", {
+        "request": request,
+        "inactivity_timeout_ms": timeout_ms,
+        "active_tab": active_tab,
+    })
+
+
+# Korenska pot preusmeri na kanonični URL rezervacij.
+@app.get("/")
+def root(request: Request):
+    return RedirectResponse(url="/rezervacije")
+
+
+@app.get("/rezervacije")
+def rezervacije_page(request: Request):
+    """Glavna stran z aktivnim zavihkom Rezervacije."""
+    return _render_index(request, "rezervacije")
+
+
+@app.get("/ocenjevanje")
+def ocenjevanje_page(request: Request):
+    """Glavna stran z aktivnim zavihkom Ocenjevanje in dnevi dejavnosti."""
+    return _render_index(request, "ocenjevanja")
 
 # ── Preusmeritev admin uporabnikov ────────────────────────────────────
 # Obstaja zaradi priročnosti — /admin/users se preusmeri na pravi endpoint.
@@ -130,18 +188,19 @@ def admin_users_redirect(request: Request):
 # ── Javni API končne točke za konfiguracijo ──────────────────────────
 # Te poti so javne (ni auth middleware-a), ker jih JavaScript v brskalniku
 # kliče za prikaz padajočih menijev (razredi, prostori, urnik).
-# Podatki so že v Settings, nič občutljivega.
+# Podatki niso občutljivi, so pa ODVISNI OD ŠOLE: če je uporabnik prijavljen,
+# vrnemo nastavitve njegove šole; sicer (ali brez šole) privzete iz .env.
 @app.get("/api/razredi")
-def get_razredi():
-    return settings.RAZREDI
+def get_razredi(request: Request, db: Session = Depends(get_db)):
+    return config_for_request(request, db).RAZREDI
 
 @app.get("/api/prostori")
-def get_prostori():
-    return settings.PROSTORI
+def get_prostori(request: Request, db: Session = Depends(get_db)):
+    return config_for_request(request, db).PROSTORI
 
 @app.get("/api/schedule")
-def get_schedule():
-    return settings.SCHEDULE
+def get_schedule(request: Request, db: Session = Depends(get_db)):
+    return config_for_request(request, db).SCHEDULE
 
 # ── Zgodovina (audit log za admina) ──────────────────────────────────
 # Prikaže HTML stran z audit logom, vendar samo če je prijavljeni
@@ -150,25 +209,34 @@ def get_schedule():
 # Zakaj posebna pot /history namesto /api/audit-log/page?
 # Zgodovinska ujemanje — prejšnja verzija je uporabljala /history in
 # uporabniki so se navadili. Oba endpointa obstajata.
-@app.get("/dejavnosti", response_class=HTMLResponse)
+@app.get("/ocenjevanje/dejavnosti", response_class=HTMLResponse)
 def dejavnosti_page(request: Request):
-    """Stran 'Vnos dejavnosti' — SAMO za vodstvo/admin."""
+    """Stran 'Vnos dejavnosti'. Branje: vsi prijavljeni. Urejanje: samo vodstvo/admin."""
     user_id = get_current_user_id(request)
     if not user_id:
         return RedirectResponse(url="/auth/login")
     from app.database import SessionLocal
     db = SessionLocal()
     user = db.query(User).filter(User.id == int(user_id)).first()
-    allowed = user and user.role in (RoleEnum.admin, RoleEnum.vodstvo)
     db.close()
-    if not allowed:
-        return HTMLResponse("Dostop samo za vodstvo/admin. Prijavite se z ustreznim računom.", status_code=403)
-    return templates.TemplateResponse("dejavnosti.html", {"request": request})
+    role = str(user.role) if user else "teacher"
+    # Učitelji vseeno vidijo stran — gumbi za dodajanje/urejanje/brisanje
+    # so jim skriti s pomočjo  USER_ROLE  v dejavnosti.html.
+    return templates.TemplateResponse("dejavnosti.html", {
+        "request": request,
+        "user_role": role,
+    })
+
+
+@app.get("/dejavnosti")
+def dejavnosti_redirect():
+    """Stara pot — preusmeri na novo /ocenjevanje/dejavnosti (ohrani zaznamke)."""
+    return RedirectResponse(url="/ocenjevanje/dejavnosti")
 
 
 @app.get("/history", response_class=HTMLResponse)
 def history_page(request: Request):
-    """Pokaži audit log — samo za prijavljenega admina."""
+    """Pokaži audit log — samo za prijavljenega admina (šolski ali glavni)."""
     user_id = get_current_user_id(request)
     if not user_id:
         return RedirectResponse(url="/auth/login")
@@ -176,8 +244,12 @@ def history_page(request: Request):
         from app.database import SessionLocal
         db = SessionLocal()
         user = db.query(User).filter(User.id == int(user_id)).first()
-        if user and user.role == RoleEnum.admin:
-            users = db.query(User.id, User.username, User.first_name, User.last_name).order_by(User.first_name).all()
+        if user and role_value(user) in (RoleEnum.admin.value, MAIN_ADMIN_ROLE):
+            # Glavni admin vidi vse; šolski admin samo uporabnike svoje šole.
+            query = db.query(User.id, User.username, User.first_name, User.last_name)
+            if not role_value(user) == MAIN_ADMIN_ROLE:
+                query = query.filter(User.school_id == user.school_id)
+            users = query.order_by(User.first_name).all()
             db.close()
             return templates.TemplateResponse("audit_log.html", {"request": request, "users": users})
         db.close()
@@ -198,6 +270,7 @@ app.include_router(audit_log.router)
 app.include_router(export.router)
 app.include_router(docs.router)
 app.include_router(dejavnosti.router)
+app.include_router(schools.router)
 
 # ── Statične datoteke za dokumentacijo ────────────────────────────────
 # Slike iz dokumentacije (v /documentation/slike/) serviramo kot statične

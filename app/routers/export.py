@@ -21,19 +21,17 @@ from sqlalchemy.orm import Session, joinedload
 from app.database import get_db
 from app.models import Reservation, Assessment, User, RoleEnum
 from app.security import get_current_user_id
+from app.tenancy import data_school_id, get_request_user, role_value, scope
 
 router = APIRouter(prefix="/api/export", tags=["export"])
 
 
-def _require_admin_or_vodstvo(request: Request, db: Session):
-    """Preveri, da je uporabnik admin ali vodstvo."""
-    user_id = get_current_user_id(request)
-    if not user_id:
-        raise HTTPException(status_code=401, detail="Niste prijavljeni")
-    user = db.query(User).filter(User.id == int(user_id)).first()
+def _require_admin_or_vodstvo(request: Request, db: Session) -> User:
+    """Preveri, da je uporabnik admin ali vodstvo. Vrne uporabnika."""
+    user = get_request_user(request, db)
     if not user:
-        raise HTTPException(status_code=401, detail="Uporabnik ne obstaja")
-    if user.role not in (RoleEnum.admin, RoleEnum.vodstvo):
+        raise HTTPException(status_code=401, detail="Niste prijavljeni")
+    if role_value(user) not in (RoleEnum.admin.value, RoleEnum.vodstvo.value):
         raise HTTPException(status_code=403, detail="Samo admin in vodstvo lahko izvažata podatke")
     return user
 
@@ -52,6 +50,7 @@ def export_rezervacije(
     Uporablja UTF-8 BOM (charset=utf-8-sig) za pravilen prikaz šumnikov v Excelu.
     """
     _require_admin_or_vodstvo(request, db)
+    school_id = data_school_id(request, db)
 
     try:
         dt_from = date.fromisoformat(date_from)
@@ -62,12 +61,12 @@ def export_rezervacije(
     if dt_from > dt_to:
         raise HTTPException(status_code=400, detail="Začetni datum ne sme biti po končnem")
 
-    query = (
+    query = scope(
         db.query(Reservation)
         .options(joinedload(Reservation.teacher))
-        .filter(Reservation.date >= dt_from, Reservation.date <= dt_to)
-        .order_by(Reservation.date, Reservation.hour, Reservation.prostor)
-    )
+        .filter(Reservation.date >= dt_from, Reservation.date <= dt_to),
+        Reservation, school_id,
+    ).order_by(Reservation.date, Reservation.hour, Reservation.prostor)
 
     if prostor:
         query = query.filter(Reservation.prostor == prostor)
@@ -120,6 +119,7 @@ def export_ocenjevanja(
     CSV vsebuje: Datum, Razred, Tip (Ponavljanje/Običajno), Učitelj.
     """
     _require_admin_or_vodstvo(request, db)
+    school_id = data_school_id(request, db)
 
     try:
         dt_from = date.fromisoformat(date_from)
@@ -130,12 +130,12 @@ def export_ocenjevanja(
     if dt_from > dt_to:
         raise HTTPException(status_code=400, detail="Začetni datum ne sme biti po končnem")
 
-    query = (
+    query = scope(
         db.query(Assessment)
         .options(joinedload(Assessment.teacher))
-        .filter(Assessment.date >= dt_from, Assessment.date <= dt_to)
-        .order_by(Assessment.date, Assessment.razred)
-    )
+        .filter(Assessment.date >= dt_from, Assessment.date <= dt_to),
+        Assessment, school_id,
+    ).order_by(Assessment.date, Assessment.razred)
 
     if razred:
         query = query.filter(Assessment.razred == razred)

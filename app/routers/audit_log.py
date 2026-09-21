@@ -18,25 +18,23 @@ from app.database import get_db
 from app.models import AuditLog, User, RoleEnum
 from app.config import settings
 from app.security import get_current_user_id
+from app.tenancy import MAIN_ADMIN_ROLE, data_school_id, get_request_user, role_value, scope
 
 router = APIRouter(prefix="/api/audit-log", tags=["audit-log"])
 templates = Jinja2Templates(directory="app/templates")
 
 
 def _require_admin(request: Request, db: Session):
-    """Preveri, da je uporabnik admin. Vrne uporabnika.
+    """Preveri, da je uporabnik admin (šolski) ali glavni admin. Vrne uporabnika.
     
-    Samo admin lahko vidi audit log — tudi vodstvo nima te pravice,
-    ker audit log vsebuje občutljive podatke o brisanju uporabnikov
-    in spremembah vlog.
+    Zakaj tudi glavni admin? Ker ta vidi podatke vseh šol — audit log je
+    del teh podatkov. Šolski admin vidi samo dogodke svoje šole
+    (filtriranje po school_id v list_audit_log).
     """
-    user_id = get_current_user_id(request)
-    if not user_id:
-        raise HTTPException(status_code=401, detail="Niste prijavljeni")
-    user = db.query(User).filter(User.id == int(user_id)).first()
+    user = get_request_user(request, db)
     if not user:
-        raise HTTPException(status_code=401, detail="Uporabnik ne obstaja")
-    if user.role != RoleEnum.admin:
+        raise HTTPException(status_code=401, detail="Niste prijavljeni")
+    if role_value(user) not in (RoleEnum.admin.value, MAIN_ADMIN_ROLE):
         raise HTTPException(status_code=403, detail="Samo admin lahko vidi audit log")
     return user
 
@@ -58,7 +56,11 @@ def list_audit_log(
     """
     _require_admin(request, db)
 
-    query = db.query(AuditLog).options(joinedload(AuditLog.user))
+    # Obseg podatkov: šolski admin vidi samo dogodke svoje šole,
+    # glavni admin vse (ali izbrano šolo, če je v kontekstu).
+    school_id = data_school_id(request, db)
+
+    query = scope(db.query(AuditLog).options(joinedload(AuditLog.user)), AuditLog, school_id)
     if action:
         query = query.filter(AuditLog.action == action)
     total = query.count()

@@ -8,7 +8,7 @@ from datetime import date, timedelta
 
 from app.database import SessionLocal
 from app.models import BlockedDate, Reservation, ActivityDay, Assessment
-from tests.conftest import login
+from tests.conftest import login, default_school_id
 
 TODAY = date.today()
 FUTURE = (TODAY + timedelta(days=7)).isoformat()
@@ -210,7 +210,11 @@ def test_sync_cancels_assessment_and_emails(client, make_user):
     teacher = make_user(role="teacher", email="teacher@test.si")
     db = SessionLocal()
     try:
-        db.add(Assessment(razred="5.a", date=date.fromisoformat(FUTURE), teacher_id=teacher.id))
+        # Večšolsko: zapis mora pripadati šoli (tako kot ga ustvari API).
+        db.add(Assessment(
+            school_id=default_school_id(),
+            razred="5.a", date=date.fromisoformat(FUTURE), teacher_id=teacher.id,
+        ))
         db.commit()
     finally:
         db.close()

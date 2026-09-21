@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Nastavitve šole - Šolski App</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; background: #f5f5f5; }
+        .container { max-width: 900px; margin: auto; background: white; padding: 20px; border-radius: 10px; }
+        .nav { margin-bottom: 20px; }
+        .nav a { margin-right: 10px; }
+        h3 { margin-top: 28px; border-bottom: 1px solid #eee; padding-bottom: 4px; }
+        .row { display: flex; align-items: center; gap: 10px; margin: 8px 0; }
+        .row label { flex: 0 0 380px; font-size: 14px; }
+        .row input { flex: 1; padding: 6px; font-family: monospace; font-size: 13px; }
+        .row input[type=password] { font-family: Arial, sans-serif; }
+        .key { color: #888; font-size: 11px; font-family: monospace; }
+        .btn { padding: 8px 14px; background: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 14px; }
+        .btn-success { background: #28a745; }
+        .hint { color: #666; font-size: 13px; }
+        .ok { color: #155724; background: #d4edda; padding: 10px; border-radius: 5px; margin: 10px 0; }
+        .err { color: #721c24; background: #f8d7da; padding: 10px; border-radius: 5px; margin: 10px 0; }
+        .sticky { position: sticky; bottom: 0; background: white; padding: 12px 0; border-top: 1px solid #eee; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="nav">
+            {% if is_main_admin %}<a href="/schools">Šole</a>{% endif %}
+            <a href="/rezervacije">Domov (urnik)</a>
+            <a href="/auth/logout">Odjava</a>
+        </div>
+
+        <h2>Nastavitve šole: {{ school.name }}</h2>
+        <p class="hint">
+            Oznaka: <strong>{{ school.slug }}</strong> &nbsp;|&nbsp;
+            Poti: {% for a in school.aliases %}<code>/{{ a }}/</code> {% endfor %}
+        </p>
+        <p class="hint">
+            Te vrednosti so prej živele v <code>.env</code>/ConfigMap; zdaj so shranjene v bazi
+            za vsako šolo posebej in jih lahko urejate tukaj. Spremembe veljajo takoj po shranjevanju
+            (nova stran/nalaganje).
+        </p>
+
+        <div id="msg"></div>
+
+        <form id="settings-form">
+            <input type="hidden" name="school_id" value="{{ school.id }}">
+
+            <h3>Osnovno</h3>
+            {% for f in fields %}{% if f.key in ('RAZREDI','PROSTORI','SCHEDULE','TABLICE_MAX','INACTIVITY_TIMEOUT_MINUTES','INACTIVITY_TIMEOUT_ADMIN_MINUTES','RESET_TOKEN_EXPIRATION_MINUTES') %}
+            <div class="row">
+                <label>{{ f.label }}<br><span class="key">{{ f.key }}</span></label>
+                {% if f.type == 'password' %}
+                <input type="password" name="{{ f.key }}" value="{{ values.get(f.key, '') }}">
+                {% else %}
+                <input type="text" name="{{ f.key }}" value="{{ values.get(f.key, '') }}">
+                {% endif %}
+            </div>
+            {% endif %}{% endfor %}
+
+            <h3>Pravila ocenjevanja</h3>
+            <p class="hint">
+                Privzeto: največ 2 običajni ocenjevanji na teden, največ 1 na dan,
+                izjema do 3 na teden, če je vmes ponavljanje, in prepoved 3 zaporednih dni.
+            </p>
+            {% for f in fields %}{% if f.key.startswith('ASSESSMENT_') %}
+            <div class="row">
+                <label>{{ f.label }}<br><span class="key">{{ f.key }}</span></label>
+                <input type="text" name="{{ f.key }}" value="{{ values.get(f.key, '') }}">
+            </div>
+            {% endif %}{% endfor %}
+
+            <h3>E-pošta (SMTP)</h3>
+            {% for f in fields %}{% if f.key.startswith('MAIL_') or f.key in ('BACKUP_EMAIL','STANJE_MAIL','ADMIN_EMAIL') %}
+            <div class="row">
+                <label>{{ f.label }}<br><span class="key">{{ f.key }}</span></label>
+                {% if f.type == 'password' %}
+                <input type="password" name="{{ f.key }}" value="{{ values.get(f.key, '') }}">
+                {% else %}
+                <input type="text" name="{{ f.key }}" value="{{ values.get(f.key, '') }}">
+                {% endif %}
+            </div>
+            {% endif %}{% endfor %}
+
+            <div class="sticky">
+                <button type="submit" class="btn btn-success">Shrani nastavitve</button>
+            </div>
+        </form>
+    </div>
+
+    <script>
+    document.getElementById('settings-form').addEventListener('submit', async function (e) {
+        e.preventDefault();
+        const box = document.getElementById('msg');
+        const schoolId = this.school_id.value;
+        const fd = new FormData(this);
+        const values = {};
+        fd.forEach((v, k) => { if (k !== 'school_id') values[k] = v; });
+
+        const res = await fetch('/api/schools/' + schoolId + '/settings', {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            credentials: 'include',
+            body: JSON.stringify({ values: values }),
+        });
+        const data = await res.json().catch(() => ({}));
+        if (res.ok) {
+            box.className = 'ok';
+            box.textContent = 'Nastavitve shranjene.';
+        } else {
+            box.className = 'err';
+            box.textContent = 'Napaka: ' + (data.detail || res.status);
+        }
+    });
+    </script>
+</body>
+</html>

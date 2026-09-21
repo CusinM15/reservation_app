@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html lang="sl">
 <head>
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Šolski App</title>
@@ -145,8 +146,10 @@
     .empty-calendar { text-align: center; padding: 2rem; color: #999; }
     /* Gumb "dodaj ocenjevanje" na koledarju — neviden do hoverja, da ne
        preobremeni pogleda. */
-    .add-asm-btn { font-size: 0.7rem; color: #4a6cf7; cursor: pointer; opacity: 0.5; }
-    .add-asm-btn:hover { opacity: 1; }
+    /* "+" gumb v spodnjem desnem kotu celice koledarja — odpre okno za
+       dodajanje ocenjevanja na ta dan. */
+    .add-asm-btn { position: absolute; right: 6px; bottom: 6px; width: 22px; height: 22px; line-height: 20px; text-align: center; border-radius: 50%; font-size: 0.95rem; font-weight: 700; color: #4a6cf7; background: #eef4ff; border: 1px solid #cfe0ff; cursor: pointer; opacity: 0.8; }
+    .add-asm-btn:hover { opacity: 1; background: #dbe8ff; }
 
     /* --- 15. SEZNAM SERIJ (ponavljajočih rezervacij) --- */
     .series-list .series-item { display: flex; justify-content: space-between; padding: 4px 0; border-bottom: 1px solid #eee; font-size: 0.85rem; }
@@ -239,14 +242,18 @@
        ================================================================ -->
   <nav>
     <span class="brand">Šolski App</span>
-    <a href="#" class="active" data-tab="rezervacije">Rezervacije</a>
-    <a href="#" data-tab="ocenjevanja">Ocenjevanje in dnevi dejavnosti</a>
+    <a href="/rezervacije" class="active" data-tab="rezervacije">Rezervacije</a>
+    <a href="/ocenjevanje" data-tab="ocenjevanja">Ocenjevanje in dnevi dejavnosti</a>
     <!-- ADMIN IN AUDIT POVEZAVE — prikazane le za admin vlogo.
          Skrijemo jih privzeto (style="display:none"), JS jih pokaže
          glede na vlogo uporabnika. Tako učitelji in vodstvo ne vidijo
          admin možnosti. -->
     <a href="/auth/admin/users" id="admin-link" style="display:none;">Admin panel</a>
     <a href="/history" id="audit-link" style="display:none;">📋 Audit log</a>
+    <!-- VEČŠOLSKO: nastavitve šole (šolski admin) in pregled šol (glavni admin).
+         Skrite privzeto; JS jih pokaže glede na vlogo (glej currentUser spodaj). -->
+    <a href="/settings" id="settings-link" style="display:none;">⚙️ Nastavitve šole</a>
+    <a href="/schools" id="schools-link" style="display:none;">🏫 Šole</a>
     <!-- IZVOZNE POVEZAVE — prikazane za admin in vodstvo.
          Vodstvo potrebuje izvoz podatkov za poročila, zato ima dostop,
          čeprav nima admin pravice. -->
@@ -365,13 +372,12 @@
           </div>
           <button class="btn btn-primary" onclick="loadAssessments()">Osveži</button>
           <button class="btn btn-outline" onclick="openOcModal()">+ Novo ocenjevanje</button>
+          <!-- GUMB »Vnos dejavnosti« — viden vsem (učitelj vidi samo branje). -->
+          <button class="btn btn-outline" onclick="location.href='/ocenjevanje/dejavnosti'">📋 Dejavnosti</button>
           <!-- GUMB ZA DNEVE DEJAVNOSTI — prikazan le uporabnikom z
-               ID 1-4 ali vlogo admin/vodstvo. Omejitev zato, ker
-               blokiranje datumov vpliva na celoten urnik in zahteva
-               pooblastila. -->
+               ID 1-4 ali vlogo admin/vodstvo.  -->
           <span id="block-btn-container">
             <button class="btn btn-outline" onclick="openBlockModal()">🚫 Dnevi dejavnosti</button>
-            <button class="btn btn-outline" onclick="location.href='/dejavnosti'">📋 Vnos dejavnosti</button>
           </span>
         </div>
         <!-- KOLEDAR — dinamično generiran mesečni pregled. -->
@@ -753,6 +759,9 @@
     let allBlocked = [];     // Seznam vseh blokad s strežnika
     let inactivityTimer = null;
     const INACTIVITY_TIMEOUT_MS = {{ inactivity_timeout_ms }};
+    // Kateri zavihek naj bo aktiven ob nalaganju (določi strežnik glede na URL):
+    //   /rezervacije → "rezervacije", /ocenjevanje → "ocenjevanja"
+    const ACTIVE_TAB = "{{ active_tab }}";
 
     // --- 2. NAVODILA — predogled, prenos, jezikovni preklop ---
     // UX: Uporabnik lahko s hoverjem na stranski gumb vidi predogled
@@ -1357,13 +1366,43 @@
     // Naloži vse rezervacije za trenutni teden (od ponedeljka do
     // petka) za vse prostore. Kliče loadProstorView za vsak prostor.
     // Datum začetka tedna se bere iz input polja rez-week-start.
+    // Aktivira zavihek (rezervacije/ocenjevanja) in po potrebi posodobi URL.
+    // URL-ji so organizirani: /rezervacije in /ocenjevanje — zavihek je
+    // torej mogoče deliti kot povezavo.
+    function activateTab(tab, pushUrl) {
+      if (!tab) tab = 'rezervacije';
+      document.querySelectorAll('nav a[data-tab]').forEach(x => x.classList.toggle('active', x.dataset.tab === tab));
+      document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+      const section = document.getElementById('section-' + tab);
+      if (section) section.classList.add('active');
+      if (pushUrl) {
+        const url = tab === 'ocenjevanja' ? '/ocenjevanje' : '/rezervacije';
+        if (window.location.pathname !== url) history.pushState({ tab: tab }, '', url);
+      }
+      if (tab === 'rezervacije') loadAllReservations();
+      if (tab === 'ocenjevanja') loadAssessments();
+    }
+
+    // Podpora gumboma nazaj/naprej v brskalniku (popstate).
+    window.addEventListener('popstate', () => {
+      activateTab(window.location.pathname.indexOf('/ocenjevanje') === 0 ? 'ocenjevanja' : 'rezervacije', false);
+    });
+
     async function loadAllReservations() {
-      const weekStart = document.getElementById('rez-week-start').value;
-      if (!weekStart) return;
-      const startDate = new Date(weekStart + 'T00:00:00');
-      const endDate = addDays(startDate, 6);
+      const weekRaw = document.getElementById('rez-week-start').value;
+      // Izbrani datum poravnamo na PONEDELJEK tedna, ki ga vsebuje.
+      // Tako izbrani dan (npr. 6.5.2027 = četrtek) ostane na svojem
+      // pravilnem dnevu v tednu, namesto da bi se obravnaval kot ponedeljek.
+      let weekStart;
+      if (weekRaw) {
+        weekStart = getMonday(new Date(weekRaw + 'T00:00:00'));
+      } else {
+        weekStart = getMonday(new Date());
+      }
+      document.getElementById('rez-week-start').value = formatDate(weekStart);
+      const endDate = addDays(weekStart, 6);
       const endStr = formatDate(endDate);
-      for (const prostor of prostori) await loadProstorView(prostor, startDate, endStr);
+      await Promise.allSettled(prostori.map(p => loadProstorView(p, weekStart, endStr)));
     }
 
     // Naloži rezervacije za en prostor v danem obdobju in jih
@@ -1372,12 +1411,11 @@
     // renderWeeklyTable.
     async function loadProstorView(prostor, startDate, endStr) {
       try {
-        const res = await fetch(`/api/rezervacije?date_from=${formatDate(startDate)}&date_to=${endStr}&prostor=${prostor}`);
-        if (!res.ok) return;
-        const reservations = await res.json();
+        const res = await fetch(`/api/rezervacije?date_from=${formatDate(startDate)}&date_to=${endStr}&prostor=${prostor}`, {credentials: 'include'});
+        const reservations = res.ok ? await res.json() : [];
         const container = document.querySelector(`#prostor-view-${prostor} .rez-table-inner`);
         container.innerHTML = renderWeeklyTable(prostor, startDate, reservations);
-      } catch(e) {}
+      } catch(e) { const c=document.querySelector(`#prostor-view-${prostor} .rez-table-inner`); if(c) c.innerHTML=`<p style="text-align:center;color:#999;padding:2rem;">Nalaganje ...</p>`; }
     }
     // Izriše tedenski urnik za en prostor v obliki HTML tabele.
     // Ustvari zemljevid (map) rezervacij po ključu 'datum|ura' za
@@ -1390,6 +1428,7 @@
     // dnevi so pon–pet (5 dni). Navigacija s puščicami (prejšnji/
     // naslednji teden) je vgrajena na vrhu tabele.
     function renderWeeklyTable(prostor, weekStart, reservations) {
+      // weekStart je Date objekt (ponedeljek tedna) — NE klicati .split().
       const map = {};
       reservations.forEach(r => { const key = r.date + '|' + r.hour; if (!map[key]) map[key] = []; map[key].push(r); });
       const tabliceMap = {};
@@ -1586,7 +1625,9 @@
             ${currentUser && (a.teacher_id === currentUser.id || currentUser.role === 'admin' || currentUser.role === 'vodstvo') ? `<span class="del-asm" onclick="event.stopPropagation();deleteAssessment(${a.id})">✕</span>` : ''}</div>`;
           });
         }
-        if (!asmMap[day] && !showBlocked && !isWeekend) html += `<div class="add-asm-btn" onclick="event.stopPropagation();quickOc('${razred}','${dateStr}')">+</div>`;
+        // "+" v spodnjem desnem kotu celice — prikaže se VEDNO na delovnik,
+        // tudi če je na dan že ocenjevanje ali je dan dejavnosti (Dejavnost).
+        if (!isWeekend) html += `<div class="add-asm-btn" title="Dodaj ocenjevanje" onclick="event.stopPropagation();quickOc('${razred}','${dateStr}')">+</div>`;
         html += `</div>`;
       }
       const lastCol = (startCol + daysInMonth) % 7;
@@ -1688,8 +1729,13 @@
 
       if (currentUser) {
         document.getElementById('userInfo').textContent = `${currentUser.full_name || currentUser.username} (${currentUser.role === 'admin' ? 'admin' : currentUser.role === 'vodstvo' ? 'vodstvo' : 'učitelj'})`;
-        if (currentUser.role === 'admin') {
+        if (currentUser.role === 'admin' || currentUser.role === 'main_admin') {
             document.getElementById('admin-link').style.display = 'inline';
+            document.getElementById('settings-link').style.display = 'inline';
+        }
+        // Pregled vseh šol ima samo glavni admin (nima svoje šole).
+        if (currentUser.role === 'main_admin') {
+            document.getElementById('schools-link').style.display = 'inline';
         }
         if (currentUser.role === 'admin' || currentUser.role === 'vodstvo') {
             document.getElementById('export-rez-link').style.display = 'inline';
@@ -1716,6 +1762,7 @@
       populateOcRazredi('oc-form-razred', razredi);
       populateHours('rez-form-hour');
 
+      // ZAGOTOVI trenen teden (prepreči ponovitev starega 2027)
       const monday = getMonday(new Date());
       document.getElementById('rez-week-start').value = formatDate(monday);
       const tabsHtml = prostori.map(p => `<div class="prostor-tab${p === prostori[0] ? ' active' : ''}" data-prostor="${p}" onclick="switchProstor('${p}')">${prostorLabel(p)}</div>`).join('');
@@ -1723,17 +1770,20 @@
       const viewsHtml = prostori.map(p => `<div class="prostor-view${p === prostori[0] ? ' active' : ''}" id="prostor-view-${p}"><div class="rez-table-inner"><p style="text-align:center;color:#999;padding:2rem;">Nalaganje ...</p></div></div>`).join('');
       document.getElementById('rez-views-container').innerHTML = viewsHtml;
 
+      // Preklop zavihkov prek nav linkov (/rezervacije, /ocenjevanje).
       document.querySelectorAll('nav a[data-tab]').forEach(a => {
         a.addEventListener('click', e => {
           e.preventDefault();
-          document.querySelectorAll('nav a[data-tab]').forEach(x => x.classList.remove('active'));
-          a.classList.add('active');
-          document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
-          document.getElementById('section-' + a.dataset.tab).classList.add('active');
-          if (a.dataset.tab === 'rezervacije') loadAllReservations();
-          if (a.dataset.tab === 'ocenjevanja') loadAssessments();
+          activateTab(a.dataset.tab, true);
         });
       });
+      // Aktiviraj zavihek glede na URL, ki ga je določil strežnik (active_tab).
+      // Podatke naloži init koda spodaj, zato tu ne kličemo load funkcij.
+      const initTab = ACTIVE_TAB || 'rezervacije';
+      document.querySelectorAll('nav a[data-tab]').forEach(x => x.classList.toggle('active', x.dataset.tab === initTab));
+      document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+      const initSection = document.getElementById('section-' + initTab);
+      if (initSection) initSection.classList.add('active');
       document.getElementById('rez-form-prostor').addEventListener('change', e => { document.getElementById('rez-form-qty-group').style.display = e.target.value === 'tablice' ? 'block' : 'none'; });
       document.getElementById('rez-form-prostor').dispatchEvent(new Event('change'));
 

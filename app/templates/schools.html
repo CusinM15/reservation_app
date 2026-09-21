@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Šole - Šolski App</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; background: #f5f5f5; }
+        .container { max-width: 1100px; margin: auto; background: white; padding: 20px; border-radius: 10px; }
+        table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+        td { padding: 8px; text-align: left; border-bottom: 1px solid #ddd; font-size: 14px; }
+        th { padding: 8px; text-align: left; border-bottom: 1px solid #ddd; font-size: 14px; background: #007bff; color: white; }
+        .btn { padding: 5px 10px; background: #007bff; color: white; text-decoration: none; border-radius: 3px; font-size: 12px; border: none; cursor: pointer; display: inline-block; margin: 1px; }
+        .btn-success { background: #28a745; }
+        .badge { display: inline-block; background: #e9ecef; border-radius: 3px; padding: 1px 6px; font-size: 12px; margin: 1px; font-family: monospace; }
+        input { padding: 6px; margin: 5px; }
+        .nav { margin-bottom: 20px; }
+        .nav a { margin-right: 10px; }
+        .hint { color: #666; font-size: 13px; }
+        .ok { color: #155724; background: #d4edda; padding: 8px; border-radius: 5px; }
+        .err { color: #721c24; background: #f8d7da; padding: 8px; border-radius: 5px; }
+        .counts span { margin-right: 12px; font-size: 13px; color: #444; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="nav">
+            <a href="/schools">Šole</a>
+            <a href="/history">Dnevnik dogodkov</a>
+            <a href="/auth/logout">Odjava</a>
+        </div>
+
+        <h2>Šole (glavni admin)</h2>
+        <p class="hint">
+            Vsaka šola ima svoje podatke, svoje uporabnike in svoje nastavitve.
+            Gumb <strong>Odpri</strong> nastavi izbrano šolo (za kanonične poti), poti šole
+            (npr. <span class="badge">/rezervacije_ostc</span>) pa jo izberejo neposredno.
+        </p>
+
+        <div id="msg"></div>
+
+        <h3>Dodaj novo šolo</h3>
+        <form method="POST" action="/api/schools" id="new-school-form">
+            <input type="text" name="name" placeholder="Polno ime šole (npr. OŠ Toneta Čufarja Jesenice)" required style="width:420px;">
+            <input type="text" name="slug" placeholder="oznaka (npr. ostcj)" style="width:160px;">
+            <button type="submit" class="btn btn-success">Ustvari šolo</button>
+        </form>
+        <p class="hint">
+            Oznaka se uporabi za poti šole: <span class="badge">/rezervacije_&lt;oznaka&gt;</span>
+            in <span class="badge">/ocenjevanje_&lt;oznaka&gt;</span>. Če je ne vpišete, se naredi iz imena.
+        </p>
+
+        <h3>Seznam šol</h3>
+        <table>
+            <thead>
+                <tr>
+                    <th>#</th><th>Ime</th><th>Oznaka</th><th>Poti</th><th>Podatki</th><th>Dejanja</th>
+                </tr>
+            </thead>
+            <tbody>
+            {% for s in schools %}
+                <tr>
+                    <td>{{ s.id }}</td>
+                    <td><strong>{{ s.name }}</strong>{% if not s.is_active %} <em>(neaktivna)</em>{% endif %}</td>
+                    <td><span class="badge">{{ s.slug }}</span></td>
+                    <td>
+                        {% for a in s.aliases %}
+                        <a href="/{{ a }}/" class="badge">{{ a }}</a>
+                        {% endfor %}
+                    </td>
+                    <td class="counts">
+                        <span>👥 {{ s.counts.users }}</span>
+                        <span>📅 {{ s.counts.reservations }}</span>
+                        <span>📝 {{ s.counts.assessments }}</span>
+                        <span>🎒 {{ s.counts.activities }}</span>
+                    </td>
+                    <td>
+                        <a class="btn btn-success" href="/schools/open/{{ s.id }}">Odpri</a>
+                        <a class="btn" href="/auth/admin/users" onclick="openInThisSchool({{ s.id }}); return false;">Uporabniki</a>
+                        <a class="btn" href="/settings?school_id={{ s.id }}">Nastavitve</a>
+                    </td>
+                </tr>
+            {% else %}
+                <tr><td colspan="6">Ni šol.</td></tr>
+            {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <script>
+    // »Uporabniki« morajo teči v kontekstu izbrane šole → najprej nastavimo
+    // piškotek school_ctx prek /schools/open/{id}, nato nadaljujemo.
+    function openInThisSchool(id) {
+        fetch('/schools/open/' + id, { redirect: 'manual', credentials: 'include' })
+            .then(() => { window.location.href = '/auth/admin/users'; })
+            .catch(() => { window.location.href = '/schools/open/' + id; });
+    }
+
+    // Ustvarjanje šole prek API-ja (JSON povzetek), da uporabnik vidi napako
+    // (npr. zaseden alias) namesto prazne strani.
+    document.getElementById('new-school-form').addEventListener('submit', async function (e) {
+        e.preventDefault();
+        const box = document.getElementById('msg');
+        const fd = new FormData(this);
+        const res = await fetch('/api/schools', { method: 'POST', body: fd, credentials: 'include' });
+        const data = await res.json().catch(() => ({}));
+        if (res.ok) {
+            box.className = 'ok';
+            box.textContent = 'Šola ustvarjena: ' + data.name + ' (' + (data.aliases || []).join(', ') + ')';
+            setTimeout(() => window.location.reload(), 1200);
+        } else {
+            box.className = 'err';
+            box.textContent = 'Napaka: ' + (data.detail || res.status);
+        }
+    });
+    </script>
+</body>
+</html>

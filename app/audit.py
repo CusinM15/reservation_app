@@ -28,6 +28,7 @@ def log_audit(
     username: str | None,
     action: str,
     details: str | None = None,
+    school_id: int | None = None,
 ):
     """Zapiši dogodek v audit log.
     
@@ -38,12 +39,15 @@ def log_audit(
                  uporabnika kasneje izbrišemo — audit log ostane čitljiv).
         action: Akcija (npr. 'create_rezervacija', 'delete_user').
         details: Poljubni podrobnosti v besedilni obliki.
+        school_id: Kateri šoli dogodek pripada. Šolski admin vidi samo
+                 dogodke svoje šole; glavni admin vidi vse.
     
     Pomembno: Ta funkcija kliče db.commit() sama, kar pomeni, da deluje
     tudi, če je klicana po že zaključeni transakciji. To je uporabno v
     primerih, ko želimo beležiti tudi neuspele poskuse.
     """
     entry = AuditLog(
+        school_id=school_id,
         user_id=user_id,
         username=username,
         action=action,

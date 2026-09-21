@@ -38,7 +38,8 @@ from sqlalchemy import text
 
 from app.main import app
 from app.database import SessionLocal
-from app.models import User, RoleEnum
+from app.models import User, RoleEnum, School
+from app.config import settings
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
@@ -47,33 +48,52 @@ TEST_PASSWORD = "Test12345"  # ustreza validate_password_strength
 
 @pytest.fixture
 def client():
-    """Svež TestClient na testno bazo (startup zažene init_db + bootstrap admina)."""
+    """Svež TestClient na testno bazo (startup zažene init_db + večšolski bootstrap)."""
     with TestClient(app) as c:
         yield c
 
 
 @pytest.fixture(autouse=True)
 def clean_db():
-    """Po vsakem testu počisti VSE tabele (tudi users) — testi so hermetični,
-    bootstrap admina se ob startupu vsakega TestClient-a znova ustvari."""
+    """Po vsakem testu počisti VSE tabele — testi so hermetični, bootstrap
+    (privzeta šola + admina) se ob startupu vsakega TestClient-a znova ustvari."""
     yield
     db = SessionLocal()
     try:
-        db.execute(text("TRUNCATE users, reservations, assessments, audit_log, blocked_dates, activity_days RESTART IDENTITY CASCADE"))
+        db.execute(text(
+            "TRUNCATE users, reservations, assessments, audit_log, blocked_dates, "
+            "activity_days, school_aliases, school_settings, schools "
+            "RESTART IDENTITY CASCADE"
+        ))
         db.commit()
+    finally:
+        db.close()
+
+
+def default_school_id() -> int | None:
+    """ID privzete šole (ostcj) — ustvari jo startup bootstrap."""
+    db = SessionLocal()
+    try:
+        school = db.query(School).filter(School.slug == settings.DEFAULT_SCHOOL_SLUG).first()
+        return school.id if school else None
     finally:
         db.close()
 
 
 @pytest.fixture
 def make_user():
-    """Ustvari uporabnika z znanim geslom in vrne User objekt."""
+    """Ustvari uporabnika z znanim geslom in vrne User objekt.
+
+    Uporabnik pripada privzeti šoli (ostcj) — tako testi tečejo po isti
+    poti kot produkcija (podatki so vezani na šolo).
+    """
     def _make(role: str = "teacher", username: str | None = None, email: str | None = None,
-              password: str = TEST_PASSWORD) -> User:
+              password: str = TEST_PASSWORD, school_id: int | None = -1) -> User:
         suffix = uuid4().hex[:8]
         db = SessionLocal()
         try:
             user = User(
+                school_id=default_school_id() if school_id == -1 else school_id,
                 username=username or f"{role}_{suffix}",
                 email=email or f"{suffix}@test.si",
                 first_name="Test",
