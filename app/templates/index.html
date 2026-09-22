@@ -639,6 +639,23 @@
   </div>
 
   <!-- ================================================================
+       POP-UP: DEJAVNOSTI NA IZBRAN DAN
+       Odpre se ob kliku na vijolično polje (dan dejavnosti) v koledarju
+       ocenjevanj. Prikaže ime dejavnosti za VSAK razred, ki ima ta dan
+       dejavnost. Imena se berejo iz strani »Vnos dejavnosti«
+       (/api/dejavnosti), zato so tu vidna tudi učiteljem (samo branje).
+       ================================================================ -->
+  <div class="modal-overlay" id="dejavnost-modal">
+    <div class="modal" style="max-width:620px;">
+      <h3>📋 Dejavnosti — <span id="dejavnost-modal-date"></span></h3>
+      <div id="dejavnost-modal-body" style="font-size:0.9rem;max-height:420px;overflow-y:auto;"></div>
+      <div class="form-actions">
+        <button class="btn btn-cancel" onclick="closeModal('dejavnost-modal')">Zapri</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ================================================================
        MODAL: IZVOZ REZERVACIJ
        Omogoča izvoz rezervacij v CSV za izbrano obdobje in prostor.
        Na voljo vodstvu in adminu za poročanje in analize.
@@ -757,6 +774,8 @@
     let currentOcRazred = '';// Trenutno izbran razred za ocenjevanja
     let blockedDates = {};   // Zemljevid: razred → {datum: true}
     let allBlocked = [];     // Seznam vseh blokad s strežnika
+    let activityDays = [];   // Zapisi iz strani »Vnos dejavnosti« (/api/dejavnosti)
+                             // Uporabijo se za imena dejavnosti v koledarju.
     let inactivityTimer = null;
     const INACTIVITY_TIMEOUT_MS = {{ inactivity_timeout_ms }};
     // Kateri zavihek naj bo aktiven ob nalaganju (določi strežnik glede na URL):
@@ -1118,6 +1137,125 @@
     // Preveri, ali je dani datum blokiran za določen razred.
     // Vrne true, če je datum v blockedDates[razred] indeksu.
     function isDateBlocked(razred, dateStr) { return blockedDates[razred] && blockedDates[razred][dateStr]; }
+
+    // ── Imena dejavnosti za koledar ──────────────────────────────────
+    // Vir imen je stran »Vnos dejavnosti« (/api/dejavnosti). Blokade
+    // (blocked_dates) povedo, KATERI razred je na dan odsoten, zapisi
+    // activity_days pa, KAKO se dejavnost imenuje.
+    //
+    // Zakaj ločeno branje? Ker so blokade lahko tudi ročne (gumb
+    // »Dnevi dejavnosti«) in takrat imena v activity_days ni.
+    async function loadActivityDays() {
+      try {
+        const res = await fetch('/api/dejavnosti', { credentials: 'include' });
+        if (!res.ok) return;
+        activityDays = await res.json();
+      } catch(e) { /* imena so dodatna informacija — brez njih koledar dela naprej */ }
+    }
+
+    // Vrni vse črkovne oddelke generacije (1.a..1.č), brez številčnih.
+    // Enako pravilo kot na strežniku (_resolve_letter_oddelki).
+    function letterOddelki(grade) {
+      const g = String(grade);
+      return (razredi || []).filter(r => r.startsWith(g + '.') && /^\d+\.[a-zč]$/.test(r));
+    }
+
+    const _dateKey = (dt) => `${dt.getFullYear()}-${String(dt.getMonth()+1).padStart(2,'0')}-${String(dt.getDate()).padStart(2,'0')}`;
+
+    // Vrni [{razred, naziv}] za en zapis dejavnosti na dani datum.
+    // Upošteva oba načina datumov, enako kot strežnik:
+    //   - termini: [{date, date_to, classes}] — več datumov, vsak s svojimi razredi
+    //   - zaledni: date_from..date_to + classes / all_classes
+    // Če v terminu ni izbranih razredov, velja cela generacija (vsi črkovni oddelki).
+    function activityEntriesForDay(day, dateStr) {
+      const out = [];
+      const title = (day.title || '').trim() || `${day.section || ''} ${day.grade}. razred`.trim();
+      const subtitle = (day.subtitle || '').trim();
+      const naziv = subtitle ? `${title} — ${subtitle}` : title;
+      const add = (razred) => { if (razred) out.push({ razred, naziv }); };
+      const walk = (from, to, cb) => {
+        if (!from) return;
+        const start = new Date(from + 'T00:00:00');
+        if (isNaN(start)) return;
+        const end = (to && to >= from) ? new Date(to + 'T00:00:00') : start;
+        for (const cur = new Date(start); cur <= end; cur.setDate(cur.getDate() + 1)) {
+          if (_dateKey(cur) === dateStr) cb();
+        }
+      };
+      const termini = Array.isArray(day.termini) ? day.termini : [];
+      if (termini.length) {
+        for (const t of termini) {
+          const from = t.date || day.date_from;
+          if (!from) continue;
+          const klasi = String(t.classes || '').split(',').map(s => s.trim())
+            .filter(s => s && (razredi || []).includes(s));
+          walk(from, t.date_to, () => {
+            if (klasi.length) klasi.forEach(add);
+            else letterOddelki(day.grade).forEach(add);
+          });
+        }
+      } else if (day.date_from) {
+        walk(day.date_from, day.date_to, () => {
+          const klasi = day.all_classes
+            ? letterOddelki(day.grade)
+            : String(day.classes || '').split(',').map(s => s.trim()).filter(Boolean);
+          klasi.forEach(add);
+        });
+      }
+      return out;
+    }
+
+    // Odpre pop-up z imeni dejavnosti za vse razrede na izbran dan.
+    // Kliče se ob kliku na vijolično polje oz. vijolično značko (dan dejavnosti).
+    // Pred prikazom osveži dejavnosti IN blokade, da so prikazani razredi ter
+    // imena vedno enaki trenutnemu stanju na strežniku (tudi če jih je nekdo
+    // ravnokar spremenil v drugem zavihku).
+    async function openDejavnostModal(dateStr) {
+      await Promise.all([loadActivityDays(), loadAllBlockedDates()]);
+      const entries = [];
+      const seen = new Set();
+      activityDays.forEach(day => {
+        activityEntriesForDay(day, dateStr).forEach(e => {
+          const key = `${e.razred}|${e.naziv}`;
+          if (seen.has(key)) return;
+          seen.add(key);
+          entries.push(e);
+        });
+      });
+      // Razredi, ki so ta dan blokirani, a nimajo zapisa v dejavnostih
+      // (npr. ročno dodan dan dejavnosti prek gumba »Dnevi dejavnosti«).
+      Object.keys(blockedDates).forEach(r => {
+        if (blockedDates[r][dateStr] && !entries.some(e => e.razred === r)) {
+          entries.push({ razred: r, naziv: null });
+        }
+      });
+      entries.sort((a, b) => a.razred.localeCompare(b.razred, 'sl'));
+
+      const [y, m, d] = dateStr.split('-');
+      document.getElementById('dejavnost-modal-date').textContent = `${Number(d)}. ${Number(m)}. ${y}`;
+
+      const body = document.getElementById('dejavnost-modal-body');
+      if (entries.length === 0) {
+        body.innerHTML = '<p style="color:#777;">Za ta dan ni zabeležene dejavnosti.</p>';
+      } else {
+        body.innerHTML = `<table style="width:100%;border-collapse:collapse;">
+            <thead><tr>
+              <th style="text-align:left;padding:6px 8px;border-bottom:2px solid #eee;width:90px;">Razred</th>
+              <th style="text-align:left;padding:6px 8px;border-bottom:2px solid #eee;">Dejavnost</th>
+            </tr></thead>
+            <tbody>
+            ${entries.map(e => `<tr>
+              <td style="padding:6px 8px;border-bottom:1px solid #f1f1f1;font-weight:600;">${e.razred}</td>
+              <td style="padding:6px 8px;border-bottom:1px solid #f1f1f1;">${e.naziv ? e.naziv : '<span style="color:#999;">— (ročno blokirano, brez zapisa v dejavnostih)</span>'}</td>
+            </tr>`).join('')}
+            </tbody>
+          </table>
+          <p style="margin-top:10px;font-size:0.8rem;color:#777;">
+            Vir: stran <a href="/ocenjevanje/dejavnosti" target="_blank">Vnos dejavnosti</a>.
+          </p>`;
+      }
+      openModal('dejavnost-modal');
+    }
 
     // Odpre modal za upravljanje dni dejavnosti.
     // Napolni izbirnik razredov, nastavi privzeta datuma na danes
@@ -1614,9 +1752,15 @@
         let cls = 'calendar-day';
         if (isToday) cls += ' today';
         if (isWeekend) cls += ' other-month';
-        html += `<div class="${cls}" ${showBlocked ? '' : `onclick="quickOc('${razred}','${dateStr}')"`}>
+        html += `<div class="${cls}" ${showBlocked
+            ? `onclick="openDejavnostModal('${dateStr}')" style="cursor:pointer;" title="Klikni za imena dejavnosti"`
+            : `onclick="quickOc('${razred}','${dateStr}')"`}>
           <div class="day-num">${day}</div>`;
-        if (showBlocked) html += `<div class="assessment-badge" style="background:#7c3aed;color:#fff;font-weight:600;"><span>Dejavnost: ${blockedRazredi.join(', ')}</span></div>`;
+        // Vijolično polje = dan dejavnosti. Klik odpre pop-up z imenom
+        // dejavnosti za vsak razred (imena pridejo iz /api/dejavnosti).
+        if (showBlocked) html += `<div class="assessment-badge" style="background:#7c3aed;color:#fff;font-weight:600;cursor:pointer;"
+            onclick="event.stopPropagation();openDejavnostModal('${dateStr}')"
+            title="Klikni za imena dejavnosti"><span>📋 Dejavnost: ${blockedRazredi.join(', ')}</span></div>`;
         if (asmMap[day]) {
           asmMap[day].forEach(a => {
             const asmCls = a.ponavljanje ? 'assessment-ponavljanje' : 'assessment-normal';
@@ -1795,6 +1939,7 @@
       loadAllReservations();
       currentOcMonth = new Date().getFullYear() + '-' + String(new Date().getMonth() + 1).padStart(2, '0');
       loadAllBlockedDates();
+      loadActivityDays();   // imena dejavnosti za pop-up v koledarju
       loadAssessments();
     });
 
