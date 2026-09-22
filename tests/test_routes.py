@@ -111,3 +111,36 @@ def test_ocenjevanje_requires_login(client):
     r = client.get("/ocenjevanje", follow_redirects=False)
     assert r.status_code in REDIRECT_CODES
     assert r.headers["location"] == "/auth/login"
+
+
+# ── Pop-up z imeni dejavnosti (klik na vijolično polje) ───────────────
+
+def test_koledar_ima_popup_za_dejavnosti(client, make_user):
+    """Klik na vijolično polje (dan dejavnosti) odpre pop-up z imeni dejavnosti.
+
+    Preverja, da je pop-up v strani in da sta klik na polje ter na značko
+    vezana na openDejavnostModal. Prej je vijolično polje kazalo samo seznam
+    razredov, klik pa ni naredil ničesar.
+    """
+    u = make_user(role="teacher")
+    login(client, u.username)
+    html = client.get("/ocenjevanje").text
+
+    # pop-up (ozadje + telo + naslov z datumom)
+    assert 'id="dejavnost-modal"' in html
+    assert 'id="dejavnost-modal-body"' in html
+    assert 'id="dejavnost-modal-date"' in html
+
+    # logika: branje iz strani »Vnos dejavnosti« + razreševanje razredov/datumov
+    assert "async function loadActivityDays" in html
+    assert "async function openDejavnostModal" in html
+    assert "function activityEntriesForDay" in html
+    assert "function letterOddelki" in html
+    assert "'/api/dejavnosti'" in html or "/api/dejavnosti" in html
+
+    # klik na polje in na značko dan dejavnosti mora odpirati pop-up
+    assert '''onclick="openDejavnostModal('${dateStr}')"''' in html
+    assert """event.stopPropagation();openDejavnostModal('${dateStr}')""" in html
+
+    # stara logika (klik na blokiran dan ni delal nič) ne sme več obstajati
+    assert """showBlocked ? '' : `onclick="quickOc""" not in html
