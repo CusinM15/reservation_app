@@ -566,8 +566,47 @@ def remove_school_alias(db: Session, school_id: int, alias: str) -> None:
 
 
 def _alias_kind_for(alias: str) -> str | None:
-    m = _ALIAS_RE.match((alias or "").strip())
-    return m.group(1) if m else None
+    """Vrni vrsto ('rezervacije'/'ocenjevanje') iz imena aliasa."""
+    match = _ALIAS_RE.match((alias or "").strip())
+    return match.group(1) if match else None
+
+
+def aliases_by_kind(db: Session, school_id: int) -> dict[str, str]:
+    """Vrni {'rezervacije': 'rezervacije_st', 'ocenjevanje': 'ocenjevanje_st'}.
+
+    Uporabi se za ohranjanje poti šole pri prehajanju med zavihki: kdor vstopi
+    prek poti šole, mora na njej tudi ostati.
+    """
+    from app.models import SchoolAlias
+    result: dict[str, str] = {}
+    rows = db.query(SchoolAlias).filter(SchoolAlias.school_id == school_id).all()
+    for row in rows:
+        kind = row.kind or _alias_kind_for(row.alias)
+        if kind and kind not in result:
+            # Prva (najstarejša) zmaga — to je privzeta, generirana pot.
+            result[kind] = row.alias
+    return result
+
+
+def nav_paths(db: Session, request, school_id: int | None = None) -> dict[str, str]:
+    """Poti za glavne zavihke, odvisno od tega, kako je uporabnik vstopil.
+
+    Če je zahtevek prišel prek poti šole (npr. /rezervacije_st), ostanejo poti
+    na poti te šole — klik na »Ocenjevanje« mora voditi na /ocenjevanje_st in ne
+    na /ocenjevanje, sicer se oznaka šole v naslovu izgubi.
+
+    Če je uporabnik vstopil po kanonični poti, ostanejo kanonične poti
+    (vedenje se ne spremeni).
+    """
+    canonical = {kind: path for kind, path in ALIAS_KINDS.items()}
+    alias = getattr(getattr(request, "state", None), "school_alias", None)
+    if not alias or school_id is None:
+        return canonical
+    mapping = aliases_by_kind(db, school_id)
+    return {
+        kind: (f"/{mapping[kind]}" if mapping.get(kind) else path)
+        for kind, path in canonical.items()
+    }
 
 
 def ensure_default_school(db: Session) -> "object":

@@ -242,8 +242,8 @@
        ================================================================ -->
   <nav>
     <span class="brand">Šolski App</span>
-    <a href="/rezervacije" class="active" data-tab="rezervacije">Rezervacije</a>
-    <a href="/ocenjevanje" data-tab="ocenjevanja">Ocenjevanje in dnevi dejavnosti</a>
+    <a href="{{ nav_rezervacije }}" class="active" data-tab="rezervacije">Rezervacije</a>
+    <a href="{{ nav_ocenjevanje }}" data-tab="ocenjevanja">Ocenjevanje in dnevi dejavnosti</a>
     <!-- ADMIN IN AUDIT POVEZAVE — prikazane le za admin vlogo.
          Skrijemo jih privzeto (style="display:none"), JS jih pokaže
          glede na vlogo uporabnika. Tako učitelji in vodstvo ne vidijo
@@ -378,7 +378,7 @@
           <button class="btn btn-primary" onclick="loadAssessments()">Osveži</button>
           <button class="btn btn-outline" onclick="openOcModal()">+ Novo ocenjevanje</button>
           <!-- GUMB »Vnos dejavnosti« — viden vsem (učitelj vidi samo branje). -->
-          <button class="btn btn-outline" onclick="location.href='/ocenjevanje/dejavnosti'">📋 Dejavnosti</button>
+          <button class="btn btn-outline" onclick="location.href='{{ nav_ocenjevanje }}/dejavnosti'">📋 Dejavnosti</button>
           <!-- GUMB ZA DNEVE DEJAVNOSTI — prikazan le uporabnikom z
                ID 1-4 ali vlogo admin/vodstvo.  -->
           <span id="block-btn-container">
@@ -1256,7 +1256,7 @@
             </tbody>
           </table>
           <p style="margin-top:10px;font-size:0.8rem;color:#777;">
-            Vir: stran <a href="/ocenjevanje/dejavnosti" target="_blank">Vnos dejavnosti</a>.
+            Vir: stran <a href="{{ nav_ocenjevanje }}/dejavnosti" target="_blank">Vnos dejavnosti</a>.
           </p>`;
       }
       openModal('dejavnost-modal');

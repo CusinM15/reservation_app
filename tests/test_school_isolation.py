@@ -149,3 +149,59 @@ def test_school_user_own_alias_works(client, make_user):
     r = client.get("/rezervacije_ostcj", follow_redirects=False)
     assert r.status_code == 200
     assert client.cookies.get("school_ctx") == str(sid_a)
+
+# ── 4. Pot šole se ohrani med prehajanjem med zavihki ─────────────────
+# Prijava: uporabnik je bil na /rezervacije_st in kliknil »Ocenjevanje« —
+# odprlo se je /ocenjevanje (brez poti šole). Zdaj mora ostati /ocenjevanje_st.
+
+def test_nav_keeps_alias_when_switching_tabs(client, make_user):
+    from app.config import settings
+    _two_schools_with_reservations()
+    login(client, settings.MAIN_ADMIN_USERNAME, settings.MAIN_ADMIN_PASSWORD)
+
+    html = client.get("/rezervacije_solab", follow_redirects=False).text
+    assert 'href="/ocenjevanje_solab"' in html, "zavihek Ocenjevanje ni ostal na poti šole"
+    assert 'href="/rezervacije_solab"' in html
+    assert "location.href='/ocenjevanje_solab/dejavnosti'" in html
+
+    # in nazaj: z ocenjevalne poti na rezervacije
+    html2 = client.get("/ocenjevanje_solab", follow_redirects=False).text
+    assert 'href="/rezervacije_solab"' in html2
+
+
+def test_dejavnosti_page_keeps_alias(client, make_user):
+    from app.config import settings
+    _two_schools_with_reservations()
+    login(client, settings.MAIN_ADMIN_USERNAME, settings.MAIN_ADMIN_PASSWORD)
+    html = client.get("/ocenjevanje_solab/dejavnosti", follow_redirects=False).text
+    assert 'href="/rezervacije_solab"' in html
+
+
+def test_canonical_nav_stays_canonical(client, make_user):
+    """Kdor vstopi po kanonični poti, dobi kanonične povezave (nespremenjeno)."""
+    user = make_user()
+    login(client, user.username)
+    html = client.get("/rezervacije", follow_redirects=False).text
+    assert 'href="/ocenjevanje"' in html
+    assert 'href="/rezervacije"' in html
+    assert "location.href='/ocenjevanje/dejavnosti'" in html
+    assert "_solab" not in html
+
+
+# ── 5. Vloga v predlogi dejavnosti ────────────────────────────────────
+
+def test_teacher_gets_teacher_role_in_template(client, make_user):
+    """Učitelj je bralec — v predlogo gre 'teacher', zato so gumbi za urejanje
+    skriti. Prej je str(RoleEnum.teacher) dal 'RoleEnum.teacher', zato so se
+    učitelju gumbi POKAZALI (klik pa je vrgel 403)."""
+    teacher = make_user()
+    login(client, teacher.username)
+    html = client.get("/ocenjevanje/dejavnosti").text
+    assert 'const USER_ROLE = "teacher";' in html
+
+
+def test_admin_gets_admin_role_in_template(client, make_user):
+    admin = make_user(role="admin")
+    login(client, admin.username)
+    html = client.get("/ocenjevanje/dejavnosti").text
+    assert 'const USER_ROLE = "admin";' in html

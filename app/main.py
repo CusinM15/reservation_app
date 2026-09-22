@@ -27,6 +27,7 @@ from app.tenancy import (
     config_for_request,
     parse_alias_path,
     lookup_alias_school_id,
+    nav_paths,
     resolve_school_context,
     role_value,
 )
@@ -189,7 +190,10 @@ def _render_index(request: Request, active_tab: str):
         user = db.query(User).filter(User.id == int(user_id)).first()
         config = config_for_request(request, db)
         # Ime šole, katere podatki so prikazani — uporabi se za oznako na vrhu.
-        _, school = resolve_school_context(request, db)
+        ctx_school_id, school = resolve_school_context(request, db)
+        # Poti zavihkov: kdor je vstopil prek poti šole, na njej tudi ostane
+        # (npr. iz /rezervacije_st klik na Ocenjevanje → /ocenjevanje_st).
+        nav = nav_paths(db, request, ctx_school_id)
     finally:
         db.close()
 
@@ -208,6 +212,8 @@ def _render_index(request: Request, active_tab: str):
         "active_tab": active_tab,
         "school_alias": getattr(request.state, "school_alias", None),
         "school_name": school.name if school else None,
+        "nav_rezervacije": nav.get("rezervacije", "/rezervacije"),
+        "nav_ocenjevanje": nav.get("ocenjevanje", "/ocenjevanje"),
     })
 
 
@@ -267,13 +273,22 @@ def dejavnosti_page(request: Request):
     from app.database import SessionLocal
     db = SessionLocal()
     user = db.query(User).filter(User.id == int(user_id)).first()
+    # Vloga gre v predlogo kot vrednost ('teacher'/'vodstvo'/'admin'), ne kot
+    # str(RoleEnum) — sicer je učitelj dobil niz 'RoleEnum.teacher', primerjava
+    # USER_ROLE !== 'teacher' pa je uspela in mu POKAZALA gumbe za urejanje
+    # (klik je nato vrgel 403). Zdaj so gumbi učiteljem res skriti.
+    role = role_value(user) if user else "teacher"
+    # Poti zavihkov: kdor je vstopil prek poti šole, na njej tudi ostane.
+    ctx_school_id, _school = resolve_school_context(request, db)
+    nav = nav_paths(db, request, ctx_school_id)
     db.close()
-    role = str(user.role) if user else "teacher"
     # Učitelji vseeno vidijo stran — gumbi za dodajanje/urejanje/brisanje
     # so jim skriti s pomočjo  USER_ROLE  v dejavnosti.html.
     return templates.TemplateResponse("dejavnosti.html", {
         "request": request,
         "user_role": role,
+        "nav_rezervacije": nav.get("rezervacije", "/rezervacije"),
+        "nav_ocenjevanje": nav.get("ocenjevanje", "/ocenjevanje"),
     })
 
 
