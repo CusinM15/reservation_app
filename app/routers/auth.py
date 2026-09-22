@@ -81,16 +81,31 @@ def _scoped_users(db: Session, school_id: int | None):
 def _find_user_by_email(db: Session, request: Request, email: str, reset_token: str | None = None):
     """Poišči uporabnika po e-pošti (za pozabljeno geslo).
 
+    Najprej točno ujemanje, nato tolerantno (brez velikih/malih črk in brez
+    odvečnih presledkov) — e-pošta je po standardu neobčutljiva na velikost
+    črk, uporabniki pa jo pogosto vtipkajo drugače ali prilepijo presledek.
+    Brez tega se zgodi zavajajoč »Uporabnik s tem emailom ne obstaja«.
+
     Če je zahtevek vezan na šolo (URL-alias), iščemo znotraj nje; sicer
     globalno (za eno šolo je zadetek natanko eden — vedenje nespremenjeno).
     """
-    query = db.query(User).filter(User.email == email)
-    if reset_token is not None:
-        query = query.filter(User.reset_token == reset_token)
-    school_id = request_school_id(request)
-    if school_id is not None:
-        query = query.filter((User.school_id == school_id) | (User.school_id.is_(None)))
-    return query.first()
+    from sqlalchemy import func
+
+    ident = (email or "").strip()
+
+    def _base():
+        query = db.query(User)
+        if reset_token is not None:
+            query = query.filter(User.reset_token == reset_token)
+        school_id = request_school_id(request)
+        if school_id is not None:
+            query = query.filter((User.school_id == school_id) | (User.school_id.is_(None)))
+        return query
+
+    user = _base().filter(User.email == ident).first()
+    if user is not None:
+        return user
+    return _base().filter(func.lower(User.email) == ident.lower()).first()
 
 
 # ── Pomožne funkcije za ponastavitev gesla ──────────────────────────

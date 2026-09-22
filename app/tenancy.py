@@ -748,25 +748,38 @@ def find_user_for_login(db: Session, request, identifier: str, *, active_only: b
     """Poišči uporabnika po username ALI email za prijavo.
 
     Pravila:
+      - Najprej TOČNO ujemanje (nespremenjeno dosedanje vedenje).
+      - Če ni zadetka, tolerantno ujemanje: brez velikih/malih črk in brez
+        odvečnih presledkov. Zakaj? E-pošta je po standardu neobčutljiva na
+        velikost črk, uporabniki pa pogosto vtipkajo drugačno velikost ali
+        prilepijo presledek — takrat prijava ne sme pasti z »napačno geslo«.
       - Če je zahtevek vezan na šolo (URL-alias), se išče znotraj te šole
         (+ glavni admin, ki nima šole).
       - Sicer se išče globalno. Če se najde več različnih uporabnikov
         (enako ime v več šolah), prijava ni mogoča brez konteksta šole —
-        dvigne se 400 z jasnim sporočilom. Za eno šolo (trenutno stanje)
-        je zadetek vedno natanko eden, zato je vedenje nespremenjeno.
+        dvigne se 400 z jasnim sporočilom.
     """
+    from sqlalchemy import func
     from app.models import User
 
-    base = db.query(User).filter((User.username == identifier) | (User.email == identifier))
-    if active_only:
-        base = base.filter(User.is_active == True)  # noqa: E712
-
+    ident = (identifier or "").strip()
     school_id = request_school_id(request)
-    if school_id is not None:
-        # Zahtevek je vezan na šolo: išči znotraj nje (+ globalni račun).
-        base = base.filter((User.school_id == school_id) | (User.school_id.is_(None)))
 
-    matches = base.all()
+    def _base():
+        query = db.query(User)
+        if active_only:
+            query = query.filter(User.is_active == True)  # noqa: E712
+        if school_id is not None:
+            query = query.filter((User.school_id == school_id) | (User.school_id.is_(None)))
+        return query
+
+    matches = _base().filter((User.username == ident) | (User.email == ident)).all()
+    if not matches:
+        low = ident.lower()
+        matches = _base().filter(
+            (func.lower(User.username) == low) | (func.lower(User.email) == low)
+        ).all()
+
     if len(matches) > 1:
         # Preferiraj glavnega admina, če je med zadetki (globalni račun).
         main_admins = [u for u in matches if role_value(u) == MAIN_ADMIN_ROLE]

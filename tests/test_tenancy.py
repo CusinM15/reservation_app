@@ -207,6 +207,51 @@ def test_school_admin_cannot_delete_user_of_other_school(client, make_user):
     assert _count(type(foreign), id=foreign.id, is_active=True) == 1
 
 
+# ── Tolerantna prijava (velikost črk / presledki) ─────────────────────
+# Zakaj: e-pošta je po standardu neobčutljiva na velikost črk, uporabniki pa
+# pogosto vtipkajo drugačno velikost ali prilepijo presledek. V tem primeru
+# prijava ne sme pasti z »napačno uporabniško ime ali geslo«.
+
+def test_login_is_tolerant_of_case_and_spaces(client, make_user):
+    u = make_user(username="mixed.case@test.si", email="Mixed.Case@Test.SI")
+    for ident in ["mixed.case@test.si", "MIXED.CASE@TEST.SI",
+                  "  Mixed.Case@Test.SI  ", "mixed.case@TEST.si"]:
+        client.post("/auth/logout")
+        login(client, ident)
+        me = client.get("/auth/me")
+        assert me.status_code == 200, f"prijava z {ident!r} ni uspela"
+        assert me.json()["id"] == u.id
+
+
+def test_tolerant_login_still_requires_correct_password(client, make_user):
+    """Tolerantnost velja samo za iskanje uporabnika — geslo mora biti pravilno."""
+    make_user(username="case2@test.si")
+    r = login(client, "CASE2@TEST.SI", password="NapacoGeslo1")
+    assert "Napačno" in r.text
+    assert client.get("/auth/me", follow_redirects=False).status_code == 307
+
+
+def test_forgot_password_is_tolerant_of_email_case(client, make_user):
+    u = make_user(email="Forgot.Case@Test.SI")
+    r = client.post("/auth/forgot-password", data={"email": "forgot.case@TEST.si"})
+    assert r.status_code == 200
+    assert "poslali povezavo" in r.text
+    db = SessionLocal()
+    try:
+        from app.models import User as _User
+        assert db.query(_User).filter(_User.id == u.id).first().reset_token
+    finally:
+        db.close()
+
+
+def test_forgot_password_real_typo_still_reported(client, make_user):
+    """Resnično neobstoječ e-naslov (npr. vguest namesto guest) se še vedno javi."""
+    make_user(email="someone@guest.arnes.si")
+    r = client.post("/auth/forgot-password", data={"email": "someone@vguest.arnes.si"})
+    assert r.status_code == 200
+    assert "ne obstaja" in r.text
+
+
 # ── 5. Nastavitve šole ────────────────────────────────────────────────
 
 def test_school_admin_can_read_and_write_own_settings(client, make_user):
