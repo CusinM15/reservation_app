@@ -27,6 +27,7 @@ from app.tenancy import (
     config_for_request,
     parse_alias_path,
     lookup_alias_school_id,
+    resolve_school_context,
     role_value,
 )
 
@@ -47,21 +48,63 @@ templates = Jinja2Templates(directory="app/templates")
 # prepisati PRED usmerjanjem (routing), kar je v čistem ASGI sloju
 # najbolj neposredno.
 class SchoolAliasMiddleware:
+    """Prepiše pot šole (alias) v kanonično pot IN si zapomni izbrano šolo.
+
+    Zakaj piškotek school_ctx? Stran se naloži z ENO zahtevo (na pot šole),
+    podatke pa nato pripelje JavaScript z ločenimi klici na /api/... — ti
+    klici ne vsebujejo imena poti šole. Brez piškotka je glavni admin na
+    /rezervacije_st videl podatke vseh šol (ali prejšnje izbrane šole), kar je
+    bilo videti, kot da poti šol ne delujejo oz. da se mešajo šole. Piškotek
+    torej izbrano šolo ohrani skozi celotno sejo, tudi za API klice.
+
+    Varnost: piškotek NE more razkriti podatkov druge šole. Za šolske
+    uporabnike je obseg vedno vezan na user.school_id (glej data_school_id);
+    če se kontekst razlikuje, sledi 403. Piškotek torej izbira le, kaj gleda
+    glavni admin.
+    """
+
+    COOKIE_NAME = "school_ctx"
+    COOKIE_MAX_AGE = 60 * 60 * 12      # 12 ur (en delovni dan)
+
     def __init__(self, app):
         self.app = app
 
     async def __call__(self, scope, receive, send):
-        if scope.get("type") == "http":
-            alias, canonical = parse_alias_path(scope.get("path", ""))
-            if alias and canonical:
-                school_id = lookup_alias_school_id(alias)
-                if school_id is not None:
-                    scope["path"] = canonical
-                    scope["raw_path"] = canonical.encode("utf-8")
-                    state = scope.setdefault("state", {})
-                    state["school_id"] = school_id
-                    state["school_alias"] = alias
-        await self.app(scope, receive, send)
+        if scope.get("type") != "http":
+            return await self.app(scope, receive, send)
+
+        alias, canonical = parse_alias_path(scope.get("path", ""))
+        school_id = None
+        if alias and canonical:
+            school_id = lookup_alias_school_id(alias)
+            if school_id is not None:
+                scope["path"] = canonical
+                scope["raw_path"] = canonical.encode("utf-8")
+                state = scope.setdefault("state", {})
+                state["school_id"] = school_id
+                state["school_alias"] = alias
+
+        if school_id is None:
+            return await self.app(scope, receive, send)
+
+        cookie_value = (
+            f"{self.COOKIE_NAME}={school_id}; Path=/; "
+            f"Max-Age={self.COOKIE_MAX_AGE}; SameSite=Lax; HttpOnly"
+        ).encode("latin-1")
+
+        async def send_with_cookie(message):
+            # Piškotek pripnemo na odgovor (ASGI sloj ne pozna Response objektov).
+            if message["type"] == "http.response.start":
+                headers = [
+                    (k, v) for (k, v) in message.get("headers", [])
+                    if not (k.lower() == b"set-cookie"
+                            and v.startswith(f"{self.COOKIE_NAME}=".encode("latin-1")))
+                ]
+                headers.append((b"set-cookie", cookie_value))
+                message = {**message, "headers": headers}
+            await send(message)
+
+        await self.app(scope, receive, send_with_cookie)
 
 
 app.add_middleware(SchoolAliasMiddleware)
@@ -145,6 +188,8 @@ def _render_index(request: Request, active_tab: str):
     try:
         user = db.query(User).filter(User.id == int(user_id)).first()
         config = config_for_request(request, db)
+        # Ime šole, katere podatki so prikazani — uporabi se za oznako na vrhu.
+        _, school = resolve_school_context(request, db)
     finally:
         db.close()
 
@@ -155,10 +200,14 @@ def _render_index(request: Request, active_tab: str):
     else:
         timeout_ms = config.INACTIVITY_TIMEOUT_MINUTES * 60 * 1000
 
+    # Označba šole: pokaže se VEDNO, ko je zahtevek prišel prek poti šole
+    # (alias), da je uporabniku jasno, kateri šoli pripadajo podatki na zaslonu.
     return templates.TemplateResponse("index.html", {
         "request": request,
         "inactivity_timeout_ms": timeout_ms,
         "active_tab": active_tab,
+        "school_alias": getattr(request.state, "school_alias", None),
+        "school_name": school.name if school else None,
     })
 
 

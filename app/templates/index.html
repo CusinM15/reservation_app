@@ -254,9 +254,11 @@
          Skrite privzeto; JS jih pokaže glede na vlogo (glej currentUser spodaj). -->
     <a href="/settings" id="settings-link" style="display:none;">⚙️ Nastavitve šole</a>
     <a href="/schools" id="schools-link" style="display:none;">🏫 Šole</a>
-    <!-- VEČŠOLSKO: katero šolo gleda glavni admin. Brez te oznake ni jasno,
-         kateri šoli pripadajo podatki na zaslonu (odvisno od poti šole). -->
-    <span id="school-badge" style="display:none;background:#eef2ff;color:#3730a3;border-radius:4px;padding:3px 8px;font-size:0.8rem;"></span>
+    <!-- VEČŠOLSKO: kateri šoli pripadajo podatki na zaslonu.
+         Ob obisku prek poti šole (alias) je oznaka izpolnjena že na strežniku
+         in vidna vsem uporabnikom; glavnemu adminu jo JS izpolni tudi na
+         kanoničnih poteh (kjer si šolo izbere sam). -->
+    <span id="school-badge" style="{% if not school_alias %}display:none;{% endif %}background:#eef2ff;color:#3730a3;border-radius:4px;padding:3px 8px;font-size:0.8rem;" title="Šola, katere podatki so prikazani">{% if school_alias %}🏫 {{ school_name or '' }} (/{{ school_alias }}){% endif %}</span>
     <!-- IZVOZNE POVEZAVE — prikazane za admin in vodstvo.
          Vodstvo potrebuje izvoz podatkov za poročila, zato ima dostop,
          čeprav nima admin pravice. -->
@@ -1884,11 +1886,13 @@
         if (currentUser.role === 'main_admin') {
             document.getElementById('schools-link').style.display = 'inline';
             // Pokaži, katero šolo trenutno gleda (podatki so odvisni od poti).
+            // Če je oznaka že izpolnjena (zahtevek je prišel prek poti šole),
+            // je ne prepišemo — tam je vir resnice strežnik.
             fetch('/api/schools/current', { credentials: 'include' })
               .then(r => r.ok ? r.json() : null)
               .then(d => {
                 const el = document.getElementById('school-badge');
-                if (!el) return;
+                if (!el || el.textContent.trim()) return;
                 if (d && d.school) {
                     const alias = (d.school.aliases || [])[0];
                     el.textContent = `🏫 ${d.school.name}${alias ? ' (/' + alias + ')' : ''}`;
