@@ -6,20 +6,31 @@
     <title>Šole - Šolski App</title>
     <style>
         body { font-family: Arial, sans-serif; margin: 20px; background: #f5f5f5; }
-        .container { max-width: 1100px; margin: auto; background: white; padding: 20px; border-radius: 10px; }
+        .container { max-width: 1150px; margin: auto; background: white; padding: 24px; border-radius: 10px; }
         table { width: 100%; border-collapse: collapse; margin-top: 20px; }
-        td { padding: 8px; text-align: left; border-bottom: 1px solid #ddd; font-size: 14px; }
-        th { padding: 8px; text-align: left; border-bottom: 1px solid #ddd; font-size: 14px; background: #007bff; color: white; }
-        .btn { padding: 5px 10px; background: #007bff; color: white; text-decoration: none; border-radius: 3px; font-size: 12px; border: none; cursor: pointer; display: inline-block; margin: 1px; }
+        td { padding: 10px 8px; text-align: left; border-bottom: 1px solid #ddd; font-size: 14px; vertical-align: top; }
+        th { padding: 10px 8px; text-align: left; border-bottom: 1px solid #ddd; font-size: 14px; background: #007bff; color: white; }
+        .btn { padding: 6px 11px; background: #007bff; color: white; text-decoration: none; border-radius: 4px; font-size: 13px; border: none; cursor: pointer; display: inline-block; margin: 2px 2px 2px 0; }
         .btn-success { background: #28a745; }
-        .badge { display: inline-block; background: #e9ecef; border-radius: 3px; padding: 1px 6px; font-size: 12px; margin: 1px; font-family: monospace; }
-        input { padding: 6px; margin: 5px; }
+        .btn-cancel { background: #6c757d; }
+        .badge { display: inline-block; background: #e9ecef; border-radius: 4px; padding: 2px 7px; font-size: 12px; margin: 1px; font-family: monospace; text-decoration: none; color: #0b5ed7; }
+        .badge:hover { background: #d4e2f7; }
+        .alias-item { white-space: nowrap; margin: 1px 0; }
+        .alias-del { color: #b02a37; cursor: pointer; font-weight: 700; margin-left: 4px; text-decoration: none; }
+        input { padding: 8px; margin: 5px 0; border: 1px solid #ccc; border-radius: 6px; }
         .nav { margin-bottom: 20px; }
-        .nav a { margin-right: 10px; }
+        .nav a { margin-right: 14px; }
         .hint { color: #666; font-size: 13px; }
-        .ok { color: #155724; background: #d4edda; padding: 8px; border-radius: 5px; }
-        .err { color: #721c24; background: #f8d7da; padding: 8px; border-radius: 5px; }
-        .counts span { margin-right: 12px; font-size: 13px; color: #444; }
+        .ok { color: #155724; background: #d4edda; padding: 12px; border-radius: 5px; margin: 12px 0; }
+        .err { color: #721c24; background: #f8d7da; padding: 12px; border-radius: 5px; margin: 12px 0; }
+        .counts span { margin-right: 12px; font-size: 13px; color: #444; display: inline-block; }
+        .modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.4); z-index: 100; justify-content: center; align-items: center; }
+        .modal-overlay.active { display: flex; }
+        .modal { background: #fff; border-radius: 12px; padding: 24px; width: 100%; max-width: 460px; }
+        .modal h3 { margin-top: 0; }
+        .modal label { display: block; font-size: 0.85rem; font-weight: 500; color: #555; margin: 10px 0 4px; }
+        .modal input { width: 100%; box-sizing: border-box; }
+        .modal .form-actions { display: flex; gap: 8px; justify-content: flex-end; margin-top: 16px; }
     </style>
 </head>
 <body>
@@ -27,14 +38,16 @@
         <div class="nav">
             <a href="/schools">Šole</a>
             <a href="/history">Dnevnik dogodkov</a>
+            <a href="#" onclick="openModal('pw-modal'); return false;">Spremeni geslo</a>
             <a href="/auth/logout">Odjava</a>
         </div>
 
         <h2>Šole (glavni admin)</h2>
         <p class="hint">
             Vsaka šola ima svoje podatke, svoje uporabnike in svoje nastavitve.
-            Gumb <strong>Odpri</strong> nastavi izbrano šolo (za kanonične poti), poti šole
-            (npr. <span class="badge">/rezervacije_ostc</span>) pa jo izberejo neposredno.
+            <strong>Odpri</strong> nastavi izbrano šolo za kanonične poti, poti šole
+            (npr. <span class="badge">/rezervacije_ostc</span>) pa jo izberejo neposredno —
+            klik odpre aplikacijo s podatki te šole.
         </p>
 
         <div id="msg"></div>
@@ -54,7 +67,7 @@
         <table>
             <thead>
                 <tr>
-                    <th>#</th><th>Ime</th><th>Oznaka</th><th>Poti</th><th>Podatki</th><th>Dejanja</th>
+                    <th>#</th><th>Ime</th><th>Oznaka</th><th>Poti šole</th><th>Podatki</th><th>Dejanja</th>
                 </tr>
             </thead>
             <tbody>
@@ -63,9 +76,11 @@
                     <td>{{ s.id }}</td>
                     <td><strong>{{ s.name }}</strong>{% if not s.is_active %} <em>(neaktivna)</em>{% endif %}</td>
                     <td><span class="badge">{{ s.slug }}</span></td>
-                    <td>
+                    <td id="aliases-{{ s.id }}">
                         {% for a in s.aliases %}
-                        <a href="/{{ a }}/" class="badge">{{ a }}</a>
+                        <div class="alias-item">
+                            <a class="badge" href="/{{ a }}" title="Odpri aplikacijo v tej šoli">/{{ a }}</a><a class="alias-del" href="#" title="Odstrani to pot" onclick="removeAlias({{ s.id }}, '{{ a }}'); return false;">✕</a>
+                        </div>
                         {% endfor %}
                     </td>
                     <td class="counts">
@@ -85,9 +100,39 @@
             {% endfor %}
             </tbody>
         </table>
+        <p class="hint">
+            Odvečno pot lahko odstranite s ✕ (npr. starejši alias, ki ga šola ne uporablja več).
+        </p>
+    </div>
+
+    <div class="modal-overlay" id="pw-modal">
+        <div class="modal">
+            <h3>Sprememba gesla ({{ current_username }})</h3>
+            <div class="form-group">
+                <label>Trenutno geslo</label>
+                <input type="password" id="pw-old" placeholder="Vnesite trenutno geslo">
+            </div>
+            <div class="form-group">
+                <label>Novo geslo</label>
+                <input type="password" id="pw-new1" placeholder="Vnesite novo geslo">
+                <small style="display:block;font-size:0.75rem;color:#666;">Vsaj 5 znakov, mala/velika črka, številka</small>
+            </div>
+            <div class="form-group">
+                <label>Novo geslo (ponovno)</label>
+                <input type="password" id="pw-new2" placeholder="Ponovite novo geslo">
+            </div>
+            <div class="form-actions">
+                <button class="btn btn-cancel" onclick="closeModal('pw-modal')">Prekliči</button>
+                <button class="btn" onclick="submitChangePassword()">Spremeni geslo</button>
+            </div>
+            <div id="pw-msg" style="margin-top:10px;font-size:0.9rem;"></div>
+        </div>
     </div>
 
     <script>
+    function openModal(id) { document.getElementById(id).classList.add('active'); }
+    function closeModal(id) { document.getElementById(id).classList.remove('active'); }
+
     // »Uporabniki« morajo teči v kontekstu izbrane šole → najprej nastavimo
     // piškotek school_ctx prek /schools/open/{id}, nato nadaljujemo.
     function openInThisSchool(id) {
@@ -113,6 +158,55 @@
             box.textContent = 'Napaka: ' + (data.detail || res.status);
         }
     });
+
+    // Odstranitev posamezne poti šole (npr. odvečen/star alias).
+    async function removeAlias(schoolId, alias) {
+        if (!confirm('Odstranim pot /' + alias + ' ?\n\nAplikacija bo dosegljiva le prek ostalih poti te šole.')) return;
+        const box = document.getElementById('msg');
+        const res = await fetch('/api/schools/' + schoolId + '/aliases/' + encodeURIComponent(alias), {
+            method: 'DELETE', credentials: 'include'
+        });
+        const data = await res.json().catch(() => ({}));
+        if (res.ok) {
+            box.className = 'ok';
+            box.textContent = data.message || 'Pot odstranjena.';
+            const cell = document.getElementById('aliases-' + schoolId);
+            if (cell) {
+                cell.innerHTML = (data.aliases || []).map(a =>
+                    '<div class="alias-item"><a class="badge" href="/' + a + '">/' + a + '</a>' +
+                    '<a class="alias-del" href="#" onclick="removeAlias(' + schoolId + ', \'' + a + '\'); return false;">✕</a></div>'
+                ).join('');
+            }
+        } else {
+            box.className = 'err';
+            box.textContent = 'Napaka: ' + (data.detail || res.status);
+        }
+    }
+
+    // ── Sprememba gesla (glavni admin) ───────────────────────────────
+    async function submitChangePassword() {
+        const oldPw = document.getElementById('pw-old').value;
+        const newPw1 = document.getElementById('pw-new1').value;
+        const newPw2 = document.getElementById('pw-new2').value;
+        const msgEl = document.getElementById('pw-msg');
+        if (!oldPw || !newPw1 || !newPw2) { msgEl.style.color = 'red'; msgEl.textContent = 'Izpolnite vsa polja.'; return; }
+        if (newPw1 !== newPw2) { msgEl.style.color = 'red'; msgEl.textContent = 'Novi gesli se ne ujemata.'; return; }
+        try {
+            const formData = new FormData();
+            formData.append('old_password', oldPw);
+            formData.append('new_password', newPw1);
+            const res = await fetch('/auth/change-password', { method: 'POST', body: formData, credentials: 'include' });
+            const json = await res.json().catch(() => ({}));
+            if (res.ok) {
+                msgEl.style.color = 'green'; msgEl.textContent = 'Geslo uspešno spremenjeno!';
+                setTimeout(() => closeModal('pw-modal'), 1500);
+            } else {
+                msgEl.style.color = 'red'; msgEl.textContent = json.detail || 'Napaka pri spreminjanju gesla.';
+            }
+        } catch (e) {
+            msgEl.style.color = 'red'; msgEl.textContent = 'Napaka pri povezavi s strežnikom.';
+        }
+    }
     </script>
 </body>
 </html>

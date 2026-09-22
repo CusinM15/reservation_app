@@ -254,6 +254,9 @@
          Skrite privzeto; JS jih pokaže glede na vlogo (glej currentUser spodaj). -->
     <a href="/settings" id="settings-link" style="display:none;">⚙️ Nastavitve šole</a>
     <a href="/schools" id="schools-link" style="display:none;">🏫 Šole</a>
+    <!-- VEČŠOLSKO: katero šolo gleda glavni admin. Brez te oznake ni jasno,
+         kateri šoli pripadajo podatki na zaslonu (odvisno od poti šole). -->
+    <span id="school-badge" style="display:none;background:#eef2ff;color:#3730a3;border-radius:4px;padding:3px 8px;font-size:0.8rem;"></span>
     <!-- IZVOZNE POVEZAVE — prikazane za admin in vodstvo.
          Vodstvo potrebuje izvoz podatkov za poročila, zato ima dostop,
          čeprav nima admin pravice. -->
@@ -1880,6 +1883,21 @@
         // Pregled vseh šol ima samo glavni admin (nima svoje šole).
         if (currentUser.role === 'main_admin') {
             document.getElementById('schools-link').style.display = 'inline';
+            // Pokaži, katero šolo trenutno gleda (podatki so odvisni od poti).
+            fetch('/api/schools/current', { credentials: 'include' })
+              .then(r => r.ok ? r.json() : null)
+              .then(d => {
+                const el = document.getElementById('school-badge');
+                if (!el) return;
+                if (d && d.school) {
+                    const alias = (d.school.aliases || [])[0];
+                    el.textContent = `🏫 ${d.school.name}${alias ? ' (/' + alias + ')' : ''}`;
+                } else {
+                    el.textContent = '🏫 vse šole';
+                }
+                el.style.display = 'inline';
+              })
+              .catch(() => {});
         }
         if (currentUser.role === 'admin' || currentUser.role === 'vodstvo') {
             document.getElementById('export-rez-link').style.display = 'inline';

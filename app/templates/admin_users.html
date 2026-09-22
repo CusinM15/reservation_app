@@ -55,9 +55,22 @@
                 <option value="admin">Admin</option>
             </select>
             <button type="submit" class="btn">Dodaj</button>
-        </form>
-        
-        <h3>Seznam uporabnikov</h3>
+                    </form>
+
+                    <h3>Uvoz uporabnikov iz CSV</h3>
+                    <p style="font-size:13px;color:#666;margin:4px 0;">
+                        Glave stolpcev (vrstni red dowoln, neobčutljivo na velikost črk):
+                        <code>username, email, first_name, last_name, role, password</code>.
+                        Uporabniki se dodajo v šolo, ki jo trenutno upravljate; če gesla ni v datoteki,
+                        dobi uporabnik privzeto geslo. Obstoječa uporabniška imena se preskočijo.
+                    </p>
+                    <div>
+                        <input type="file" id="csv-file" accept=".csv,text/csv">
+                        <button type="button" class="btn btn-success" onclick="importUsersCSV()">📥 Uvozi CSV</button>
+                    </div>
+                    <div id="csv-msg" style="margin-top:8px;font-size:13px;"></div>
+
+                    <h3>Seznam uporabnikov</h3>
         <div style="margin-bottom: 10px;">
             <input type="text" id="user-search" placeholder="🔍 Išči po imenu, priimku ali emailu..." style="width:100%;max-width:400px;padding:8px;font-size:14px;" oninput="filterUsers()">
         </div>
@@ -201,10 +214,46 @@
             });
 
             // Update arrow indicators
-            document.querySelectorAll('th .sort-arrow').forEach(el => el.textContent = '');
-            const arrow = document.querySelector(`th:nth-child(${col + 1}) .sort-arrow`);
-            if (arrow) arrow.textContent = sortDir[col] ? '▲' : '▼';
-        }
-    </script>
+                        document.querySelectorAll('th .sort-arrow').forEach(el => el.textContent = '');
+                        const arrow = document.querySelector(`th:nth-child(${col + 1}) .sort-arrow`);
+                        if (arrow) arrow.textContent = sortDir[col] ? '▲' : '▼';
+                    }
+
+                    // ── Uvoz uporabnikov iz CSV ──────────────────────────────────
+                    // Pošlje datoteko na /auth/admin/users/import in prikaže povzetek.
+                    // Uporabniki se vedno dodajo v šolo, ki jo admin trenutno upravlja.
+                    async function importUsersCSV() {
+                        const box = document.getElementById('csv-msg');
+                        const input = document.getElementById('csv-file');
+                        if (!input.files.length) {
+                            box.style.color = 'red';
+                            box.textContent = 'Najprej izberite .csv datoteko.';
+                            return;
+                        }
+                        const fd = new FormData();
+                        fd.append('file', input.files[0]);
+                        box.style.color = '#333';
+                        box.textContent = 'Uvažam ...';
+                        try {
+                            const res = await fetch('/auth/admin/users/import', {
+                                method: 'POST', body: fd, credentials: 'include'
+                            });
+                            const data = await res.json().catch(() => ({}));
+                            if (!res.ok) {
+                                box.style.color = 'red';
+                                box.textContent = 'Napaka: ' + (data.detail || res.status);
+                                return;
+                            }
+                            let msg = 'Uvoženih: ' + data.created + ', preskočenih: ' + data.skipped + '.';
+                            if ((data.errors || []).length) msg += ' Napake: ' + data.errors.join('; ');
+                            box.style.color = 'green';
+                            box.textContent = msg;
+                            if (data.created) setTimeout(() => window.location.reload(), 1600);
+                        } catch (e) {
+                            box.style.color = 'red';
+                            box.textContent = 'Napaka pri povezavi s strežnikom.';
+                        }
+                    }
+                </script>
 </body>
 </html>

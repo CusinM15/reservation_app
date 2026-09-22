@@ -81,14 +81,12 @@ SCHOOL_SETTING_FIELDS = [
     {"key": "TABLICE_MAX", "label": "Največ tablic na uro", "type": "int"},
     {"key": "INACTIVITY_TIMEOUT_MINUTES", "label": "Timeout neaktivnosti — učitelji (min)", "type": "int"},
     {"key": "INACTIVITY_TIMEOUT_ADMIN_MINUTES", "label": "Timeout neaktivnosti — admin/vodstvo (min)", "type": "int"},
-    {"key": "RESET_TOKEN_EXPIRATION_MINUTES", "label": "Veljavnost povezave za novo geslo (min)", "type": "int"},
     {"key": "MAIL_SERVER", "label": "SMTP strežnik", "type": "text"},
     {"key": "MAIL_PORT", "label": "SMTP vrata", "type": "int"},
     {"key": "MAIL_USERNAME", "label": "SMTP uporabniško ime", "type": "text"},
     {"key": "MAIL_PASSWORD", "label": "SMTP geslo", "type": "password"},
     {"key": "MAIL_FROM", "label": "Naslov pošiljatelja (From)", "type": "text"},
     {"key": "BACKUP_EMAIL", "label": "E-pošta za varnostne kopije", "type": "text"},
-    {"key": "STANJE_MAIL", "label": "E-pošta za poročilo o stanju", "type": "text"},
     {"key": "ADMIN_EMAIL", "label": "E-pošta šolskega admina", "type": "text"},
     {"key": "ASSESSMENT_MAX_PER_WEEK", "label": "Ocenjevanja: največ na teden", "type": "int"},
     {"key": "ASSESSMENT_MAX_PER_DAY", "label": "Ocenjevanja: največ na dan", "type": "int"},
@@ -172,7 +170,11 @@ def parse_alias_path(path: str) -> tuple[str | None, str | None]:
         return None, None
     parts = trimmed.split("/", 1)
     first = parts[0]
-    rest = ("/" + parts[1]) if len(parts) > 1 else ""
+    # Preostanek poti normaliziramo: odstranimo morebitne zaključne poševnice.
+    # Zakaj? Brez tega se "/rezervacije_ostc/" prevede v "/rezervacije/", kar
+    # Starlette preusmeri (307) na "/rezervacije" — pri tem pa se izgubi
+    # kontekst šole (state), zato je uporabnik videl podatke druge šole.
+    rest = ("/" + parts[1]).rstrip("/") if len(parts) > 1 else ""
     m = _ALIAS_RE.match(first)
     if not m:
         return None, None
@@ -547,6 +549,20 @@ def add_school_alias(db: Session, school_id: int, alias: str) -> "object":
     db.refresh(row)
     invalidate_alias_cache()
     return row
+
+
+def remove_school_alias(db: Session, school_id: int, alias: str) -> None:
+    """Odstrani alias šole (npr. podvojen/zgodovinski alias)."""
+    from app.models import SchoolAlias
+    alias = (alias or "").strip().strip("/")
+    row = db.query(SchoolAlias).filter(
+        SchoolAlias.school_id == school_id, SchoolAlias.alias == alias
+    ).first()
+    if row is None:
+        raise ValueError(f"Alias '{alias}' ne obstaja pri tej šoli.")
+    db.delete(row)
+    db.commit()
+    invalidate_alias_cache()
 
 
 def _alias_kind_for(alias: str) -> str | None:

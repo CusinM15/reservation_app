@@ -38,12 +38,14 @@ from app.tenancy import (
     invalidate_alias_cache,
     is_main_admin,
     is_school_admin,
+    remove_school_alias,
     request_school_id,
     role_value,
     set_school_setting,
     get_school_config,
     slugify,
 )
+from app.backup_restore import DOMAINS, DOMAIN_LABELS, restore_domain
 
 router = APIRouter(tags=["schools"])
 templates = Jinja2Templates(directory="app/templates")
@@ -201,6 +203,85 @@ def create_school_alias(
     return {"id": row.id, "alias": row.alias, "kind": row.kind}
 
 
+@router.delete("/api/schools/{school_id}/aliases/{alias}")
+def delete_school_alias(
+    school_id: int,
+    alias: str,
+    request: Request,
+    db: Session = Depends(get_db),
+):
+    """Odstrani pot šole (npr. podvojen/zgodovinski alias).
+
+    Zakaj to potrebujemo? Ena šola lahko ima več aliasov (generirani + stari).
+    Če je kakšen odveč, ga je mogoče odstraniti — brez tega bi ostajale
+    zavajajoče povezave v pregledu šol.
+    """
+    school = _manageable_school(db, request, school_id)
+    try:
+        remove_school_alias(db, school.id, alias)
+    except ValueError as exc:
+        raise HTTPException(status_code=404, detail=str(exc))
+    user = get_request_user(request, db)
+    log_audit(db, user.id if user else None, user.username if user else "?",
+              "delete_school_alias", f"school_id={school.id}, alias={alias}",
+              school_id=school.id)
+    return {"message": f"Pot '{alias}' odstranjena.", "aliases": [a.alias for a in school.aliases]}
+
+
+# ═══════════════════════════════════════════════════════════════════════
+# API — obnova iz varnostne kopije (.sql)
+# ═══════════════════════════════════════════════════════════════════════
+
+@router.post("/api/schools/{school_id}/restore")
+async def restore_from_backup(school_id: int, request: Request, db: Session = Depends(get_db)):
+    """Obnovi podatke šole iz naložene .sql varnostne kopije.
+
+    Obrazec (multipart/form-data):
+      - file:   .sql datoteka (pg_dump, plain)
+      - domain: dejavnosti | rezervacije | ocenjevanje | vse
+
+    Vsebina izbranih tabel za TO šolo se izbriše in znova vstavi iz kopije.
+    Vrstice drugih šol ostanejo nedotaknjene (`WHERE school_id = ...`).
+    """
+    school = _manageable_school(db, request, school_id)
+
+    form = await request.form()
+    domain = str(form.get("domain") or "").strip().lower()
+    upload = form.get("file")
+    if domain not in DOMAINS:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Neveljavno področje. Dovoljeno: {', '.join(DOMAINS.keys())}",
+        )
+    if upload is None or not hasattr(upload, "read"):
+        raise HTTPException(status_code=400, detail="Manjka datoteka (polje 'file').")
+
+    raw = await upload.read()
+    if not raw:
+        raise HTTPException(status_code=400, detail="Naložena datoteka je prazna.")
+    content = raw.decode("utf-8", errors="replace")
+
+    try:
+        summary = restore_domain(db, school.id, content, domain)
+        db.commit()
+    except HTTPException:
+        db.rollback()
+        raise
+    except Exception as exc:
+        db.rollback()
+        raise HTTPException(status_code=400, detail=f"Obnova ni uspela: {exc}")
+
+    user = get_request_user(request, db)
+    log_audit(
+        db, user.id if user else None, user.username if user else "?",
+        "restore_from_backup",
+        f"school_id={school.id}, domain={domain}, "
+        f"tables={ {t: v['inserted'] for t, v in summary['tables'].items()} }",
+        school_id=school.id,
+    )
+    return summary
+
+
 # ═══════════════════════════════════════════════════════════════════════
 # API — nastavitve šole
 # ═══════════════════════════════════════════════════════════════════════
@@ -309,6 +390,7 @@ def schools_page(request: Request, db: Session = Depends(get_db)):
         "request": request,
         "schools": schools_data,
         "default_slug": slugify(schools_data[0]["name"]) if schools_data else "",
+        "current_username": user.username,
     })
 
 

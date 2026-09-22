@@ -6,40 +6,61 @@
     <title>Nastavitve šole - Šolski App</title>
     <style>
         body { font-family: Arial, sans-serif; margin: 20px; background: #f5f5f5; }
-        .container { max-width: 900px; margin: auto; background: white; padding: 20px; border-radius: 10px; }
+        .container { max-width: 1100px; margin: auto; background: white; padding: 24px; border-radius: 10px; }
         .nav { margin-bottom: 20px; }
-        .nav a { margin-right: 10px; }
-        h3 { margin-top: 28px; border-bottom: 1px solid #eee; padding-bottom: 4px; }
-        .row { display: flex; align-items: center; gap: 10px; margin: 8px 0; }
-        .row label { flex: 0 0 380px; font-size: 14px; }
-        .row input { flex: 1; padding: 6px; font-family: monospace; font-size: 13px; }
-        .row input[type=password] { font-family: Arial, sans-serif; }
-        .key { color: #888; font-size: 11px; font-family: monospace; }
-        .btn { padding: 8px 14px; background: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 14px; }
+        .nav a { margin-right: 14px; }
+        h3 { margin-top: 30px; border-bottom: 1px solid #eee; padding-bottom: 6px; }
+        /* Vsako polje je v svoji vrstici: oznaka zgoraj (cela vidna), vnos pod njo
+           čez celotno širino — da so tudi dolge vrednosti (seznami razredov,
+           JSON urnika) v celoti berljive. */
+        .field { margin: 16px 0; }
+        .field label { display: block; font-size: 14px; font-weight: 600; color: #333; margin-bottom: 4px; }
+        .field .key { display: block; font-family: monospace; font-size: 11px; color: #999; margin-bottom: 6px; }
+        .field input, .field textarea {
+            width: 100%; box-sizing: border-box; padding: 8px 10px;
+            border: 1px solid #ccc; border-radius: 6px;
+            font-family: monospace; font-size: 13px; line-height: 1.4;
+        }
+        .field input[type=password] { font-family: Arial, sans-serif; }
+        .field textarea { resize: vertical; min-height: 64px; }
+        .btn { padding: 9px 14px; background: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 14px; margin: 2px; }
         .btn-success { background: #28a745; }
+        .btn-warn { background: #b45309; }
+        .btn-cancel { background: #6c757d; }
         .hint { color: #666; font-size: 13px; }
-        .ok { color: #155724; background: #d4edda; padding: 10px; border-radius: 5px; margin: 10px 0; }
-        .err { color: #721c24; background: #f8d7da; padding: 10px; border-radius: 5px; margin: 10px 0; }
-        .sticky { position: sticky; bottom: 0; background: white; padding: 12px 0; border-top: 1px solid #eee; }
+        .ok { color: #155724; background: #d4edda; padding: 12px; border-radius: 5px; margin: 12px 0; }
+        .err { color: #721c24; background: #f8d7da; padding: 12px; border-radius: 5px; margin: 12px 0; }
+        .sticky { position: sticky; bottom: 0; background: white; padding: 14px 0; border-top: 1px solid #eee; }
+        .restore-box { background: #fff7ed; border: 1px solid #fed7aa; border-radius: 8px; padding: 16px; margin-top: 12px; }
+        table.restore { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 13px; }
+        table.restore th, table.restore td { text-align: left; padding: 6px 8px; border-bottom: 1px solid #eee; }
+        .modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.4); z-index: 100; justify-content: center; align-items: center; }
+        .modal-overlay.active { display: flex; }
+        .modal { background: #fff; border-radius: 12px; padding: 24px; width: 100%; max-width: 460px; }
+        .modal h3 { margin-top: 0; border: none; }
+        .modal label { display: block; font-size: 0.85rem; font-weight: 500; color: #555; margin: 10px 0 4px; }
+        .modal input { width: 100%; box-sizing: border-box; padding: 8px; border: 1px solid #ddd; border-radius: 6px; }
+        .modal .form-actions { display: flex; gap: 8px; justify-content: flex-end; margin-top: 16px; }
     </style>
 </head>
 <body>
     <div class="container">
         <div class="nav">
             {% if is_main_admin %}<a href="/schools">Šole</a>{% endif %}
-            <a href="/rezervacije">Domov (urnik)</a>
+            <a href="/rezervacije">Aplikacija</a>
+            <a href="#" onclick="openModal('pw-modal'); return false;">Spremeni geslo</a>
             <a href="/auth/logout">Odjava</a>
         </div>
 
         <h2>Nastavitve šole: {{ school.name }}</h2>
         <p class="hint">
             Oznaka: <strong>{{ school.slug }}</strong> &nbsp;|&nbsp;
-            Poti: {% for a in school.aliases %}<code>/{{ a }}/</code> {% endfor %}
+            Poti šole (klik odpre aplikacijo v tej šoli):
+            {% for a in school.aliases %}<a href="/{{ a }}"><code>/{{ a }}</code></a> {% endfor %}
         </p>
         <p class="hint">
             Te vrednosti so prej živele v <code>.env</code>/ConfigMap; zdaj so shranjene v bazi
-            za vsako šolo posebej in jih lahko urejate tukaj. Spremembe veljajo takoj po shranjevanju
-            (nova stran/nalaganje).
+            za vsako šolo posebej in jih lahko urejate tukaj. Spremembe veljajo takoj po shranjevanju.
         </p>
 
         <div id="msg"></div>
@@ -48,10 +69,13 @@
             <input type="hidden" name="school_id" value="{{ school.id }}">
 
             <h3>Osnovno</h3>
-            {% for f in fields %}{% if f.key in ('RAZREDI','PROSTORI','SCHEDULE','TABLICE_MAX','INACTIVITY_TIMEOUT_MINUTES','INACTIVITY_TIMEOUT_ADMIN_MINUTES','RESET_TOKEN_EXPIRATION_MINUTES') %}
-            <div class="row">
-                <label>{{ f.label }}<br><span class="key">{{ f.key }}</span></label>
-                {% if f.type == 'password' %}
+            {% for f in fields %}{% if f.key in ('RAZREDI','PROSTORI','SCHEDULE','TABLICE_MAX','INACTIVITY_TIMEOUT_MINUTES','INACTIVITY_TIMEOUT_ADMIN_MINUTES') %}
+            <div class="field">
+                <label>{{ f.label }}</label>
+                <span class="key">{{ f.key }}</span>
+                {% if f.type == 'csv' or f.type == 'json' %}
+                <textarea name="{{ f.key }}" rows="3">{{ values.get(f.key, '') }}</textarea>
+                {% elif f.type == 'password' %}
                 <input type="password" name="{{ f.key }}" value="{{ values.get(f.key, '') }}">
                 {% else %}
                 <input type="text" name="{{ f.key }}" value="{{ values.get(f.key, '') }}">
@@ -65,16 +89,18 @@
                 izjema do 3 na teden, če je vmes ponavljanje, in prepoved 3 zaporednih dni.
             </p>
             {% for f in fields %}{% if f.key.startswith('ASSESSMENT_') %}
-            <div class="row">
-                <label>{{ f.label }}<br><span class="key">{{ f.key }}</span></label>
+            <div class="field">
+                <label>{{ f.label }}</label>
+                <span class="key">{{ f.key }}</span>
                 <input type="text" name="{{ f.key }}" value="{{ values.get(f.key, '') }}">
             </div>
             {% endif %}{% endfor %}
 
             <h3>E-pošta (SMTP)</h3>
-            {% for f in fields %}{% if f.key.startswith('MAIL_') or f.key in ('BACKUP_EMAIL','STANJE_MAIL','ADMIN_EMAIL') %}
-            <div class="row">
-                <label>{{ f.label }}<br><span class="key">{{ f.key }}</span></label>
+            {% for f in fields %}{% if f.key.startswith('MAIL_') or f.key in ('BACKUP_EMAIL','ADMIN_EMAIL') %}
+            <div class="field">
+                <label>{{ f.label }}</label>
+                <span class="key">{{ f.key }}</span>
                 {% if f.type == 'password' %}
                 <input type="password" name="{{ f.key }}" value="{{ values.get(f.key, '') }}">
                 {% else %}
@@ -87,18 +113,73 @@
                 <button type="submit" class="btn btn-success">Shrani nastavitve</button>
             </div>
         </form>
+
+        <h3>Obnova iz varnostne kopije</h3>
+        <div class="restore-box">
+            <p class="hint" style="margin-top:0;">
+                Naložite varnostno kopijo (<code>.sql</code>, izpis <code>pg_dump</code>) in izberite,
+                kaj naj se obnovi. Podatki izbrane skupine <strong>za to šolo</strong> se zamenjajo
+                s podatki iz kopije; podatki drugih šol ostanejo nedotaknjeni.
+            </p>
+            <div>
+                <button type="button" class="btn btn-warn" onclick="startRestore('dejavnosti')">📋 Dejavnosti</button>
+                <button type="button" class="btn btn-warn" onclick="startRestore('rezervacije')">📅 Rezervacije</button>
+                <button type="button" class="btn btn-warn" onclick="startRestore('ocenjevanje')">📝 Ocenjevanje</button>
+                <button type="button" class="btn btn-warn" onclick="startRestore('vse')">♻️ Vse</button>
+            </div>
+            <input type="file" id="restore-file" accept=".sql,text/plain" style="display:none">
+            <p class="hint" style="margin-bottom:0;">
+                Dejavnosti = dnevi dejavnosti + zasedeni datumi. Vsaka obnova se zabeleži v dnevnik dogodkov.
+            </p>
+            <div id="restore-msg"></div>
+        </div>
+    </div>
+
+    <div class="modal-overlay" id="pw-modal">
+        <div class="modal">
+            <h3>Sprememba gesla</h3>
+            <div class="form-group">
+                <label>Trenutno geslo</label>
+                <input type="password" id="pw-old" placeholder="Vnesite trenutno geslo">
+            </div>
+            <div class="form-group">
+                <label>Novo geslo</label>
+                <input type="password" id="pw-new1" placeholder="Vnesite novo geslo">
+                <small style="display:block;font-size:0.75rem;color:#666;">Vsaj 5 znakov, mala/velika črka, številka</small>
+            </div>
+            <div class="form-group">
+                <label>Novo geslo (ponovno)</label>
+                <input type="password" id="pw-new2" placeholder="Ponovite novo geslo">
+            </div>
+            <div class="form-actions">
+                <button class="btn btn-cancel" onclick="closeModal('pw-modal')">Prekliči</button>
+                <button class="btn" onclick="submitChangePassword()">Spremeni geslo</button>
+            </div>
+            <div id="pw-msg" style="margin-top:10px;font-size:0.9rem;"></div>
+        </div>
     </div>
 
     <script>
+    const SCHOOL_ID = {{ school.id }};
+    const DOMAIN_LABELS = {
+        dejavnosti: 'Dejavnosti (dnevi dejavnosti + zasedeni datumi)',
+        rezervacije: 'Rezervacije prostorov',
+        ocenjevanje: 'Ocenjevanja',
+        vse: 'Vse (dejavnosti, rezervacije, ocenjevanja)'
+    };
+
+    function openModal(id) { document.getElementById(id).classList.add('active'); }
+    function closeModal(id) { document.getElementById(id).classList.remove('active'); }
+
+    // ── Shranjevanje nastavitev ──────────────────────────────────────
     document.getElementById('settings-form').addEventListener('submit', async function (e) {
         e.preventDefault();
         const box = document.getElementById('msg');
-        const schoolId = this.school_id.value;
         const fd = new FormData(this);
         const values = {};
         fd.forEach((v, k) => { if (k !== 'school_id') values[k] = v; });
 
-        const res = await fetch('/api/schools/' + schoolId + '/settings', {
+        const res = await fetch('/api/schools/' + SCHOOL_ID + '/settings', {
             method: 'PUT',
             headers: { 'Content-Type': 'application/json' },
             credentials: 'include',
@@ -112,7 +193,99 @@
             box.className = 'err';
             box.textContent = 'Napaka: ' + (data.detail || res.status);
         }
+        box.scrollIntoView({ behavior: 'smooth', block: 'center' });
     });
+
+    // ── Obnova iz varnostne kopije ────────────────────────────────────
+    let restoreDomain = null;
+
+    // Gumbi odpirajo izbirnik datotek; ob izbiri se obnova izvede.
+    function startRestore(domain) {
+        restoreDomain = domain;
+        const input = document.getElementById('restore-file');
+        input.value = '';
+        input.click();
+    }
+
+    document.getElementById('restore-file').addEventListener('change', async function () {
+        const box = document.getElementById('restore-msg');
+        if (!this.files.length || !restoreDomain) return;
+        const file = this.files[0];
+        const label = DOMAIN_LABELS[restoreDomain] || restoreDomain;
+
+        const confirmed = confirm(
+            'Obnovim »' + label + '« iz datoteke ' + file.name + ' ?\n\n' +
+            'Vsi obstoječi podatki te skupine ZA TO ŠOLO bodo zamenjani s podatki iz kopije.\n' +
+            'Podatki drugih šol ostanejo nespremenjeni.'
+        );
+        if (!confirmed) { restoreDomain = null; return; }
+
+        box.className = '';
+        box.textContent = 'Obnavljam iz ' + file.name + ' ...';
+
+        const fd = new FormData();
+        fd.append('domain', restoreDomain);
+        fd.append('file', file);
+        try {
+            const res = await fetch('/api/schools/' + SCHOOL_ID + '/restore', {
+                method: 'POST', body: fd, credentials: 'include'
+            });
+            const data = await res.json().catch(() => ({}));
+            if (!res.ok) {
+                box.className = 'err';
+                box.textContent = 'Napaka: ' + (data.detail || res.status);
+                return;
+            }
+            let html = '<div class="ok"><strong>Obnova zaključena: ' + (data.label || '') + '</strong>';
+            html += '<table class="restore"><thead><tr><th>Tabela</th><th>Izbrisano</th><th>Uvoženo</th></tr></thead><tbody>';
+            Object.keys(data.tables || {}).forEach(t => {
+                const r = data.tables[t];
+                html += '<tr><td>' + t + '</td><td>' + r.deleted + '</td><td>' + r.inserted + '</td></tr>';
+            });
+            html += '</tbody></table>';
+            if ((data.missing || []).length) {
+                html += '<p style="margin:8px 0 0;">V kopiji ni bilo podatkov za: <strong>' +
+                        data.missing.join(', ') + '</strong> (te tabele so ostale nespremenjene).</p>';
+            }
+            if (data.skipped_other_schools) {
+                html += '<p style="margin:8px 0 0;">Preskočenih vrstic drugih šol: ' +
+                        data.skipped_other_schools + '.</p>';
+            }
+            html += '</div>';
+            box.innerHTML = html;
+            box.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        } catch (e) {
+            box.className = 'err';
+            box.textContent = 'Napaka pri povezavi s strežnikom.';
+        } finally {
+            restoreDomain = null;
+        }
+    });
+
+    // ── Sprememba gesla ──────────────────────────────────────────────
+    async function submitChangePassword() {
+        const oldPw = document.getElementById('pw-old').value;
+        const newPw1 = document.getElementById('pw-new1').value;
+        const newPw2 = document.getElementById('pw-new2').value;
+        const msgEl = document.getElementById('pw-msg');
+        if (!oldPw || !newPw1 || !newPw2) { msgEl.style.color = 'red'; msgEl.textContent = 'Izpolnite vsa polja.'; return; }
+        if (newPw1 !== newPw2) { msgEl.style.color = 'red'; msgEl.textContent = 'Novi gesli se ne ujemata.'; return; }
+        try {
+            const formData = new FormData();
+            formData.append('old_password', oldPw);
+            formData.append('new_password', newPw1);
+            const res = await fetch('/auth/change-password', { method: 'POST', body: formData, credentials: 'include' });
+            const json = await res.json().catch(() => ({}));
+            if (res.ok) {
+                msgEl.style.color = 'green'; msgEl.textContent = 'Geslo uspešno spremenjeno!';
+                setTimeout(() => closeModal('pw-modal'), 1500);
+            } else {
+                msgEl.style.color = 'red'; msgEl.textContent = json.detail || 'Napaka pri spreminjanju gesla.';
+            }
+        } catch (e) {
+            msgEl.style.color = 'red'; msgEl.textContent = 'Napaka pri povezavi s strežnikom.';
+        }
+    }
     </script>
 </body>
 </html>
