@@ -350,6 +350,13 @@ async def update_school_settings(school_id: int, request: Request, db: Session =
         elif isinstance(raw, (dict, list)):
             values[key] = _json.dumps(raw, ensure_ascii=False)
 
+    # Seznam ali slovar se shrani kot JSON — za VSAKO nastavitev, tudi tisto,
+    # ki ni v obrazcu (npr. PROSTORI_QTY je seznam prostorov »kot Tablice«).
+    # Brez tega bi Python seznam shranili kot "['tablice']", kar ni berljivo.
+    for key, raw_value in list(values.items()):
+        if isinstance(raw_value, (dict, list)):
+            values[key] = _json.dumps(raw_value, ensure_ascii=False)
+
     for key, value in values.items():
         set_school_setting(db, school.id, key, value)
     db.commit()
@@ -441,7 +448,8 @@ def school_settings_page(
     except HTTPException as exc:
         return HTMLResponse(exc.detail, status_code=exc.status_code)
 
-    values = get_school_config(db, school.id).effective_values()
+    cfg = get_school_config(db, school.id)
+    values = cfg.effective_values()
 
     # URNIK: v obrazcu je vsaka ura v SVOJI VRSTICI (ne surov JSON), ker je
     # tako urejanje za šolskega admina preprosto in pregledno. Tu pripravimo
@@ -462,6 +470,11 @@ def school_settings_page(
         for key in sorted(parsed.keys(), key=_sort_key):
             schedule_rows.append({"index": str(key), "value": str(parsed[key])})
 
+    # PROSTORI: vsak prostor v svoji vrstici + kljukica »kot Tablice«
+    # (= več učiteljev hkrati, količina, omejitev TABLICE_MAX).
+    prostori_qty = set(cfg.PROSTORI_QTY)
+    prostori_rows = [{"name": p, "qty": p in prostori_qty} for p in cfg.PROSTORI]
+
     return templates.TemplateResponse("school_settings.html", {
         "request": request,
         "school": {"id": school.id, "slug": school.slug, "name": school.name,
@@ -469,5 +482,6 @@ def school_settings_page(
         "fields": SCHOOL_SETTING_FIELDS,
         "values": values,
         "schedule_rows": schedule_rows,
+        "prostori_rows": prostori_rows,
         "is_main_admin": is_main_admin(user),
     })

@@ -63,6 +63,11 @@ SCHOOL_SETTING_KEYS = [
     "SCHEDULE",
     "RAZREDI",
     "PROSTORI",
+    # Prostori, ki delujejo KOT TABLICE: v njih lahko več učiteljev hkrati
+    # rezervira, vsak navede količino, skupna vsota na uro pa ne sme preseči
+    # TABLICE_MAX. Shranjuje se kot vejica-ločen seznam id-jev prostorov
+    # (npr. "tablice"), ureja pa se s kljukicami v vrsticah prostorov.
+    "PROSTORI_QTY",
     "INACTIVITY_TIMEOUT_MINUTES",
     "INACTIVITY_TIMEOUT_ADMIN_MINUTES",
     "RESET_TOKEN_EXPIRATION_MINUTES",
@@ -333,6 +338,41 @@ class SchoolConfig:
     @property
     def PROSTORI(self) -> list[str]:
         return self.get_list("PROSTORI", settings.PROSTORI)
+
+    @property
+    def PROSTORI_QTY(self) -> list[str]:
+        """Prostori, ki delujejo kot Tablice (količina + omejitev TABLICE_MAX).
+
+        Shranjeno je kot seznam (JSON), npr. ["tablice"], ker mora biti mogoče
+        izraziti tudi PRAZEN seznam (admin odkljuka vse). Preprost niz "" bi
+        namreč po pravilih nastavitev štel kot »ni nastavljeno« in bi se vrnila
+        privzeta vrednost — zato praznega seznama ne bi bilo mogoče shraniti.
+
+        Privzeto (brez zapisa v bazi) je 'tablice', zato je vedenje obstoječih
+        šol nespremenjeno.
+        """
+        raw = self._raw("PROSTORI_QTY")
+        if raw is None:
+            raw = self._env.get("PROSTORI_QTY", "tablice")
+        if raw is None:
+            return ["tablice"]
+        text = str(raw).strip()
+        if text.startswith("["):
+            try:
+                parsed = json.loads(text)
+                if isinstance(parsed, list):
+                    return [str(x).strip() for x in parsed if str(x).strip()]
+            except (TypeError, ValueError):
+                pass
+        return [x.strip() for x in text.split(",") if x.strip()]
+
+    def ima_kolicino(self, prostor: str) -> bool:
+        """Ali prostor deluje kot Tablice (več uporabnikov, količina, omejitev).
+
+        Zakaj predikat? Ker je bilo prej povsod trdo zapisano 'tablice'; zdaj se
+        pravilo bere iz nastavitev šole, zato lahko šola doda npr. 'tablice2'.
+        """
+        return bool(prostor) and prostor in self.PROSTORI_QTY
 
     @property
     def SCHEDULE(self) -> dict:

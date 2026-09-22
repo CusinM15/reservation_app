@@ -57,6 +57,10 @@ class Settings:
     # da ne dobimo lažnih vrednost (npr. ' 9.b' namesto '9.b').
     RAZREDI = [r.strip() for r in os.getenv("RAZREDI", "").split(",") if r.strip()]
     PROSTORI = [p.strip() for p in os.getenv("PROSTORI", "").split(",") if p.strip()]
+    # Prostori, ki delujejo KOT TABLICE: več učiteljev hkrati + količina,
+    # skupna vsota na uro pa je omejena s TABLICE_MAX. Privzeto "tablice",
+    # zato je vedenje obstoječih namestitev nespremenjeno.
+    PROSTORI_QTY = os.getenv("PROSTORI_QTY", "tablice")
 
     # ── URL in timeout ──────────────────────────────────────────────
     # BASE_URL se uporablja za generiranje povezav v emailih.

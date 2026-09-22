@@ -788,6 +788,10 @@
     let schedule = {};       // Urnik (ure → oznake)
     let razredi = [];        // Seznam razredov
     let prostori = [];       // Seznam prostorov
+    // Prostori, ki delujejo kot Tablice (količina + omejitev na uro).
+    // Privzeto 'tablice', nato se osveži iz /api/prostori-qty (nastavitve šole).
+    let QTY_ROOMS = new Set(['tablice']);
+    let QTY_MAX = 28;
     let currentUser = null;  // Trenutno prijavljeni uporabnik
     let currentOcMonth = ''; // Trenutni mesec na koledarju ocenjevanj
     let currentOcRazred = '';// Trenutno izbran razred za ocenjevanja
@@ -1391,7 +1395,7 @@
         date_from: document.getElementById('weekly-date-from').value,
         date_to: document.getElementById('weekly-date-to').value,
       };
-      if (prostor === 'tablice') data.qty = parseInt(document.getElementById('weekly-qty').value) || 1;
+      if (QTY_ROOMS.has(prostor)) data.qty = parseInt(document.getElementById('weekly-qty').value) || 1;
       try {
         const res = await fetch('/api/rezervacije/series/weekly', { method: 'POST', headers: {'Content-Type': 'application/json'}, credentials: 'include', body: JSON.stringify(data) });
         const json = await res.json();
@@ -1498,7 +1502,7 @@
         date_from: document.getElementById('fullday-date-from')?.value || '',
         date_to: document.getElementById('fullday-date-to')?.value || '',
       };
-      if (prostor.value === 'tablice') {
+      if (QTY_ROOMS.has(prostor.value)) {
         const qty = document.getElementById('fullday-qty');
         data.qty = parseInt(qty?.value) || 1;
       }
@@ -1598,7 +1602,7 @@
       const map = {};
       reservations.forEach(r => { const key = r.date + '|' + r.hour; if (!map[key]) map[key] = []; map[key].push(r); });
       const tabliceMap = {};
-      if (prostor === 'tablice') {
+      if (QTY_ROOMS.has(prostor)) {
         reservations.forEach(r => { const key = r.date + '|' + r.hour; tabliceMap[key] = (tabliceMap[key] || 0) + (r.qty || 0); });
       }
       const days = [];
@@ -1626,7 +1630,7 @@
               // Serijske rezervacije prikazujejo ime serije (ali "Dogodek"),
               // enkratne pa ime učitelja — serija ne razkriva ustvarjalca.
               const label = res.series_id ? (res.name || 'Dogodek') : (res.teacher_name || '?');
-              if (prostor === 'tablice') {
+              if (QTY_ROOMS.has(prostor)) {
                 const parts = []; if (res.qty) parts.push(`${res.qty} kos`); parts.push(label);
                 html += `<div class="rez-label">${parts.join(' : ')}</div>`;
               } else { html += `<div class="rez-label">${label}</div>`; }
@@ -1634,11 +1638,11 @@
                 html += `<span class="del-rez" onclick="deleteReservation(${res.id})">✕</span>`;
               }
             }
-            if (prostor === 'tablice') { const used = tabliceMap[key] || 0; const free = 28 - used; html += `<div class="slot-info" style="margin-top:4px;">Prosto: ${free}/28</div>`; }
+            if (QTY_ROOMS.has(prostor)) { const used = tabliceMap[key] || 0; const free = QTY_MAX - used; html += `<div class="slot-info" style="margin-top:4px;">Prosto: ${free}/${QTY_MAX}</div>`; }
             html += `</td>`;
           } else {
             html += `<td><div class="slot-free">Prosto</div>`;
-            if (prostor === 'tablice') { const used = tabliceMap[key] || 0; html += `<div class="slot-info">${28 - used}/28 preostalih</div>`; }
+            if (QTY_ROOMS.has(prostor)) { const used = tabliceMap[key] || 0; html += `<div class="slot-info">${QTY_MAX - used}/${QTY_MAX} preostalih</div>`; }
             html += `<div class="quick-add"><button class="btn btn-sm btn-outline" onclick="quickRez('${prostor}','${dateStr}',${hourIdx})">+</button></div></td>`;
           }
         }
@@ -1668,7 +1672,7 @@
       document.getElementById('rez-form-date').value = date;
       document.getElementById('rez-form-hour').value = hour;
       document.getElementById('rez-form-qty').value = 1;
-      document.getElementById('rez-form-qty-group').style.display = prostor === 'tablice' ? 'block' : 'none';
+      document.getElementById('rez-form-qty-group').style.display = QTY_ROOMS.has(prostor) ? 'block' : 'none';
       openModal('rez-modal');
     }
     // Odpre prazen modal za novo rezervacijo (brez vnaprej
@@ -1678,7 +1682,8 @@
       document.getElementById('rez-form-date').value = document.getElementById('rez-week-start').value;
       document.getElementById('rez-form-prostor').value = prostori[0];
       document.getElementById('rez-form-qty').value = 1;
-      document.getElementById('rez-form-qty-group').style.display = 'block';
+      document.getElementById('rez-form-qty-group').style.display =
+        QTY_ROOMS.has(prostori[0]) ? 'block' : 'none';
       openModal('rez-modal');
     }
 
@@ -1693,7 +1698,7 @@
         hour: parseInt(document.getElementById('rez-form-hour').value),
         teacher_id: currentUser.id,
       };
-      if (data.prostor === 'tablice') data.qty = parseInt(document.getElementById('rez-form-qty').value) || 1;
+      if (QTY_ROOMS.has(data.prostor)) data.qty = parseInt(document.getElementById('rez-form-qty').value) || 1;
       try {
         const res = await fetch('/api/rezervacije', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(data) });
         const json = await res.json();
@@ -1891,12 +1896,21 @@
     // 7. Zažene začetno nalaganje: rezervacije, zasedeni datumi,
     //    ocenjevanja.
     document.addEventListener('DOMContentLoaded', async () => {
-      const [schedRes, razRes, proRes, meRes] = await Promise.all([
-        fetch('/api/schedule'), fetch('/api/razredi'), fetch('/api/prostori'), fetch('/auth/me')
+      const [schedRes, razRes, proRes, qtyProRes, meRes] = await Promise.all([
+        fetch('/api/schedule'), fetch('/api/razredi'), fetch('/api/prostori'),
+        fetch('/api/prostori-qty'), fetch('/auth/me')
       ]);
       schedule = await schedRes.json();
       razredi = await razRes.json();
       prostori = await proRes.json();
+      // Kateri prostori so »kot Tablice« + omejitev — iz nastavitev šole.
+      try {
+        const qtyRes = await qtyProRes.json();
+        if (qtyRes && Array.isArray(qtyRes.rooms)) {
+          QTY_ROOMS = new Set(qtyRes.rooms);
+          QTY_MAX = parseInt(qtyRes.max) || QTY_MAX;
+        }
+      } catch (e) { /* ostane privzeto (tablice) */ }
       if (meRes.ok) currentUser = await meRes.json();
 
       if (currentUser) {
@@ -1958,13 +1972,13 @@
       document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
       const initSection = document.getElementById('section-' + initTab);
       if (initSection) initSection.classList.add('active');
-      document.getElementById('rez-form-prostor').addEventListener('change', e => { document.getElementById('rez-form-qty-group').style.display = e.target.value === 'tablice' ? 'block' : 'none'; });
+      document.getElementById('rez-form-prostor').addEventListener('change', e => { document.getElementById('rez-form-qty-group').style.display = QTY_ROOMS.has(e.target.value) ? 'block' : 'none'; });
       document.getElementById('rez-form-prostor').dispatchEvent(new Event('change'));
 
       const weeklyProstor = document.getElementById('weekly-prostor');
       const fulldayProstor = document.getElementById('fullday-prostor');
-      weeklyProstor.addEventListener('change', () => { document.getElementById('weekly-qty-group').style.display = weeklyProstor.value === 'tablice' ? 'block' : 'none'; });
-      fulldayProstor.addEventListener('change', () => { document.getElementById('fullday-qty-group').style.display = fulldayProstor.value === 'tablice' ? 'block' : 'none'; });
+      weeklyProstor.addEventListener('change', () => { document.getElementById('weekly-qty-group').style.display = QTY_ROOMS.has(weeklyProstor.value) ? 'block' : 'none'; });
+      fulldayProstor.addEventListener('change', () => { document.getElementById('fullday-qty-group').style.display = QTY_ROOMS.has(fulldayProstor.value) ? 'block' : 'none'; });
 
       loadAllReservations();
       currentOcMonth = new Date().getFullYear() + '-' + String(new Date().getMonth() + 1).padStart(2, '0');

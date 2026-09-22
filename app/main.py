@@ -263,6 +263,15 @@ def get_razredi(request: Request, db: Session = Depends(get_db)):
 def get_prostori(request: Request, db: Session = Depends(get_db)):
     return config_for_request(request, db).PROSTORI
 
+# Kateri prostori delujejo KOT TABLICE (več učiteljev hkrati, količina,
+# omejitev na uro) in kolikšna je ta omejitev. Ločen endpoint, ker mora
+# stran prilagoditi vnosna polja glede na nastavitve šole — prej je bilo
+# to trdo zapisano ('tablice', 28).
+@app.get("/api/prostori-qty")
+def get_prostori_qty(request: Request, db: Session = Depends(get_db)):
+    config = config_for_request(request, db)
+    return {"rooms": config.PROSTORI_QTY, "max": config.TABLICE_MAX}
+
 @app.get("/api/schedule")
 def get_schedule(request: Request, db: Session = Depends(get_db)):
     return config_for_request(request, db).SCHEDULE

@@ -69,7 +69,7 @@
             <input type="hidden" name="school_id" value="{{ school.id }}">
 
             <h3>Osnovno</h3>
-            {% for f in fields %}{% if f.key in ('RAZREDI','PROSTORI','TABLICE_MAX','INACTIVITY_TIMEOUT_MINUTES','INACTIVITY_TIMEOUT_ADMIN_MINUTES') %}
+            {% for f in fields %}{% if f.key in ('RAZREDI','TABLICE_MAX','INACTIVITY_TIMEOUT_MINUTES','INACTIVITY_TIMEOUT_ADMIN_MINUTES') %}
             <div class="field">
                 <label>{{ f.label }}</label>
                 <span class="key">{{ f.key }}</span>
@@ -82,6 +82,21 @@
                 {% endif %}
             </div>
             {% endif %}{% endfor %}
+
+            <!-- PROSTORI: vsak prostor v SVOJI vrstici + kljukica »kot Tablice«. -->
+            <div class="field">
+                <label>Prostori — vsak prostor v svoji vrstici</label>
+                <span class="key">PROSTORI + PROSTORI_QTY</span>
+                <div id="prostori-rows"></div>
+                <button type="button" class="btn" style="margin-top:8px;" onclick="addProstorRow(); return false;">＋ Dodaj prostor</button>
+                <div class="hint" style="margin-top:6px;">
+                    Kljukica <strong>»kot Tablice«</strong> pomeni: v tem prostoru lahko hkrati rezervira več
+                    učiteljev, vsak navede količino, skupna vsota na uro pa je omejena z
+                    »Največ tablic na uro« ({{ values.get('TABLICE_MAX', '') }}).
+                    Brez kljukice je prostor ekskluziven — ena rezervacija na uro.
+                    Primer: <code>tablice</code> z kljukico, <code>racunalnica</code> brez.
+                </div>
+            </div>
 
             <!-- URNIK: vsaka ura v SVOJI vrstici (ne surov JSON), da je urejanje
                  preprosto in pregledno. Ob shranjevanju se vrstice sestavijo
@@ -182,6 +197,53 @@
         vse: 'Vse (dejavnosti, rezervacije, ocenjevanja)'
     };
 
+    // ── Prostori: vsak prostor v svoji vrstici ───────────────────────
+    // Ob shranjevanju se vrstice sestavijo v dve nastavitvi: PROSTORI (seznam)
+    // in PROSTORI_QTY (tisti s kljukico »kot Tablice«).
+    const PROSTORI_ROWS = {{ prostori_rows|tojson }};
+
+    function prostorRowHtml(name, qty) {
+        const safe = (name || '').replace(/"/g, '&quot;');
+        const checked = qty ? ' checked' : '';
+        return `<div class="prostor-row" style="display:flex;gap:10px;align-items:center;margin-bottom:6px;flex-wrap:wrap;">
+            <input type="text" class="prostor-name" value="${safe}" placeholder="npr. tablice" style="max-width:220px;">
+            <label style="display:flex;align-items:center;gap:6px;font-size:13px;font-weight:400;margin:0;">
+              <input type="checkbox" class="prostor-qty"${checked}>
+              kot Tablice (količina + omejitev)
+            </label>
+            <button type="button" class="btn btn-cancel" style="padding:6px 10px;"
+                    onclick="this.closest('.prostor-row').remove(); return false;"
+                    title="Odstrani prostor">✕</button>
+        </div>`;
+    }
+
+    function renderProstoriRows(rows) {
+        document.getElementById('prostori-rows').innerHTML =
+            rows.map(r => prostorRowHtml(r.name, r.qty)).join('');
+    }
+
+    function addProstorRow() {
+        document.getElementById('prostori-rows').insertAdjacentHTML(
+            'beforeend', prostorRowHtml('', false));
+    }
+
+    // Vrne {prostori: "tablice,ladja", qty: "tablice"} iz vrstic.
+    function collectProstori() {
+        const names = [];
+        const qty = [];
+        document.querySelectorAll('#prostori-rows .prostor-row').forEach(function (row) {
+            const name = (row.querySelector('.prostor-name').value || '').trim();
+            if (!name) return;
+            if (names.indexOf(name) === -1) names.push(name);
+            if (row.querySelector('.prostor-qty').checked && qty.indexOf(name) === -1) qty.push(name);
+        });
+        // qty gre kot SEZNAM (JSON) — praznega seznama ni mogoče izraziti
+        // s praznim nizom, ker bi ta štel kot »ni nastavljeno«.
+        return { prostori: names.join(','), qty: qty };
+    }
+
+    renderProstoriRows(PROSTORI_ROWS);
+
     // ── Urnik: ure v ločenih vrsticah ────────────────────────────────
     // Vrednost iz baze (JSON) razdelimo v vrstice; ob shranjevanju jih
     // sestavimo nazaj v JSON, zato je shranjena oblika nespremenjena.
@@ -238,6 +300,17 @@
         const fd = new FormData(this);
         const values = {};
         fd.forEach((v, k) => { if (k !== 'school_id') values[k] = v; });
+
+        // Prostori pridejo iz vrstic (ne iz enega polja).
+        const pr = collectProstori();
+        if (!pr.prostori) {
+            box.className = 'err';
+            box.textContent = 'Vpišite vsaj en prostor.';
+            box.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            return;
+        }
+        values['PROSTORI'] = pr.prostori;
+        values['PROSTORI_QTY'] = pr.qty;   // seznam → strežnik ga shrani kot JSON
 
         // Urnik pride iz ločenih vrstic (ne iz enega polja) — sestavimo JSON.
         const sched = collectSchedule();

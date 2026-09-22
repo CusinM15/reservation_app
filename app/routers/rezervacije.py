@@ -88,32 +88,34 @@ def _check_tablice_capacity(db: Session, school_id: int | None, config: SchoolCo
     Za ostale prostore (računalnica, ladja, gospodinjstvo) je prostor
     ekskluziven — preverja _check_unique_space.
     """
-    if prostor != "tablice":
+    if not config.ima_kolicino(prostor):
         return
-    
+
     existing = scope(db.query(Reservation).filter(
-        Reservation.prostor == "tablice",
+        Reservation.prostor == prostor,
         Reservation.date == date,
         Reservation.hour == hour
     ), Reservation, school_id).all()
-    
+
     total_used = sum(r.qty or 0 for r in existing)
     if total_used + qty > config.TABLICE_MAX:
         raise HTTPException(
             status_code=400,
-            detail=f"Skupno število tablet ({total_used + qty}) presega kapaciteto ({config.TABLICE_MAX})"
+            detail=f"Skupno število ({total_used + qty}) za prostor {prostor} presega kapaciteto ({config.TABLICE_MAX})"
         )
 
 
-def _check_unique_space(db: Session, school_id: int | None, prostor: str, date: DateType, hour: int):
+def _check_unique_space(db: Session, school_id: int | None, config: SchoolConfig,
+                        prostor: str, date: DateType, hour: int):
     """Preveri, ali je prostor že zaseden v določeni uri (znotraj šole).
-    
-    Za tablice preskočimo (lahko jih uporablja več učiteljev hkrati).
-    Za vse ostale prostore velja ekskluzivnost.
+
+    Za prostore »kot Tablice« (nastavitev PROSTORI_QTY) preskočimo — tam lahko
+    več učiteljev hkrati rezervira, vsota pa je omejena s TABLICE_MAX
+    (_check_tablice_capacity). Za vse ostale prostore velja ekskluzivnost.
     """
-    if prostor == "tablice":
+    if config.ima_kolicino(prostor):
         return
-    
+
     existing = scope(db.query(Reservation).filter(
         Reservation.prostor == prostor,
         Reservation.date == date,
@@ -199,8 +201,11 @@ def create_rezervacija(data: ReservationCreate, request: Request, db: Session = 
     
     # Za tablice je obvezno navesti število (qty), ker lahko več
     # učiteljev sočasno uporablja tablice. Za ostale prostore qty ni smiseln.
-    if data.prostor == "tablice" and data.qty is None:
-        raise HTTPException(status_code=400, detail="Za tablice morate navesti število (qty)")
+    if config.ima_kolicino(data.prostor) and data.qty is None:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Za prostor {data.prostor} morate navesti število (qty)",
+        )
     
     school_id = write_school_id(request, db)
 
@@ -215,8 +220,12 @@ def create_rezervacija(data: ReservationCreate, request: Request, db: Session = 
     # sočasno rezervira tablice, vendar želimo še vedno detektirati race).
     # Za ostale prostore je ključ 'rezervacija:<prostor>:<date>:<hour>'.
     resource_key = f"school:{school_id}:rezervacija:{data.prostor}:{data.date}:{data.hour}"
-    if data.prostor == "tablice":
-        resource_key = f"school:{school_id}:tablice:{data.date}:{data.hour}"
+    if config.ima_kolicino(data.prostor):
+        # Prostori »kot Tablice«: ključ je skupen za prostor (več učiteljev
+        # hkrati), zato je treba race zaznati na ravni prostora in ure.
+        resource_key = f"school:{school_id}:prostor:{data.prostor}:{data.date}:{data.hour}"
+        if data.prostor == "tablice":
+            resource_key = f"school:{school_id}:tablice:{data.date}:{data.hour}"
     
     lock = get_lock(resource_key)
     register_intent(resource_key, user_id, user_name)
@@ -232,7 +241,7 @@ def create_rezervacija(data: ReservationCreate, request: Request, db: Session = 
         
         # Now do the actual checks
         _check_tablice_capacity(db, school_id, config, data.prostor, data.date, data.hour, data.qty or 0)
-        _check_unique_space(db, school_id, data.prostor, data.date, data.hour)
+        _check_unique_space(db, school_id, config, data.prostor, data.date, data.hour)
 
         # Varnost: teacher_id vedno iz seje (prijavljeni uporabnik), NIKOLI
         # od clienta. Prej je client lahko poslal poljuben teacher_id in s tem
@@ -369,9 +378,9 @@ def _resolve_conflicts_and_notify(
     """
     removed = 0
     for d, h in planned:
-        if prostor == "tablice":
+        if config.ima_kolicino(prostor):
             existing = scope(db.query(Reservation).options(joinedload(Reservation.teacher)).filter(
-                Reservation.prostor == "tablice",
+                Reservation.prostor == prostor,
                 Reservation.date == d,
                 Reservation.hour == h,
             ), Reservation, school_id).all()
@@ -477,14 +486,17 @@ def _commit_series(
     _validate_prostor(prostor, config)
     for _, h in planned:
         _validate_hour(h)
-    if prostor == "tablice" and qty is None:
-        raise HTTPException(status_code=400, detail="Za tablice morate navesti število (qty)")
-    # ⚠️ Preveri kapaciteto PRED brisanjem konfliktov — če qty že sam presega
-    # TABLICE_MAX, zavrni takoj, da ne izgubimo obstoječih rezervacij.
-    if prostor == "tablice" and qty is not None and qty > config.TABLICE_MAX:
+    if config.ima_kolicino(prostor) and qty is None:
         raise HTTPException(
             status_code=400,
-            detail=f"Skupno število tablet ({qty}) presega kapaciteto ({config.TABLICE_MAX})",
+            detail=f"Za prostor {prostor} morate navesti število (qty)",
+        )
+    # ⚠️ Preveri kapaciteto PRED brisanjem konfliktov — če qty že sam presega
+    # TABLICE_MAX, zavrni takoj, da ne izgubimo obstoječih rezervacij.
+    if config.ima_kolicino(prostor) and qty is not None and qty > config.TABLICE_MAX:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Skupno število ({qty}) za prostor {prostor} presega kapaciteto ({config.TABLICE_MAX})",
         )
 
     # 1) Pobriši konfliktne rezervacije in pošlji obvestila
