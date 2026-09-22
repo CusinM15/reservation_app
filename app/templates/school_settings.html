@@ -69,7 +69,7 @@
             <input type="hidden" name="school_id" value="{{ school.id }}">
 
             <h3>Osnovno</h3>
-            {% for f in fields %}{% if f.key in ('RAZREDI','PROSTORI','SCHEDULE','TABLICE_MAX','INACTIVITY_TIMEOUT_MINUTES','INACTIVITY_TIMEOUT_ADMIN_MINUTES') %}
+            {% for f in fields %}{% if f.key in ('RAZREDI','PROSTORI','TABLICE_MAX','INACTIVITY_TIMEOUT_MINUTES','INACTIVITY_TIMEOUT_ADMIN_MINUTES') %}
             <div class="field">
                 <label>{{ f.label }}</label>
                 <span class="key">{{ f.key }}</span>
@@ -82,6 +82,20 @@
                 {% endif %}
             </div>
             {% endif %}{% endfor %}
+
+            <!-- URNIK: vsaka ura v SVOJI vrstici (ne surov JSON), da je urejanje
+                 preprosto in pregledno. Ob shranjevanju se vrstice sestavijo
+                 nazaj v JSON (ključ SCHEDULE). -->
+            <div class="field">
+                <label>Urnik — vsaka ura v svoji vrstici</label>
+                <span class="key">SCHEDULE</span>
+                <div id="schedule-rows"></div>
+                <button type="button" class="btn" style="margin-top:8px;" onclick="addScheduleRow(); return false;">＋ Dodaj uro</button>
+                <div class="hint" style="margin-top:6px;">
+                    V vsako vrstico vpišite razpon ure, npr. <code>07:30-08:15</code>.
+                    Vrstico odstranite z ✕. Ure se uporabljajo v urniku in pri rezervacijah.
+                </div>
+            </div>
 
             <h3>Pravila ocenjevanja</h3>
             <p class="hint">
@@ -168,6 +182,52 @@
         vse: 'Vse (dejavnosti, rezervacije, ocenjevanja)'
     };
 
+    // ── Urnik: ure v ločenih vrsticah ────────────────────────────────
+    // Vrednost iz baze (JSON) razdelimo v vrstice; ob shranjevanju jih
+    // sestavimo nazaj v JSON, zato je shranjena oblika nespremenjena.
+    const SCHEDULE_ROWS = {{ schedule_rows|tojson }};
+
+    function scheduleRowHtml(index, value) {
+        const safe = (value || '').replace(/"/g, '&quot;');
+        return `<div class="sched-row" style="display:flex;gap:8px;align-items:center;margin-bottom:6px;">
+            <span style="font-weight:600;min-width:70px;">Ura ${index}</span>
+            <input type="text" class="sched-value" data-index="${index}" value="${safe}"
+                   placeholder="npr. 07:30-08:15" style="max-width:220px;">
+            <button type="button" class="btn btn-cancel" style="padding:6px 10px;"
+                    onclick="this.closest('.sched-row').remove(); return false;"
+                    title="Odstrani to uro">✕</button>
+        </div>`;
+    }
+
+    function renderScheduleRows(rows) {
+        document.getElementById('schedule-rows').innerHTML =
+            rows.map(r => scheduleRowHtml(r.index, r.value)).join('');
+    }
+
+    // Doda uro s prvo prosto zaporedno številko.
+    function addScheduleRow() {
+        const used = Array.from(document.querySelectorAll('#schedule-rows .sched-value'))
+            .map(i => parseInt(i.dataset.index, 10)).filter(n => !isNaN(n));
+        const next = used.length ? Math.max.apply(null, used) + 1 : 0;
+        document.getElementById('schedule-rows').insertAdjacentHTML(
+            'beforeend', scheduleRowHtml(next, ''));
+    }
+
+    // Vrne {ura: razpon} za vse izpolnjene vrstice.
+    function collectSchedule() {
+        const out = {};
+        document.querySelectorAll('#schedule-rows .sched-row').forEach(function (row) {
+            const input = row.querySelector('.sched-value');
+            if (!input) return;
+            const idx = (input.dataset.index || '').trim();
+            const val = (input.value || '').trim();
+            if (idx !== '' && val !== '') out[idx] = val;
+        });
+        return out;
+    }
+
+    renderScheduleRows(SCHEDULE_ROWS);
+
     function openModal(id) { document.getElementById(id).classList.add('active'); }
     function closeModal(id) { document.getElementById(id).classList.remove('active'); }
 
@@ -178,6 +238,16 @@
         const fd = new FormData(this);
         const values = {};
         fd.forEach((v, k) => { if (k !== 'school_id') values[k] = v; });
+
+        // Urnik pride iz ločenih vrstic (ne iz enega polja) — sestavimo JSON.
+        const sched = collectSchedule();
+        if (Object.keys(sched).length === 0) {
+            box.className = 'err';
+            box.textContent = 'Urnik ne sme biti prazen (vsaj ena ura).';
+            box.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            return;
+        }
+        values['SCHEDULE'] = JSON.stringify(sched);
 
         const res = await fetch('/api/schools/' + SCHOOL_ID + '/settings', {
             method: 'PUT',

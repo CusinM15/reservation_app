@@ -173,3 +173,67 @@ def test_settings_page_has_password_change(client, make_user):
     assert "Spremeni geslo" in html
     assert "submitChangePassword" in html
     assert 'id="pw-old"' in html
+
+# ── 5. Urnik: vsaka ura v svoji vrstici ───────────────────────────────
+# Zahteva: na /settings naj bo urnik iz vrstic (ena ura = ena vrstica),
+# ne eno samo polje s surovim JSON-om.
+
+def test_settings_renders_schedule_as_one_row_per_hour(client, make_user):
+    sid = default_school_id()
+    _school_admin_login(client, make_user)
+
+    r = client.put(f"/api/schools/{sid}/settings", json={
+        "values": {"SCHEDULE": {"0": "07:30-08:15", "1": "08:20-09:05", "2": "09:15-10:00"}}
+    })
+    assert r.status_code == 200, r.text
+
+    html = client.get("/settings").text
+    assert 'id="schedule-rows"' in html
+    assert 'name="SCHEDULE"' not in html, "urnik se še vedno izrisuje kot eno polje"
+    # ure pridejo v stran kot vrstice (JS jih izriše)
+    assert '"index": "0", "value": "07:30-08:15"' in html
+    assert '"index": "1", "value": "08:20-09:05"' in html
+    assert '"index": "2", "value": "09:15-10:00"' in html
+    assert "function addScheduleRow" in html and "function collectSchedule" in html
+    assert "Urnik — vsaka ura v svoji vrstici" in html
+
+
+def test_schedule_saved_from_ui_round_trips_as_json(client, make_user):
+    """Kar uporabnik vpiše v vrstice, se shrani kot JSON in prebere nazaj
+    v iste vrstice (oblika v bazi ostane nespremenjena)."""
+    sid = default_school_id()
+    _school_admin_login(client, make_user)
+
+    # tako kot bi poslal JS: SCHEDULE kot JSON niz iz vrstic
+    r = client.put(f"/api/schools/{sid}/settings", json={
+        "values": {"SCHEDULE": '{"0": "08:00-08:45", "1": "08:50-09:35"}'}
+    })
+    assert r.status_code == 200, r.text
+
+    html = client.get("/settings").text
+    assert '"index": "0", "value": "08:00-08:45"' in html
+    assert '"index": "1", "value": "08:50-09:35"' in html
+    # vrstni red je numeričen (0 pred 1), ne leksikografski
+    assert html.index('"index": "0"') < html.index('"index": "1"')
+
+
+def test_schedule_rows_sorted_numerically(client, make_user):
+    """Pri 10+ urah mora vrstni red ostati 2, 9, 10 (ne 10, 2, 9)."""
+    sid = default_school_id()
+    _school_admin_login(client, make_user)
+    client.put(f"/api/schools/{sid}/settings", json={
+        "values": {"SCHEDULE": {"10": "18:00-18:45", "2": "09:15-10:00", "9": "17:00-17:45"}}
+    })
+    html = client.get("/settings").text
+    i2 = html.index('"index": "2"')
+    i9 = html.index('"index": "9"')
+    i10 = html.index('"index": "10"')
+    assert i2 < i9 < i10
+
+
+def test_invalid_schedule_json_is_rejected(client, make_user):
+    sid = default_school_id()
+    _school_admin_login(client, make_user)
+    r = client.put(f"/api/schools/{sid}/settings", json={"values": {"SCHEDULE": "{ni-json"}})
+    assert r.status_code == 400
+    assert "veljaven JSON" in r.json()["detail"]

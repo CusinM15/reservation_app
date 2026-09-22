@@ -441,11 +441,33 @@ def school_settings_page(
     except HTTPException as exc:
         return HTMLResponse(exc.detail, status_code=exc.status_code)
 
+    values = get_school_config(db, school.id).effective_values()
+
+    # URNIK: v obrazcu je vsaka ura v SVOJI VRSTICI (ne surov JSON), ker je
+    # tako urejanje za šolskega admina preprosto in pregledno. Tu pripravimo
+    # vrstice iz shranjene vrednosti; JavaScript jih ob shranjevanju sestavi
+    # nazaj v JSON, zato strežnik in koledar prejmeta enako obliko kot prej.
+    import json as _json
+    schedule_rows = []
+    try:
+        parsed = _json.loads(values.get("SCHEDULE") or "{}")
+    except (TypeError, ValueError):
+        parsed = {}
+    if isinstance(parsed, dict):
+        def _sort_key(item):
+            try:
+                return (0, int(item))
+            except (TypeError, ValueError):
+                return (1, str(item))
+        for key in sorted(parsed.keys(), key=_sort_key):
+            schedule_rows.append({"index": str(key), "value": str(parsed[key])})
+
     return templates.TemplateResponse("school_settings.html", {
         "request": request,
         "school": {"id": school.id, "slug": school.slug, "name": school.name,
                    "aliases": [a.alias for a in school.aliases]},
         "fields": SCHOOL_SETTING_FIELDS,
-        "values": get_school_config(db, school.id).effective_values(),
+        "values": values,
+        "schedule_rows": schedule_rows,
         "is_main_admin": is_main_admin(user),
     })
