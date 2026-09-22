@@ -761,7 +761,10 @@ def write_school_id(request, db: Session) -> int:
             return ctx
         raise HTTPException(
             status_code=400,
-            detail="Glavni admin mora izbrati šolo (uporabite pot šole, npr. /rezervacije_<oznaka>).",
+            detail=(
+                "Glavni admin mora izbrati šolo v spustnem seznamu »Šola« na vrhu "
+                "strani (ali odpreti pot šole, npr. /rezervacije_<oznaka>)."
+            ),
         )
     default_id = _default_school_id(db)
     if default_id is None:

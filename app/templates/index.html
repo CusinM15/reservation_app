@@ -259,6 +259,20 @@
          in vidna vsem uporabnikom; glavnemu adminu jo JS izpolni tudi na
          kanoničnih poteh (kjer si šolo izbere sam). -->
     <span id="school-badge" style="{% if not school_alias %}display:none;{% endif %}background:#eef2ff;color:#3730a3;border-radius:4px;padding:3px 8px;font-size:0.8rem;" title="Šola, katere podatki so prikazani">{% if school_alias %}🏫 {{ school_name or '' }} (/{{ school_alias }}){% endif %}</span>
+    {% if nav_schools %}
+    <!-- GLAVNI ADMIN: izbira šole BREZ poti šole. Izbira se shrani v piškotek
+         school_ctx, zato velja za vse nadaljnje branje IN pisanje. -->
+    <label style="margin-left:8px;font-size:0.8rem;color:#555;">Šola:
+      <select id="school-select" onchange="switchSchool(this.value)"
+              title="Izbrana šola velja za vse, kar gledate in urejate"
+              style="font-size:0.8rem;padding:3px 5px;border-radius:4px;border:1px solid #ccc;background:#fff;color:#333;">
+        <option value=""{% if not current_school_id %} selected{% endif %}>— vse šole —</option>
+        {% for s in nav_schools %}
+        <option value="{{ s.id }}"{% if current_school_id == s.id %} selected{% endif %}>{{ s.name }}</option>
+        {% endfor %}
+      </select>
+    </label>
+    {% endif %}
     <!-- IZVOZNE POVEZAVE — prikazane za admin in vodstvo.
          Vodstvo potrebuje izvoz podatkov za poročila, zato ima dostop,
          čeprav nima admin pravice. -->
@@ -1003,6 +1017,15 @@
     // Odpre modalno okno (prekrivko) z danim ID-jem. Doda 'active'
     // razred, ki preklopi display iz 'none' v 'flex'. Prekrivka
     // prepreči interakcijo z vsebino pod njo (z-index 100+).
+    // Glavni admin: preklop šole. Izbrana šola se shrani v piškotek school_ctx
+    // (nastavi strežnik), nato se stran ponovno naloži — vsi nadaljnji klici
+    // (branje IN pisanje) veljajo za izbrano šolo. Prazna izbira = »vse šole«:
+    // takrat je branje čez vse šole, pisanje pa zavrnjeno.
+    function switchSchool(schoolId) {
+        const next = encodeURIComponent(location.pathname);
+        window.location.href = '/schools/open/' + (schoolId || '0') + '?next=' + next;
+    }
+
     function openModal(id) { document.getElementById(id).classList.add('active'); }
     // Zapre modalno okno — odstrani 'active' razred. Uporabnik se
     // vrne na glavni pogled pod prekrivko.
@@ -1885,23 +1908,8 @@
         // Pregled vseh šol ima samo glavni admin (nima svoje šole).
         if (currentUser.role === 'main_admin') {
             document.getElementById('schools-link').style.display = 'inline';
-            // Pokaži, katero šolo trenutno gleda (podatki so odvisni od poti).
-            // Če je oznaka že izpolnjena (zahtevek je prišel prek poti šole),
-            // je ne prepišemo — tam je vir resnice strežnik.
-            fetch('/api/schools/current', { credentials: 'include' })
-              .then(r => r.ok ? r.json() : null)
-              .then(d => {
-                const el = document.getElementById('school-badge');
-                if (!el || el.textContent.trim()) return;
-                if (d && d.school) {
-                    const alias = (d.school.aliases || [])[0];
-                    el.textContent = `🏫 ${d.school.name}${alias ? ' (/' + alias + ')' : ''}`;
-                } else {
-                    el.textContent = '🏫 vse šole';
-                }
-                el.style.display = 'inline';
-              })
-              .catch(() => {});
+            // Katero šolo gleda glavni admin, pove spustni seznam Šola
+            // (izrisan na strežniku), zato tu ni več ločenega klica.
         }
         if (currentUser.role === 'admin' || currentUser.role === 'vodstvo') {
             document.getElementById('export-rez-link').style.display = 'inline';

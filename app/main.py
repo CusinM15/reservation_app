@@ -194,6 +194,14 @@ def _render_index(request: Request, active_tab: str):
         # Poti zavihkov: kdor je vstopil prek poti šole, na njej tudi ostane
         # (npr. iz /rezervacije_st klik na Ocenjevanje → /ocenjevanje_st).
         nav = nav_paths(db, request, ctx_school_id)
+        # Glavni admin dobi spustni seznam šol (preklapljanje brez poti šole).
+        nav_schools = []
+        if user is not None and role_value(user) == MAIN_ADMIN_ROLE:
+            from app.models import School
+            nav_schools = [
+                {"id": s.id, "name": s.name}
+                for s in db.query(School).order_by(School.name).all()
+            ]
     finally:
         db.close()
 
@@ -214,6 +222,8 @@ def _render_index(request: Request, active_tab: str):
         "school_name": school.name if school else None,
         "nav_rezervacije": nav.get("rezervacije", "/rezervacije"),
         "nav_ocenjevanje": nav.get("ocenjevanje", "/ocenjevanje"),
+        "nav_schools": nav_schools,
+        "current_school_id": ctx_school_id,
     })
 
 

@@ -205,3 +205,103 @@ def test_admin_gets_admin_role_in_template(client, make_user):
     login(client, admin.username)
     html = client.get("/ocenjevanje/dejavnosti").text
     assert 'const USER_ROLE = "admin";' in html
+
+
+# ── 6. Glavni admin: izbira šole v UI (spustni seznam) ────────────────
+# Zahteva: glavni admin naj ne potrebuje poti šol, ampak izbere šolo v
+# spustnem seznamu; pisanje gre VEDNO v natanko določeno šolo.
+
+def test_main_admin_gets_school_dropdown(client, make_user):
+    from app.config import settings
+    sid_a, sid_b = _two_schools_with_reservations()
+    login(client, settings.MAIN_ADMIN_USERNAME, settings.MAIN_ADMIN_PASSWORD)
+
+    html = client.get("/rezervacije", follow_redirects=False).text
+    assert 'id="school-select"' in html
+    assert "switchSchool(" in html
+    assert "— vse šole —" in html
+    # vse šole so v seznamu
+    assert f'value="{sid_a}"' in html and f'value="{sid_b}"' in html
+    assert "Šola B" in html
+
+
+def test_school_user_gets_no_school_dropdown(client, make_user):
+    _two_schools_with_reservations()
+    user = make_user()                       # učitelj šole A
+    login(client, user.username)
+    html = client.get("/rezervacije", follow_redirects=False).text
+    assert 'id="school-select"' not in html
+
+
+def test_dropdown_preselects_current_school(client, make_user):
+    from app.config import settings
+    sid_a, sid_b = _two_schools_with_reservations()
+    login(client, settings.MAIN_ADMIN_USERNAME, settings.MAIN_ADMIN_PASSWORD)
+    client.cookies.set("school_ctx", str(sid_b))
+    html = client.get("/rezervacije", follow_redirects=False).text
+    assert f'<option value="{sid_b}" selected>' in html
+
+
+def test_open_school_with_next_returns_to_same_page(client, make_user):
+    from app.config import settings
+    sid_a, sid_b = _two_schools_with_reservations()
+    login(client, settings.MAIN_ADMIN_USERNAME, settings.MAIN_ADMIN_PASSWORD)
+
+    r = client.get("/schools/open/%d?next=%%2Focenjevanje" % sid_b, follow_redirects=False)
+    assert r.status_code == 303
+    assert r.headers["location"] == "/ocenjevanje"
+    assert client.cookies.get("school_ctx") == str(sid_b)
+
+
+def test_open_school_zero_clears_selection(client, make_user):
+    """»vse šole« (school_id = 0) počisti izbiro — kot brskalnik, prek endpointa."""
+    from app.config import settings
+    sid_a, _ = _two_schools_with_reservations()
+    login(client, settings.MAIN_ADMIN_USERNAME, settings.MAIN_ADMIN_PASSWORD)
+
+    # najprej izberi šolo tako kot brskalnik (strežnik nastavi piškotek)
+    client.get(f"/schools/open/{sid_a}?next=%2Frezervacije", follow_redirects=False)
+    assert client.cookies.get("school_ctx") == str(sid_a)
+
+    r = client.get("/schools/open/0?next=%2Frezervacije", follow_redirects=False)
+    assert r.status_code == 303
+    assert r.headers["location"] == "/rezervacije"
+    assert not client.cookies.get("school_ctx")
+
+
+def test_main_admin_write_without_school_is_rejected(client, make_user):
+    from app.config import settings
+    _two_schools_with_reservations()
+    login(client, settings.MAIN_ADMIN_USERNAME, settings.MAIN_ADMIN_PASSWORD)
+
+    r = client.post("/api/rezervacije", json={
+        "date": "2026-12-01", "hour": 0, "prostor": "tablice", "qty": 1, "teacher_id": 1,
+    })
+    assert r.status_code == 400
+    assert "izbrati šolo" in r.json()["detail"]
+
+
+def test_main_admin_write_goes_to_selected_school(client, make_user):
+    from app.config import settings
+    from app.models import Reservation
+    sid_a, sid_b = _two_schools_with_reservations()
+    login(client, settings.MAIN_ADMIN_USERNAME, settings.MAIN_ADMIN_PASSWORD)
+    client.cookies.set("school_ctx", str(sid_b))
+
+    r = client.post("/api/rezervacije", json={
+        "date": "2026-12-02", "hour": 1, "prostor": "tablice", "qty": 2, "teacher_id": 1,
+    })
+    assert r.status_code in (200, 201), r.text
+
+    db = SessionLocal()
+    try:
+        rows = db.query(Reservation).filter(
+            Reservation.school_id == sid_b, Reservation.date == date(2026, 12, 2)
+        ).all()
+        assert len(rows) == 1
+        # in NIČ v drugi šoli
+        assert db.query(Reservation).filter(
+            Reservation.school_id == sid_a, Reservation.date == date(2026, 12, 2)
+        ).count() == 0
+    finally:
+        db.close()

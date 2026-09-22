@@ -395,17 +395,33 @@ def schools_page(request: Request, db: Session = Depends(get_db)):
 
 
 @router.get("/schools/open/{school_id}")
-def open_school(school_id: int, request: Request, db: Session = Depends(get_db)):
-    """Glavni admin »vstopi« v šolo — nastavi piškotek school_ctx in odpri urnik.
+def open_school(
+    school_id: int,
+    request: Request,
+    next_url: str | None = Query(None, alias="next"),
+    db: Session = Depends(get_db),
+):
+    """Glavni admin izbere šolo — nastavi piškotek school_ctx.
 
-    Zakaj piškotek? Ker glavni admin ni vezan na šolo; s tem izbere,
-    katero šolo gleda/ureja prek kanoničnih poti.
+    Zakaj piškotek? Ker glavni admin ni vezan na šolo; s tem izbere, katero
+    šolo gleda IN ureja prek kanoničnih poti (poti šol torej niso potrebne).
+
+    school_id = 0 pomeni »vse šole« (izbira se počisti — branje čez vse šole,
+    pisanje zavrnjeno, ker ni jasno, kateri šoli naj zapis pripada).
+    next: kam naj se vrne (npr. trenutna stran, da uporabnik ne skoči na urnik).
     """
     _require_main_admin(request, db)
+    target = next_url if (next_url or "").startswith("/") else "/rezervacije"
+
+    if school_id == 0:
+        response = RedirectResponse(url=target, status_code=303)
+        response.delete_cookie("school_ctx")
+        return response
+
     school = db.query(School).filter(School.id == school_id).first()
     if not school:
         raise HTTPException(status_code=404, detail="Šola ne obstaja")
-    response = RedirectResponse(url="/rezervacije", status_code=303)
+    response = RedirectResponse(url=target, status_code=303)
     response.set_cookie(key="school_ctx", value=str(school.id), httponly=True, samesite="lax")
     return response
 
