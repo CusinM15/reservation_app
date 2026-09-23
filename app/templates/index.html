@@ -264,12 +264,14 @@
     <span id="school-badge" style="{% if not school_alias %}display:none;{% endif %}background:#eef2ff;color:#3730a3;border-radius:4px;padding:3px 8px;font-size:0.8rem;" title="Šola, katere podatki so prikazani">{% if school_alias %}🏫 {{ school_name or '' }} (/{{ school_alias }}){% endif %}</span>
     {% if nav_schools %}
     <!-- GLAVNI ADMIN: izbira šole BREZ poti šole. Izbira se shrani v piškotek
-         school_ctx, zato velja za vse nadaljnje branje IN pisanje. -->
-    <label style="margin-left:8px;font-size:0.8rem;color:#555;">Šola:
+         school_ctx, zato velja za vse nadaljnje branje IN pisanje.
+         Opombe: možnosti »vse šole« NI več (uporabnik je zahteval odstranitev),
+         oznaka je »Izbrana šola:« in poudarjena barva, da je takoj vidna. -->
+    <label style="margin-left:10px;font-size:0.8rem;font-weight:700;color:#b45309;">
+      Izbrana šola:
       <select id="school-select" onchange="switchSchool(this.value)"
               title="Izbrana šola velja za vse, kar gledate in urejate"
-              style="font-size:0.8rem;padding:3px 5px;border-radius:4px;border:1px solid #ccc;background:#fff;color:#333;">
-        <option value=""{% if not current_school_id %} selected{% endif %}>— vse šole —</option>
+              style="font-size:0.8rem;font-weight:700;padding:3px 6px;border-radius:4px;border:2px solid #b45309;background:#fef3c7;color:#7c2d12;">
         {% for s in nav_schools %}
         <option value="{{ s.id }}"{% if current_school_id == s.id %} selected{% endif %}>{{ s.name }}</option>
         {% endfor %}
@@ -1045,8 +1047,8 @@
     // prepreči interakcijo z vsebino pod njo (z-index 100+).
     // Glavni admin: preklop šole. Izbrana šola se shrani v piškotek school_ctx
     // (nastavi strežnik), nato se stran ponovno naloži — vsi nadaljnji klici
-    // (branje IN pisanje) veljajo za izbrano šolo. Prazna izbira = »vse šole«:
-    // takrat je branje čez vse šole, pisanje pa zavrnjeno.
+    // (branje IN pisanje) veljajo za izbrano šolo. V spustnem seznamu ni več
+    // možnosti »vse šole« (endpoint /schools/open/0 jo sicer še podpira).
     function switchSchool(schoolId) {
         const next = encodeURIComponent(location.pathname);
         window.location.href = '/schools/open/' + (schoolId || '0') + '?next=' + next;
@@ -1263,13 +1265,15 @@
 
     // Vrni razrede, ki imajo na dani datum katerokoli dejavnost — tudi tako,
     // ki NE traja cel dan (ni označena »Celoten dan«) in zato ne ustvari
-    // blokade. Vijolično polje v koledarju se prikaže tudi takrat, razredi
-    // pa se izpišejo le ob celodnevni (blokirani) dejavnosti.
-    function dayActivityClasses(dateStr) {
+    // blokade. Z `fullOnly = true` vrne LE razrede s celodnevno dejavnostjo
+    // (to so razredi, ki se smejo izpisati v vijoličnem polju koledarja).
+    function dayActivityClasses(dateStr, fullOnly) {
       const out = [];
       (activityDays || []).forEach(day => {
         activityEntriesForDay(day, dateStr).forEach(e => {
-          if (e.razred && out.indexOf(e.razred) === -1) out.push(e.razred);
+          if (!e.razred) return;
+          if (fullOnly && !e.full) return;
+          if (out.indexOf(e.razred) === -1) out.push(e.razred);
         });
       });
       return out;
@@ -1873,15 +1877,20 @@
         // se prikaže tudi zanje, a BREZ razredov; razredi se izpišejo le ob
         // celodnevni (blokirani) dejavnosti.
         const dayActClasses = dayActivityClasses(dateStr);
+        const dayFullClasses = dayActivityClasses(dateStr, true);
         let showActivity = dayActClasses.length > 0;
         if (showActivity && razred && razred !== 'Vsi razredi') {
           if (razred.startsWith('__')) { const prefix = razred === '__8__' ? '8.' : '9.'; showActivity = dayActClasses.some(r => r.startsWith(prefix)); }
           else showActivity = dayActClasses.some(r => r === razred);
         }
         const showField = showBlocked || showActivity;
-        // Razredi za izpis: samo celodnevne (blokirane) dejavnosti, filtrirano
-        // po izbranem razredu. Krajše dejavnosti tu nimajo vpliva.
-        const fieldRazredi = calendarFieldRazredi(razred, blockedRazredi);
+        // Razredi za izpis: le tisti s CELODNEVNO dejavnostjo, plus ročne
+        // blokade (razred, ki ga nobena dejavnost ne omenja). Razred, ki ima ta
+        // dan le KRAJŠO dejavnost, se ne izpiše — tudi če je v bazi ostala
+        // zastarela blokada (npr. dejavnost je bila nekoč celodnevna).
+        const printedRazredi = blockedRazredi.filter(r =>
+          dayFullClasses.indexOf(r) !== -1 || dayActClasses.indexOf(r) === -1);
+        const fieldRazredi = calendarFieldRazredi(razred, printedRazredi);
         let cls = 'calendar-day';
         if (isToday) cls += ' today';
         if (isWeekend) cls += ' other-month';

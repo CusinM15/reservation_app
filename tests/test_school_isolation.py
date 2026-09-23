@@ -219,7 +219,10 @@ def test_main_admin_gets_school_dropdown(client, make_user):
     html = client.get("/rezervacije", follow_redirects=False).text
     assert 'id="school-select"' in html
     assert "switchSchool(" in html
-    assert "— vse šole —" in html
+    # oznaka in poudarjena barva (uporabnik zahteval »Izbrana šola:«)
+    assert "Izbrana šola:" in html
+    # možnosti »— vse šole —« NI več (uporabnik je zahteval odstranitev)
+    assert "— vse šole —</option>" not in html
     # vse šole so v seznamu
     assert f'value="{sid_a}"' in html and f'value="{sid_b}"' in html
     assert "Šola B" in html
