@@ -270,7 +270,11 @@ def get_prostori(request: Request, db: Session = Depends(get_db)):
 @app.get("/api/prostori-qty")
 def get_prostori_qty(request: Request, db: Session = Depends(get_db)):
     config = config_for_request(request, db)
-    return {"rooms": config.PROSTORI_QTY, "max": config.TABLICE_MAX}
+    rooms = config.PROSTORI_QTY
+    # Kapaciteta je lahko po prostoru različna (vsak prostor je vezan na svojo
+    # številsko spremenljivko), zato vrnemo tudi zemljevid omejitev.
+    limits = {room: config.kapaciteta(room) for room in rooms}
+    return {"rooms": rooms, "max": config.TABLICE_MAX, "limits": limits}
 
 @app.get("/api/schedule")
 def get_schedule(request: Request, db: Session = Depends(get_db)):

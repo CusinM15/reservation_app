@@ -296,10 +296,14 @@ def test_settings_page_renders_for_school_admin(client, make_user):
     r = client.get("/settings")
     assert r.status_code == 200, r.text
     assert settings.SCHOOL_NAME in r.text
-    # obrazec vsebuje polja nastavitev (npr. RAZREDI, TABLICE_MAX)
+    # obrazec vsebuje razdelke nastavitev — razredi, števila in urnik so zdaj
+    # izrisani kot vrstice (vsak v svoji vrstici), ne kot eno polje.
     assert 'id="settings-form"' in r.text
-    assert 'name="RAZREDI"' in r.text
-    assert 'name="TABLICE_MAX"' in r.text
+    assert 'id="razredi-rows"' in r.text
+    assert 'id="stevila-rows"' in r.text
+    assert 'id="schedule-rows"' in r.text
+    assert "Razredi — vsak razred v svoji vrstici" in r.text
+    assert "Števila — vsaka spremenljivka v svoji vrstici" in r.text
 
 
 def test_settings_page_renders_for_main_admin(client):

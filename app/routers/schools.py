@@ -433,6 +433,34 @@ def open_school(
     return response
 
 
+def _school_chooser_html(db: Session) -> str:
+    """Preprosta stran za glavnega admina: izbira šole za /settings.
+
+    Zakaj? Glavni admin ni vezan na šolo; če ni izbral šole (spustni seznam
+    »Šola« oz. pot šole), nastavitev ni mogoče prikazati. Prej je dobil golo
+    napako 400, zdaj pa dobi seznam šol s povezavami na njihove nastavitve.
+    """
+    from html import escape
+
+    rows = db.query(School).order_by(School.name).all()
+    items = "".join(
+        f'<li><a href="/settings?school_id={s.id}">{escape(str(s.name))}</a> '
+        f'<span style="color:#888;font-size:0.85rem;">(/{escape(str(s.slug))})</span></li>'
+        for s in rows
+    )
+    return (
+        "<!DOCTYPE html><html lang=\"sl\"><head><meta charset=\"UTF-8\">"
+        "<title>Nastavitve šole</title></head><body "
+        "style=\"font-family:Arial,sans-serif;margin:40px;max-width:640px;\">"
+        "<h2>⚙️ Nastavitve šole</h2>"
+        "<p>Izberite šolo, katere nastavitve želite urediti:</p>"
+        f"<ul style=\"line-height:1.9;\">{items}</ul>"
+        "<p><a href=\"/schools\">← Pregled vseh šol</a> &nbsp;|&nbsp; "
+        "<a href=\"/rezervacije\">← Aplikacija</a></p>"
+        "</body></html>"
+    )
+
+
 @router.get("/settings", response_class=HTMLResponse)
 def school_settings_page(
     request: Request,
@@ -446,6 +474,11 @@ def school_settings_page(
     try:
         school = _manageable_school(db, request, school_id)
     except HTTPException as exc:
+        # Glavni admin, ki ni izbral šole (in jih ima več), prej ni dobil niti
+        # strani niti povezave — samo golo napako 400. Zdaj mu ponudimo izbiro
+        # šole direktno na strani, da dostop do /settings ne »pade«.
+        if exc.status_code == 400 and is_main_admin(user):
+            return HTMLResponse(_school_chooser_html(db), status_code=200)
         return HTMLResponse(exc.detail, status_code=exc.status_code)
 
     cfg = get_school_config(db, school.id)
@@ -470,10 +503,20 @@ def school_settings_page(
         for key in sorted(parsed.keys(), key=_sort_key):
             schedule_rows.append({"index": str(key), "value": str(parsed[key])})
 
-    # PROSTORI: vsak prostor v svoji vrstici + kljukica »kot Tablice«
-    # (= več učiteljev hkrati, količina, omejitev TABLICE_MAX).
-    prostori_qty = set(cfg.PROSTORI_QTY)
-    prostori_rows = [{"name": p, "qty": p in prostori_qty} for p in cfg.PROSTORI]
+    # RAZREDI: vsak razred v SVOJI vrstici (iz vejica-ločenega seznama).
+    razredi_rows = [r for r in cfg.RAZREDI if r]
+
+    # ŠTEVILA: imenovane številske spremenljivke v vrsticah (ime + vrednost).
+    # Ločen objekt (kot urnik) — na imena se vežejo prostori spodaj.
+    stevila_rows = [{"name": name, "value": value} for name, value in cfg.STEVILA.items()]
+
+    # PROSTORI: vsak prostor v svoji vrstici + vezava na številsko spremenljivko
+    # (kljukica »število« + spustni seznam imen iz STEVILA).
+    prostori_stevilo = cfg.PROSTORI_STEVILO
+    prostori_rows = [
+        {"name": p, "stevilo": prostori_stevilo.get(p, "")}
+        for p in cfg.PROSTORI
+    ]
 
     return templates.TemplateResponse("school_settings.html", {
         "request": request,
@@ -483,5 +526,7 @@ def school_settings_page(
         "values": values,
         "schedule_rows": schedule_rows,
         "prostori_rows": prostori_rows,
+        "razredi_rows": razredi_rows,
+        "stevila_rows": stevila_rows,
         "is_main_admin": is_main_admin(user),
     })

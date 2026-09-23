@@ -142,5 +142,11 @@ def test_koledar_ima_popup_za_dejavnosti(client, make_user):
     assert '''onclick="openDejavnostModal('${dateStr}')"''' in html
     assert """event.stopPropagation();openDejavnostModal('${dateStr}')""" in html
 
+    # vijolično polje »Dejavnosti:« je vidno tudi ob NE-celodnevnih dejavnostih;
+    # razredi se izpišejo LE, če je vsaj ena dejavnost celodnevna (blokada).
+    assert "function dayActivityClasses" in html
+    assert "const showField = showBlocked || showActivity;" in html
+    assert "📋 Dejavnosti:" in html
+
     # stara logika (klik na blokiran dan ni delal nič) ne sme več obstajati
     assert """showBlocked ? '' : `onclick="quickOc""" not in html

@@ -61,12 +61,20 @@ SCHOOL_SETTING_KEYS = [
     "ADMIN_EMAIL",
     "TABLICE_MAX",
     "SCHEDULE",
+    # Imenovane številske spremenljivke šole (JSON: ime → celo število), npr.
+    # {"Število tablic": 28, "Število računalnikov": 30}. Ločen objekt — tako
+    # lahko šola doda poljubno število (ne le omejitve tablic). Nadomešča
+    # skalarni TABLICE_MAX, ki ostaja le še kot zgodovinska rezerva.
+    "STEVILA",
     "RAZREDI",
     "PROSTORI",
     # Prostori, ki delujejo KOT TABLICE: v njih lahko več učiteljev hkrati
     # rezervira, vsak navede količino, skupna vsota na uro pa ne sme preseči
-    # TABLICE_MAX. Shranjuje se kot vejica-ločen seznam id-jev prostorov
-    # (npr. "tablice"), ureja pa se s kljukicami v vrsticah prostorov.
+    # kapacitete. Zdaj se shranjuje kot objekt prostor → ime številske
+    # spremenljivke (glej STEVILA), npr. {"tablice": "Število tablic"}.
+    "PROSTORI_STEVILO",
+    # Zgodovinski seznam prostorov »kot Tablice« (brez vezave na ime
+    # spremenljivke). Bere se le, kadar PROSTORI_STEVILO še ni nastavljen.
     "PROSTORI_QTY",
     "INACTIVITY_TIMEOUT_MINUTES",
     "INACTIVITY_TIMEOUT_ADMIN_MINUTES",
@@ -78,12 +86,18 @@ SCHOOL_SETTING_KEYS = [
     "ASSESSMENT_MAX_CONSECUTIVE_DAYS",
 ]
 
+# Privzeto ime številske spremenljivke za kapaciteto prostorov »kot Tablice«.
+# Uporabi se pri prehodu s starega skalarnega TABLICE_MAX.
+DEFAULT_NUMBERS_NAME = "Število tablic"
+
 # Opis polj za UI (oznaka + tip vnosa). Vrstni red = vrstni red v obrazcu.
 SCHOOL_SETTING_FIELDS = [
     {"key": "RAZREDI", "label": "Razredi (vejica-ločeno)", "type": "csv"},
     {"key": "PROSTORI", "label": "Prostori (vejica-ločeno)", "type": "csv"},
     {"key": "SCHEDULE", "label": "Urnik (JSON: ura → opis)", "type": "json"},
-    {"key": "TABLICE_MAX", "label": "Največ tablic na uro", "type": "int"},
+    # Števila: imenovane številske spremenljivke (npr. »Število tablic«).
+    {"key": "STEVILA", "label": "Števila (JSON: ime → vrednost)", "type": "json"},
+    {"key": "PROSTORI_STEVILO", "label": "Prostori — vezava na število (JSON)", "type": "json"},
     {"key": "INACTIVITY_TIMEOUT_MINUTES", "label": "Timeout neaktivnosti — učitelji (min)", "type": "int"},
     {"key": "INACTIVITY_TIMEOUT_ADMIN_MINUTES", "label": "Timeout neaktivnosti — admin/vodstvo (min)", "type": "int"},
     {"key": "MAIL_SERVER", "label": "SMTP strežnik", "type": "text"},
@@ -340,17 +354,71 @@ class SchoolConfig:
         return self.get_list("PROSTORI", settings.PROSTORI)
 
     @property
-    def PROSTORI_QTY(self) -> list[str]:
-        """Prostori, ki delujejo kot Tablice (količina + omejitev TABLICE_MAX).
+    def STEVILA(self) -> dict:
+        """Imenovane številske spremenljivke šole (ime → celo število).
 
-        Shranjeno je kot seznam (JSON), npr. ["tablice"], ker mora biti mogoče
-        izraziti tudi PRAZEN seznam (admin odkljuka vse). Preprost niz "" bi
-        namreč po pravilih nastavitev štel kot »ni nastavljeno« in bi se vrnila
-        privzeta vrednost — zato praznega seznama ne bi bilo mogoče shraniti.
+        Shranjeno kot JSON objekt, npr. {"Število tablic": 28, "Število
+        računalnikov": 30}. Ločen objekt omogoča, da šola doda poljubno
+        število (ne le omejitve tablic) in da se prostori nanje vežejo
+        (PROSTORI_STEVILO).
 
-        Privzeto (brez zapisa v bazi) je 'tablice', zato je vedenje obstoječih
-        šol nespremenjeno.
+        Če v bazi ni zapisa, se vrne privzetek iz starega skalarnega
+        TABLICE_MAX — tako je vedenje obstoječih šol nespremenjeno.
         """
+        raw = self._raw("STEVILA")
+        if raw is not None:
+            try:
+                parsed = json.loads(raw)
+            except (TypeError, ValueError):
+                parsed = None
+            if isinstance(parsed, dict):
+                return self._normalize_numbers(parsed)
+        return {DEFAULT_NUMBERS_NAME: self.TABLICE_MAX}
+
+    @staticmethod
+    def _normalize_numbers(values: dict) -> dict:
+        """Obdrži samo vnose z imenom in celoštevilsko vrednostjo."""
+        out: dict[str, int] = {}
+        for key, value in values.items():
+            name = str(key).strip()
+            if not name:
+                continue
+            try:
+                out[name] = int(value)
+            except (TypeError, ValueError):
+                continue
+        return out
+
+    @property
+    def PROSTORI_STEVILO(self) -> dict:
+        """Vezava prostor → ime številske spremenljivke (odgovarja STEVILA).
+
+        Objekt, npr. {"tablice": "Število tablic", "racunalnica": "Število
+        računalnikov"}. Prostor v tem objektu deluje »kot Tablice«: več
+        učiteljev lahko rezervira hkrati, vsak navede količino, skupna vsota
+        na uro pa je omejena z vrednostjo pripisane spremenljivke.
+
+        Če PROSTORI_STEVILO ni nastavljen, se prebere zgodovinski seznam
+        PROSTORI_QTY in vsak prostor veže na privzeto ime (»Število tablic«).
+        """
+        raw = self._raw("PROSTORI_STEVILO")
+        if raw is not None:
+            try:
+                parsed = json.loads(raw)
+            except (TypeError, ValueError):
+                parsed = None
+            if isinstance(parsed, dict):
+                out: dict[str, str] = {}
+                for room, name in parsed.items():
+                    room = str(room).strip()
+                    if room:
+                        out[room] = str(name).strip() if name is not None else ""
+                return out
+        # Nazajzdružljivost: star seznam prostorov brez imena spremenljivke.
+        return {p: DEFAULT_NUMBERS_NAME for p in self._legacy_qty_rooms()}
+
+    def _legacy_qty_rooms(self) -> list[str]:
+        """Preberi staro nastavitev PROSTORI_QTY (seznam ali vejica-ločeno)."""
         raw = self._raw("PROSTORI_QTY")
         if raw is None:
             raw = self._env.get("PROSTORI_QTY", "tablice")
@@ -366,13 +434,34 @@ class SchoolConfig:
                 pass
         return [x.strip() for x in text.split(",") if x.strip()]
 
+    @property
+    def PROSTORI_QTY(self) -> list[str]:
+        """Prostori, ki delujejo kot Tablice (imenovan seznam, za nazaj).
+
+        Vrne imena prostorov iz PROSTORI_STEVILO. Ohranjeno zaradi združljivosti
+        (API /api/prostori-qty, obstoječa koda in testi).
+        """
+        return list(self.PROSTORI_STEVILO.keys())
+
     def ima_kolicino(self, prostor: str) -> bool:
         """Ali prostor deluje kot Tablice (več uporabnikov, količina, omejitev).
 
         Zakaj predikat? Ker je bilo prej povsod trdo zapisano 'tablice'; zdaj se
         pravilo bere iz nastavitev šole, zato lahko šola doda npr. 'tablice2'.
         """
-        return bool(prostor) and prostor in self.PROSTORI_QTY
+        return bool(prostor) and prostor in self.PROSTORI_STEVILO
+
+    def kapaciteta(self, prostor: str) -> int:
+        """Največja dovoljena skupna količina za prostor v eni uri.
+
+        Bere vrednost pripisane številske spremenljivke (STEVILA); če prostor
+        ni vezan ali spremenljivka ne obstaja, pade nazaj na TABLICE_MAX.
+        """
+        name = self.PROSTORI_STEVILO.get(prostor)
+        stevila = self.STEVILA
+        if name and name in stevila:
+            return int(stevila[name])
+        return self.TABLICE_MAX
 
     @property
     def SCHEDULE(self) -> dict:

@@ -69,7 +69,22 @@
             <input type="hidden" name="school_id" value="{{ school.id }}">
 
             <h3>Osnovno</h3>
-            {% for f in fields %}{% if f.key in ('RAZREDI','TABLICE_MAX','INACTIVITY_TIMEOUT_MINUTES','INACTIVITY_TIMEOUT_ADMIN_MINUTES') %}
+
+            <!-- RAZREDI: vsak razred v SVOJI vrstici (kot prostori in urnik),
+                 da je urejanje pregledno in brez vejic. Ob shranjevanju se
+                 vrstice sestavijo nazaj v vejica-ločen seznam (ključ RAZREDI). -->
+            <div class="field">
+                <label>Razredi — vsak razred v svoji vrstici</label>
+                <span class="key">RAZREDI</span>
+                <div id="razredi-rows"></div>
+                <button type="button" class="btn" style="margin-top:8px;" onclick="addRazredRow(); return false;">＋ Dodaj razred</button>
+                <div class="hint" style="margin-top:6px;">
+                    V vsako vrstico vpišite en razred, npr. <code>1. a</code>. Vrstico odstranite z ✕.
+                    Razredi se uporabljajo pri rezervacijah in ocenjevanjih.
+                </div>
+            </div>
+
+            {% for f in fields %}{% if f.key in ('INACTIVITY_TIMEOUT_MINUTES','INACTIVITY_TIMEOUT_ADMIN_MINUTES') %}
             <div class="field">
                 <label>{{ f.label }}</label>
                 <span class="key">{{ f.key }}</span>
@@ -83,18 +98,36 @@
             </div>
             {% endif %}{% endfor %}
 
-            <!-- PROSTORI: vsak prostor v SVOJI vrstici + kljukica »kot Tablice«. -->
+            <!-- ŠTEVILA: imenovane številske spremenljivke (npr. »Število tablic«),
+                 vsaka v SVOJI vrstici — enako kot urnik. Ob shranjevanju se
+                 vrstice sestavijo v JSON objekt (ključ STEVILA). Na ta imena se
+                 sklicujejo prostori (kljukica »število« + spustni seznam). -->
+            <div class="field">
+                <label>Števila — vsaka spremenljivka v svoji vrstici</label>
+                <span class="key">STEVILA</span>
+                <div id="stevila-rows"></div>
+                <button type="button" class="btn" style="margin-top:8px;" onclick="addSteviloRow(); return false;">＋ Dodaj število</button>
+                <div class="hint" style="margin-top:6px;">
+                    Vsaka vrstica je imenovana številska spremenljivka (ime + vrednost), npr.
+                    <code>Število tablic</code> = <code>28</code> ali <code>Število računalnikov</code> = <code>30</code>.
+                    Na ta imena se vežejo prostori (spodaj) — kapaciteta prostora na uro je vrednost te spremenljivke.
+                </div>
+            </div>
+
+            <!-- PROSTORI: vsak prostor v SVOJI vrstici + kljukica »število«.
+                 Ob kljukici se odpre spustni seznam z vsemi številskimi
+                 spremenljivkami (STEVILA) — prostor se veže na izbrano. -->
             <div class="field">
                 <label>Prostori — vsak prostor v svoji vrstici</label>
-                <span class="key">PROSTORI + PROSTORI_QTY</span>
+                <span class="key">PROSTORI + PROSTORI_STEVILO</span>
                 <div id="prostori-rows"></div>
                 <button type="button" class="btn" style="margin-top:8px;" onclick="addProstorRow(); return false;">＋ Dodaj prostor</button>
                 <div class="hint" style="margin-top:6px;">
-                    Kljukica <strong>»kot Tablice«</strong> pomeni: v tem prostoru lahko hkrati rezervira več
-                    učiteljev, vsak navede količino, skupna vsota na uro pa je omejena z
-                    »Največ tablic na uro« ({{ values.get('TABLICE_MAX', '') }}).
-                    Brez kljukice je prostor ekskluziven — ena rezervacija na uro.
-                    Primer: <code>tablice</code> z kljukico, <code>racunalnica</code> brez.
+                    Kljukica <strong>»število«</strong> pomeni: v tem prostoru lahko hkrati rezervira več
+                    učiteljev, vsak navede količino, skupna vsota na uro pa je omejena z izbrano
+                    številsko spremenljivko. Brez kljukice je prostor ekskluziven — ena rezervacija na uro.
+                    Primer: <code>tablice</code> s kljukico in spremenljivko <code>Število tablic</code>,
+                    <code>racunalnica</code> brez.
                 </div>
             </div>
 
@@ -197,20 +230,131 @@
         vse: 'Vse (dejavnosti, rezervacije, ocenjevanja)'
     };
 
+    // ── Pomožno ──────────────────────────────────────────────────────
+    function escAttr(s) {
+        return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) {
+            return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
+        });
+    }
+
+    // ── Razredi: vsak razred v svoji vrstici ─────────────────────────
+    // Ob shranjevanju se vrstice sestavijo v vejica-ločen seznam (RAZREDI).
+    const RAZREDI_ROWS = {{ razredi_rows|tojson }};
+
+    function razredRowHtml(name) {
+        return `<div class="razred-row" style="display:flex;gap:10px;align-items:center;margin-bottom:6px;">
+            <input type="text" class="razred-name" value="${escAttr(name)}" placeholder="npr. 1. a" style="max-width:220px;">
+            <button type="button" class="btn btn-cancel" style="padding:6px 10px;"
+                    onclick="this.closest('.razred-row').remove(); return false;"
+                    title="Odstrani razred">✕</button>
+        </div>`;
+    }
+
+    function renderRazrediRows(rows) {
+        document.getElementById('razredi-rows').innerHTML = (rows || []).map(razredRowHtml).join('');
+    }
+
+    function addRazredRow() {
+        document.getElementById('razredi-rows').insertAdjacentHTML('beforeend', razredRowHtml(''));
+    }
+
+    // Vrne vejica-ločen seznam razredov (brez praznih in podvojenih).
+    function collectRazredi() {
+        const out = [];
+        document.querySelectorAll('#razredi-rows .razred-row').forEach(function (row) {
+            const name = (row.querySelector('.razred-name').value || '').trim();
+            if (name && out.indexOf(name) === -1) out.push(name);
+        });
+        return out.join(',');
+    }
+
+    renderRazrediRows(RAZREDI_ROWS);
+
+    // ── Števila: imenovane številske spremenljivke ───────────────────
+    // Vrstice (ime + vrednost) se ob shranjevanju sestavijo v JSON objekt
+    // (STEVILA). Prostori se nanje vežejo s spustom (spodaj).
+    const STEVILA_ROWS = {{ stevila_rows|tojson }};
+
+    function steviloRowHtml(name, value) {
+        return `<div class="stevilo-row" data-original="${escAttr(name)}"
+             style="display:flex;gap:8px;align-items:center;margin-bottom:6px;flex-wrap:wrap;">
+            <input type="text" class="stevilo-name" value="${escAttr(name)}" placeholder="npr. Število tablic" style="max-width:280px;">
+            <input type="number" class="stevilo-value" value="${value == null ? '' : escAttr(value)}" min="0" placeholder="npr. 28" style="max-width:120px;">
+            <button type="button" class="btn btn-cancel" style="padding:6px 10px;"
+                    onclick="this.closest('.stevilo-row').remove(); refreshSteviloOptions(); return false;"
+                    title="Odstrani spremenljivko">✕</button>
+        </div>`;
+    }
+
+    function renderStevilaRows(rows) {
+        document.getElementById('stevila-rows').innerHTML =
+            (rows || []).map(function (r) { return steviloRowHtml(r.name, r.value); }).join('');
+    }
+
+    function addSteviloRow() {
+        document.getElementById('stevila-rows').insertAdjacentHTML('beforeend', steviloRowHtml('', ''));
+        refreshSteviloOptions();
+    }
+
+    // Vrne {ime: število} za vse izpolnjene vrstice.
+    function collectStevila() {
+        const out = {};
+        document.querySelectorAll('#stevila-rows .stevilo-row').forEach(function (row) {
+            const name = (row.querySelector('.stevilo-name').value || '').trim();
+            const value = (row.querySelector('.stevilo-value').value || '').trim();
+            if (!name || value === '') return;
+            const num = parseInt(value, 10);
+            if (!isNaN(num)) out[name] = num;
+        });
+        return out;
+    }
+
+    // Imena trenutnih številskih spremenljivk iz vrstic.
+    function currentSteviloNames() {
+        const out = [];
+        document.querySelectorAll('#stevila-rows .stevilo-name').forEach(function (inp) {
+            const name = (inp.value || '').trim();
+            if (name && out.indexOf(name) === -1) out.push(name);
+        });
+        return out;
+    }
+
+    // Osveži spustne sezname pri prostorih, da vsebujejo VSE trenutne
+    // številske spremenljivke (tudi ravnokar dodane). Ohrani izbrano vrednost.
+    function refreshSteviloOptions() {
+        const names = currentSteviloNames();
+        document.querySelectorAll('#prostori-rows .prostor-stevilo-name').forEach(function (sel) {
+            const prev = sel.dataset.bound || sel.value || '';
+            let html = '<option value="">— izberi —</option>';
+            names.forEach(function (n) {
+                html += `<option value="${escAttr(n)}"${n === prev ? ' selected' : ''}>${escAttr(n)}</option>`;
+            });
+            sel.innerHTML = html;
+            sel.value = (prev && names.indexOf(prev) !== -1) ? prev : '';
+            sel.dataset.bound = sel.value;
+        });
+    }
+
+    renderStevilaRows(STEVILA_ROWS);
+    // Ko se ime spremenljivke vpiše/preimenuje, osveži sezname pri prostorih.
+    document.getElementById('stevila-rows').addEventListener('input', function (e) {
+        if (e.target.classList.contains('stevilo-name')) refreshSteviloOptions();
+    });
+
     // ── Prostori: vsak prostor v svoji vrstici ───────────────────────
-    // Ob shranjevanju se vrstice sestavijo v dve nastavitvi: PROSTORI (seznam)
-    // in PROSTORI_QTY (tisti s kljukico »kot Tablice«).
+    // Ob shranjevanju se vrstice sestavijo v nastavitvi PROSTORI (seznam)
+    // in PROSTORI_STEVILO (prostor → ime številske spremenljivke).
     const PROSTORI_ROWS = {{ prostori_rows|tojson }};
 
-    function prostorRowHtml(name, qty) {
-        const safe = (name || '').replace(/"/g, '&quot;');
-        const checked = qty ? ' checked' : '';
+    function prostorRowHtml(name, stevilo) {
+        const checked = stevilo ? ' checked' : '';
         return `<div class="prostor-row" style="display:flex;gap:10px;align-items:center;margin-bottom:6px;flex-wrap:wrap;">
-            <input type="text" class="prostor-name" value="${safe}" placeholder="npr. tablice" style="max-width:220px;">
+            <input type="text" class="prostor-name" value="${escAttr(name)}" placeholder="npr. tablice" style="max-width:220px;">
             <label style="display:flex;align-items:center;gap:6px;font-size:13px;font-weight:400;margin:0;">
-              <input type="checkbox" class="prostor-qty"${checked}>
-              kot Tablice (količina + omejitev)
+              <input type="checkbox" class="prostor-stevilo"${checked} onchange="toggleProstorStevilo(this)">
+              število
             </label>
+            <select class="prostor-stevilo-name" data-bound="${escAttr(stevilo)}"${stevilo ? '' : ' style="display:none;"'}></select>
             <button type="button" class="btn btn-cancel" style="padding:6px 10px;"
                     onclick="this.closest('.prostor-row').remove(); return false;"
                     title="Odstrani prostor">✕</button>
@@ -219,27 +363,39 @@
 
     function renderProstoriRows(rows) {
         document.getElementById('prostori-rows').innerHTML =
-            rows.map(r => prostorRowHtml(r.name, r.qty)).join('');
+            (rows || []).map(function (r) { return prostorRowHtml(r.name, r.stevilo); }).join('');
+        refreshSteviloOptions();
     }
 
     function addProstorRow() {
-        document.getElementById('prostori-rows').insertAdjacentHTML(
-            'beforeend', prostorRowHtml('', false));
+        document.getElementById('prostori-rows').insertAdjacentHTML('beforeend', prostorRowHtml('', false));
     }
 
-    // Vrne {prostori: "tablice,ladja", qty: "tablice"} iz vrstic.
+    // Kljukica »število«: pokaži/skrij spustni seznam številskih spremenljivk.
+    function toggleProstorStevilo(cb) {
+        const row = cb.closest('.prostor-row');
+        const sel = row.querySelector('.prostor-stevilo-name');
+        sel.style.display = cb.checked ? '' : 'none';
+        if (cb.checked) refreshSteviloOptions();
+    }
+
+    // Vrne {prostori: "tablice,ladja", stevilo: {"tablice": "Število tablic"}, qty: ["tablice"]}
     function collectProstori() {
         const names = [];
+        const stevilo = {};
         const qty = [];
         document.querySelectorAll('#prostori-rows .prostor-row').forEach(function (row) {
             const name = (row.querySelector('.prostor-name').value || '').trim();
             if (!name) return;
             if (names.indexOf(name) === -1) names.push(name);
-            if (row.querySelector('.prostor-qty').checked && qty.indexOf(name) === -1) qty.push(name);
+            const cb = row.querySelector('.prostor-stevilo');
+            const sel = row.querySelector('.prostor-stevilo-name');
+            if (cb && cb.checked) {
+                qty.push(name);
+                stevilo[name] = sel ? (sel.value || '') : '';
+            }
         });
-        // qty gre kot SEZNAM (JSON) — praznega seznama ni mogoče izraziti
-        // s praznim nizom, ker bi ta štel kot »ni nastavljeno«.
-        return { prostori: names.join(','), qty: qty };
+        return { prostori: names.join(','), stevilo: stevilo, qty: qty };
     }
 
     renderProstoriRows(PROSTORI_ROWS);
@@ -301,6 +457,20 @@
         const values = {};
         fd.forEach((v, k) => { if (k !== 'school_id') values[k] = v; });
 
+        // Razredi pridejo iz vrstic (ne iz enega polja) — sestavimo CSV.
+        const razrediVal = collectRazredi();
+        if (!razrediVal) {
+            box.className = 'err';
+            box.textContent = 'Vpišite vsaj en razred.';
+            box.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            return;
+        }
+        values['RAZREDI'] = razrediVal;
+
+        // Števila pridejo iz vrstic (ime + vrednost) — sestavimo JSON objekt.
+        const stevila = collectStevila();
+        values['STEVILA'] = JSON.stringify(stevila);
+
         // Prostori pridejo iz vrstic (ne iz enega polja).
         const pr = collectProstori();
         if (!pr.prostori) {
@@ -309,8 +479,33 @@
             box.scrollIntoView({ behavior: 'smooth', block: 'center' });
             return;
         }
+        // Preimenovanja številskih spremenljivk: vezave prostorov posodobimo,
+        // da ob preimenovanju ne »padejo« v prazno.
+        const renames = {};
+        document.querySelectorAll('#stevila-rows .stevilo-row').forEach(function (row) {
+            const orig = (row.dataset.original || '').trim();
+            const now = (row.querySelector('.stevilo-name').value || '').trim();
+            if (orig && now && orig !== now) renames[orig] = now;
+        });
+        Object.keys(pr.stevilo).forEach(function (room) {
+            const bound = pr.stevilo[room];
+            if (bound && renames[bound]) pr.stevilo[room] = renames[bound];
+        });
+        // Vsak prostor s kljukico »število« mora imeti izbrano (obstoječo)
+        // številsko spremenljivko.
+        const badRoom = Object.keys(pr.stevilo).find(function (room) {
+            return !pr.stevilo[room] || !(pr.stevilo[room] in stevila);
+        });
+        if (badRoom) {
+            box.className = 'err';
+            box.textContent = 'Za prostor »' + badRoom + '« izberite številsko spremenljivko ' +
+                '(ali dodajte manjkajočo v razdelku Števila).';
+            box.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            return;
+        }
         values['PROSTORI'] = pr.prostori;
-        values['PROSTORI_QTY'] = pr.qty;   // seznam → strežnik ga shrani kot JSON
+        values['PROSTORI_STEVILO'] = pr.stevilo;   // objekt → strežnik ga shrani kot JSON
+        values['PROSTORI_QTY'] = pr.qty;           // nazajzdružljivost (seznam imen)
 
         // Urnik pride iz ločenih vrstic (ne iz enega polja) — sestavimo JSON.
         const sched = collectSchedule();

@@ -251,8 +251,11 @@
     <a href="/auth/admin/users" id="admin-link" style="display:none;">Admin panel</a>
     <a href="/history" id="audit-link" style="display:none;">📋 Audit log</a>
     <!-- VEČŠOLSKO: nastavitve šole (šolski admin) in pregled šol (glavni admin).
-         Skrite privzeto; JS jih pokaže glede na vlogo (glej currentUser spodaj). -->
-    <a href="/settings" id="settings-link" style="display:none;">⚙️ Nastavitve šole</a>
+         Skrite privzeto; JS jih pokaže glede na vlogo (glej currentUser spodaj).
+         Kontekst šole prenesemo s parametrom school_id, da nastavitve odpremo za
+         ISTO šolo, ki jo uporabnik gleda (prej se je pri glavnem adminu brez
+         izbrane šole zgodila napaka 400 »Izberite šolo«). -->
+    <a href="/settings{% if current_school_id %}?school_id={{ current_school_id }}{% endif %}" id="settings-link" style="display:none;">⚙️ Nastavitve šole</a>
     <a href="/schools" id="schools-link" style="display:none;">🏫 Šole</a>
     <!-- VEČŠOLSKO: kateri šoli pripadajo podatki na zaslonu.
          Ob obisku prek poti šole (alias) je oznaka izpolnjena že na strežniku
@@ -788,10 +791,29 @@
     let schedule = {};       // Urnik (ure → oznake)
     let razredi = [];        // Seznam razredov
     let prostori = [];       // Seznam prostorov
-    // Prostori, ki delujejo kot Tablice (količina + omejitev na uro).
-    // Privzeto 'tablice', nato se osveži iz /api/prostori-qty (nastavitve šole).
+    // Prostori, ki delujejo »kot Tablice« (količina + omejitev na uro).
+    // Kapaciteta je vrednost številske spremenljivke, pripisane prostoru
+    // (nastavitve šole) — privzeto 'tablice', osveži se iz /api/prostori-qty.
     let QTY_ROOMS = new Set(['tablice']);
-    let QTY_MAX = 28;
+    let QTY_MAX = 28;          // splošna kapaciteta (rezerva, nazajzdružljivost)
+    let QTY_LIMITS = {};       // prostor → največja dovoljena količina na uro
+    // Največja dovoljena količina za prostor. Kapaciteta je lahko po prostoru
+    // različna (vsak je vezan na svojo številsko spremenljivko v nastavitvah).
+    function qtyLimit(prostor) { return QTY_LIMITS[prostor] || QTY_MAX; }
+    // Napolni izbirnik količine z vrednostmi 1..kapaciteta prostora. Kapaciteta
+    // pride iz nastavitev šole (številska spremenljivka, pripisana prostoru).
+    function fillQtyOptions(selectEl, prostor) {
+      if (!selectEl || !QTY_ROOMS.has(prostor)) return;
+      const cap = qtyLimit(prostor);
+      const prev = parseInt(selectEl.value, 10);
+      selectEl.innerHTML = '';
+      for (let i = 1; i <= cap; i++) {
+        const opt = document.createElement('option');
+        opt.value = String(i); opt.textContent = String(i);
+        selectEl.appendChild(opt);
+      }
+      selectEl.value = (prev && prev <= cap) ? String(prev) : '1';
+    }
     let currentUser = null;  // Trenutno prijavljeni uporabnik
     let currentOcMonth = ''; // Trenutni mesec na koledarju ocenjevanj
     let currentOcRazred = '';// Trenutno izbran razred za ocenjevanja
@@ -1237,6 +1259,20 @@
       return out;
     }
 
+    // Vrni razrede, ki imajo na dani datum katerokoli dejavnost — tudi tako,
+    // ki NE traja cel dan (ni označena »Celoten dan«) in zato ne ustvari
+    // blokade. Vijolično polje v koledarju se prikaže tudi takrat, razredi
+    // pa se izpišejo le ob celodnevni (blokirani) dejavnosti.
+    function dayActivityClasses(dateStr) {
+      const out = [];
+      (activityDays || []).forEach(day => {
+        activityEntriesForDay(day, dateStr).forEach(e => {
+          if (e.razred && out.indexOf(e.razred) === -1) out.push(e.razred);
+        });
+      });
+      return out;
+    }
+
     // Odpre pop-up z imeni dejavnosti za vse razrede na izbran dan.
     // Kliče se ob kliku na vijolično polje oz. vijolično značko (dan dejavnosti).
     // Pred prikazom osveži dejavnosti IN blokade, da so prikazani razredi ter
@@ -1368,7 +1404,8 @@
     // serij. Tedenske serije uporabljajo vodstvo/admin za redne
     // tedenske rezervacije (npr. vsak ponedeljek 1. uro v računalnici).
     function openWeeklySeriesModal() {
-      document.getElementById('weekly-prostor').value = prostori[0] || '';
+      const prostorSel = document.getElementById('weekly-prostor');
+      prostorSel.value = prostori[0] || '';
       document.getElementById('weekly-name').value = '';
       document.getElementById('weekly-hour').value = '0';
       document.getElementById('weekly-weekday').value = '0';
@@ -1376,6 +1413,8 @@
       document.getElementById('weekly-date-from').value = today;
       const nextMonth = new Date(); nextMonth.setMonth(nextMonth.getMonth() + 3);
       document.getElementById('weekly-date-to').value = nextMonth.toISOString().split('T')[0];
+      // Kapaciteta je odvisna od izbranega prostora — napolni izbirnik količine.
+      fillQtyOptions(document.getElementById('weekly-qty'), prostorSel.value);
       document.getElementById('weekly-qty').value = '1';
       loadSeriesList();
       openModal('weekly-series-modal');
@@ -1477,7 +1516,7 @@
       const el2 = document.getElementById('fullday-date-to');
       if (el2) el2.value = nextWeek.toISOString().split('T')[0];
       const el3 = document.getElementById('fullday-qty');
-      if (el3) el3.value = '1';
+      if (el3) { fillQtyOptions(el3, sel ? sel.value : ''); el3.value = '1'; }
       const el4 = document.getElementById('fullday-hours');
       if (el4) el4.value = '';
       loadFullDaySeriesList();
@@ -1638,11 +1677,11 @@
                 html += `<span class="del-rez" onclick="deleteReservation(${res.id})">✕</span>`;
               }
             }
-            if (QTY_ROOMS.has(prostor)) { const used = tabliceMap[key] || 0; const free = QTY_MAX - used; html += `<div class="slot-info" style="margin-top:4px;">Prosto: ${free}/${QTY_MAX}</div>`; }
+            if (QTY_ROOMS.has(prostor)) { const used = tabliceMap[key] || 0; const cap = qtyLimit(prostor); const free = cap - used; html += `<div class="slot-info" style="margin-top:4px;">Prosto: ${free}/${cap}</div>`; }
             html += `</td>`;
           } else {
             html += `<td><div class="slot-free">Prosto</div>`;
-            if (QTY_ROOMS.has(prostor)) { const used = tabliceMap[key] || 0; html += `<div class="slot-info">${QTY_MAX - used}/${QTY_MAX} preostalih</div>`; }
+            if (QTY_ROOMS.has(prostor)) { const used = tabliceMap[key] || 0; const cap = qtyLimit(prostor); html += `<div class="slot-info">${cap - used}/${cap} preostalih</div>`; }
             html += `<div class="quick-add"><button class="btn btn-sm btn-outline" onclick="quickRez('${prostor}','${dateStr}',${hourIdx})">+</button></div></td>`;
           }
         }
@@ -1680,10 +1719,12 @@
     // Nastavi privzeti datum na začetek tedna in prvi prostor.
     function openRezModal() {
       document.getElementById('rez-form-date').value = document.getElementById('rez-week-start').value;
-      document.getElementById('rez-form-prostor').value = prostori[0];
+      const sel = document.getElementById('rez-form-prostor');
+      sel.value = prostori[0];
       document.getElementById('rez-form-qty').value = 1;
-      document.getElementById('rez-form-qty-group').style.display =
-        QTY_ROOMS.has(prostori[0]) ? 'block' : 'none';
+      // Ponovno uporabi poslušalec »change« — nastavi vidnost polja in max glede
+      // na kapaciteto izbranega prostora.
+      sel.dispatchEvent(new Event('change'));
       openModal('rez-modal');
     }
 
@@ -1734,6 +1775,9 @@
       else if (razred === '__9__') filterPrefix = '9.';
       else if (razred) url += `&razred=${razred}`;
       try {
+        // Vijolično polje »Dejavnosti:« se izriše iz zapisov dejavnosti, zato
+        // poskrbimo, da so ti naloženi, preden izrišemo koledar.
+        if (!activityDays || activityDays.length === 0) await loadActivityDays();
         const res = await fetch(url);
         if (!res.ok) { showMsg('Napaka pri nalaganju ocenjevanj.', 'error'); return; }
         let assessments = await res.json();
@@ -1782,18 +1826,29 @@
           if (razred.startsWith('__')) { const prefix = razred === '__8__' ? '8.' : '9.'; showBlocked = blockedRazredi.some(r => r.startsWith(prefix)); }
           else if (blockedDates[razred] && blockedDates[razred][dateStr]) showBlocked = true;
         } else if (hasBlockedOnDate && (!razred || razred === 'Vsi razredi')) showBlocked = true;
+        // Dejavnosti, ki NE trajajo cel dan, ne ustvarijo blokade — zato jih
+        // poiščemo neposredno v zapisih dejavnosti. Polje »Dejavnosti:« mora
+        // biti vidno tudi zanje; razredi se izpišejo samo ob celodnevni.
+        const dayActClasses = dayActivityClasses(dateStr);
+        let showActivity = dayActClasses.length > 0;
+        if (showActivity && razred && razred !== 'Vsi razredi') {
+          if (razred.startsWith('__')) { const prefix = razred === '__8__' ? '8.' : '9.'; showActivity = dayActClasses.some(r => r.startsWith(prefix)); }
+          else showActivity = dayActClasses.some(r => r === razred);
+        }
+        const showField = showBlocked || showActivity;
         let cls = 'calendar-day';
         if (isToday) cls += ' today';
         if (isWeekend) cls += ' other-month';
-        html += `<div class="${cls}" ${showBlocked
-            ? `onclick="openDejavnostModal('${dateStr}')" style="cursor:pointer;" title="Klikni za imena dejavnosti"`
+        html += `<div class="${cls}" ${showField
+            ? `onclick="openDejavnostModal('${dateStr}')" style="cursor:pointer;" title="Klikni za seznam dejavnosti"`
             : `onclick="quickOc('${razred}','${dateStr}')"`}>
           <div class="day-num">${day}</div>`;
-        // Vijolično polje = dan dejavnosti. Klik odpre pop-up z imenom
-        // dejavnosti za vsak razred (imena pridejo iz /api/dejavnosti).
-        if (showBlocked) html += `<div class="assessment-badge" style="background:#7c3aed;color:#fff;font-weight:600;cursor:pointer;"
+        // Vijolično polje = dan dejavnosti (celodnevne ali krajše). Klik odpre
+        // pop-up s SEZNAMOM vseh dejavnosti tega dne. Razredi se pripišejo le,
+        // če je vsaj ena dejavnost celodnevna (blokada) — sicer samo »Dejavnosti:«.
+        if (showField) html += `<div class="assessment-badge" style="background:#7c3aed;color:#fff;font-weight:600;cursor:pointer;"
             onclick="event.stopPropagation();openDejavnostModal('${dateStr}')"
-            title="Klikni za imena dejavnosti"><span>📋 Dejavnost: ${blockedRazredi.join(', ')}</span></div>`;
+            title="Klikni za seznam dejavnosti"><span>📋 Dejavnosti:${(showBlocked && blockedRazredi.length) ? ' ' + blockedRazredi.join(', ') : ''}</span></div>`;
         if (asmMap[day]) {
           asmMap[day].forEach(a => {
             const asmCls = a.ponavljanje ? 'assessment-ponavljanje' : 'assessment-normal';
@@ -1903,12 +1958,14 @@
       schedule = await schedRes.json();
       razredi = await razRes.json();
       prostori = await proRes.json();
-      // Kateri prostori so »kot Tablice« + omejitev — iz nastavitev šole.
+      // Kateri prostori so »kot Tablice« + kapaciteta na uro — iz nastavitev šole.
       try {
         const qtyRes = await qtyProRes.json();
         if (qtyRes && Array.isArray(qtyRes.rooms)) {
           QTY_ROOMS = new Set(qtyRes.rooms);
           QTY_MAX = parseInt(qtyRes.max) || QTY_MAX;
+          // Kapaciteta po prostoru (vsak je vezan na svojo številsko spremenljivko).
+          QTY_LIMITS = (qtyRes.limits && typeof qtyRes.limits === 'object') ? qtyRes.limits : {};
         }
       } catch (e) { /* ostane privzeto (tablice) */ }
       if (meRes.ok) currentUser = await meRes.json();
@@ -1972,13 +2029,27 @@
       document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
       const initSection = document.getElementById('section-' + initTab);
       if (initSection) initSection.classList.add('active');
-      document.getElementById('rez-form-prostor').addEventListener('change', e => { document.getElementById('rez-form-qty-group').style.display = QTY_ROOMS.has(e.target.value) ? 'block' : 'none'; });
+      document.getElementById('rez-form-prostor').addEventListener('change', e => {
+        const isQty = QTY_ROOMS.has(e.target.value);
+        document.getElementById('rez-form-qty-group').style.display = isQty ? 'block' : 'none';
+        if (isQty) {
+          const inp = document.getElementById('rez-form-qty');
+          inp.max = String(qtyLimit(e.target.value));
+          if ((parseInt(inp.value, 10) || 1) > qtyLimit(e.target.value)) inp.value = '1';
+        }
+      });
       document.getElementById('rez-form-prostor').dispatchEvent(new Event('change'));
 
       const weeklyProstor = document.getElementById('weekly-prostor');
       const fulldayProstor = document.getElementById('fullday-prostor');
-      weeklyProstor.addEventListener('change', () => { document.getElementById('weekly-qty-group').style.display = QTY_ROOMS.has(weeklyProstor.value) ? 'block' : 'none'; });
-      fulldayProstor.addEventListener('change', () => { document.getElementById('fullday-qty-group').style.display = QTY_ROOMS.has(fulldayProstor.value) ? 'block' : 'none'; });
+      weeklyProstor.addEventListener('change', () => {
+        document.getElementById('weekly-qty-group').style.display = QTY_ROOMS.has(weeklyProstor.value) ? 'block' : 'none';
+        fillQtyOptions(document.getElementById('weekly-qty'), weeklyProstor.value);
+      });
+      fulldayProstor.addEventListener('change', () => {
+        document.getElementById('fullday-qty-group').style.display = QTY_ROOMS.has(fulldayProstor.value) ? 'block' : 'none';
+        fillQtyOptions(document.getElementById('fullday-qty'), fulldayProstor.value);
+      });
 
       loadAllReservations();
       currentOcMonth = new Date().getFullYear() + '-' + String(new Date().getMonth() + 1).padStart(2, '0');

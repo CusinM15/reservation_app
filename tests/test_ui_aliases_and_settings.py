@@ -153,7 +153,7 @@ def test_settings_page_omits_removed_fields_and_renames_home_link(client, make_u
     assert "Aplikacija" in html
     assert "Domov (urnik)" not in html
     # polja, ki morajo ostati
-    assert "Največ tablic na uro" in html
+    assert "Število tablic" in html
     assert "Timeout neaktivnosti" in html
 
 
@@ -237,3 +237,62 @@ def test_invalid_schedule_json_is_rejected(client, make_user):
     r = client.put(f"/api/schools/{sid}/settings", json={"values": {"SCHEDULE": "{ni-json"}})
     assert r.status_code == 400
     assert "veljaven JSON" in r.json()["detail"]
+
+
+# ── 6. Dostop do /settings iz rezervacij/ocenjevanja ─────────────────
+# Poročilo uporabnika: občasne težave pri odpiranju /settings iz strani
+# »Rezervacije in ocenjevanje«. Preverimo oba zavihka, obe poti (kanonično in
+# pot šole) ter poseben primer glavnega admina brez izbrane šole.
+
+def test_settings_link_carries_school_context(client, make_user):
+    """Povezava »⚙️ Nastavitve šole« v aplikaciji mora prenesti izbrano šolo,
+    da pri glavnem adminu (in na poteh šol) ne pade v napako 400."""
+    sid = default_school_id()
+    _school_admin_login(client, make_user)
+    for tab in ("/rezervacije", "/ocenjevanje"):
+        html = client.get(tab).text
+        assert f'href="/settings?school_id={sid}"' in html, f"{tab}: manjka kontekst šole"
+        assert 'id="settings-link"' in html
+
+
+def test_settings_reachable_from_both_tabs_and_school_paths(client, make_user):
+    """Šolski admin mora /settings odpreti z obeh zavihkov in z obeh poti šole."""
+    _school_admin_login(client, make_user)
+    for path in ("/rezervacije", "/ocenjevanje",
+                 "/rezervacije_ostcj", "/ocenjevanje_ostcj"):
+        r = client.get(path, follow_redirects=False)
+        assert r.status_code == 200, f"{path} → {r.status_code}"
+        s = client.get("/settings", follow_redirects=False)
+        assert s.status_code == 200, f"/settings po {path} → {s.status_code}"
+
+
+def test_alias_path_sets_context_so_settings_open_same_school(client, make_user):
+    """Glavni admin, ki vstopi prek poti šole, dobi piškotek school_ctx — zato
+    /settings (kanonična pot) odpre ISTO šolo (prej bi se izgubil kontekst)."""
+    sid = default_school_id()
+    login(client, settings.MAIN_ADMIN_USERNAME, settings.MAIN_ADMIN_PASSWORD)
+    r = client.get("/rezervacije_ostcj", follow_redirects=False)
+    assert r.status_code == 200
+    assert client.cookies.get("school_ctx") == str(sid)
+    html = client.get("/settings")
+    assert html.status_code == 200
+    assert "Nastavitve šole" in html.text
+
+
+def test_settings_main_admin_without_school_gets_chooser(client, make_user):
+    """Glavni admin z VEČ šolami in brez izbrane šole naj ne dobi gole napake
+    400, ampak izbiro šol (stran se odpre)."""
+    from app.tenancy import create_school
+
+    db = SessionLocal()
+    try:
+        create_school(db, name="Šola B", slug="solab")
+    finally:
+        db.close()
+
+    login(client, settings.MAIN_ADMIN_USERNAME, settings.MAIN_ADMIN_PASSWORD)
+    r = client.get("/settings")                     # brez school_id in brez piškotka
+    assert r.status_code == 200
+    assert "Izberite šolo" in r.text
+    assert "Šola B" in r.text
+    assert "school_id=" in r.text

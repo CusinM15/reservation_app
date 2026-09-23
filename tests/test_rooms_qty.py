@@ -1,13 +1,13 @@
 # ─────────────────────────────────────────────────────────────────────────
-# tests/test_rooms_qty.py — prostori: vsak v svoji vrstici + »kot Tablice«
+# tests/test_rooms_qty.py — prostori: vsak v svoji vrstici + kljukica »število«
 #
 # Zahteva: na /settings naj bo vsak prostor v svoji vrstici, s kljukico
-# »kot Tablice«. Prostor s kljukico se obnaša kot tablice: več učiteljev
-# hkrati, obvezna količina in omejitev TABLICE_MAX na uro. Brez kljukice
-# ostane prostor ekskluziven (ena rezervacija na uro).
+# »število«. Ob kljukici se odpre spustni seznam z imenovanimi številskimi
+# spremenljivkami (STEVILA) — prostor se veže na izbrano, kapaciteta na uro
+# pa je njena vrednost. Brez kljukice ostane prostor ekskluziven.
 #
-# Pomembno: privzeto je PROSTORI_QTY = "tablice", zato je vedenje obstoječih
-# šol (ostcj) NESPREMENJENO.
+# Pomembno: privzeto je PROSTORI_QTY = "tablice" in TABLICE_MAX = 28, zato je
+# vedenje obstoječih šol (ostcj) NESPREMENJENO.
 # ─────────────────────────────────────────────────────────────────────────
 
 from app.database import SessionLocal
@@ -45,11 +45,15 @@ def test_settings_renders_one_row_per_room_with_checkbox(client, make_user):
     assert 'id="prostori-rows"' in html
     assert 'name="PROSTORI"' not in html, "prostori se še vedno izrisujejo kot eno polje"
     assert "function addProstorRow" in html and "function collectProstori" in html
-    assert "kot Tablice" in html
+    # Kljukica se zdaj imenuje samo »število« (prej »kot Tablice«).
+    assert "število" in html
+    assert "kot Tablice" not in html
     assert "Prostori — vsak prostor v svoji vrstici" in html
     # vrstice se izrišejo na odjemalcu iz tega seznama
-    assert '{"name": "tablice", "qty": true}' in html
-    assert '{"name": "racunalnica", "qty": false}' in html
+    assert '"name": "tablice"' in html
+    assert '"name": "racunalnica"' in html
+    # spustni seznam številskih spremenljivk
+    assert "function refreshSteviloOptions" in html and "prostor-stevilo-name" in html
 
 
 def test_settings_checkbox_follows_saved_setting(client, make_user):
@@ -57,9 +61,12 @@ def test_settings_checkbox_follows_saved_setting(client, make_user):
     _admin(client, make_user)
     _set(client, sid, PROSTORI="tablice,racunalnica,ladja", PROSTORI_QTY=["tablice", "ladja"])
     html = client.get("/settings").text
-    assert '{"name": "tablice", "qty": true}' in html
-    assert '{"name": "racunalnica", "qty": false}' in html
-    assert '{"name": "ladja", "qty": true}' in html
+    assert '"name": "tablice"' in html
+    assert '"name": "racunalnica"' in html
+    assert '"name": "ladja"' in html
+    # prostori s kljukico imajo vezavo na spremenljivko, prostor brez pa ne
+    assert '"stevilo": "\\u0160tevilo tablic"' in html, "prostor s kljukico nima vezave"
+    assert '"name": "racunalnica", "stevilo": ""' in html, "prostor brez kljukice ne sme imeti vezave"
 
 
 def test_rooms_and_qty_round_trip(client, make_user):
@@ -84,6 +91,8 @@ def test_prostori_qty_endpoint(client, make_user):
     d = client.get("/api/prostori-qty").json()
     assert d["rooms"] == ["ladja"]
     assert d["max"] == 7
+    # kapaciteta je na voljo tudi po prostoru
+    assert d["limits"]["ladja"] == 7
 
 
 # ── 3. Vedenje: prostor »kot Tablice« ─────────────────────────────────
@@ -169,4 +178,4 @@ def test_adding_room_like_tablice_later(client, make_user):
     assert _rez(client, "tablice", hour=5, qty=3).status_code in (200, 201)   # deljen prostor
 
     html = client.get("/settings").text
-    assert '{"name": "tablice", "qty": true}' in html
+    assert '"name": "tablice"' in html

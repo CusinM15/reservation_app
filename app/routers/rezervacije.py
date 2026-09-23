@@ -79,12 +79,14 @@ def _validate_hour(hour: int):
 
 def _check_tablice_capacity(db: Session, school_id: int | None, config: SchoolConfig,
                             prostor: str, date: DateType, hour: int, qty: int):
-    """Preveri kapaciteto tablic za določeno uro (znotraj šole).
-    
+    """Preveri kapaciteto prostora »kot Tablice« za določeno uro (znotraj šole).
+
     Zakaj posebno preverjanje za tablice? Ker tablice niso ekskluzivne
     — več učiteljev lahko hkrati uporablja tablice v isti uri. Skupno
-    število ne sme preseči TABLICE_MAX (nastavitev šole, privzeto 28).
-    
+    število ne sme preseči kapacitete prostora (config.kapaciteta): ta je
+    vrednost številske spremenljivke, pripisane prostoru (npr. »Število
+    tablic«); brez vezave pade nazaj na TABLICE_MAX.
+
     Za ostale prostore (računalnica, ladja, gospodinjstvo) je prostor
     ekskluziven — preverja _check_unique_space.
     """
@@ -97,11 +99,12 @@ def _check_tablice_capacity(db: Session, school_id: int | None, config: SchoolCo
         Reservation.hour == hour
     ), Reservation, school_id).all()
 
+    limit = config.kapaciteta(prostor)
     total_used = sum(r.qty or 0 for r in existing)
-    if total_used + qty > config.TABLICE_MAX:
+    if total_used + qty > limit:
         raise HTTPException(
             status_code=400,
-            detail=f"Skupno število ({total_used + qty}) za prostor {prostor} presega kapaciteto ({config.TABLICE_MAX})"
+            detail=f"Skupno število ({total_used + qty}) za prostor {prostor} presega kapaciteto ({limit})"
         )
 
 
@@ -389,7 +392,7 @@ def _resolve_conflicts_and_notify(
                 still_used = sum(r.qty or 0 for r in existing)
             else:
                 still_used = 0
-            while still_used + need > config.TABLICE_MAX and existing:
+            while still_used + need > config.kapaciteta(prostor) and existing:
                 res = existing.pop(0)
                 db.delete(res)  # ⚠️ dejansko pobriši iz baze — prej je manjkal!
                 teacher = res.teacher
@@ -492,11 +495,11 @@ def _commit_series(
             detail=f"Za prostor {prostor} morate navesti število (qty)",
         )
     # ⚠️ Preveri kapaciteto PRED brisanjem konfliktov — če qty že sam presega
-    # TABLICE_MAX, zavrni takoj, da ne izgubimo obstoječih rezervacij.
-    if config.ima_kolicino(prostor) and qty is not None and qty > config.TABLICE_MAX:
+    # kapaciteto prostora, zavrni takoj, da ne izgubimo obstoječih rezervacij.
+    if config.ima_kolicino(prostor) and qty is not None and qty > config.kapaciteta(prostor):
         raise HTTPException(
             status_code=400,
-            detail=f"Skupno število ({qty}) za prostor {prostor} presega kapaciteto ({config.TABLICE_MAX})",
+            detail=f"Skupno število ({qty}) za prostor {prostor} presega kapaciteto ({config.kapaciteta(prostor)})",
         )
 
     # 1) Pobriši konfliktne rezervacije in pošlji obvestila
