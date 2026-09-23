@@ -149,3 +149,12 @@ def test_nightly_cronjob_calls_new_script():
     # komentar sme omeniti stari skript, UKAZ pa ne
     assert "- scripts.db_backup" not in manifest
     assert "-m\n            - scripts.school_backups" in manifest
+
+
+def test_daily_report_is_removed():
+    """Dnevno poročilo (sola-daily-report) je bilo odstranjeno 2026-09-23 —
+    manifesta ni več, kustomizacija pa ga ne sme (več) vsebovati (sicer bi se
+    ob `kubectl apply -k` CronJob znova ustvaril)."""
+    assert not Path("k8s/app/base/sola-daily-report-cronjob.yaml").exists()
+    kust = Path("k8s/app/base/kustomization.yaml").read_text(encoding="utf-8")
+    assert "sola-daily-report" not in kust
