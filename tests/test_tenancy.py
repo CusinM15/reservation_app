@@ -302,8 +302,8 @@ def test_settings_page_renders_for_school_admin(client, make_user):
     assert 'id="razredi-rows"' in r.text
     assert 'id="stevila-rows"' in r.text
     assert 'id="schedule-rows"' in r.text
-    assert "Razredi — vsak razred v svoji vrstici" in r.text
-    assert "Števila — vsaka spremenljivka v svoji vrstici" in r.text
+    assert "<label>Razredi</label>" in r.text
+    assert "<label>Števila</label>" in r.text
 
 
 def test_settings_page_renders_for_main_admin(client):

@@ -148,5 +148,12 @@ def test_koledar_ima_popup_za_dejavnosti(client, make_user):
     assert "const showField = showBlocked || showActivity;" in html
     assert "📋 Dejavnosti:" in html
 
+    # celodnevne in krajše dejavnosti so v pop-upu RAZLIČNIH barv + mikro legenda
+    assert "full: !!day.full_day" in html            # zapis nosi oznako »Celoten dan«
+    assert "const FULL_COLOR = '#7c3aed';" in html   # celoten dan (vijolična)
+    assert "const PART_COLOR = '#0d9488';" in html   # ne traja cel dan (petrolejna)
+    assert "Ne traja cel dan" in html
+    assert "Celoten dan</b> — dejavnost traja ves dan" in html
+
     # stara logika (klik na blokiran dan ni delal nič) ne sme več obstajati
     assert """showBlocked ? '' : `onclick="quickOc""" not in html

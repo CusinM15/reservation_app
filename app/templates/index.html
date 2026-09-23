@@ -1216,17 +1216,19 @@
 
     const _dateKey = (dt) => `${dt.getFullYear()}-${String(dt.getMonth()+1).padStart(2,'0')}-${String(dt.getDate()).padStart(2,'0')}`;
 
-    // Vrni [{razred, naziv}] za en zapis dejavnosti na dani datum.
+    // Vrni [{razred, naziv, full}] za en zapis dejavnosti na dani datum.
     // Upošteva oba načina datumov, enako kot strežnik:
     //   - termini: [{date, date_to, classes}] — več datumov, vsak s svojimi razredi
     //   - zaledni: date_from..date_to + classes / all_classes
     // Če v terminu ni izbranih razredov, velja cela generacija (vsi črkovni oddelki).
+    // `full` = »Celoten dan« (blokira dan + rezervira ure 1–5); v pop-upu se
+    // celodnevne in krajše dejavnosti prikažejo v RAZLIČNIH barvah.
     function activityEntriesForDay(day, dateStr) {
       const out = [];
       const title = (day.title || '').trim() || `${day.section || ''} ${day.grade}. razred`.trim();
       const subtitle = (day.subtitle || '').trim();
       const naziv = subtitle ? `${title} — ${subtitle}` : title;
-      const add = (razred) => { if (razred) out.push({ razred, naziv }); };
+      const add = (razred) => { if (razred) out.push({ razred, naziv, full: !!day.full_day }); };
       const walk = (from, to, cb) => {
         if (!from) return;
         const start = new Date(from + 'T00:00:00');
@@ -1284,7 +1286,7 @@
       const seen = new Set();
       activityDays.forEach(day => {
         activityEntriesForDay(day, dateStr).forEach(e => {
-          const key = `${e.razred}|${e.naziv}`;
+          const key = `${e.razred}|${e.naziv}|${e.full}`;
           if (seen.has(key)) return;
           seen.add(key);
           entries.push(e);
@@ -1292,12 +1294,14 @@
       });
       // Razredi, ki so ta dan blokirani, a nimajo zapisa v dejavnostih
       // (npr. ročno dodan dan dejavnosti prek gumba »Dnevi dejavnosti«).
+      // Blokada je po naravi CELODNEVNA.
       Object.keys(blockedDates).forEach(r => {
         if (blockedDates[r][dateStr] && !entries.some(e => e.razred === r)) {
-          entries.push({ razred: r, naziv: null });
+          entries.push({ razred: r, naziv: null, full: true });
         }
       });
-      entries.sort((a, b) => a.razred.localeCompare(b.razred, 'sl'));
+      // Po razredu, znotraj istega razreda najprej celodnevne dejavnosti.
+      entries.sort((a, b) => a.razred.localeCompare(b.razred, 'sl') || (b.full ? 1 : 0) - (a.full ? 1 : 0));
 
       const [y, m, d] = dateStr.split('-');
       document.getElementById('dejavnost-modal-date').textContent = `${Number(d)}. ${Number(m)}. ${y}`;
@@ -1306,19 +1310,41 @@
       if (entries.length === 0) {
         body.innerHTML = '<p style="color:#777;">Za ta dan ni zabeležene dejavnosti.</p>';
       } else {
+        // Barvi: celodnevna dejavnost = vijolična (enako kot polje v koledarju),
+        // krajša dejavnost (brez »Celoten dan«) = petrolejna. Razlika je vidna
+        // kot barvni trak vrstice, pika pred imenom in značka z besedilom.
+        const FULL_COLOR = '#7c3aed';
+        const PART_COLOR = '#0d9488';
+        const chip = (color, text) =>
+          `<span style="display:inline-block;background:${color};color:#fff;border-radius:3px;` +
+          `padding:1px 6px;font-size:0.68rem;font-weight:600;white-space:nowrap;vertical-align:middle;">${text}</span>`;
+        const dot = (color) =>
+          `<span style="display:inline-block;width:9px;height:9px;border-radius:50%;` +
+          `background:${color};margin-right:6px;vertical-align:middle;"></span>`;
         body.innerHTML = `<table style="width:100%;border-collapse:collapse;">
             <thead><tr>
               <th style="text-align:left;padding:6px 8px;border-bottom:2px solid #eee;width:90px;">Razred</th>
               <th style="text-align:left;padding:6px 8px;border-bottom:2px solid #eee;">Dejavnost</th>
             </tr></thead>
             <tbody>
-            ${entries.map(e => `<tr>
-              <td style="padding:6px 8px;border-bottom:1px solid #f1f1f1;font-weight:600;">${e.razred}</td>
-              <td style="padding:6px 8px;border-bottom:1px solid #f1f1f1;">${e.naziv ? e.naziv : '<span style="color:#999;">— (ročno blokirano, brez zapisa v dejavnostih)</span>'}</td>
-            </tr>`).join('')}
+            ${entries.map(e => {
+              const color = e.full ? FULL_COLOR : PART_COLOR;
+              const tag = e.full ? chip(color, 'Celoten dan') : chip(color, 'Ne traja cel dan');
+              const naziv = e.naziv ? e.naziv
+                : '<span style="color:#999;">— (ročno blokirano, brez zapisa v dejavnostih)</span>';
+              return `<tr>
+              <td style="padding:6px 8px;border-bottom:1px solid #f1f1f1;border-left:4px solid ${color};font-weight:600;">${e.razred}</td>
+              <td style="padding:6px 8px;border-bottom:1px solid #f1f1f1;">${dot(color)}${naziv} &nbsp;${tag}</td>
+            </tr>`;
+            }).join('')}
             </tbody>
           </table>
-          <p style="margin-top:10px;font-size:0.8rem;color:#777;">
+          <p style="margin:10px 0 0;font-size:0.72rem;color:#555;line-height:1.7;">
+            ${dot(FULL_COLOR)} <b>Celoten dan</b> — dejavnost traja ves dan (blokira ocenjevanja, rezervira ure 1–5)
+            &nbsp;&nbsp;|&nbsp;&nbsp;
+            ${dot(PART_COLOR)} <b>Ne traja cel dan</b> — krajša dejavnost, ocenjevanja niso blokirana
+          </p>
+          <p style="margin-top:8px;font-size:0.8rem;color:#777;">
             Vir: stran <a href="{{ nav_ocenjevanje }}/dejavnosti" target="_blank">Vnos dejavnosti</a>.
           </p>`;
       }

@@ -48,7 +48,7 @@ def test_settings_renders_one_row_per_room_with_checkbox(client, make_user):
     # Kljukica se zdaj imenuje samo »število« (prej »kot Tablice«).
     assert "število" in html
     assert "kot Tablice" not in html
-    assert "Prostori — vsak prostor v svoji vrstici" in html
+    assert "<label>Prostori</label>" in html
     # vrstice se izrišejo na odjemalcu iz tega seznama
     assert '"name": "tablice"' in html
     assert '"name": "racunalnica"' in html

@@ -46,7 +46,7 @@ def test_settings_renders_one_row_per_class(client, make_user):
     assert 'id="razredi-rows"' in html
     assert 'name="RAZREDI"' not in html, "razredi se še vedno izrisujejo kot eno polje"
     assert "function addRazredRow" in html and "function collectRazredi" in html
-    assert "Razredi — vsak razred v svoji vrstici" in html
+    assert "<label>Razredi</label>" in html
     for r in ("1. a", "1. b", "2. a"):
         assert f'"{r}"' in html
 
@@ -68,7 +68,7 @@ def test_settings_renders_numbers_as_own_section(client, make_user):
 
     assert 'id="stevila-rows"' in html
     assert 'name="STEVILA"' not in html, "števila se izrisujejo kot eno polje"
-    assert "Števila — vsaka spremenljivka v svoji vrstici" in html
+    assert "<label>Števila</label>" in html
     assert "function addSteviloRow" in html and "function collectStevila" in html
     # privzeto (brez zapisa) se število napolni iz starega TABLICE_MAX
     assert '"name": "\\u0160tevilo tablic"' in html or '"name": "Število tablic"' in html
