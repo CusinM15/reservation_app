@@ -15,10 +15,13 @@ spec:
           - name: backup
             image: mato12345/sola-app:latest
             imagePullPolicy: Always
+            # Vsaka šola dobi SVOJO .sql kopijo (samo njeni podatki) po e-pošti.
+            # Zakaj ne pg_dump? V sliki ga NI (stari scripts.db_backup je zato
+            # tiho odpovedoval), poleg tega bi pg_dump izvozil CELO bazo.
             command:
             - python
             - -m
-            - scripts.db_backup
+            - scripts.school_backups
             env:
             - name: DATABASE_URL
               valueFrom:
