@@ -58,7 +58,7 @@ Before installing anything, check if you have the following:
 
 > **💡 Important: choose your path**
 >
-> **Git** in the table above is optional — you can also download the code as a [ZIP archive](https://github.com/os-tc-jesenice/reservation_app/archive/refs/heads/main.zip) and extract it manually. However, **I recommend Git** because it makes updates easier (`git pull`). Without Git, you'll need to download the full ZIP and replace files every time.
+> **Git** in the table above is optional — you can also download the code as a [ZIP archive](https://github.com/CusinM15/reservation_app_sell/archive/refs/heads/main.zip) and extract it manually. However, **I recommend Git** because it makes updates easier (`git pull`). Without Git, you'll need to download the full ZIP and replace files every time.
 >
 > **Two paths, two tools:**
 > - **Path 1 — uvicorn** (recommended): you need **Python**, Docker is **not needed**.
@@ -140,7 +140,7 @@ First, you need to download the application code from the internet to your compu
 
 ```bash
 # 1. Clone the repository (meaning: download the entire folder with the code)
-git clone https://github.com/os-tc-jesenice/reservation_app.git
+git clone https://github.com/CusinM15/reservation_app_sell.git
 cd sola-app
 ```
 
@@ -237,7 +237,7 @@ If you don't have Docker or don't want to install it (or have issues with it, e.
 
 ```bash
 # 1. Download the code
-git clone https://github.com/os-tc-jesenice/reservation_app.git
+git clone https://github.com/CusinM15/reservation_app_sell.git
 cd sola-app
 
 # 2. Create a virtual environment

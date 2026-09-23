@@ -632,8 +632,8 @@ def render_report(k3s, longhorn, app_data=None, kube_error=None):
     lines.append("Note: lifetime estimate is heuristic, based on readiness, pressure conditions, pod restarts, failed jobs, recent warning events and Longhorn disk usage.")
     lines.append("")
     lines.append("Dokumentacija:")
-    lines.append("  https://github.com/os-tc-jesenice/reservation_app/blob/main/documentation/navodila-vodstvo.md")
-    lines.append("  https://github.com/os-tc-jesenice/reservation_app/blob/main/poletna-pavza.md")
+    lines.append("  https://github.com/CusinM15/reservation_app_sell/blob/main/documentation/navodila-vodstvo.md")
+    lines.append("  https://github.com/CusinM15/reservation_app_sell/blob/main/poletna-pavza.md")
     lines.append("")
 
     lines.append("## Recent warning events")
@@ -680,7 +680,7 @@ def render_report(k3s, longhorn, app_data=None, kube_error=None):
 
     # ── Documentation reference ──
     lines.append("## Documentation links")
-    lines.append("- 📄 [Poletna pavza — navodila za izklop jeseni](https://github.com/os-tc-jesenice/reservation_app/blob/main/poletna-pavza.md)")
+    lines.append("- 📄 [Poletna pavza — navodila za izklop jeseni](https://github.com/CusinM15/reservation_app_sell/blob/main/poletna-pavza.md)")
     lines.append("")
 
     return "\n".join(lines)

@@ -58,7 +58,7 @@ Preden karkoli namestiš, preveri, ali imaš sledeče:
 
 > **💡 Pomembno: izbira poti**
 >
-> **Git** v zgornji tabeli ni obvezen — kodo lahko preneseš tudi kot [ZIP arhiv](https://github.com/os-tc-jesenice/reservation_app/archive/refs/heads/main.zip) in jo ročno razpakiraš. Vendar **priporočam Git**, ker potem lažje prenašaš posodobitve (`git pull`). Brez Gita boš moral vsakič znova prenesti celoten ZIP in prepisati datoteke.
+> **Git** v zgornji tabeli ni obvezen — kodo lahko preneseš tudi kot [ZIP arhiv](https://github.com/CusinM15/reservation_app_sell/archive/refs/heads/main.zip) in jo ročno razpakiraš. Vendar **priporočam Git**, ker potem lažje prenašaš posodobitve (`git pull`). Brez Gita boš moral vsakič znova prenesti celoten ZIP in prepisati datoteke.
 >
 > **Dve poti, dve orodji:**
 > - **Pot 1 — uvicorn** (priporočeno): rabiš **Python**, Dockerja **ne rabiš**.
@@ -140,7 +140,7 @@ Najprej moraš kodo aplikacije prenesti s spleta na svoj računalnik. To naredi�
 
 ```bash
 # 1. Kloniraj repozitorij (to pomeni: prenesi celotno mapo s kodo)
-git clone https://github.com/os-tc-jesenice/reservation_app.git
+git clone https://github.com/CusinM15/reservation_app_sell.git
 cd sola-app
 ```
 
@@ -237,7 +237,7 @@ docker start sola-app
 
 ```bash
 # 1. Prenesi kodo
-git clone https://github.com/os-tc-jesenice/reservation_app.git
+git clone https://github.com/CusinM15/reservation_app_sell.git
 cd sola-app
 
 # 2. Ustvari virtualno okolje

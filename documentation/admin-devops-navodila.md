@@ -115,7 +115,7 @@ Kopiram ssh ključ tudi iz računalnikov ki so že v strežniku, da lahko Hermes
 ```
 ```bash
 scp ~/.ssh/id_ed25519 ~/.ssh/id_ed25519.pub  admin_os@193.2.171.251:~/.ssh/
-git clone git@github.com:os-tc-jesenice/reservation_app.git
+git clone git@github.com:CusinM15/reservation_app_sell.git
 scp .env admin_os@193.2.171.251:~/reservation_app/
 ```
 ****
