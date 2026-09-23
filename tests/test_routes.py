@@ -155,5 +155,10 @@ def test_koledar_ima_popup_za_dejavnosti(client, make_user):
     assert "Ne traja cel dan" in html
     assert "Celoten dan</b> — dejavnost traja ves dan" in html
 
+    # gumb »Zapri« v pop-upu je v isti (primarni) barvi kot gumb »Osveži«
+    # na strani Ocenjevanje — ne v sivi »cancel« barvi.
+    assert 'class="btn btn-primary" onclick="closeModal(\'dejavnost-modal\')"' in html
+    assert 'class="btn btn-cancel" onclick="closeModal(\'dejavnost-modal\')"' not in html
+
     # stara logika (klik na blokiran dan ni delal nič) ne sme več obstajati
     assert """showBlocked ? '' : `onclick="quickOc""" not in html
