@@ -1275,14 +1275,12 @@
       return out;
     }
 
-    // Razredi za izpis v vijoličnem polju koledarja: unija razredov, ki imajo
-    // ta dan katerokoli dejavnost (tudi krajšo, ne-celodnevno) IN blokiranih
-    // (celodnevnih) razredov. Če je izbran posamezen razred, seznam omejimo nanj.
-    function calendarFieldRazredi(razred, dayActClasses, blockedRazredi) {
-      const all = [];
-      (dayActClasses || []).forEach(r => { if (r && all.indexOf(r) === -1) all.push(r); });
-      (blockedRazredi || []).forEach(r => { if (r && all.indexOf(r) === -1) all.push(r); });
-      all.sort((a, b) => a.localeCompare(b, 'sl'));
+    // Razredi za izpis v vijoličnem polju koledarja: SAMO celodnevne
+    // (blokirane) dejavnosti — krajše dejavnosti se v polju NE izpišejo
+    // (vidne so le v pop-upu ob kliku), zato takrat polje pravi zgolj
+    // »Dejavnost:«. Seznam omejimo na izbrani razred (oz. 8./9.).
+    function calendarFieldRazredi(razred, blockedRazredi) {
+      const all = (blockedRazredi || []).slice().sort((a, b) => a.localeCompare(b, 'sl'));
       if (razred && razred !== 'Vsi razredi') {
         if (razred.startsWith('__')) {
           const prefix = razred === '__8__' ? '8.' : '9.';
@@ -1871,8 +1869,9 @@
           else if (blockedDates[razred] && blockedDates[razred][dateStr]) showBlocked = true;
         } else if (hasBlockedOnDate && (!razred || razred === 'Vsi razredi')) showBlocked = true;
         // Dejavnosti, ki NE trajajo cel dan, ne ustvarijo blokade — zato jih
-        // poiščemo neposredno v zapisih dejavnosti. Polje »Dejavnosti:« mora
-        // biti vidno tudi zanje, izpiše pa tudi razred(e).
+        // poiščemo neposredno v zapisih dejavnosti. Polje »Dejavnost:« (ednina)
+        // se prikaže tudi zanje, a BREZ razredov; razredi se izpišejo le ob
+        // celodnevni (blokirani) dejavnosti.
         const dayActClasses = dayActivityClasses(dateStr);
         let showActivity = dayActClasses.length > 0;
         if (showActivity && razred && razred !== 'Vsi razredi') {
@@ -1880,9 +1879,9 @@
           else showActivity = dayActClasses.some(r => r === razred);
         }
         const showField = showBlocked || showActivity;
-        // Razredi za izpis v polju: unija razredov s katerokoli dejavnostjo in
-        // blokiranih (celodnevnih) razredov, filtrirano po izbranem razredu.
-        const fieldRazredi = calendarFieldRazredi(razred, dayActClasses, blockedRazredi);
+        // Razredi za izpis: samo celodnevne (blokirane) dejavnosti, filtrirano
+        // po izbranem razredu. Krajše dejavnosti tu nimajo vpliva.
+        const fieldRazredi = calendarFieldRazredi(razred, blockedRazredi);
         let cls = 'calendar-day';
         if (isToday) cls += ' today';
         if (isWeekend) cls += ' other-month';
@@ -1890,13 +1889,13 @@
             ? `onclick="openDejavnostModal('${dateStr}')" style="cursor:pointer;" title="Klikni za seznam dejavnosti"`
             : `onclick="quickOc('${razred}','${dateStr}')"`}>
           <div class="day-num">${day}</div>`;
-        // Vijolično polje = dan dejavnosti (celodnevne ali krajše). Klik odpre
-        // pop-up s SEZNAMOM vseh dejavnosti tega dne. Razred(i) se izpišejo tudi
-        // pri krajših dejavnostih (brez »Celoten dan«) — da je takoj jasno, kdo
-        // ima dejavnost; pop-up nato loči celodnevne od krajših po barvi.
+        // Vijolično polje = dan dejavnosti. Klik odpre pop-up s SEZNAMOM vseh
+        // dejavnosti tega dne (tudi krajših). V polju samem se razred(i)
+        // izpišejo SAMO ob celodnevni dejavnosti; če celodnevne ni, piše zgolj
+        // »📋 Dejavnost:« (ednina).
         if (showField) html += `<div class="assessment-badge" style="background:#7c3aed;color:#fff;font-weight:600;cursor:pointer;"
             onclick="event.stopPropagation();openDejavnostModal('${dateStr}')"
-            title="Klikni za seznam dejavnosti"><span>📋 Dejavnosti:${fieldRazredi.length ? ' ' + fieldRazredi.join(', ') : ''}</span></div>`;
+            title="Klikni za seznam dejavnosti"><span>📋 Dejavnost:${fieldRazredi.length ? ' ' + fieldRazredi.join(', ') : ''}</span></div>`;
         if (asmMap[day]) {
           asmMap[day].forEach(a => {
             const asmCls = a.ponavljanje ? 'assessment-ponavljanje' : 'assessment-normal';

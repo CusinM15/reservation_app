@@ -142,15 +142,17 @@ def test_koledar_ima_popup_za_dejavnosti(client, make_user):
     assert '''onclick="openDejavnostModal('${dateStr}')"''' in html
     assert """event.stopPropagation();openDejavnostModal('${dateStr}')""" in html
 
-    # vijolično polje »Dejavnosti:« je vidno tudi ob NE-celodnevnih dejavnostih
-    # in izpiše tudi razred(e) — tako pri celodnevnih kot pri krajših.
+    # vijolično polje »Dejavnost:« (EDNINA) je vidno tudi ob NE-celodnevnih
+    # dejavnostih, a takrat BREZ razredov; razredi se izpišejo le ob celodnevni.
     assert "function dayActivityClasses" in html
     assert "function calendarFieldRazredi" in html
-    assert "const fieldRazredi = calendarFieldRazredi(razred, dayActClasses, blockedRazredi);" in html
+    assert "const fieldRazredi = calendarFieldRazredi(razred, blockedRazredi);" in html
     assert "const showField = showBlocked || showActivity;" in html
-    assert "📋 Dejavnosti:" in html
+    assert "📋 Dejavnost:" in html
+    assert "📋 Dejavnosti:" not in html              # ednina, ne množina
     assert "${fieldRazredi.length ? ' ' + fieldRazredi.join(', ') : ''}" in html
-    # stara logika (razredi samo ob blokadi) ne sme več veljati
+    # razredi v polju NE smejo več prihajati iz krajših (ne-celodnevnih) dejavnosti
+    assert "calendarFieldRazredi(razred, dayActClasses, blockedRazredi)" not in html
     assert "${(showBlocked && blockedRazredi.length) ?" not in html
 
     # celodnevne in krajše dejavnosti so v pop-upu RAZLIČNIH barv + mikro legenda
