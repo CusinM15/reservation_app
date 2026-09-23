@@ -59,10 +59,19 @@
 
                     <h3>Uvoz uporabnikov iz CSV</h3>
                     <p style="font-size:13px;color:#666;margin:4px 0;">
-                        Glave stolpcev (vrstni red dowoln, neobčutljivo na velikost črk):
-                        <code>username, email, first_name, last_name, role, password</code>.
-                        Uporabniki se dodajo v šolo, ki jo trenutno upravljate; če gesla ni v datoteki,
-                        dobi uporabnik privzeto geslo. Obstoječa uporabniška imena se preskočijo.
+                        <strong>Glava stolpcev ni obvezna.</strong> Če je ni, velja vrstni red:
+                        <code>uporabniško ime, email, ime, priimek, vloga, geslo</code> —
+                        npr. <code>mt.cusin@gmail.com,mt.cusin@gmail.com,ime,priimek,učitelj</code>.
+                        Imena stolpcev so lahko slovenska ali angleška
+                        (<code>ime, priimek, vloga, geslo</code> oz. <code>first_name, role, password</code>).
+                    </p>
+                    <p style="font-size:13px;color:#666;margin:4px 0;">
+                        <strong>Vloga</strong> je lahko slovenska: <code>učitelj</code> (tudi profesor),
+                        <code>vodstvo</code>, <code>admin</code>.
+                        <strong>Geslo ni potrebno</strong> — če ga v vrstici ni, si ga aplikacija
+                        izmisli in vam ga pokaže v povzetku (tega razdelite uporabnikom).
+                        Uporabniki se dodajo v šolo, ki jo trenutno upravljate; obstoječa
+                        uporabniška imena se preskočijo.
                     </p>
                     <div>
                         <input type="file" id="csv-file" accept=".csv,text/csv">
@@ -244,11 +253,17 @@
                                 box.textContent = 'Napaka: ' + (data.detail || res.status);
                                 return;
                             }
-                            let msg = 'Uvoženih: ' + data.created + ', preskočenih: ' + data.skipped + '.';
-                            if ((data.errors || []).length) msg += ' Napake: ' + data.errors.join('; ');
-                            box.style.color = 'green';
+                            let msg = '✅ Uvoženih: ' + data.created + ', preskočenih: ' + data.skipped + '.';
+                            const gen = (data.users || []).filter(u => u.password);
+                            if (gen.length) {
+                                msg += '\n🔑 Izmišljena gesla (razdelite jih uporabnikom):';
+                                gen.forEach(u => { msg += '\n   ' + u.username + ' → ' + u.password; });
+                            }
+                            if ((data.errors || []).length) msg += '\n⚠️ Napake: ' + data.errors.join('; ');
+                            box.style.color = (data.errors || []).length ? '#92400e' : 'green';
+                            box.style.whiteSpace = 'pre-line';
                             box.textContent = msg;
-                            if (data.created) setTimeout(() => window.location.reload(), 1600);
+                            if (data.created) setTimeout(() => window.location.reload(), 4000);
                         } catch (e) {
                             box.style.color = 'red';
                             box.textContent = 'Napaka pri povezavi s strežnikom.';

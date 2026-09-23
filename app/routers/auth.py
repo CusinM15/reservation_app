@@ -455,6 +455,102 @@ def change_password(
 _SCHOOL_ROLES = {RoleEnum.teacher.value, RoleEnum.vodstvo.value, RoleEnum.admin.value}
 
 
+# ── Uvoz uporabnikov iz CSV: preslikave (tolerantno na SI/EN in velikost črk) ──
+# Zakaj? V praksi šole pripravijo CSV v Excelu brez glave in v slovenščini
+# (npr. `mt.cusin@gmail.com,mt.cusin@gmail.com,ime,priimek,učitelj`) — vrstni
+# red je enak, le imena stolpcev/vlog so drugačna. Zato prevedemo tako glave
+# kot vloge; če glave NI, uporabimo privzeti vrstni red.
+_FOLD_MAP = str.maketrans({"č": "c", "š": "s", "ž": "z", "ć": "c", "đ": "d"})
+
+
+def _fold(value: str) -> str:
+    """Poenoti za primerjavo: trim, male črke, šumniki → ASCII."""
+    return (value or "").strip().lower().translate(_FOLD_MAP)
+
+
+# Imena stolpcev (že »folded«) → kanonično ime.
+_CSV_COLUMN_ALIASES = {
+    "username": {"username", "user", "uporabnisko_ime", "uporabnisko ime", "uporabnisko"},
+    "email": {"email", "e-posta", "eposta", "mail", "e posta", "elektronska posta"},
+    "first_name": {"first_name", "ime"},
+    "last_name": {"last_name", "priimek"},
+    "role": {"role", "vloga"},
+    "password": {"password", "geslo"},
+}
+
+# Če glave NI, velja ta vrstni red stolpcev.
+_CSV_POSITIONAL_ORDER = ["username", "email", "first_name", "last_name", "role", "password"]
+
+# Slovenske/angleške vloge → vrednosti RoleEnum.
+_ROLE_ALIASES = {
+    "teacher": "teacher", "ucitelj": "teacher", "profesor": "teacher", "professor": "teacher",
+    "vodstvo": "vodstvo", "vodja": "vodstvo", "leadership": "vodstvo", "ravnatelj": "vodstvo",
+    "admin": "admin", "administrator": "admin", "skrbnik": "admin",
+}
+
+
+def _generate_import_password(length: int = 10) -> str:
+    """Naključno geslo, ki VEDNO ustreza pravilom šole (mala+velika+številka, ≥5).
+
+    Zakaj? Uporabnik ne sme rabiti vpisovati gesla za vsakega učitelja posebej —
+    aplikacija si ga izmisli, admin pa ga razdelí (vidno je v povzetku uvoza).
+    """
+    import random
+    lower = "abcdefghijkmnopqrstuvwxyz"      # brez »l« (zamenjava s 1)
+    upper = "ABCDEFGHJKLMNPQRSTUVWXYZ"       # brez »I«/»O«
+    digits = "23456789"
+    alphabet = lower + upper + digits
+    chars = [secrets.choice(lower), secrets.choice(upper), secrets.choice(digits)]
+    chars += [secrets.choice(alphabet) for _ in range(max(0, length - 3))]
+    random.SystemRandom().shuffle(chars)
+    return "".join(chars)
+
+
+def _parse_user_csv(text: str) -> list[dict]:
+    """Razčleni CSV v vrstice uporabnikov; glave so NEOBVEZNE.
+
+    Vrne seznam slovarjev s ključi username/email/first_name/last_name/role/password
+    (manjkajoči stolpci so prazni nizi). Prazne vrstice so izpuščene.
+    """
+    import csv
+    import io
+
+    rows = [
+        row for row in csv.reader(io.StringIO(text or ""))
+        if any((cell or "").strip() for cell in row)
+    ]
+    if not rows:
+        return []
+
+    header_map: dict[str, int] = {}
+    for idx, name in enumerate(_fold(cell) for cell in rows[0]):
+        for canonical, aliases in _CSV_COLUMN_ALIASES.items():
+            if name in aliases and canonical not in header_map:
+                header_map[canonical] = idx
+
+    # Kdaj je prva vrstica GLAVA? Zahtevamo, da vsebuje stolpec za uporabniško
+    # ime ali email (`username`/`uporabniško ime` ali `email`/`e-pošta`).
+    # Zakaj tako strogo? Ker bi sicer podatkovna vrstica, ki ima v stolpcih za
+    # ime/priimek dobesedno vrednost »Ime«/»Priimek«, veljala za glavo in bi se
+    # tiho požrla. Podatkovna celica redko vsebuje dobesedno »username«/»email«,
+    # glava pa skoraj vedno poimenuje vsaj enega od teh dveh stolpcev.
+    if "username" in header_map or "email" in header_map:
+        data_rows = rows[1:]                      # prva vrstica je glava
+    else:
+        header_map = {name: i for i, name in enumerate(_CSV_POSITIONAL_ORDER)}
+        data_rows = rows                         # brez glave — vsi podatki
+
+    parsed = []
+    for row in data_rows:
+        # Vse kanonične ključe vedno vrnemo (manjkajoči so prazni nizi), da je
+        # oblika vrstice predvidljiva ne glede na obliko datoteke.
+        item = {canonical: "" for canonical in _CSV_COLUMN_ALIASES}
+        for canonical, idx in header_map.items():
+            item[canonical] = row[idx].strip() if idx < len(row) else ""
+        parsed.append(item)
+    return parsed
+
+
 @router.get("/admin/users", response_class=HTMLResponse)
 def admin_users_page(request: Request, db: Session = Depends(get_db)):
     """Prikaži seznam uporabnikov šole, ki jo admin upravlja."""
@@ -538,16 +634,20 @@ def create_user(
 async def import_users_csv(request: Request, db: Session = Depends(get_db)):
     """Uvozi uporabnike iz CSV datoteke (šolski admin svoje šole).
 
-    Pripravljeno za UI (gumb »Uvozi CSV«), ki ga lahko dodamo kasneje.
-    Pričakovane glave stolpcev (neobčutljivo na velikost črk, vrstni red
-    dowoln): username, email, first_name, last_name, role, password.
-    Če gesla ni, se uporabniku nastavi privzeto geslo, ki ga mora zamenjati.
+    Tolerantno na obliko datoteke — v praksi jo šole pripravijo v Excelu:
+      * glava stolpcev je NEOBVEZNA. Če je ni, velja vrstni red
+        `uporabniško ime, email, ime, priimek, vloga, geslo`;
+      * imena stolpcev so lahko slovenska (ime, priimek, vloga, geslo) ali
+        angleška (username, first_name, role, password);
+      * vloga je lahko slovenska — učitelj, vodstvo, admin (tudi profesor,
+        ravnatelj, skrbnik);
+      * GESLO JE NEOBVezno: če ga v vrstici ni, si ga aplikacija izmisli
+        (naključno, veljavno po pravilih šole) in ga vrne v povzetku, da ga
+        admin razdelí.
 
-    Vrne JSON povzetek: {created, skipped, errors}.
+    Vrne JSON povzetek: {created, skipped, errors, users} kjer `users` vsebuje
+    le uporabnike z GENERIRANIM geslom (gesla iz datoteke se ne vračajo).
     """
-    import csv
-    import io
-
     current_user, school_id, error = _user_admin_scope(request, db)
     if error is not None:
         raise HTTPException(status_code=403, detail="Nimate admin pravic")
@@ -559,45 +659,84 @@ async def import_users_csv(request: Request, db: Session = Depends(get_db)):
     if upload is None or not hasattr(upload, "read"):
         raise HTTPException(status_code=400, detail="Manjka datoteka (polje 'file').")
 
-    raw = await upload.read()
-    text = raw.decode("utf-8-sig", errors="replace")
-    reader = csv.DictReader(io.StringIO(text))
+    text = (await upload.read()).decode("utf-8-sig", errors="replace")
+    rows = _parse_user_csv(text)
+    if not rows:
+        raise HTTPException(
+            status_code=400,
+            detail="V datoteki ni uporabnih vrstic (prazna datoteka?).",
+        )
 
     created, skipped, errors = 0, 0, []
-    for i, row in enumerate(reader, start=2):  # 2 = prva vrstica pod glavo
-        norm = {(k or "").strip().lower(): (v or "").strip() for k, v in row.items()}
-        username = norm.get("username", "")
+    new_users: list[dict] = []
+    seen: set[str] = set()
+    for i, item in enumerate(rows, start=1):
+        username = item.get("username", "")
         if not username:
-            errors.append(f"vrstica {i}: manjka username")
+            errors.append(f"vrstica {i}: manjka uporabniško ime")
             continue
-        role = norm.get("role") or RoleEnum.teacher.value
-        if role not in _SCHOOL_ROLES:
-            errors.append(f"vrstica {i}: neveljavna vloga '{role}'")
+        if username.lower() in seen:
+            # Podvojenih v datoteki NE uvažamo — sicer bi nastali dvojniki
+            # (username/school_id nista unikatna na ravni baze).
+            errors.append(f"vrstica {i}: uporabnik '{username}' je v datoteki naveden večkrat")
             continue
+        seen.add(username.lower())
+
+        role = _ROLE_ALIASES.get(_fold(item.get("role") or RoleEnum.teacher.value))
+        if role is None:
+            errors.append(
+                f"vrstica {i}: neveljavna vloga '{item.get('role')}' "
+                f"(dovoljeno: učitelj, vodstvo, admin)"
+            )
+            continue
+
         exists = db.query(User).filter(
             User.username == username, User.school_id == school_id
         ).first()
         if exists:
             skipped += 1
             continue
-        password = norm.get("password") or settings.DEFAULT_IMPORT_PASSWORD
+
+        password = item.get("password", "")
+        generated = not password
+        if generated:
+            password = _generate_import_password()
+        else:
+            problem = validate_password_strength(password)
+            if problem:
+                errors.append(f"vrstica {i}: geslo je prešibko ({problem})")
+                continue
+
         db.add(User(
             school_id=school_id,
             username=username,
-            email=norm.get("email") or None,
-            first_name=norm.get("first_name", ""),
-            last_name=norm.get("last_name", ""),
+            email=item.get("email") or None,
+            first_name=item.get("first_name", ""),
+            last_name=item.get("last_name", ""),
             password_hash=get_password_hash(password),
             role=role,
             is_active=True,
         ))
         created += 1
+        new_users.append({
+            "username": username,
+            "email": item.get("email", ""),
+            # Vrnemo SAMO generirana gesla (gesel iz datoteke ne razkrivamo).
+            "password": password if generated else None,
+        })
 
-    db.commit()
+    try:
+        db.commit()
+    except Exception as exc:                                  # noqa: BLE001
+        db.rollback()
+        raise HTTPException(status_code=400, detail=f"Uvoza ni bilo mogoče shraniti: {exc}")
+
     log_audit(db, user_id=current_user.id, username=current_user.username,
-              action="import_users", details=f"school_id={school_id}, created={created}, skipped={skipped}",
+              action="import_users",
+              details=(f"school_id={school_id}, created={created}, skipped={skipped}, "
+                       f"generated_passwords={sum(1 for u in new_users if u['password'])}"),
               school_id=school_id)
-    return {"created": created, "skipped": skipped, "errors": errors}
+    return {"created": created, "skipped": skipped, "errors": errors, "users": new_users}
 
 
 @router.post("/admin/users/{id}/deactivate")
