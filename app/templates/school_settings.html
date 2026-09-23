@@ -176,6 +176,17 @@
             </div>
         </form>
 
+        <h3>Varnostna kopija šole</h3>
+        <div class="restore-box">
+            <p class="hint" style="margin-top:0;">
+                Sestavi <code>.sql</code> varnostno kopijo podatkov <strong>te šole</strong>
+                (izključno te šole — vrstic drugih šol ne vsebuje) in jo pošlje po e-pošti na
+                <strong>{{ backup_email or '(naslov ni nastavljen — vpišite BACKUP_EMAIL)' }}</strong>.
+            </p>
+            <button type="button" class="btn btn-success" onclick="makeBackup()">📧 Naredi backup</button>
+            <div id="backup-msg"></div>
+        </div>
+
         <h3>Obnova iz varnostne kopije</h3>
         <div class="restore-box">
             <p class="hint" style="margin-top:0;">
@@ -448,6 +459,37 @@
 
     function openModal(id) { document.getElementById(id).classList.add('active'); }
     function closeModal(id) { document.getElementById(id).classList.remove('active'); }
+
+    // ── Naredi backup: .sql kopija TE šole po e-pošti ────────────────
+    // Strežnik sestavi datoteko (samo podatki te šole) in jo pošlje na
+    // naslov za varnostne kopije; tu prikažemo rezultat (poslano/ni poslano)
+    // in povzetek po tabelah, da uporabnik ve, kaj je bilo vključeno.
+    async function makeBackup() {
+        const box = document.getElementById('backup-msg');
+        box.className = '';
+        box.textContent = 'Sestavljam kopijo in pošiljam ...';
+        try {
+            const res = await fetch('/api/schools/' + SCHOOL_ID + '/backup', {
+                method: 'POST', credentials: 'include'
+            });
+            const data = await res.json().catch(() => ({}));
+            if (!res.ok) {
+                box.className = 'err';
+                box.textContent = 'Napaka: ' + (data.detail || res.status);
+                return;
+            }
+            const rows = Object.keys(data.tables || {})
+                .map(function (t) { return t + ': ' + data.tables[t]; }).join(' · ');
+            const kb = Math.round((data.bytes || 0) / 1024 * 10) / 10;
+            box.className = data.sent ? 'ok' : 'err';
+            box.innerHTML = (data.sent ? '✅ ' : '⚠️ ') + (data.message || '') +
+                '<br><span style="font-size:0.85rem;">📄 ' + data.filename + ' (' + kb + ' KB)</span>' +
+                '<br><span style="font-size:0.85rem;color:#555;">Vključeno — ' + rows + '</span>';
+        } catch (e) {
+            box.className = 'err';
+            box.textContent = 'Napaka pri povezavi s strežnikom.';
+        }
+    }
 
     // ── Shranjevanje nastavitev ──────────────────────────────────────
     document.getElementById('settings-form').addEventListener('submit', async function (e) {

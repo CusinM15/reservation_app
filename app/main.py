@@ -337,8 +337,22 @@ def history_page(request: Request):
             if not role_value(user) == MAIN_ADMIN_ROLE:
                 query = query.filter(User.school_id == user.school_id)
             users = query.order_by(User.first_name).all()
+            # Spustni seznam »Šola« (filtriranje dnevnika) ima samo glavni admin.
+            from app.models import School
+            from app.tenancy import is_main_admin
+            main_admin = is_main_admin(user)
+            schools = (
+                [{"id": s.id, "name": s.name}
+                 for s in db.query(School).order_by(School.name).all()]
+                if main_admin else []
+            )
             db.close()
-            return templates.TemplateResponse("audit_log.html", {"request": request, "users": users})
+            return templates.TemplateResponse("audit_log.html", {
+                "request": request,
+                "users": users,
+                "is_main_admin": main_admin,
+                "schools": schools,
+            })
         db.close()
     except Exception:
         pass

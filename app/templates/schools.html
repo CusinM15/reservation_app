@@ -13,6 +13,8 @@
         .btn { padding: 6px 11px; background: #007bff; color: white; text-decoration: none; border-radius: 4px; font-size: 13px; border: none; cursor: pointer; display: inline-block; margin: 2px 2px 2px 0; }
         .btn-success { background: #28a745; }
         .btn-cancel { background: #6c757d; }
+        .btn-danger { background: #dc3545; }
+        .btn-danger:hover { background: #b02a37; }
         .badge { display: inline-block; background: #e9ecef; border-radius: 4px; padding: 2px 7px; font-size: 12px; margin: 1px; font-family: monospace; text-decoration: none; color: #0b5ed7; }
         .badge:hover { background: #d4e2f7; }
         .alias-item { white-space: nowrap; margin: 1px 0; }
@@ -93,6 +95,8 @@
                         <a class="btn btn-success" href="/schools/open/{{ s.id }}">Odpri</a>
                         <a class="btn" href="/auth/admin/users" onclick="openInThisSchool({{ s.id }}); return false;">Uporabniki</a>
                         <a class="btn" href="/settings?school_id={{ s.id }}">Nastavitve</a>
+                        <a class="btn btn-danger" href="#" title="Izbriše šolo in vse njene podatke"
+                           onclick="deleteSchool({{ s.id }}, '{{ s.name|e }}'); return false;">🗑 Izbriši</a>
                     </td>
                 </tr>
             {% else %}
@@ -177,6 +181,28 @@
                     '<a class="alias-del" href="#" onclick="removeAlias(' + schoolId + ', \'' + a + '\'); return false;">✕</a></div>'
                 ).join('');
             }
+        } else {
+            box.className = 'err';
+            box.textContent = 'Napaka: ' + (data.detail || res.status);
+        }
+    }
+
+    // ── Izbris šole (glavni admin) ──────────────────────────────────
+    // Dvostopenjsko potrjevanje: brisanje odstrani VSE podatke šole
+    // (uporabnike, rezervacije, ocenjevanja, dneve dejavnosti, nastavitve,
+    // poti šole) in je nepreklicno. Privzete šole strežnik ne pusti izbrisati.
+    async function deleteSchool(id, name) {
+        if (!confirm('Izbrišem šolo »' + name + '«?\n\nIzbrisani bodo VSI njeni podatki: ' +
+                     'uporabniki, rezervacije, ocenjevanja, dnevi dejavnosti, nastavitve in poti šole.')) return;
+        if (!confirm('Potrdite še enkrat: brisanje šole »' + name + '« je NEPREKLICNO.')) return;
+
+        const box = document.getElementById('msg');
+        const res = await fetch('/api/schools/' + id, { method: 'DELETE', credentials: 'include' });
+        const data = await res.json().catch(() => ({}));
+        if (res.ok) {
+            box.className = 'ok';
+            box.textContent = data.message || 'Šola izbrisana.';
+            setTimeout(() => window.location.reload(), 1500);
         } else {
             box.className = 'err';
             box.textContent = 'Napaka: ' + (data.detail || res.status);

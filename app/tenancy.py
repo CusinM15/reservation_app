@@ -700,6 +700,67 @@ def _alias_kind_for(alias: str) -> str | None:
     return match.group(1) if match else None
 
 
+def delete_school_data(db: Session, school) -> dict:
+    """Izbriše VSE podatke ene šole in šolo samo (samo glavni admin).
+
+    Vrstni red je pomemben zaradi tujih ključev:
+      1. podatki, ki kažejo na uporabnike/šolo (rezervacije, ocenjevanja,
+         blokade, dejavnosti),
+      2. dnevnik dogodkov TE šole,
+      3. uporabniki in njihove nastavitve/aliasi,
+      4. šola.
+    Dnevnik dogodkov, ki šoli ne pripada (school_id je NULL), se NE briše —
+    tam se user_id na brisane uporabnike samo počisti (username ostane
+    zapisan), da ne pade tuji ključ in da zgodovina ostane berljiva.
+
+    Vrne slovar {tabela: število izbrisanih vrstic}.
+    """
+    from app.models import (
+        ActivityDay, Assessment, AuditLog, BlockedDate, Reservation,
+        SchoolAlias, SchoolSetting, User,
+    )
+    from sqlalchemy import select
+
+    sid = int(school.id)
+    counts: dict[str, int] = {}
+
+    for model, name in (
+        (Reservation, "reservations"),
+        (Assessment, "assessments"),
+        (BlockedDate, "blocked_dates"),
+        (ActivityDay, "activity_days"),
+    ):
+        counts[name] = db.query(model).filter(model.school_id == sid).delete(
+            synchronize_session=False
+        ) or 0
+
+    counts["audit_log"] = db.query(AuditLog).filter(AuditLog.school_id == sid).delete(
+        synchronize_session=False
+    ) or 0
+
+    # Dnevnik z school_id = NULL, ki kaže na uporabnike te šole: sklopi vez
+    # (username ostane), da brisanje uporabnikov ne pade na tujem ključu.
+    user_ids = select(User.id).where(User.school_id == sid)
+    db.query(AuditLog).filter(AuditLog.user_id.in_(user_ids)).update(
+        {"user_id": None}, synchronize_session=False
+    )
+
+    counts["users"] = db.query(User).filter(User.school_id == sid).delete(
+        synchronize_session=False
+    ) or 0
+    counts["school_settings"] = db.query(SchoolSetting).filter(
+        SchoolSetting.school_id == sid
+    ).delete(synchronize_session=False) or 0
+    counts["school_aliases"] = db.query(SchoolAlias).filter(
+        SchoolAlias.school_id == sid
+    ).delete(synchronize_session=False) or 0
+
+    db.delete(school)
+    db.flush()
+    invalidate_alias_cache()
+    return counts
+
+
 def aliases_by_kind(db: Session, school_id: int) -> dict[str, str]:
     """Vrni {'rezervacije': 'rezervacije_st', 'ocenjevanje': 'ocenjevanje_st'}.
 

@@ -57,6 +57,20 @@
             <span class="chip" data-action="create_blocked_dates" onclick="setFilter('create_blocked_dates')">➕ blokade</span>
             <span class="chip" data-action="delete_blocked_date" onclick="setFilter('delete_blocked_date')">➖ blokade</span>
         </div>
+        {% if is_main_admin %}
+        <!-- GLAVNI ADMIN: filter po šoli. »— vse šole —« prikaže vrstice vseh
+             šol skupaj; izbira posamezne šole prikaže samo njeno zgodovino. -->
+        <label style="margin-left:auto;font-size:13px;font-weight:600;color:#555;white-space:nowrap;">
+            Šola:
+            <select id="schoolFilter" onchange="setSchoolFilter(this.value)"
+                    style="font-size:13px;padding:6px 8px;border:1px solid #1976D2;border-radius:6px;background:#e3f2fd;color:#0d47a1;font-weight:600;">
+                <option value="">— vse šole —</option>
+                {% for s in schools %}
+                <option value="{{ s.id }}">{{ s.name }}</option>
+                {% endfor %}
+            </select>
+        </label>
+        {% endif %}
     </div>
 
     <div class="stats" id="stats"></div>
@@ -70,7 +84,15 @@
     <script>
         let currentOffset = 0;
         let currentAction = '';
+        let currentSchool = '';        // '' = vse šole (samo glavni admin)
         const LIMIT = 100;
+
+        // Glavni admin: prikaži le izbrano šolo (ali vse).
+        function setSchoolFilter(value) {
+            currentSchool = value;
+            currentOffset = 0;
+            loadLog();
+        }
 
         function setFilter(action) {
             currentOffset = 0;
@@ -96,6 +118,7 @@
         async function loadLog() {
             let url = `/api/audit-log?limit=${LIMIT}&offset=${currentOffset}`;
             if (currentAction) url += `&action=${currentAction}`;
+            if (currentSchool) url += `&school_id=${currentSchool}`;
             
             try {
                 const resp = await fetch(url);
@@ -118,6 +141,7 @@
                     <thead><tr>
                         <th>Čas</th>
                         <th>Uporabnik</th>
+                        <th>Šola</th>
                         <th>Akcija</th>
                         <th>Podrobnosti</th>
                     </tr></thead><tbody>`;
@@ -126,6 +150,7 @@
                     html += `<tr>
                         <td class="timestamp">${ts}</td>
                         <td>${esc(r.username || '?')}</td>
+                        <td>${r.school ? esc(r.school) : '<span style="color:#aaa;">—</span>'}</td>
                         <td><span class="badge ${getActionClass(r.action)}">${esc(formatAction(r.action))}</span></td>
                         <td class="details">${esc(r.details || '')}</td>
                     </tr>`;

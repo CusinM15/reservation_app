@@ -33,6 +33,7 @@ from app.tenancy import (
     SCHOOL_SETTING_KEYS,
     add_school_alias,
     create_school,
+    delete_school_data,
     generate_aliases,
     get_request_user,
     invalidate_alias_cache,
@@ -46,6 +47,8 @@ from app.tenancy import (
     slugify,
 )
 from app.backup_restore import DOMAINS, DOMAIN_LABELS, restore_domain
+from app.school_backup import backup_filename, build_school_sql, send_backup_email
+from app.config import settings
 
 router = APIRouter(tags=["schools"])
 templates = Jinja2Templates(directory="app/templates")
@@ -226,6 +229,79 @@ def delete_school_alias(
               "delete_school_alias", f"school_id={school.id}, alias={alias}",
               school_id=school.id)
     return {"message": f"Pot '{alias}' odstranjena.", "aliases": [a.alias for a in school.aliases]}
+
+
+# ═══════════════════════════════════════════════════════════════════════
+# API — varnostna kopija (.sql) ene šole po e-pošti
+# ═══════════════════════════════════════════════════════════════════════
+
+@router.post("/api/schools/{school_id}/backup")
+def make_school_backup(school_id: int, request: Request, db: Session = Depends(get_db)):
+    """Sestavi .sql varnostno kopijo TE šole in jo pošlje po e-pošti.
+
+    Kopija vsebuje IZKLJUČNO podatke te šole (vsaka poizvedba je omejena na
+    school_id). Naslov: BACKUP_EMAIL šole, sicer ADMIN_EMAIL.
+    Vrne, ali je bilo pošiljanje uspešno, in povzetek po tabelah.
+    """
+    school = _manageable_school(db, request, school_id)
+    config = get_school_config(db, school.id)
+    sql, summary = build_school_sql(db, school)
+    recipient = config.BACKUP_EMAIL or config.ADMIN_EMAIL
+    filename = backup_filename(school)
+    size = len(sql.encode("utf-8"))
+
+    sent, message = send_backup_email(config, recipient, school, sql, filename)
+
+    user = get_request_user(request, db)
+    log_audit(
+        db, user.id if user else None, user.username if user else "?",
+        "school_backup",
+        f"school_id={school.id}, email={recipient or '-'}, file={filename}, "
+        f"bytes={size}, sent={sent}, tables={summary}",
+        school_id=school.id,
+    )
+    return {
+        "sent": sent,
+        "message": message,
+        "email": recipient,
+        "filename": filename,
+        "bytes": size,
+        "tables": summary,
+    }
+
+
+# ═══════════════════════════════════════════════════════════════════════
+# API — brisanje šole (samo glavni admin)
+# ═══════════════════════════════════════════════════════════════════════
+
+@router.delete("/api/schools/{school_id}")
+def delete_school(school_id: int, request: Request, db: Session = Depends(get_db)):
+    """Izbriše šolo in VSE njene podatke (samo glavni admin).
+
+    Privzete šole ni mogoče izbrisati — ob zagonu bi jo bootstrap znova
+    ustvaril, zato bi uporabnik mislil, da brisanje ne deluje.
+    """
+    admin = _require_main_admin(request, db)
+    school = db.query(School).filter(School.id == school_id).first()
+    if not school:
+        raise HTTPException(status_code=404, detail="Šola ne obstaja")
+    if school.slug == settings.DEFAULT_SCHOOL_SLUG:
+        raise HTTPException(
+            status_code=400,
+            detail=(f"Privzete šole »{school.name}« ni mogoče izbrisati — "
+                    f"ob zagonu aplikacije se znova ustvari."),
+        )
+
+    name, slug = school.name, school.slug
+    counts = delete_school_data(db, school)
+    db.commit()
+    # Zapis v dnevnik: school_id=None, ker šole ni več (ni tuje-ključne vezi).
+    log_audit(
+        db, admin.id, admin.username, "delete_school",
+        f"school_id={school_id}, slug={slug}, name={name}, deleted={counts}",
+        school_id=None,
+    )
+    return {"message": f"Šola »{name}« je izbrisana.", "deleted": counts}
 
 
 # ═══════════════════════════════════════════════════════════════════════
@@ -528,5 +604,7 @@ def school_settings_page(
         "prostori_rows": prostori_rows,
         "razredi_rows": razredi_rows,
         "stevila_rows": stevila_rows,
+        # Naslov, kamor gre »Naredi backup« (BACKUP_EMAIL šole, sicer ADMIN_EMAIL).
+        "backup_email": (cfg.BACKUP_EMAIL or cfg.ADMIN_EMAIL or ""),
         "is_main_admin": is_main_admin(user),
     })
