@@ -31,12 +31,16 @@ from app.routers.blocked_dates import _send_email
 from app.security import sign_user_id, get_current_user_id
 from app.tenancy import (
     MAIN_ADMIN_ROLE,
+    admin_email_for_new_user,
+    admin_email_for_user,
     config_for_request,
     find_user_for_login,
     get_request_user,
+    get_school_config,
     is_main_admin,
     is_school_admin,
     request_school_id,
+    role_value,
     write_school_id,
 )
 
@@ -611,6 +615,10 @@ def create_user(
         return RedirectResponse(url="/auth/admin/users?error=Uporabnik že obstaja", status_code=303)
     
     hashed = get_password_hash(password)
+    # Admin račun dobi e-pošto iz nastavitve ADMIN_EMAIL te šole (ne iz obrazca):
+    # e-pošta šolskega admina je vezana na nastavitve (glej update_user).
+    if role == "admin":
+        email = admin_email_for_new_user(db, target_school_id) or ""
     new_user = User(
         username=username,
         email=email or None,
@@ -710,7 +718,10 @@ async def import_users_csv(request: Request, db: Session = Depends(get_db)):
         db.add(User(
             school_id=school_id,
             username=username,
-            email=item.get("email") or None,
+            # Admin račun: e-pošta je vezana na nastavitev ADMIN_EMAIL šole
+            # (in le, če je naslov prost — glej admin_email_for_new_user).
+            email=(admin_email_for_new_user(db, school_id) if role == "admin"
+                  else (item.get("email") or None)),
             first_name=item.get("first_name", ""),
             last_name=item.get("last_name", ""),
             password_hash=get_password_hash(password),
@@ -851,7 +862,14 @@ def update_user(
         user.password_hash = get_password_hash(new_password)
     
     user.username = username
-    user.email = email or None
+    # E-pošta ŠOLSKEGA ADMINA je vezana na nastavitev ADMIN_EMAIL — tu je ni
+    # mogoče spremeniti (tudi če bi obrazec poslal drugo vrednost). Ureja se
+    # izključno na /settings → »E-pošta šolskega admina«. Naslov nosi le glavni
+    # admin račun šole (UNIQUE school_id+email), zato admin_email_for_user.
+    if role_value(user) == "admin":
+        user.email = admin_email_for_user(db, user)
+    else:
+        user.email = email or None
     user.first_name = first_name
     user.last_name = last_name
     user.role = role

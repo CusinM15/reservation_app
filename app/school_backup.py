@@ -50,6 +50,12 @@ def _columns(db: Session, table: str) -> list[str]:
     return [r[0] for r in rows]
 
 
+# Ključi nastavitev, ki jih v varnostno kopijo šole NE vključimo.
+# STANJE_MAIL — naslov za poročila o stanju sistema (dnevno poročilo je bilo
+# odstranjeno 2026-09-23), zato ga v kopiji ne potrebujemo.
+BACKUP_EXCLUDED_SETTING_KEYS = {"STANJE_MAIL"}
+
+
 def _copy_value(value) -> str:
     """Pretvori vrednost v obliko COPY (pg_dump text).
 
@@ -96,15 +102,20 @@ def build_school_sql(db: Session, school) -> tuple[str, dict]:
         cols = _columns(db, table)
         if not cols:
             continue
+        params: dict = {"sid": sid}
         if table == "schools":
             where = "id = :sid"
+        elif table == "school_settings" and BACKUP_EXCLUDED_SETTING_KEYS:
+            # Nekaterih ključev (npr. STANJE_MAIL) v kopijo NE vključimo.
+            where = "school_id = :sid AND key <> ALL(:excluded)"
+            params["excluded"] = sorted(BACKUP_EXCLUDED_SETTING_KEYS)
         elif "school_id" in cols:
             where = "school_id = :sid"
         else:
             # Tabela brez school_id (npr. globalna) — v kopijo šole ne sodi.
             continue
         rows = db.execute(
-            sql_text(f"SELECT {', '.join(cols)} FROM {table} WHERE {where}"), {"sid": sid}
+            sql_text(f"SELECT {', '.join(cols)} FROM {table} WHERE {where}"), params
         ).fetchall()
         lines.append("--")
         lines.append(f"-- Podatki: {table} ({len(rows)} vrstic)")

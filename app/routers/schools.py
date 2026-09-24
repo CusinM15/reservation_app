@@ -32,6 +32,7 @@ from app.tenancy import (
     SCHOOL_SETTING_FIELDS,
     SCHOOL_SETTING_KEYS,
     add_school_alias,
+    apply_admin_email,
     create_school,
     delete_school_data,
     generate_aliases,
@@ -45,6 +46,7 @@ from app.tenancy import (
     set_school_setting,
     get_school_config,
     slugify,
+    sync_admin_user_email,
 )
 from app.backup_restore import DOMAINS, DOMAIN_LABELS, restore_domain
 from app.school_backup import backup_filename, build_school_sql, send_backup_email
@@ -337,8 +339,24 @@ async def restore_from_backup(school_id: int, request: Request, db: Session = De
         raise HTTPException(status_code=400, detail="Naložena datoteka je prazna.")
     content = raw.decode("utf-8", errors="replace")
 
+    user = get_request_user(request, db)
     try:
-        summary = restore_domain(db, school.id, content, domain)
+        summary = restore_domain(
+            db, school.id, content, domain,
+            fallback_user_id=(user.id if user else None),
+        )
+        # Če smo obnovili nastavitve, uskladimo še e-pošto glavnega admin računa
+        # (nastavitev ADMIN_EMAIL → users.email). Če naslov uporablja drug račun,
+        # obnova vseeno uspe — le opozorilo zapišemo v povzetek.
+        if "school_settings" in summary["tables"]:
+            admin_email = get_school_config(db, school.id).ADMIN_EMAIL
+            _changes, conflict = sync_admin_user_email(db, school.id, admin_email)
+            if conflict:
+                summary["warnings"].append(
+                    f"E-pošta admina ni usklajena: {conflict}"
+                )
+            else:
+                apply_admin_email(db, school.id, admin_email)
         db.commit()
     except HTTPException:
         db.rollback()
@@ -347,7 +365,6 @@ async def restore_from_backup(school_id: int, request: Request, db: Session = De
         db.rollback()
         raise HTTPException(status_code=400, detail=f"Obnova ni uspela: {exc}")
 
-    user = get_request_user(request, db)
     log_audit(
         db, user.id if user else None, user.username if user else "?",
         "restore_from_backup",
@@ -433,14 +450,35 @@ async def update_school_settings(school_id: int, request: Request, db: Session =
         if isinstance(raw_value, (dict, list)):
             values[key] = _json.dumps(raw_value, ensure_ascii=False)
 
+    # E-pošta šolskega admina je VEZANA na nastavitev ADMIN_EMAIL: admin račun
+    # te šole dobi natanko ta naslov (glej sync_admin_user_email). Če naslov že
+    # uporablja drug račun iste šole (UNIQUE school_id+email), nastavitev NI
+    # shranjena in uporabnik dobi JASNO razlago, kaj naj uredi.
+    admin_email_changes: list[str] = []
+    if "ADMIN_EMAIL" in values:
+        admin_email_changes, conflict = sync_admin_user_email(
+            db, school.id, values.get("ADMIN_EMAIL")
+        )
+        if conflict:
+            db.rollback()
+            raise HTTPException(
+                status_code=400,
+                detail=(f"Nastavitve niso shranjene: {conflict}. "
+                        f"Uredite ali izbrišite tisti račun, nato poskusite znova."),
+            )
+        # Naslov zapišemo v GLAVNI admin račun te šole.
+        apply_admin_email(db, school.id, values.get("ADMIN_EMAIL"))
+
     for key, value in values.items():
         set_school_setting(db, school.id, key, value)
     db.commit()
 
     user = get_request_user(request, db)
+    details = f"school_id={school.id}, keys={','.join(sorted(values.keys()))}"
+    if admin_email_changes:
+        details += f", admin_email={'; '.join(admin_email_changes)}"
     log_audit(db, user.id if user else None, user.username if user else "?",
-              _SETTINGS_AUDIT_ACTION,
-              f"school_id={school.id}, keys={','.join(sorted(values.keys()))}")
+              _SETTINGS_AUDIT_ACTION, details)
     return _settings_payload(db, school)
 
 

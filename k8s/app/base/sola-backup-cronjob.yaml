@@ -16,8 +16,9 @@ spec:
             image: mato12345/sola-app:latest
             imagePullPolicy: Always
             # Vsaka šola dobi SVOJO .sql kopijo (samo njeni podatki) po e-pošti.
-            # Zakaj ne pg_dump? V sliki ga NI (stari scripts.db_backup je zato
-            # tiho odpovedoval), poleg tega bi pg_dump izvozil CELO bazo.
+            # Zakaj ne pg_dump? Izvozil bi CELO bazo (vse šole v eni datoteki).
+            # (Stari scripts.db_backup je odpovedal zaradi manjkajočega
+            # SECRET_KEY v tem CronJobu — pg_dump je v sliki sicer prisoten.)
             command:
             - python
             - -m

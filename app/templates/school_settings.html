@@ -195,14 +195,18 @@
                 s podatki iz kopije; podatki drugih šol ostanejo nedotaknjeni.
             </p>
             <div>
+                <button type="button" class="btn btn-warn" onclick="startRestore('uporabniki')">👥 Uporabniki</button>
+                <button type="button" class="btn btn-warn" onclick="startRestore('nastavitve')">⚙️ Nastavitve (razredi, prostori)</button>
                 <button type="button" class="btn btn-warn" onclick="startRestore('dejavnosti')">📋 Dejavnosti</button>
                 <button type="button" class="btn btn-warn" onclick="startRestore('rezervacije')">📅 Rezervacije</button>
                 <button type="button" class="btn btn-warn" onclick="startRestore('ocenjevanje')">📝 Ocenjevanje</button>
-                <button type="button" class="btn btn-warn" onclick="startRestore('vse')">♻️ Vse</button>
+                <button type="button" class="btn btn-warn" onclick="startRestore('vse')">♻️ Celotna šola (vse)</button>
             </div>
             <input type="file" id="restore-file" accept=".sql,text/plain" style="display:none">
             <p class="hint" style="margin-bottom:0;">
-                Dejavnosti = dnevi dejavnosti + zasedeni datumi. Vsaka obnova se zabeleži v dnevnik dogodkov.
+                Dejavnosti = dnevi dejavnosti + zasedeni datumi. »Nastavitve« vrne razrede, prostore,
+                urnik in števila; »Uporabniki« vrne račune šole (z gesli). »Celotna šola (vse)«
+                ponovno postavi vso šolo iz kopije. Vsaka obnova se zabeleži v dnevnik dogodkov.
             </p>
             <div id="restore-msg"></div>
         </div>
@@ -235,10 +239,12 @@
     <script>
     const SCHOOL_ID = {{ school.id }};
     const DOMAIN_LABELS = {
+        uporabniki: 'Uporabniki (računi šole, z gesli)',
+        nastavitve: 'Nastavitve šole (razredi, prostori, urnik, števila)',
         dejavnosti: 'Dejavnosti (dnevi dejavnosti + zasedeni datumi)',
         rezervacije: 'Rezervacije prostorov',
         ocenjevanje: 'Ocenjevanja',
-        vse: 'Vse (dejavnosti, rezervacije, ocenjevanja)'
+        vse: 'Vse (uporabniki, nastavitve, dejavnosti, rezervacije, ocenjevanja)'
     };
 
     // ── Pomožno ──────────────────────────────────────────────────────

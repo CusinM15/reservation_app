@@ -7,10 +7,11 @@
 # sicer ADMIN_EMAIL). Vsaka datoteka vsebuje ZGOLJ podatke svoje šole.
 #
 # Zakaj lasten izvoz in ne `pg_dump`?
-#   * v sliki NI `pg_dump`/`psql` odjemalca (prejšnji `scripts/db_backup.py` je
-#     zato vsako noč tiho odpovedal — pg_dump ni obstajal);
-#   * `pg_dump` izvozi CELO bazo, torej bi ena datoteka vsebovala podatke VSEH
-#     šol — tu pa mora vsaka šola dobiti SAMO SVOJE podatke.
+#   * `pg_dump` izvozi CELO bazo — ena datoteka bi vsebovala podatke VSEH šol,
+#     tu pa mora vsaka šola dobiti SAMO SVOJE podatke (ločitev po school_id);
+#   * staro nočno opravilo (`scripts/db_backup.py`) je vsako noč tiho odpovedalo,
+#     ker njegov CronJob ni imel `SECRET_KEY` — aplikacija je padla že ob importu.
+#     (pg_dump je v sliki SICER prisoten: postgresql-client-18.)
 # Izpis je zato v obliki `pg_dump -F p` (COPY bloki), ki jo zna prebrati naš
 # obnovitveni parser — kopijo je mogoče obnoviti prek /settings → »Obnova iz
 # varnostne kopije«.

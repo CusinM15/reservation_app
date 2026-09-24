@@ -761,6 +761,123 @@ def delete_school_data(db: Session, school) -> dict:
     return counts
 
 
+def primary_admin(db: Session, school_id: int):
+    """Glavni (primarni) admin račun šole — najstarejši, tj. najnižji id.
+
+    Zakaj samo eden? V bazi velja UNIQUE (school_id, email), zato istega naslova
+    ne moreta imeti dva uporabnika iste šole. Naslov iz nastavitve ADMIN_EMAIL
+    zato nosi natanko ta račun (v ostcj je to admin_ostcj); morebitni dodatni
+    admin računi ostanejo brez e-pošte.
+    """
+    from app.models import RoleEnum, User
+
+    return db.query(User).filter(
+        User.school_id == school_id,
+        User.role == RoleEnum.admin.value,
+    ).order_by(User.id).first()
+
+
+def sync_admin_user_email(db: Session, school_id: int, email: str | None) -> tuple[list[str], str | None]:
+    """Uskladi e-pošto GLAVNEGA ADMIN računa šole z nastavitvijo ADMIN_EMAIL.
+
+    Pravilo (zahteva uporabnika 2026-09-23): šolski admin (npr. admin_ostcj) mora
+    imeti VEDNO tisto e-pošto, ki je določena v nastavitvi ADMIN_EMAIL — in je
+    drugače ni mogoče spremeniti, le prek nastavitev šole.
+
+    Zakaj tako? E-pošta admina je naslov, kamor gredo sistemska sporočila
+    (obvestila, ponastavitev gesla). Če bi se nastavitev in uporabniški račun
+    razšla, bi pošta šla na en naslov, ponastavitev gesla pa na drugega.
+
+    Podatkovna omejitev: UNIQUE (school_id, email) — zato istega naslova ne
+    moreta imeti dva uporabnika. Če naslov že uporablja NEKI DRUGI uporabnik
+    (npr. ločen račun vodstva z istim AAI naslovom), ga ne moremo prepisati;
+    vrnemo konflikt, da klicatelj uporabniku POVE, kaj naj uredi (prej je to
+    povzročilo neuspešno shranjevanje brez razlage).
+
+    Vrne (spremembe, konflikt):
+      * spremembe — opisi, npr. ["admin_ostcj: a@b → c@d"]
+      * konflikt — besedilo napake ali None
+    """
+    from app.models import User
+
+    email = (email or "").strip() or None
+    admin = primary_admin(db, school_id)
+    if admin is None:
+        return [], None
+
+    if email:
+        holder = db.query(User).filter(
+            User.school_id == school_id,
+            User.email == email,
+        ).first()
+        if holder is not None and holder.id != admin.id:
+            return [], (
+                f"naslov {email} že uporablja uporabnik »{holder.username}« "
+                f"(e-pošta mora biti prosta, ker je v bazi unikatna znotraj šole)"
+            )
+
+    if (admin.email or None) != email:
+        return [f"{admin.username}: {admin.email or '-'} → {email or '-'}"], None
+    return [], None
+
+
+def apply_admin_email(db: Session, school_id: int, email: str | None) -> bool:
+    """Zapiši e-pošto v glavni admin račun šole. Vrne True, če je bila sprememba."""
+    admin = primary_admin(db, school_id)
+    if admin is None:
+        return False
+    new_value = (email or "").strip() or None
+    if (admin.email or None) != new_value:
+        admin.email = new_value
+        return True
+    return False
+
+
+def admin_email_for_user(db: Session, user) -> str | None:
+    """Kateri naslov naj nosi TA admin račun.
+
+    Naslov iz nastavitve ADMIN_EMAIL nosi le GLAVNI (najstarejši) admin račun
+    šole — ker velja UNIQUE (school_id, email), ga drugi admin računi ne morejo
+    imeti. Zato:
+      * glavni admin → naslov iz nastavitev (ali None, če ga zaseda drug račun),
+      * drugi admin računi → None.
+    """
+    from app.models import User
+
+    primary = primary_admin(db, user.school_id)
+    if primary is None or primary.id != user.id:
+        return None
+    desired = (get_school_config(db, user.school_id).ADMIN_EMAIL or "").strip() or None
+    if not desired:
+        return None
+    if (user.email or None) == desired:
+        return desired
+    holder = db.query(User).filter(
+        User.school_id == user.school_id,
+        User.email == desired,
+        User.id != user.id,
+    ).first()
+    return None if holder is not None else desired
+
+
+def admin_email_for_new_user(db: Session, school_id: int) -> str | None:
+    """Naslov iz nastavitve ADMIN_EMAIL, če je prost — sicer None.
+
+    Uporabimo ga pri USTVARJANJU/UVOZU admin računa. Če naslov že uporablja
+    drug uporabnik te šole (UNIQUE school_id+email), nov račun dobi None
+    (brez e-pošte), namesto da bi shranjevanje padlo.
+    """
+    from app.models import User
+
+    email = (get_school_config(db, school_id).ADMIN_EMAIL or "").strip() or None
+    if not email:
+        return None
+    holder = db.query(User).filter(
+        User.school_id == school_id, User.email == email
+    ).first()
+    return None if holder is not None else email
+
+
 def aliases_by_kind(db: Session, school_id: int) -> dict[str, str]:
     """Vrni {'rezervacije': 'rezervacije_st', 'ocenjevanje': 'ocenjevanje_st'}.
 

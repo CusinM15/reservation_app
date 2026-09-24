@@ -4,9 +4,9 @@
 # Zahteva: ponoči mora vsaka šola (vse šole, ki jih ima glavni admin) dobiti
 # SVOJO varnostno kopijo — in vsaka kopija vsebuje ZGOLJ podatke te šole.
 #
-# Zakaj nov skript? Prejšnji `scripts/db_backup.py` je klical `pg_dump`, ki ga
-# v sliki NI (job je zato vsako noč tiho odpovedal), poleg tega bi pg_dump
-# izvozil CELO bazo (vse šole v eni datoteki).
+# Zakaj nov skript? Prejšnji `scripts/db_backup.py` je vsako noč tiho odpovedal,
+# ker njegov CronJob ni imel SECRET_KEY (aplikacija je padla že ob importu),
+# poleg tega bi pg_dump izvozil CELO bazo (vse šole v eni datoteki).
 # ─────────────────────────────────────────────────────────────────────────
 
 from datetime import date

@@ -58,6 +58,10 @@
                     </form>
 
                     <h3>Uvoz uporabnikov iz CSV</h3>
+        <p style="font-size:12px;color:#777;margin:2px 0 6px;">
+            Opomba: e-pošta uporabnika z vlogo <strong>admin</strong> je vezana na nastavitev
+            »E-pošta šolskega admina« na strani <a href="/settings">Nastavitve</a> — v obrazcu je ne urejate.
+        </p>
                     <p style="font-size:13px;color:#666;margin:4px 0;">
                         <strong>Glava stolpcev ni obvezna.</strong> Če je ni, velja vrstni red:
                         <code>uporabniško ime, email, ime, priimek, vloga, geslo</code> —
@@ -133,7 +137,16 @@
                             </div>
                             <div>
                                 <label style="font-size:12px;">Email</label>
+                                {% if user.role == 'admin' %}
+                                {# E-pošta šolskega admina je vezana na nastavitev
+                                   ADMIN_EMAIL — zato je tu samo za branje. #}
+                                <input type="email" name="email" value="{{ user.email or '' }}" readonly
+                                       title="E-pošta šolskega admina je vezana na nastavitev na strani /settings"
+                                       style="background:#f3f4f6;color:#555;cursor:not-allowed;">
+                                <div style="font-size:11px;color:#777;">Vezano na /settings → »E-pošta šolskega admina«</div>
+                                {% else %}
                                 <input type="email" name="email" value="{{ user.email or '' }}">
+                                {% endif %}
                             </div>
                             <div>
                                 <label style="font-size:12px;">Ime</label>
