@@ -151,6 +151,86 @@ def test_nightly_cronjob_calls_new_script():
     assert "-m\n            - scripts.school_backups" in manifest
 
 
+# ── 4. --save / --no-email / --school (lokalni preizkus backup+obnova) ──
+# Uporabnik: »rad bi postavil lokalno iz tega repoja da bom stestiral backup
+# recover« — zato mora skript znati .sql zapisati NA DISK (brez e-pošte), da se
+# datoteka lahko naloži v »Obnova iz varnostne kopije«.
+
+def test_save_writes_one_file_per_school_and_no_mail(client, make_user, monkeypatch, tmp_path):
+    """--save zapiše datoteko za vsako šolo in NE pošilja pošte."""
+    _two_schools()
+
+    def explode(*args, **kwargs):
+        raise AssertionError("z --no-email se e-pošta NE sme pošiljati")
+
+    monkeypatch.setattr("scripts.school_backups.send_backup_email", explode)
+
+    assert run(["--save", str(tmp_path), "--no-email"]) == 0
+    files = sorted(p.name for p in tmp_path.glob("*.sql"))
+    assert len(files) == 2, files
+    assert any("ostcj" in f for f in files) and any("solab" in f for f in files)
+
+    # vsaka datoteka vsebuje SAMO podatke svoje šole
+    a = next(tmp_path.glob("*ostcj*.sql")).read_text(encoding="utf-8")
+    b = next(tmp_path.glob("*solab*.sql")).read_text(encoding="utf-8")
+    assert "Dejavnost A" in a and "Dejavnost B" not in a
+    assert "Dejavnost B" in b and "Dejavnost A" not in b
+
+
+def test_save_for_single_school(client, make_user, tmp_path):
+    """--school omeji na eno šolo (oznaka ali id)."""
+    sid_a, sid_b = _two_schools()
+    assert run(["--save", str(tmp_path), "--no-email", "--school", "solab"]) == 0
+    assert [p.name for p in tmp_path.glob("*.sql")] == [f"sola-backup-solab-{date.today().isoformat()}.sql"]
+
+    assert run(["--save", str(tmp_path), "--no-email", "--school", str(sid_a)]) == 0
+    assert len(list(tmp_path.glob("*.sql"))) == 2
+
+
+def test_unknown_school_is_error(client, make_user, tmp_path):
+    """Neobstoječa šola ni tihi uspeh (drugače bi mislil, da je backup narejen)."""
+    _two_schools()
+    assert run(["--save", str(tmp_path), "--no-email", "--school", "neobstoji"]) == 1
+    assert list(tmp_path.glob("*.sql")) == []
+
+
+def test_no_email_without_save_does_nothing():
+    """--no-email brez --save nima cilja — raje jasna napaka kot tiha prazna krog."""
+    assert run(["--no-email"]) == 1
+
+
+def test_saved_backup_can_be_restored(client, make_user, tmp_path):
+    """CELOTEN potek, ki ga uporabnik testira: backup → (izguba podatkov) → obnova.
+
+    Shranjena .sql iz --save se prebere z istim parserjem, ki ga uporablja
+    »Obnova iz varnostne kopije«, in podatke te šole povrne.
+    """
+    from app.backup_restore import restore_domain
+    sid_a, _sid_b = _two_schools()
+    assert run(["--save", str(tmp_path), "--no-email", "--school", "ostcj"]) == 0
+    sql_file = next(tmp_path.glob("*ostcj*.sql"))
+    sql_text = sql_file.read_text(encoding="utf-8")
+
+    db = SessionLocal()
+    try:
+        # »nesreča«: izgubimo dejavnosti in rezervacije šole A
+        db.query(ActivityDay).filter(ActivityDay.school_id == sid_a).delete()
+        db.query(Reservation).filter(Reservation.school_id == sid_a).delete()
+        db.commit()
+        assert db.query(ActivityDay).filter(ActivityDay.school_id == sid_a).count() == 0
+
+        # obnova obeh področij iz datoteke
+        summary = restore_domain(db, sid_a, sql_text, "vse")
+        db.commit()
+        assert summary["tables"]["activity_days"]["inserted"] == 1
+        assert summary["tables"]["reservations"]["inserted"] == 1
+        titles = [a.title for a in db.query(ActivityDay).filter(
+            ActivityDay.school_id == sid_a).all()]
+        assert titles == ["Dejavnost A"]
+    finally:
+        db.close()
+
+
 def test_daily_report_is_removed():
     """Dnevno poročilo (sola-daily-report) je bilo odstranjeno 2026-09-23 —
     manifesta ni več, kustomizacija pa ga ne sme (več) vsebovati (sicer bi se
