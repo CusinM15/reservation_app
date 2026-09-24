@@ -1,0 +1,19 @@
+# ─────────────────────────────────────────────────────────────────────────
+# railway.toml — nastavitve za Railway (hosting)
+#
+# Namen: Railway privzeto uporabi "Nixpacks" (sam zazna Python), kjer pa
+# weasyprint (PDF) PADE, ker nima sistemskih knjižnic (pango, cairo). Zato
+# izrecno uporabimo naš Dockerfile — v njem so vse knjižnice že nameščene
+# in slika je identična tisti, ki teče v k3s.
+# ─────────────────────────────────────────────────────────────────────────
+
+[build]
+builder = "DOCKERFILE"
+dockerfilePath = "Dockerfile"
+
+[deploy]
+# /health vrne 200, ko aplikacija in baza delujeta
+healthcheckPath = "/health"
+healthcheckTimeout = 120
+restartPolicyType = "ON_FAILURE"
+restartPolicyMaxRetries = 5

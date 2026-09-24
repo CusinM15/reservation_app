@@ -21,6 +21,20 @@ from dotenv import load_dotenv
 load_dotenv()
 
 
+def normalize_db_url(url: str | None) -> str | None:
+    """Popravi shemo `postgres://` v `postgresql://` (in prazno → None).
+
+    Zakaj? SQLAlchemy 2.x ne sprejme več stare sheme `postgres://`, hosting
+    ponudniki (Railway, Heroku) pa jo pošljejo v DATABASE_URL. Brez popravka
+    aplikacija tam ne starta, čeprav je baza povezana. Naša k3s nastavitev
+    uporablja `postgresql://`, zato tam ni spremembe.
+    """
+    value = (url or "").strip()
+    if value.startswith("postgres://"):
+        value = "postgresql://" + value[len("postgres://"):]
+    return value or None
+
+
 class Settings:
     # ── Osnovna konfiguracija strežnika ──────────────────────────────
     # APP_HOST in APP_PORT določata, kje strežnik posluša.
@@ -31,7 +45,9 @@ class Settings:
     # ── Podatkovna baza ─────────────────────────────────────────────
     # DATABASE_URL je OBVEZEN (PostgreSQL). Brez njega aplikacija ne
     # štarta — nobenega tihega SQLite fallbacka v produkciji.
-    DATABASE_URL = os.getenv("DATABASE_URL")
+    # Shema se normalizira (glej normalize_db_url), ker Railway/Heroku
+    # pošljeta `postgres://`, SQLAlchemy 2.x pa zahteva `postgresql://`.
+    DATABASE_URL = normalize_db_url(os.getenv("DATABASE_URL"))
 
     # ── SECRET_KEY ──────────────────────────────────────────────────
     # OBVEZEN — uporablja se za podpisovanje session cookieja (user_id),

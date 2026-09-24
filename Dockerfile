@@ -64,4 +64,6 @@ EXPOSE 8002
 
 # workers=1 — dovolj za obremenitev šole; PostgreSQL podpira več
 # workerjev, če bo kdaj potrebno povečati.
-CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8002", "--workers", "1"]
+# Vrata: privzeto 8002 (k3s/Docker), če pa okolje nastavi PORT (Railway,
+# Heroku, drugi PaaS), poslušamo tam — sicer promet ne pride do aplikacije.
+CMD ["sh", "-c", "exec uvicorn app.main:app --host 0.0.0.0 --port ${PORT:-8002} --workers 1"]
