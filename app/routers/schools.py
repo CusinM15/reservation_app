@@ -16,7 +16,7 @@
 #   - vodstvo/teacher ne vidita teh strani (403).
 # ─────────────────────────────────────────────────────────────────────────
 
-from fastapi import APIRouter, Depends, HTTPException, Query, Request, Form
+from fastapi import APIRouter, Depends, HTTPException, Query, Request, Form, Response
 from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.templating import Jinja2Templates
 from sqlalchemy.orm import Session
@@ -24,7 +24,7 @@ from sqlalchemy.orm import Session
 from app.database import get_db
 from app.models import School, SchoolAlias, User, Reservation, Assessment, ActivityDay, RoleEnum
 from app.audit import log_audit
-from app.security import get_current_user_id
+from app.security import get_current_user_id, sign_user_id
 from app.tenancy import (
     ASSESSMENT_RULE_DEFAULTS,
     MAIN_ADMIN_ROLE,
@@ -311,7 +311,12 @@ def delete_school(school_id: int, request: Request, db: Session = Depends(get_db
 # ═══════════════════════════════════════════════════════════════════════
 
 @router.post("/api/schools/{school_id}/restore")
-async def restore_from_backup(school_id: int, request: Request, db: Session = Depends(get_db)):
+async def restore_from_backup(
+    school_id: int,
+    request: Request,
+    response: Response,
+    db: Session = Depends(get_db),
+):
     """Obnovi podatke šole iz naložene .sql varnostne kopije.
 
     Obrazec (multipart/form-data):
@@ -339,11 +344,19 @@ async def restore_from_backup(school_id: int, request: Request, db: Session = De
         raise HTTPException(status_code=400, detail="Naložena datoteka je prazna.")
     content = raw.decode("utf-8", errors="replace")
 
-    user = get_request_user(request, db)
+    # Kdo obnavlja: id in uporabniško ime shranimo PREJ. Obnova področja
+    # »uporabniki« izbriše in znova vstavi vrstice te šole, zato objekt User po
+    # obnovi ni več veljaven — vsak dostop do njega vrže ObjectDeletedError in
+    # stran je javila 500, čeprav je obnova uspela.
+    actor = get_request_user(request, db)
+    actor_id = actor.id if actor else None
+    actor_username = actor.username if actor else None
+    actor_is_main = bool(actor and is_main_admin(actor))
+
     try:
         summary = restore_domain(
             db, school.id, content, domain,
-            fallback_user_id=(user.id if user else None),
+            fallback_user_id=actor_id,
         )
         # Če smo obnovili nastavitve, uskladimo še e-pošto glavnega admin računa
         # (nastavitev ADMIN_EMAIL → users.email). Če naslov uporablja drug račun,
@@ -365,8 +378,32 @@ async def restore_from_backup(school_id: int, request: Request, db: Session = De
         db.rollback()
         raise HTTPException(status_code=400, detail=f"Obnova ni uspela: {exc}")
 
+    # Sveži sklic na račun, ki je obnavljal: isti uporabnik ima po obnovi lahko
+    # NOV id (vrstice so bile znova vstavljene). Brez tega bi dnevnik padel na
+    # tujem ključu, seja pa bi kazala na neobstoječ (ali celo tuj) račun.
+    log_user_id = actor_id
+    if actor_username:
+        query = db.query(User).filter(User.username == actor_username)
+        if not actor_is_main:
+            query = query.filter(User.school_id == school.id)
+        fresh = query.first()
+        if fresh is None:
+            log_user_id = None
+        else:
+            log_user_id = fresh.id
+            if actor_id is not None and fresh.id != actor_id:
+                # Seja je vezana na id → osvežimo piškotek, da uporabnik ostane prijavljen.
+                response.set_cookie(
+                    key="user_id", value=sign_user_id(fresh.id),
+                    httponly=True, samesite="lax",
+                )
+                summary["warnings"].append(
+                    "Vaš račun je bil obnovljen z novim id-jem — seja je bila "
+                    "osvežena, zato ostanete prijavljeni."
+                )
+
     log_audit(
-        db, user.id if user else None, user.username if user else "?",
+        db, log_user_id, actor_username or "?",
         "restore_from_backup",
         f"school_id={school.id}, domain={domain}, "
         f"tables={ {t: v['inserted'] for t, v in summary['tables'].items()} }",

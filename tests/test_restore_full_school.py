@@ -22,7 +22,7 @@ from sqlalchemy import text as sql_text
 from app.backup_restore import restore_domain
 from app.database import SessionLocal
 from app.models import (
-    ActivityDay, Assessment, BlockedDate, Reservation, School, SchoolSetting, User,
+    ActivityDay, Assessment, AuditLog, BlockedDate, Reservation, School, SchoolSetting, User,
 )
 from app.routers.auth import verify_password
 from app.school_backup import build_school_sql
@@ -197,6 +197,47 @@ def test_restore_settings_only_restores_razredi_and_prostori(client, make_user):
 
 
 # ── 4. Prek API-ja (kot iz UI) ────────────────────────────────────────
+
+def test_restore_all_as_school_admin_keeps_session(client, make_user):
+    """PRIJAVLJEN ŠOLSKI ADMIN OBNOVI SVOJO ŠOLO (uporabniki se zamenjajo → nov id).
+
+    To je primer iz produkcije: obnova je uspela, stran pa je javila 500, ker je
+    dnevnik dogodkov poskušal zapisati s STARIM id-jem uporabnika, ki je bil prav
+    v tej obnovi izbrisan (tuji ključ). Seja mora ostati veljavna.
+    """
+    sid_b, _uid, _uname = _school_with_everything(make_user)
+    admin_b = make_user(role="admin", school_id=sid_b)
+    sql = _dump(sid_b)
+
+    login(client, admin_b.username)
+    # seja deluje pred obnovo
+    assert client.get(f"/settings?school_id={sid_b}").status_code == 200
+
+    r = client.post(
+        f"/api/schools/{sid_b}/restore",
+        data={"domain": "vse"},
+        files={"file": ("b.sql", sql, "text/plain")},
+    )
+    assert r.status_code == 200, r.text
+
+    # sea mora veljati naprej (piškotek se obnovi z novim id-jem)
+    assert client.get(f"/settings?school_id={sid_b}").status_code == 200
+    assert client.get("/history").status_code == 200
+
+    db = SessionLocal()
+    try:
+        # dnevnik je zabeležen in ne visi na izbrisanem uporabniku
+        row = (db.query(AuditLog)
+                 .filter(AuditLog.action == "restore_from_backup",
+                         AuditLog.school_id == sid_b)
+                 .order_by(AuditLog.id.desc()).first())
+        assert row is not None
+        assert row.username == admin_b.username
+        if row.user_id is not None:
+            assert db.query(User).filter(User.id == row.user_id).first() is not None
+    finally:
+        db.close()
+
 
 def test_restore_endpoint_returns_summary_and_logs(client, make_user):
     from app.config import settings
