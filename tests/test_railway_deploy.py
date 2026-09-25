@@ -60,3 +60,12 @@ def test_dockerfile_listens_on_port_env():
     """Vrata iz okolja (Railway) z rezervo 8002 (k3s)."""
     text = Path("Dockerfile").read_text(encoding="utf-8")
     assert "${PORT:-8002}" in text
+
+
+def test_dockerfile_has_no_volume_instruction():
+    """Railway zavrne Dockerfile z ukazom VOLUME (diagnoza »unsupported VOLUME
+    instruction«), k3s pa ga ignorira — zato ga ne smemo imeti."""
+    text = Path("Dockerfile").read_text(encoding="utf-8")
+    ukazi = [ln.strip().upper() for ln in text.splitlines()
+             if ln.strip() and not ln.strip().startswith("#")]
+    assert not any(ln.startswith("VOLUME") for ln in ukazi), "VOLUME v Dockerfile ni dovoljen (Railway)"

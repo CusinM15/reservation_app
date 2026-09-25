@@ -58,8 +58,11 @@ ENV PATH=/home/appuser/.local/bin:$PATH \
     PYTHONDONTWRITEBYTECODE=1 \
     PASSLIB_BCRYPT_AVOID_WRAP_BUG=1
 
-VOLUME /tmp
-
+# Opomba: VOLUME tu namenoma NI. Railway (in nekateri drugi graditelji) zavrne
+# Dockerfile z ukazom VOLUME — tam se trajna shramba nastavi kot Railway Volume.
+# Kubernetes ukaz VOLUME tako ali tako ignorira, zato ga ne potrebujemo: /tmp je
+# v vsebniku običajna mapa z dovoljenjem za pisanje (uporablja jo npr. --save
+# pri varnostnih kopijah).
 EXPOSE 8002
 
 # workers=1 — dovolj za obremenitev šole; PostgreSQL podpira več
