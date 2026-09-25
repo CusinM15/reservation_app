@@ -1016,13 +1016,14 @@
       sel.innerHTML = items.map(v => `<option value="${v}">${prostorLabel(v)}</option>`).join('');
     }
     // Napolni <select> z razredi, urejenimi po kategorijah.
-    // Doda posebne moznosti za filtriranje vseh 6.-9., 8. ali 9. razredov.
-    // Pozor: »IP/NIP/ID« je posebna skupina (IP program), ne oddelek — v izbor
-    // razreda ne sodi, zato ga izločimo (vzorec zahteva obliko «<št>. <oddelek>»).
+    // Doda posebne moznosti za filtriranje vseh 8. ali 9. razredov.
+    // »IP/NIP/ID« je posebna skupina (IP program), zato je v izboru RAZREDA ZA
+    // FILTRIRANJE (oc-razred) ne ponudimo — njena ocenjevanja se prikažejo zraven
+    // razredov 6.–9. Drugje (obrazec za novo ocenjevanje, izvoz) pa ostane na voljo.
     function populateOcRazredi(id, items, addAll) {
       const sel = document.getElementById(id);
       const jeObicajen = r => /^\d+\.[A-Za-z0-9čšžČŠŽ]+$/.test(r);
-      const razredi = items.filter(jeObicajen);
+      const razredi = id === 'oc-razred' ? items.filter(jeObicajen) : items.slice();
       const osmice = razredi.filter(r => r.startsWith('8.')).sort();
       const devetke = razredi.filter(r => r.startsWith('9.')).sort();
       const ostalo = razredi.filter(r => !r.startsWith('8.') && !r.startsWith('9.')).sort();

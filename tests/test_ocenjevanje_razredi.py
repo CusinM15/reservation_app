@@ -46,16 +46,29 @@ def _render_js(html: str) -> str:
     return _js(html, "function renderMonthlyCalendar", "document.getElementById('oc-calendar-container')")
 
 
-# ── 1. IP/NIP/ID ni izbira v seznamu ─────────────────────────────────
+# ── 1. IP/NIP/ID: skrit le v filtru, drugje ostane ───────────────────
 
-def test_ip_nip_id_is_not_selectable(client, make_user):
+def test_ip_nip_id_hidden_only_in_filter_dropdown(client, make_user):
+    """IP/NIP/ID se NE ponudi v filtru ocenjevanj, drugje (obrazec za novo
+    ocenjevanje, izvoz) pa ostane na voljo."""
     funkcija = _picker_js(_index_html(client, make_user))
 
-    # Vzorec za običajen oddelek (npr. 6.a, 9.5) — »IP/NIP/ID« te oblike nima.
+    # filtriranje velja izključno za filter (oc-razred)
+    assert "id === 'oc-razred' ? items.filter(jeObicajen) : items.slice()" in funkcija
     assert "jeObicajen" in funkcija
-    assert r"/^\d+\.[A-Za-z0-9čšžČŠŽ]+$/" in funkcija
-    assert "const razredi = items.filter(jeObicajen)" in funkcija
-    assert "items.forEach" not in funkcija
+
+
+def test_form_dropdown_keeps_ip_nip_id(client, make_user):
+    """Obrazec za novo ocenjevanje dobi CEL seznam (torej tudi IP/NIP/ID)."""
+    telo = _index_html(client, make_user)
+    assert "populateOcRazredi('oc-form-razred', razredi)" in telo
+
+
+def test_export_dropdown_keeps_ip_nip_id(client, make_user):
+    """Izvoz ocenjevanj se polni iz celotnega seznama razredov (brez filtra)."""
+    telo = _js(_index_html(client, make_user), "function openExportOcModal",
+               "async function exportOcenjevanja")
+    assert "razredi.map(r => `<option value=\"${r}\">${r}</option>`)" in telo
 
 
 # ── 2. Skupinska izbira 6.–9. je ODSTRANJENA ─────────────────────────
