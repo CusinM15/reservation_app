@@ -1,17 +1,24 @@
 # ─────────────────────────────────────────────────────────────────────────
-# tests/test_ocenjevanje_razredi.py — izbor razreda pri ocenjevanjih
+# tests/test_ocenjevanje_razredi.py — izbor razreda in IP/NIP/ID pri ocenjevanjih
 #
-# Zahteva uporabnika (2026-09-24): »ocenjevanja za razred IP/NIP/ID ni prisoten
-# v dropdownu za izbor razreda, ampak je po defaultu prikazan za vse od 6 do 9
-# razreda in naj bo druge barve (zelen)«.
+# Zahteva uporabnika (2026-09-24), dokončna oblika:
+#   * »IP/NIP/ID« naj NE bo izbira v spustnem seznamu razredov,
+#   * pri razredih 6.a–7.č ter vseh 8. in 9. (črke in številke) in pri skupinah
+#     »8. razred (vsi)« / »9. razred (vsi)« ter privzeti »6.–9. razred (vsi)« naj
+#     se poleg tega razreda prikažejo TUDI ocenjevanja razreda IP/NIP/ID,
+#   * ta ocenjevanja naj bodo v ZELENI znački (skladno z legendo).
 #
-# Preverjamo (na izrisanem HTML-ju strani, ker gre za odjemalčev JavaScript):
-#   * »IP/NIP/ID« se NE ponudi kot razred v izboru (filtriranje po obliki <št>. <oddelek>),
-#   * privzeta izbira je skupina 6.–9. razred (oznaka __6_9__), obarvana zeleno,
-#   * nalaganje ocenjevanj zna to skupino razširiti na 6., 7., 8. in 9. razred.
+# Ker gre za odjemalčev JavaScript, preverjamo izrisani HTML strani + odgovor API-ja.
 # ─────────────────────────────────────────────────────────────────────────
 
-from tests.conftest import login
+from datetime import date
+
+from app.database import SessionLocal
+from app.models import Assessment
+from tests.conftest import default_school_id, login
+
+DAY = date(2026, 12, 10)
+MONTH = "2026-12"
 
 
 def _index_html(client, make_user) -> str:
@@ -22,31 +29,33 @@ def _index_html(client, make_user) -> str:
     return r.text
 
 
+def _js(html: str, zacetek: str, konec: str) -> str:
+    assert zacetek in html, f"v strani ni {zacetek!r}"
+    return html.split(zacetek, 1)[1].split(konec, 1)[0]
+
+
 def _picker_js(html: str) -> str:
-    """Izreži telo funkcije populateOcRazredi iz strani."""
-    assert "function populateOcRazredi" in html
-    return html.split("function populateOcRazredi", 1)[1].split("function populateHours", 1)[0]
+    return _js(html, "function populateOcRazredi", "function populateHours")
 
 
 def _load_js(html: str) -> str:
-    """Izreži telo funkcije loadAssessments iz strani."""
-    assert "async function loadAssessments" in html
-    return html.split("async function loadAssessments", 1)[1].split("function renderMonthlyCalendar", 1)[0]
+    return _js(html, "async function loadAssessments", "function renderMonthlyCalendar")
 
 
-# ── 1. IP/NIP/ID ni v izboru razreda ─────────────────────────────────
+def _render_js(html: str) -> str:
+    return _js(html, "function renderMonthlyCalendar", "document.getElementById('oc-calendar-container')")
 
-def test_ip_nip_id_is_filtered_out_of_class_picker(client, make_user):
-    html = _index_html(client, make_user)
-    funkcija = _picker_js(html)
+
+# ── 1. IP/NIP/ID ni izbira v seznamu ─────────────────────────────────
+
+def test_ip_nip_id_is_not_selectable(client, make_user):
+    funkcija = _picker_js(_index_html(client, make_user))
 
     # Vzorec za običajen oddelek (npr. 6.a, 9.5) — »IP/NIP/ID« te oblike nima.
     assert "jeObicajen" in funkcija
     assert r"/^\d+\.[A-Za-z0-9čšžČŠŽ]+$/" in funkcija
-    # Možnosti se gradijo iz FILTRIRANEGA seznama, ne iz surovih podatkov.
     assert "const razredi = items.filter(jeObicajen)" in funkcija
     assert "items.forEach" not in funkcija
-    assert '"IP/NIP/ID"' not in funkcija
 
 
 # ── 2. Privzeto 6.–9. razred, zeleno ─────────────────────────────────
@@ -56,30 +65,92 @@ def test_default_selection_is_six_to_nine_and_green(client, make_user):
 
     assert 'value="__6_9__"' in funkcija
     assert "6.–9. razred (vsi)" in funkcija
-    assert "background:#d1fae5" in funkcija          # zelena podlaga
-    assert "color:#065f46" in funkcija                # temnozelena pisava
-    # dejansko privzeto izbrano (ne le prva možnost v seznamu)
+    assert "background:#d1fae5" in funkcija
+    assert "color:#065f46" in funkcija
     assert "sel.value = '__6_9__'" in funkcija
 
 
 def test_group_shortcuts_still_exist(client, make_user):
     funkcija = _picker_js(_index_html(client, make_user))
-    assert 'value="__8__"' in funkcija
-    assert 'value="__9__"' in funkcija
+    assert 'value="__8__"' in funkcija and 'value="__9__"' in funkcija
 
 
-# ── 3. Nalaganje razume skupinsko izbiro ─────────────────────────────
+# ── 3. IP/NIP/ID ocenjevanja se PRIKAŽEJO zraven 6.–9. ───────────────
 
-def test_load_handles_six_to_nine_group(client, make_user):
+def test_load_includes_ip_for_grades_6_to_9(client, make_user):
     telo = _load_js(_index_html(client, make_user))
 
-    assert "'__6_9__'" in telo
-    assert "'6.', '7.', '8.', '9.'" in telo            # širi na vse štiri razrede
-    assert "6.–9. razred (vsi)" in telo                # naslov koledarja
-    assert "filterPrefix.some" in telo
+    assert "POSEBNI_RAZRED" in telo          # 'IP/NIP/ID'
+    assert "jePosebni" in telo               # prepoznavanje posebne skupine
+    assert "jeRazpon69" in telo              # le razredi/skupine 6.–9.
+    assert "RAZREDI_69" in telo
+    # ocenjevanja posebne skupine se dodajo k izbranemu razredu
+    assert "jePosebni(a) && jeRazpon69" in telo
+    # pri skupinskih izbirah se dodajo zraven
+    assert "jePosebni(a)\n" in telo or "jePosebni(a)" in telo
+
+
+def test_client_filters_locally_so_ip_rows_are_available(client, make_user):
+    """Mesečna ocenjevanja se naložijo BREZ filtra po razredu — drugače v odgovoru
+    ne bi bilo zapisov IP/NIP/ID in jih ne bi mogli prikazati zraven."""
+    telo = _load_js(_index_html(client, make_user))
+    assert "&razred=" not in telo
+    assert "/api/ocenjevanja?month=${month}" in telo
+
+
+def test_api_returns_ip_and_class_rows_for_month(client, make_user):
+    """Podlaga za prikaz: API za mesec vrne tudi zapise IP/NIP/ID."""
+    u = make_user()
+    db = SessionLocal()
+    try:
+        db.add(Assessment(school_id=default_school_id(), razred="IP/NIP/ID",
+                          date=DAY, teacher_id=u.id))
+        db.add(Assessment(school_id=default_school_id(), razred="6.a",
+                          date=DAY, teacher_id=u.id))
+        db.commit()
+    finally:
+        db.close()
+
+    login(client, u.username)
+    r = client.get(f"/api/ocenjevanja?month={MONTH}")
+    assert r.status_code == 200
+    razredi = {row["razred"] for row in r.json()}
+    assert "IP/NIP/ID" in razredi
+    assert "6.a" in razredi
+
+
+# ── 4. Zelena značka + legenda ───────────────────────────────────────
+
+def test_ip_assessment_badge_is_green(client, make_user):
+    html = _index_html(client, make_user)
+
+    assert ".assessment-ip" in html
+    assert "background: #dcfce7" in html            # zelena podlaga značke
+    assert "color: #14532d" in html                 # temnozelena pisava
+
+
+def test_badge_uses_ip_style_and_shows_class(client, make_user):
+    telo = _render_js(_index_html(client, make_user))
+
+    assert "const jeIp = a.razred === POSEBNI_RAZRED;" in telo
+    assert "jeIp ? 'assessment-ip'" in telo
+    # oznaka razreda se pri IP/NIP/ID izpiše vedno (tudi ko gledamo en razred)
+    assert "(jeIp || showAll)" in telo
+
+
+def test_legend_has_ip_colour(client, make_user):
+    html = _index_html(client, make_user)
+    assert "background:#dcfce7;border-radius:2px;" in html
+    assert "> IP/NIP/ID</span>" in html
+
+
+# ── 5. Skupinska izbira pri dejavnostih + obrazec ────────────────────
+
+def test_activity_field_handles_six_to_nine_group(client, make_user):
+    telo = _render_js(_index_html(client, make_user))
+    assert "'__6_9__' ? RAZREDI_69" in telo
 
 
 def test_modal_prefill_ignores_group_values(client, make_user):
-    """Skupinska izbira ('__6_9__') ni konkreten razred → obrazca ne prepišemo z njo."""
     html = _index_html(client, make_user)
     assert "indexOf('__') !== 0" in html

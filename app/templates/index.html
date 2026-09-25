@@ -134,6 +134,9 @@
     .assessment-badge { font-size: 0.72rem; padding: 0.15rem 0.3rem; border-radius: 3px; margin-bottom: 2px; display: flex; justify-content: space-between; align-items: center; gap: 2px; }
     .assessment-normal { background: #cce5ff; color: #004085; }
     .assessment-ponavljanje { background: #ffcccc; color: #8b0000; }
+    /* Zelena značka = ocenjevanje razreda IP/NIP/ID (posebna skupina, prikazana
+       zraven razredov 6.–9.). Barva se ujema z legendo pod koledarjem. */
+    .assessment-ip { background: #dcfce7; color: #14532d; font-weight: 600; }
     .assessment-badge .del-asm { cursor: pointer; font-weight: 700; padding: 0 2px; opacity: 0.6; }
     .assessment-badge .del-asm:hover { opacity: 1; }
 
@@ -792,6 +795,11 @@
     // in so dostopne vsem funkcijam v tem bloku.
     let schedule = {};       // Urnik (ure → oznake)
     let razredi = [];        // Seznam razredov
+    // Posebna skupina: ocenjevanja zanj se prikažejo ZRAVEN razredov od 6. do 9.
+    // razreda (v zeleni znački), ker te učence poučuje drug program — a njihova
+    // ocenjevanja zadevajo iste dni in iste učitelje.
+    const POSEBNI_RAZRED = 'IP/NIP/ID';
+    const RAZREDI_69 = ['6.', '7.', '8.', '9.'];
     let prostori = [];       // Seznam prostorov
     // Prostori, ki delujejo »kot Tablice« (količina + omejitev na uro).
     // Kapaciteta je vrednost številske spremenljivke, pripisane prostoru
@@ -1818,21 +1826,26 @@
     }
 
     // --- Ocenjevanja ---
-    // Naloži ocenjevanja za trenutni mesec in izbrani razred.
-    // Podpira skupinske izbire: 6.–9. (privzeto, __6_9__), 8. (__8__), 9. (__9__).
-    // Če razred ni izbran ('' = Vsi razredi), prikaže vse.
-    // Po fetch-u podatke posreduje v renderMonthlyCalendar.
+    // Naloži ocenjevanja za trenutni mesec in izbrano skupino razredov.
+    // Podpira skupinske izbire: 6.–9. (privzeto, __6_9__), 8. (__8__), 9. (__9__)
+    // ter posamezen razred. Pri razredih/skupinah od 6. do 9. razreda se zraven
+    // pokažejo TUDI ocenjevanja razreda IP/NIP/ID (zeleno) — ti učenci so v istih
+    // dnevih in jih poučujejo isti učitelji, zato morajo biti vidni.
     async function loadAssessments() {
       let razred = document.getElementById('oc-razred').value;
       let month = currentOcMonth;
       if (!month) { const now = new Date(); month = now.getFullYear() + '-' + String(now.getMonth() + 1).padStart(2,'0'); currentOcMonth = month; }
-      let url = `/api/ocenjevanja?month=${month}`;
+      // Naložimo VEDNO cel mesec brez filtra po razredu: le tako so v odgovoru
+      // tudi ocenjevanja razreda IP/NIP/ID. Za en mesec je podatkov malo.
+      const url = `/api/ocenjevanja?month=${month}`;
       let filterPrefix = [];
       let naslov = razred || 'Vsi razredi';
-      if (razred === '__6_9__') { filterPrefix = ['6.', '7.', '8.', '9.']; naslov = '6.–9. razred (vsi)'; }
+      if (razred === '__6_9__') { filterPrefix = RAZREDI_69; naslov = '6.–9. razred (vsi)'; }
       else if (razred === '__8__') { filterPrefix = ['8.']; naslov = '8. razred (vsi)'; }
       else if (razred === '__9__') { filterPrefix = ['9.']; naslov = '9. razred (vsi)'; }
-      else if (razred) url += `&razred=${razred}`;
+      // Ali gledamo razred/skupino 6.–9.? (le tam sodi tudi IP/NIP/ID)
+      const jeRazpon69 = filterPrefix.length > 0
+        || RAZREDI_69.some(p => (razred || '').startsWith(p));
       try {
         // Vijolično polje »Dejavnosti:« se izriše iz zapisov dejavnosti, zato
         // poskrbimo, da so ti naloženi, preden izrišemo koledar.
@@ -1840,7 +1853,14 @@
         const res = await fetch(url);
         if (!res.ok) { showMsg('Napaka pri nalaganju ocenjevanj.', 'error'); return; }
         let assessments = await res.json();
-        if (filterPrefix.length) assessments = assessments.filter(a => a.razred && filterPrefix.some(p => a.razred.startsWith(p)));
+        const jePosebni = a => a.razred === POSEBNI_RAZRED;
+        if (filterPrefix.length) {
+          assessments = assessments.filter(a => jePosebni(a)
+            || (a.razred && filterPrefix.some(p => a.razred.startsWith(p))));
+        } else if (razred) {
+          assessments = assessments.filter(a => a.razred === razred
+            || (jePosebni(a) && jeRazpon69));
+        }
         renderMonthlyCalendar(naslov, month, assessments, razred === '' || filterPrefix.length > 0);
       } catch(e) { showMsg('Napaka pri povezavi s strežnikom.', 'error'); }
     }
@@ -1893,7 +1913,12 @@
         const dayFullClasses = dayActivityClasses(dateStr, true);
         let showActivity = dayActClasses.length > 0;
         if (showActivity && razred && razred !== 'Vsi razredi') {
-          if (razred.startsWith('__')) { const prefix = razred === '__8__' ? '8.' : '9.'; showActivity = dayActClasses.some(r => r.startsWith(prefix)); }
+          if (razred.startsWith('__')) {
+            // skupinske izbire filtra: 6.–9. (vsi), 8. (vsi), 9. (vsi)
+            const prefixes = razred === '__6_9__' ? RAZREDI_69
+              : [razred === '__8__' ? '8.' : '9.'];
+            showActivity = dayActClasses.some(r => prefixes.some(p => r.startsWith(p)));
+          }
           else showActivity = dayActClasses.some(r => r === razred);
         }
         const showField = showBlocked || showActivity;
@@ -1920,8 +1945,11 @@
             title="Klikni za seznam dejavnosti"><span>📋 Dejavnost:${fieldRazredi.length ? ' ' + fieldRazredi.join(', ') : ''}</span></div>`;
         if (asmMap[day]) {
           asmMap[day].forEach(a => {
-            const asmCls = a.ponavljanje ? 'assessment-ponavljanje' : 'assessment-normal';
-            const clsLabel = showAll ? ` [${a.razred}]` : '';
+            const jeIp = a.razred === POSEBNI_RAZRED;
+            const asmCls = jeIp ? 'assessment-ip' : (a.ponavljanje ? 'assessment-ponavljanje' : 'assessment-normal');
+            // Pri IP/NIP/ID oznako razreda izpišemo VEDNO (ocena pripada drugi
+            // skupini, kot je gledani razred), da je jasno, od kod je.
+            const clsLabel = (jeIp || showAll) ? ` [${a.razred}]` : '';
             html += `<div class="assessment-badge ${asmCls}"><span>${a.ponavljanje ? '🔄 ' : ''}Ocenjevanje${clsLabel}: ${a.teacher_name || '?'}</span>
             ${currentUser && (a.teacher_id === currentUser.id || currentUser.role === 'admin' || currentUser.role === 'vodstvo') ? `<span class="del-asm" onclick="event.stopPropagation();deleteAssessment(${a.id})">✕</span>` : ''}</div>`;
           });
@@ -1937,6 +1965,7 @@
       html += `</div><div style="display:flex;gap:15px;justify-content:center;margin-top:10px;font-size:0.75rem;">
         <span><span style="display:inline-block;width:12px;height:12px;background:#cce5ff;border-radius:2px;"></span> Običajno ocenjevanje</span>
         <span><span style="display:inline-block;width:12px;height:12px;background:#ffcccc;border-radius:2px;"></span> Ponavljanje</span>
+        <span><span style="display:inline-block;width:12px;height:12px;background:#dcfce7;border-radius:2px;"></span> IP/NIP/ID</span>
         <span><span style="display:inline-block;width:12px;height:12px;background:#7c3aed;border-radius:2px;"></span> Dan dejavnosti</span>
       </div>`;
       document.getElementById('oc-calendar-container').innerHTML = html;
