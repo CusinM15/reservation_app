@@ -12,6 +12,7 @@
 # ─────────────────────────────────────────────────────────────────────────
 
 from fastapi import FastAPI, Request, Query, Depends
+from fastapi.middleware.gzip import GZipMiddleware
 from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.templating import Jinja2Templates
 from fastapi.staticfiles import StaticFiles
@@ -109,6 +110,13 @@ class SchoolAliasMiddleware:
 
 
 app.add_middleware(SchoolAliasMiddleware)
+
+# ── Stiskanje odgovorov (gzip) ─────────────────────────────────────────
+# Zakaj? Stran s koledarjem in JSON-odgovori so besedilo (HTML/JSON) in se
+# stisnejo na ~10–20 % velikosti. Kjer je strežnik blizu (k3s v šoli) to ni
+# opazno, pri gostovanju na daljavo (Railway + domači internet) pa se prenos
+# občutno skrajša. Prag 1000 B pomeni, da majhnih odgovorov ne stiskamo.
+app.add_middleware(GZipMiddleware, minimum_size=1000)
 
 # ── Auth middleware ────────────────────────────────────────────────────
 # Zakaj lastni middleware namesto OAuth2/JWT?

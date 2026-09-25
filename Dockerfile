@@ -69,4 +69,6 @@ EXPOSE 8002
 # workerjev, če bo kdaj potrebno povečati.
 # Vrata: privzeto 8002 (k3s/Docker), če pa okolje nastavi PORT (Railway,
 # Heroku, drugi PaaS), poslušamo tam — sicer promet ne pride do aplikacije.
-CMD ["sh", "-c", "exec uvicorn app.main:app --host 0.0.0.0 --port ${PORT:-8002} --workers 1"]
+# Število delavcev je nastavljivo (WEB_WORKERS): gostovanje z več CPU lahko
+# vzporedno streže več zahtev, k3s pa ostane pri enem (3 replike so dovolj).
+CMD ["sh", "-c", "exec uvicorn app.main:app --host 0.0.0.0 --port ${PORT:-8002} --workers ${WEB_WORKERS:-1}"]

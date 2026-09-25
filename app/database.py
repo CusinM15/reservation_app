@@ -19,8 +19,18 @@ import os
 from app.config import settings
 
 # ── Engine ────────────────────────────────────────────────────────────
+# Velikost sklada povezav in preverjanje »mrtvih« povezav.
+# Zakaj? Gostujoče baze (Railway, Heroku, upravljani PostgreSQL) stojijo za
+# proxyjem, ki tiho zapre povezave, ki nekaj časa mirujejo. Brez preverjanja
+# (pool_pre_ping) in obnavljanja (pool_recycle) prva zahteva po mirovanju
+# čaka na ponovno vzpostavitev povezave (ali pade) — uporabniku se to vidi kot
+# »včasih se stran nalaga več sekund«. Vrednosti so nastavljive z okoljem.
 engine = create_engine(
     settings.DATABASE_URL,
+    pool_pre_ping=True,
+    pool_recycle=int(os.getenv("DB_POOL_RECYCLE", "300")),
+    pool_size=int(os.getenv("DB_POOL_SIZE", "5")),
+    max_overflow=int(os.getenv("DB_MAX_OVERFLOW", "10")),
     connect_args={},
 )
 
