@@ -12,6 +12,7 @@
 # ─────────────────────────────────────────────────────────────────────────
 
 from sqlalchemy import create_engine, text
+from sqlalchemy.exc import OperationalError
 from sqlalchemy.orm import sessionmaker, declarative_base, Session
 
 import os
@@ -39,6 +40,40 @@ def get_db():
         db.close()
 
 
+def db_connection_hint(url: str | None = None) -> str:
+    """Razumljivo sporočilo, ko se aplikacija ne more povezati na bazo.
+
+    Zakaj? Na hosting ponudnikih (Railway, Heroku) najpogostejša napaka ni v
+    kodi: v DATABASE_URL ostane VZOREC iz navodil (gostitelj dobesedno »host«)
+    ali pa na spremenljivko sploh ni povezana baza. Takrat psycopg2 javi le
+    »could not translate host name "host"«, kar uporabniku nič ne pove.
+    """
+    from urllib.parse import urlparse
+
+    try:
+        host = (urlparse(url or "").hostname or "").strip().lower()
+    except Exception:                       # pokvarjen URL — tudi to pojasnimo
+        host = ""
+
+    hint = ""
+    if host in ("host", "h", "example.com", "dbname"):
+        hint = (f"V DATABASE_URL je ostal VZOREC (gostitelj »{host}«). "
+                "Vnesi pravi naslov baze.")
+    elif host in ("localhost", "127.0.0.1", "::1"):
+        hint = (f"DATABASE_URL kaže na »{host}«, torej na isti strežnik. "
+                "V gostovanju (Railway, Docker) mora kazati na ime storitve baze.")
+    elif not host:
+        hint = "V DATABASE_URL ni naslova baze (manjka ime gostitelja)."
+
+    if not hint:
+        hint = f"DATABASE_URL je nastavljen, a povezava na gostitelja »{host}« ni uspela."
+
+    return (f"{hint} "
+            "Na Railwayu: Variables → Add Reference → izberi storitev Postgres → "
+            "DATABASE_URL (tako se vrednost poveže samodejno; ročnega vpisa ne "
+            "potrebuješ). Enako preveri, da SECRET_KEY ni vzorec iz navodil.")
+
+
 def init_db():
     """Ustvari vse tabele in izvede lahke idempotentne migracije.
 
@@ -49,7 +84,13 @@ def init_db():
     """
     import app.models  # noqa: F401 – ensure models are registered
 
-    Base.metadata.create_all(bind=engine)
+    try:
+        Base.metadata.create_all(bind=engine)
+    except OperationalError as exc:
+        # Povezava na bazo ni uspela — javi ČLOVEŠKO razlago (in ne le
+        # psycopg2 sledi), ker je to najpogostejša napaka pri postavitvi.
+        from app.config import settings
+        raise RuntimeError(db_connection_hint(settings.DATABASE_URL)) from exc
 
     def _migrate(statement: str) -> None:
         try:
