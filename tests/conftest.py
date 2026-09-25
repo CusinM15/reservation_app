@@ -62,12 +62,16 @@ def clean_db():
     try:
         db.execute(text(
             "TRUNCATE users, reservations, assessments, audit_log, blocked_dates, "
-            "activity_days, school_aliases, school_settings, schools "
+            "activity_days, school_aliases, school_settings, schools, "
+            "payments, app_settings "
             "RESTART IDENTITY CASCADE"
         ))
         db.commit()
     finally:
         db.close()
+    # Predpomnjeno stikalo prodaje (app_settings) bi sicer ostalo v pomnilniku.
+    from app.app_settings import invalidate_cache
+    invalidate_cache()
 
 
 def default_school_id() -> int | None:

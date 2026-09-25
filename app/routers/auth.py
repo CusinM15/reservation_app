@@ -25,12 +25,15 @@ from datetime import datetime, timedelta, timezone
 from app.database import get_db
 from app.config import settings
 from app.audit import log_audit
+from app.app_settings import selling_config
+from app.subscriptions import get_valid_until, is_active
 from app.models import User, RoleEnum
 from app.config import settings, validate_password_strength
 from app.routers.blocked_dates import _send_email
 from app.security import sign_user_id, get_current_user_id
 from app.tenancy import (
     MAIN_ADMIN_ROLE,
+    SCHOOL_ADMIN_ROLE,
     admin_email_for_new_user,
     admin_email_for_user,
     config_for_request,
@@ -163,9 +166,21 @@ def verify_password(plain_password, hashed_password):
 # ── Prijava / odjava ──────────────────────────────────────────────────
 
 @router.get("/login", response_class=HTMLResponse)
-def login_page(request: Request, error: str = None, info: str = None):
-    """Prikaži login stran z morebitnim sporočilom o napaki ali informacijo."""
-    return templates.TemplateResponse("login.html", {"request": request, "error": error, "info": info})
+def login_page(
+    request: Request,
+    error: str = None,
+    info: str = None,
+    db: Session = Depends(get_db),
+):
+    """Prikaži login stran z morebitnim sporočilom o napaki ali informacijo.
+
+    Predlogi dodamo stanje prodaje naročnin (če ta namestitev prodaja), da se
+    na prijavni strani pokaže možnost nakupa za en mesec.
+    """
+    return templates.TemplateResponse(
+        "login.html",
+        {"request": request, "error": error, "info": info, "selling": selling_config(db)},
+    )
 
 
 @router.post("/login")
@@ -199,9 +214,29 @@ def login(
     if not user or not verify_password(password, user.password_hash):
         return templates.TemplateResponse(
             "login.html", 
-            {"request": request, "error": "Napačno uporabniško ime ali geslo"}
+            {"request": request, "error": "Napačno uporabniško ime ali geslo",
+             "selling": selling_config(db)}
         )
-    
+
+    # ── Naročnina ──────────────────────────────────────────────────────
+    # Zahteva (2026-09-25): ko naročnina šole poteče, aplikacija za to šolo ni
+    # več dostopna — prijavita se lahko le ŠOLSKI ADMIN (da kupi nov mesec) in
+    # glavni admin. Ostali dobijo jasno sporočilo namesto prazne aplikacije.
+    if not is_main_admin(user) and role_value(user) != SCHOOL_ADMIN_ROLE:
+        if not is_active(db, user.school_id):
+            until = get_valid_until(db, user.school_id)
+            rok = f" (veljavnost je bila do {until.day}. {until.month}. {until.year})" if until else ""
+            return templates.TemplateResponse(
+                "login.html",
+                {
+                    "request": request,
+                    "error": "Naročnina vaše šole je potekla" + rok + ". "
+                             "Aplikacija trenutno ni na voljo — obrnite se na "
+                             "administratorja šole.",
+                    "selling": selling_config(db),
+                },
+            )
+
     # Glavnega admina peljemo na pregled šol (nima svoje šole/urnika).
     target = "/schools" if is_main_admin(user) else "/rezervacije"
     response = RedirectResponse(url=target, status_code=303)

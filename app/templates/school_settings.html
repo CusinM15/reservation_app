@@ -176,6 +176,35 @@
             </div>
         </form>
 
+        {% if prodaja and prodaja.enabled %}
+        <!-- NAROČNINA: v tej namestitvi se naročnine prodajajo, zato šolski
+             admin tu vidi stanje in gumb za nakup oziroma podaljšanje. -->
+        <h3>Naročnina šole</h3>
+        <div class="restore-box">
+            {% if narocnina.until and narocnina.active %}
+                <p class="hint" style="margin-top:0;">
+                    Naročnina je veljavna do
+                    <strong>{{ narocnina.until.strftime('%d. %m. %Y') }}</strong>
+                    {% if narocnina.days_left is not none %}(še {{ narocnina.days_left }} dni){% endif %}.
+                </p>
+            {% elif narocnina.active %}
+                <p class="hint" style="margin-top:0;">
+                    V tej namestitvi naročnina ni potrebna — aplikacija deluje brez omejitev.
+                </p>
+            {% else %}
+                <p class="hint" style="margin-top:0;color:#991b1b;">
+                    Naročnina <strong>ni veljavna</strong>{% if narocnina.until %}
+                    (potekla {{ narocnina.until.strftime('%d. %m. %Y') }}){% endif %}.
+                    Aplikacija je za učitelje zaprta, dokler naročnina ni obnovljena.
+                </p>
+            {% endif %}
+            <a class="btn btn-primary" href="/narocnina?school_id={{ school.id }}"
+               style="text-decoration:none;display:inline-block;">
+                Nakup / podaljšanje naročnine ({{ prodaja.price_eur }} € na mesec)
+            </a>
+        </div>
+        {% endif %}
+
         <h3>Varnostna kopija šole</h3>
         <div class="restore-box">
             <p class="hint" style="margin-top:0;">

@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html lang="sl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Naročnina šole — Šolski App</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 0; background: #f5f5f5; color: #222; }
+        .wrap { max-width: 820px; margin: 30px auto; padding: 0 16px 40px; }
+        .card { background: #fff; padding: 22px 26px; border-radius: 10px;
+                box-shadow: 0 0 10px rgba(0,0,0,0.08); margin-bottom: 18px; }
+        h1 { font-size: 1.4rem; margin: 0 0 4px; }
+        h2 { font-size: 1.05rem; margin: 0 0 10px; }
+        .muted { color: #666; font-size: 0.9rem; }
+        .ok { background: #d1fae5; color: #065f46; padding: 10px 12px; border-radius: 6px; margin-bottom: 14px; }
+        .bad { background: #fee2e2; color: #991b1b; padding: 10px 12px; border-radius: 6px; margin-bottom: 14px; }
+        .info { background: #e0f2fe; color: #075985; padding: 10px 12px; border-radius: 6px; margin-bottom: 14px; }
+        .btn { display: inline-block; padding: 10px 16px; background: #007bff; color: #fff;
+               border: none; border-radius: 6px; cursor: pointer; text-decoration: none; font-size: 0.95rem; }
+        .btn:hover { background: #0056b3; }
+        .btn-pay { background: #0070ba; font-weight: 600; }
+        .btn-pay:hover { background: #005c99; }
+        .btn-sm { padding: 6px 10px; font-size: 0.85rem; }
+        .btn-ok { background: #16a34a; } .btn-ok:hover { background: #12813b; }
+        .btn-no { background: #6c757d; } .btn-no:hover { background: #565e64; }
+        label { display: block; font-size: 0.85rem; margin: 10px 0 4px; color: #333; }
+        input[type=text], input[type=number], textarea { width: 100%; padding: 8px 10px;
+               border: 1px solid #ddd; border-radius: 5px; box-sizing: border-box; }
+        table { width: 100%; border-collapse: collapse; font-size: 0.88rem; }
+        th, td { text-align: left; padding: 7px 8px; border-bottom: 1px solid #eee; }
+        th { background: #f8f9fa; }
+        .pill { display: inline-block; padding: 2px 8px; border-radius: 10px; font-size: 0.78rem; }
+        .p-ok { background: #d1fae5; color: #065f46; }
+        .p-wait { background: #fef3c7; color: #92400e; }
+        .p-no { background: #f3f4f6; color: #555; }
+        .grid { display: grid; gap: 14px; grid-template-columns: 1fr 1fr; }
+        @media (max-width: 640px) { .grid { grid-template-columns: 1fr; } }
+    </style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="card">
+    <h1>Naročnina šole</h1>
+    <p class="muted">
+      Šola: <strong>{{ school.name }}</strong>
+      {% if is_main_admin %} · prijavljeni ste kot glavni admin{% endif %}
+    </p>
+
+    {% if info %}<div class="info">{{ info }}</div>{% endif %}
+    {% if error %}<div class="bad">{{ error }}</div>{% endif %}
+
+    {% if state.until and state.active %}
+      <div class="ok">
+        Naročnina je <strong>veljavna</strong> do <strong>{{ state.until.strftime('%d. %m. %Y') }}</strong>
+        {% if state.days_left is not none %} (še {{ state.days_left }} dni){% endif %}.
+      </div>
+    {% elif state.selling and not state.active %}
+      <div class="bad">
+        Naročnina <strong>ni veljavna</strong>{% if state.until %} (potekla {{ state.until.strftime('%d. %m. %Y') }}){% endif %}.
+        Aplikacija za to šolo ni dostopna; prijavijo se lahko le administrator šole in glavni admin.
+      </div>
+    {% else %}
+      <p class="muted">Prodaja naročnin v tej namestitvi ni vklopljena — aplikacija deluje brez omejitev.</p>
+    {% endif %}
+  </div>
+
+  {% if cfg.enabled and not view_only %}
+  <div class="card">
+    <h2>Nakup enega meseca — {{ cfg.price_eur }} €</h2>
+    {% set do_placila = state.days_left is none or state.days_left <= 0 %}
+    <p class="muted">
+      {% if do_placila %}
+        Naročnino obnovite tako, da plačate {{ cfg.price_eur }} € in nato sporočite plačilo.
+      {% else %}
+        Podaljšanje je mogoče kadarkoli — dodani mesec se prišteje k veljavnosti
+        ({{ state.until.strftime('%d. %m. %Y') }}), tako da ne izgubite že plačanih dni.
+      {% endif %}
+    </p>
+
+    {% if cfg.paypal_url %}
+      <p><a class="btn btn-pay" href="{{ cfg.paypal_url }}" target="_blank" rel="noopener">
+        Plačaj s PayPalom ({{ cfg.price_eur }} €)</a></p>
+    {% else %}
+      <div class="info">
+        Povezava do plačila še ni nastavljena.
+        {% if is_main_admin %}Vnesite jo v razdelku »Nastavitve prodaje« spodaj.{% endif %}
+      </div>
+    {% endif %}
+
+    <p class="muted">{{ cfg.note }}</p>
+
+    <form method="POST" action="/narocnina/sporoci-placilo">
+      <input type="hidden" name="school_id" value="{{ school.id }}">
+      <div class="grid">
+        <div>
+          <label>Sklic oziroma koda transakcije</label>
+          <input type="text" name="reference" placeholder="npr. PP-9F2K1 ali sklic nakazila">
+        </div>
+        <div>
+          <label>Opomba (neobvezno)</label>
+          <input type="text" name="note" placeholder="npr. plačano 25. 9. 2026">
+        </div>
+      </div>
+      <p style="margin-top:14px;"><button class="btn" type="submit">Sporoči plačilo</button></p>
+      <p class="muted" style="margin-bottom:0;">
+        Naročnino potrdi glavni admin, ko je nakazilo prejeto. Podatkov o kartici ne
+        shranjujemo — plačilo poteka na PayPalovi strani.
+      </p>
+    </form>
+  </div>
+  {% endif %}
+
+  {% if view_only %}
+  <div class="card">
+    <h2>Kaj zdaj?</h2>
+    <p class="muted">
+      Naročnino lahko obnovi le administrator šole (ali glavni admin). Obrnite se
+      nanj in mu sporočite, da aplikacija za vašo šolo ni več dostopna.
+    </p>
+  </div>
+  {% endif %}
+
+  {% if payments and not view_only %}
+  <div class="card">
+    <h2>Sporočena plačila</h2>
+    <table>
+      <tr><th>Kdaj</th><th>Znesek</th><th>Sklic</th><th>Stanje</th><th>Velja do</th></tr>
+      {% for p in payments %}
+      <tr>
+        <td>{{ p.reported_at.strftime('%d. %m. %Y') }}</td>
+        <td>{{ p.amount_eur }} €</td>
+        <td>{{ p.reference or '—' }}</td>
+        <td>
+          {% if p.status == 'confirmed' %}<span class="pill p-ok">potrjeno</span>
+          {% elif p.status == 'rejected' %}<span class="pill p-no">ni prejeto</span>
+          {% else %}<span class="pill p-wait">čaka potrditev</span>{% endif %}
+        </td>
+        <td>{% if p.valid_until %}{{ p.valid_until.strftime('%d. %m. %Y') }}{% else %}—{% endif %}</td>
+      </tr>
+      {% endfor %}
+    </table>
+  </div>
+  {% endif %}
+
+  {% if is_main_admin %}
+  <div class="card">
+    <h2>Nerešena plačila (vse šole)</h2>
+    {% if pending %}
+    <table>
+      <tr><th>Šola</th><th>Sporočeno</th><th>Znesek</th><th>Sklic</th><th>Dejanje</th></tr>
+      {% for p in pending %}
+      <tr>
+        <td>{{ p.school_name }}</td>
+        <td>{{ p.reported_at.strftime('%d. %m. %Y') }}</td>
+        <td>{{ p.amount_eur }} €</td>
+        <td>{{ p.reference or '—' }}{% if p.note %} · {{ p.note }}{% endif %}</td>
+        <td>
+          <form method="POST" action="/narocnina/potrdi/{{ p.id }}" style="display:inline;">
+            <button class="btn btn-sm btn-ok" type="submit">Potrdi (+1 mesec)</button>
+          </form>
+          <form method="POST" action="/narocnina/zavrni/{{ p.id }}" style="display:inline;">
+            <button class="btn btn-sm btn-no" type="submit">Zavrni</button>
+          </form>
+        </td>
+      </tr>
+      {% endfor %}
+    </table>
+    {% else %}
+      <p class="muted">Trenutno ni nerešenih plačil.</p>
+    {% endif %}
+  </div>
+
+  <div class="card">
+    <h2>Nastavitve prodaje</h2>
+    <form method="POST" action="/narocnina/nastavitve">
+      <label>Prodaja naročnin</label>
+      <select name="selling" style="padding:8px 10px;border:1px solid #ddd;border-radius:5px;">
+        <option value="1" {% if cfg.enabled %}selected{% endif %}>vklopljena</option>
+        <option value="0" {% if not cfg.enabled %}selected{% endif %}>izklopljena</option>
+      </select>
+      <div class="grid" style="margin-top:10px;">
+        <div>
+          <label>Cena na mesec (€)</label>
+          <input type="number" name="price_eur" min="1" value="{{ cfg.price_eur }}">
+        </div>
+        <div>
+          <label>PayPal povezava do plačila</label>
+          <input type="text" name="paypal_url" value="{{ cfg.paypal_url }}"
+                 placeholder="https://www.paypal.com/...">
+        </div>
+      </div>
+      <label>Navodila ob plačilu (vidijo šole)</label>
+      <textarea name="payment_note" rows="3">{{ cfg.note }}</textarea>
+      <p style="margin-top:14px;"><button class="btn" type="submit">Shrani nastavitve</button></p>
+    </form>
+
+    <hr style="border:none;border-top:1px solid #eee;margin:18px 0;">
+    <h2>Podaljšaj brez plačila</h2>
+    <p class="muted">Za vašo šolo ali za poskusno obdobje.</p>
+    <form method="POST" action="/narocnina/podaljsaj">
+      <input type="hidden" name="school_id" value="{{ school.id }}">
+      <label>Število mesecev</label>
+      <input type="number" name="months" min="1" value="1" style="max-width:140px;">
+      <p style="margin-top:14px;"><button class="btn btn-sm btn-ok" type="submit">Podaljšaj to šolo</button></p>
+    </form>
+  </div>
+  {% endif %}
+
+  <p class="muted">
+    <a href="/">Nazaj v aplikacijo</a>
+    {% if is_main_admin %} · <a href="/schools">Pregled šol</a>{% endif %}
+    · <a href="/auth/logout">Odjava</a>
+  </p>
+</div>
+</body>
+</html>

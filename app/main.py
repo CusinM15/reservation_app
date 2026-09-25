@@ -13,25 +13,59 @@
 
 from fastapi import FastAPI, Request, Query, Depends
 from fastapi.middleware.gzip import GZipMiddleware
-from fastapi.responses import HTMLResponse, RedirectResponse
+from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse
 from fastapi.templating import Jinja2Templates
 from fastapi.staticfiles import StaticFiles
 from starlette.middleware.base import BaseHTTPMiddleware
 from sqlalchemy.orm import Session
 
-from app.database import init_db, get_db
-from app.routers import rezervacije, ocenjevanja, auth, blocked_dates, audit_log, export, docs, dejavnosti, schools
+from app.database import init_db, get_db, SessionLocal
+from app.routers import rezervacije, ocenjevanja, auth, blocked_dates, audit_log, export, docs, dejavnosti, schools, subscription
+from app.app_settings import selling_enabled
+from app.subscriptions import is_active
 from app.models import User, RoleEnum
 from app.tenancy import (
     MAIN_ADMIN_ROLE,
+    SCHOOL_ADMIN_ROLE,
     bootstrap_tenancy,
     config_for_request,
+    is_main_admin,
     parse_alias_path,
     lookup_alias_school_id,
     nav_paths,
     resolve_school_context,
     role_value,
 )
+
+# Sporočilo, ki ga uporabnik vidi, ko šola nima veljavne naročnine.
+NAROCNINA_POTEKLA = (
+    "Naro%C4%8Dnina+%C5%A1ole+je+potekla.+Za+obnovitev+se+obrnite+na+"
+    "administratorja+%C5%A1ole."
+)
+
+
+def subscription_blocks_access(request: Request) -> bool:
+    """Ali naj bo ta zahteva zavrnjena, ker šola nima veljavne naročnine?
+
+    Preverjanje je namenoma poceni: ko je prodaja izklopljena (privzeto), se
+    takoj vrne False, ne da bi se dotaknili baze (stikalo je predpomnjeno).
+    Dovoljeni so: glavni admin in ŠOLSKI ADMIN (ta mora priti do nakupa).
+    """
+    db = SessionLocal()
+    try:
+        if not selling_enabled(db):
+            return False
+        uid = get_current_user_id(request)
+        if not uid:
+            return False
+        user = db.query(User).filter(User.id == uid).first()
+        if user is None or is_main_admin(user) or role_value(user) == SCHOOL_ADMIN_ROLE:
+            return False
+        if user.school_id is None:          # npr. glavni admin brez šole
+            return False
+        return not is_active(db, user.school_id)
+    finally:
+        db.close()
 
 # ── Inicializacija aplikacije ──────────────────────────────────────────
 # Ustvarimo FastAPI instanco z naslovom "Šolski App". Predpone /api/*
@@ -137,6 +171,24 @@ class AuthMiddleware(BaseHTTPMiddleware):
         is_public = any(path == p for p in public) or path.startswith("/static") or path.startswith("/slike") or path.startswith("/docs/")
         if not is_public and not get_current_user_id(request):
             return RedirectResponse(url="/auth/login")
+
+        # ── Naročnina ──────────────────────────────────────────────────
+        # Če šola nima veljavne naročnine, aplikacija zanjo ni več dostopna:
+        # prijavita se lahko le ŠOLSKI ADMIN (da kupi nov mesec) in glavni
+        # admin. Preverjamo v middleware, da velja tudi za že odprte seje.
+        # Ko je prodaja izklopljena (privzeto, npr. v šolski namestitvi),
+        # preverjanje ne stori nič in ne obremenjuje baze.
+        if (not is_public and not path.startswith("/narocnina")
+                and not path.startswith("/auth") and get_current_user_id(request)):
+            if subscription_blocks_access(request):
+                if path.startswith("/api/"):
+                    return JSONResponse(
+                        {"detail": "Naročnina šole je potekla. Za obnovitev se "
+                                   "obrnite na administratorja šole."},
+                        status_code=403,
+                    )
+                return RedirectResponse(url=f"/narocnina?error={NAROCNINA_POTEKLA}", status_code=303)
+
         return await call_next(request)
 
 app.add_middleware(AuthMiddleware)
@@ -380,6 +432,7 @@ app.include_router(export.router)
 app.include_router(docs.router)
 app.include_router(dejavnosti.router)
 app.include_router(schools.router)
+app.include_router(subscription.router)
 
 # ── Statične datoteke za dokumentacijo ────────────────────────────────
 # Slike iz dokumentacije (v /documentation/slike/) serviramo kot statične

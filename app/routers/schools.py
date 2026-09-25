@@ -22,6 +22,8 @@ from fastapi.templating import Jinja2Templates
 from sqlalchemy.orm import Session
 
 from app.database import get_db
+from app.app_settings import selling_config
+from app.subscriptions import subscription_state
 from app.models import School, SchoolAlias, User, Reservation, Assessment, ActivityDay, RoleEnum
 from app.audit import log_audit
 from app.security import get_current_user_id, sign_user_id
@@ -682,4 +684,8 @@ def school_settings_page(
         # Naslov, kamor gre »Naredi backup« (BACKUP_EMAIL šole, sicer ADMIN_EMAIL).
         "backup_email": (cfg.BACKUP_EMAIL or cfg.ADMIN_EMAIL or ""),
         "is_main_admin": is_main_admin(user),
+        # Naročnina: stanje (veljavnost) + nastavitve prodaje — šolski admin tu
+        # vidi, da lahko naročnino kupi oziroma podaljša na /narocnina.
+        "narocnina": subscription_state(db, school.id),
+        "prodaja": selling_config(db),
     })

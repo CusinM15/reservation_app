@@ -256,3 +256,40 @@ class ActivityDay(Base):
     created_by = relationship("User")
     created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)
+
+
+# ── Nastavitve cele namestitve ────────────────────────────────────────
+# Zakaj ločeno od school_settings? Nekatere nastavitve niso vezane na šolo,
+# ampak na celo namestitev — npr. ali se naročnine sploh prodajajo, po kaki
+# ceni in na katero PayPal povezavo. Velja: ključ → vrednost (besedilo).
+class AppSetting(Base):
+    __tablename__ = "app_settings"
+
+    key = Column(String, primary_key=True)
+    value = Column(Text, nullable=True, default="")
+
+
+# ── Plačila naročnine ─────────────────────────────────────────────────
+# Zakaj ločena tabela? Naročnina se prodaja po mesecih (30 €/mesec), zato
+# potrebujemo evidenco: kdaj je šola sporočila plačilo in kdaj ga je glavni
+# admin potrdil. PODATKOV O KARTICI tu NI in jih nikoli ne shranjujemo —
+# plačilo poteka na PayPalovi strani, tu je le evidenca (znesek, sklic,
+# opomba, kdo je potrdil).
+class Payment(Base):
+    __tablename__ = "payments"
+
+    id = Column(Integer, primary_key=True, index=True)
+    school_id = Column(Integer, ForeignKey("schools.id"), nullable=False, index=True)
+    amount_eur = Column(Integer, nullable=False, default=0)      # znesek v evrih (30)
+    months = Column(Integer, nullable=False, default=1)          # koliko mesecev pokriva
+    reference = Column(String, nullable=True, default="")        # sklic / naziv plačnika
+    note = Column(Text, nullable=True, default="")               # sporočilo šole
+    # pending = šola je sporočila plačilo, čaka potrditev
+    # confirmed = glavni admin potrdil (naročnina podaljšana)
+    # rejected = plačilo ni bilo prejeto / ni veljavno
+    status = Column(String, nullable=False, default="pending", index=True)
+    valid_until = Column(Date, nullable=True)                    # do kdaj je podaljšano (ob potrditvi)
+    reported_at = Column(DateTime, default=datetime.utcnow, nullable=False)
+    reported_by_id = Column(Integer, ForeignKey("users.id"), nullable=True)
+    confirmed_at = Column(DateTime, nullable=True)
+    confirmed_by = Column(String, nullable=True, default="")     # uporabniško ime potrjevalca
