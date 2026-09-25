@@ -1027,10 +1027,6 @@
       const devetke = razredi.filter(r => r.startsWith('9.')).sort();
       const ostalo = razredi.filter(r => !r.startsWith('8.') && !r.startsWith('9.')).sort();
       let html = '';
-      if (id === 'oc-razred') {
-        // PRIVZETO (zeleno): ocenjevanja vseh razredov od 6. do 9.
-        html += '<option value="__6_9__" style="background:#d1fae5;color:#065f46;font-weight:600;">🌿 6.–9. razred (vsi)</option>';
-      }
       if (addAll) html += '<option value="">Vsi razredi</option>';
       if (id === 'oc-razred') {
         html += '<option value="__8__">🗂️ 8. razred (vsi)</option>';
@@ -1041,9 +1037,6 @@
       if (osmice.length) { if (id !== 'oc-razred') html += '<option value="" disabled style="font-weight:bold;background:#eee;">— 8. razred —</option>'; osmice.forEach(r => html += `<option value="${r}">${r}</option>`); }
       if (devetke.length) { if (id !== 'oc-razred') html += '<option value="" disabled style="font-weight:bold;background:#eee;">— 9. razred —</option>'; devetke.forEach(r => html += `<option value="${r}">${r}</option>`); }
       sel.innerHTML = html;
-      // Privzeto izbrano: 6.–9. razred (vsi) — da je takoj vidno celotno
-      // dogajanje od 6. do 9. razreda, ne pa en sam oddelek.
-      if (id === 'oc-razred') sel.value = '__6_9__';
     }
     // Napolni <select> z urami urnika (pridobljenimi s strežnika).
     function populateHours(id) {
@@ -1827,10 +1820,10 @@
 
     // --- Ocenjevanja ---
     // Naloži ocenjevanja za trenutni mesec in izbrano skupino razredov.
-    // Podpira skupinske izbire: 6.–9. (privzeto, __6_9__), 8. (__8__), 9. (__9__)
-    // ter posamezen razred. Pri razredih/skupinah od 6. do 9. razreda se zraven
-    // pokažejo TUDI ocenjevanja razreda IP/NIP/ID (zeleno) — ti učenci so v istih
-    // dnevih in jih poučujejo isti učitelji, zato morajo biti vidni.
+    // Podpira skupinski izbiri 8. (__8__) in 9. (__9__) ter posamezen razred.
+    // Pri razredih in skupinah od 6. do 9. razreda se zraven pokažejo TUDI
+    // ocenjevanja razreda IP/NIP/ID (zeleno) — ti učenci so v istih dnevih in jih
+    // poučujejo isti učitelji, zato morajo biti vidni.
     async function loadAssessments() {
       let razred = document.getElementById('oc-razred').value;
       let month = currentOcMonth;
@@ -1840,8 +1833,7 @@
       const url = `/api/ocenjevanja?month=${month}`;
       let filterPrefix = [];
       let naslov = razred || 'Vsi razredi';
-      if (razred === '__6_9__') { filterPrefix = RAZREDI_69; naslov = '6.–9. razred (vsi)'; }
-      else if (razred === '__8__') { filterPrefix = ['8.']; naslov = '8. razred (vsi)'; }
+      if (razred === '__8__') { filterPrefix = ['8.']; naslov = '8. razred (vsi)'; }
       else if (razred === '__9__') { filterPrefix = ['9.']; naslov = '9. razred (vsi)'; }
       // Ali gledamo razred/skupino 6.–9.? (le tam sodi tudi IP/NIP/ID)
       const jeRazpon69 = filterPrefix.length > 0
@@ -1914,10 +1906,9 @@
         let showActivity = dayActClasses.length > 0;
         if (showActivity && razred && razred !== 'Vsi razredi') {
           if (razred.startsWith('__')) {
-            // skupinske izbire filtra: 6.–9. (vsi), 8. (vsi), 9. (vsi)
-            const prefixes = razred === '__6_9__' ? RAZREDI_69
-              : [razred === '__8__' ? '8.' : '9.'];
-            showActivity = dayActClasses.some(r => prefixes.some(p => r.startsWith(p)));
+            // skupinski izbiri filtra: 8. (vsi), 9. (vsi)
+            const prefix = razred === '__8__' ? '8.' : '9.';
+            showActivity = dayActClasses.some(r => r.startsWith(prefix));
           }
           else showActivity = dayActClasses.some(r => r === razred);
         }
@@ -1988,9 +1979,9 @@
     // Odpre prazen modal za novo ocenjevanje (klicano iz
     // gumba '+ Novo ocenjevanje'). Nastavi privzeti razred
     // iz filtrov in današnji datum.
-    // Skupinske izbire filtra ('__6_9__', '__8__', '__9__', 'Vsi razredi')
-    // niso konkreten razred, zato polja ne prepišemo z njimi — sicer bi izbira
-    // tiho padla na prvi razred v seznamu.
+    // Skupinski izbiri filtra ('__8__', '__9__') in 'Vsi razredi' niso konkreten
+    // razred, zato polja ne prepišemo z njimi — sicer bi izbira tiho padla na
+    // prvi razred v seznamu.
     function openOcModal() {
       const izbran = document.getElementById('oc-razred').value;
       if (izbran && izbran.indexOf('__') !== 0) {

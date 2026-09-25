@@ -58,16 +58,18 @@ def test_ip_nip_id_is_not_selectable(client, make_user):
     assert "items.forEach" not in funkcija
 
 
-# ── 2. Privzeto 6.–9. razred, zeleno ─────────────────────────────────
+# ── 2. Skupinska izbira 6.–9. je ODSTRANJENA ─────────────────────────
 
-def test_default_selection_is_six_to_nine_and_green(client, make_user):
-    funkcija = _picker_js(_index_html(client, make_user))
+def test_six_to_nine_group_option_is_removed(client, make_user):
+    """Uporabnik je zahteval odstranitev izbire »6.–9. razred (vsi)«."""
+    html = _index_html(client, make_user)
+    funkcija = _picker_js(html)
 
-    assert 'value="__6_9__"' in funkcija
-    assert "6.–9. razred (vsi)" in funkcija
-    assert "background:#d1fae5" in funkcija
-    assert "color:#065f46" in funkcija
-    assert "sel.value = '__6_9__'" in funkcija
+    assert "__6_9__" not in funkcija
+    assert "6.–9. razred (vsi)" not in funkcija
+    assert "sel.value = '__6_9__'" not in funkcija
+    # prav tako je ni nikjer drugje na strani (nalaganje, koledar)
+    assert "__6_9__" not in html
 
 
 def test_group_shortcuts_still_exist(client, make_user):
@@ -86,8 +88,10 @@ def test_load_includes_ip_for_grades_6_to_9(client, make_user):
     assert "RAZREDI_69" in telo
     # ocenjevanja posebne skupine se dodajo k izbranemu razredu
     assert "jePosebni(a) && jeRazpon69" in telo
-    # pri skupinskih izbirah se dodajo zraven
-    assert "jePosebni(a)\n" in telo or "jePosebni(a)" in telo
+    # posebne skupine se dodajo tudi pri skupinskih izbirah (8./9. vsi)
+    assert "jePosebni(a)" in telo
+    # izbire 6.–9. ni več
+    assert "__6_9__" not in telo
 
 
 def test_client_filters_locally_so_ip_rows_are_available(client, make_user):
@@ -144,11 +148,12 @@ def test_legend_has_ip_colour(client, make_user):
     assert "> IP/NIP/ID</span>" in html
 
 
-# ── 5. Skupinska izbira pri dejavnostih + obrazec ────────────────────
+# ── 5. Skupinski izbiri 8./9. pri dejavnostih + obrazec ──────────────
 
-def test_activity_field_handles_six_to_nine_group(client, make_user):
+def test_activity_field_handles_group_selections(client, make_user):
     telo = _render_js(_index_html(client, make_user))
-    assert "'__6_9__' ? RAZREDI_69" in telo
+    assert "razred === '__8__' ? '8.' : '9.'" in telo
+    assert "__6_9__" not in telo
 
 
 def test_modal_prefill_ignores_group_values(client, make_user):
