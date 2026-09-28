@@ -174,6 +174,9 @@ def registracija_submit(
     )
     response.set_cookie(key="user_id", value=sign_user_id(admin.id), httponly=True, samesite="lax")
     response.set_cookie(key="role", value=admin.role, httponly=True, samesite="lax")
+    # Šola novega admina — brez tega bi v brskalniku ostala izbira PREJŠNJE šole
+    # in vsaka zahteva bi se končala z »Nimate dostopa do podatkov te šole.«
+    response.set_cookie(key="school_ctx", value=str(school.id), httponly=True, samesite="lax")
     return response
 
 

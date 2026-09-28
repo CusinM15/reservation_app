@@ -1018,9 +1018,18 @@ def resolve_school_context(request, db: Session):
 
     user = get_request_user(request, db)
     if user is not None and user.school_id:
+        # Obseg šolske vloge je vedno njena šola. Če piškotek/alias kaže na
+        # DRUGO šolo, zahteve ne izvedemo (varnost: tuja šola ni dostopna), a
+        # dodamo navodilo — takšno stanje nastane, ko v istem brskalniku ostane
+        # seja uporabnika druge šole (glej tudi registracijo, ki piškotek
+        # nastavi, in odjavo, ki ga pobriše).
         ctx = request_school_id(request)
         if ctx is not None and ctx != user.school_id:
-            raise HTTPException(status_code=403, detail="Nimate dostopa do podatkov te šole.")
+            raise HTTPException(
+                status_code=403,
+                detail=("Nimate dostopa do podatkov te šole. Vaša seja je iz "
+                        "druge šole — odjavite se in se prijavite znova."),
+            )
         school = db.query(School).filter(School.id == user.school_id).first()
         return user.school_id, school
 
@@ -1047,9 +1056,15 @@ def data_school_id(request, db: Session) -> int | None:
         # Šolski uporabnik brez šole (legacy) — omejimo na privzeto šolo,
         # da ne vidi podatkov drugih šol.
         return _default_school_id(db)
+    # Obseg branja je vedno šola uporabnika; navedba druge šole (alias ali
+    # zastarel piškotek) se zavrne z navodilom, kako naprej.
     ctx = request_school_id(request)
     if ctx is not None and ctx != user.school_id:
-        raise HTTPException(status_code=403, detail="Nimate dostopa do podatkov te šole.")
+        raise HTTPException(
+            status_code=403,
+            detail=("Nimate dostopa do podatkov te šole. Vaša seja je iz druge "
+                    "šole — odjavite se in se prijavite znova."),
+        )
     return user.school_id
 
 
@@ -1064,9 +1079,14 @@ def write_school_id(request, db: Session) -> int:
     if user is None:
         raise HTTPException(status_code=401, detail="Niste prijavljeni")
     if user.school_id:
+        # Pisanje gre v šolo uporabnika; navedba druge šole se zavrne.
         ctx = request_school_id(request)
         if ctx is not None and ctx != user.school_id:
-            raise HTTPException(status_code=403, detail="Nimate dostopa do podatkov te šole.")
+            raise HTTPException(
+                status_code=403,
+                detail=("Nimate dostopa do podatkov te šole. Vaša seja je iz "
+                        "druge šole — odjavite se in se prijavite znova."),
+            )
         return user.school_id
     if is_main_admin(user):
         ctx = request_school_id(request)
@@ -1134,7 +1154,12 @@ def find_user_for_login(db: Session, request, identifier: str, *, active_only: b
     from app.models import User
 
     ident = (identifier or "").strip()
-    school_id = request_school_id(request)
+    # Za prijavo upoštevamo SAMO pot šole (URL-alias), ne piškotka school_ctx:
+    # piškotek hrani le, katero šolo gleda prejšnji uporabnik, zato je ob
+    # zastareli vrednosti (npr. po registraciji nove šole) prijava iz druge šole
+    # ne bi bila mogoča (uporabnik se ne bi našel).
+    _state = getattr(request, "state", None)
+    school_id = getattr(_state, "school_id", None) if _state is not None else None
 
     def _base():
         query = db.query(User)
@@ -1174,14 +1199,18 @@ def bootstrap_tenancy(db: Session) -> "object":
     """
     from app.models import School, User, RoleEnum
     from app.audit import log_audit
+    # Uvoz na ZAČETKU funkcije: prej je bil le znotraj veje za glavnega admina,
+    # zato je ob obstoječem glavnem adminu (in manjkajočem šolskem) spodaj
+    # vrglo UnboundLocalError »CryptContext«.
+    from passlib.context import CryptContext
+
+    pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
     school = ensure_default_school(db)
 
     # 1) Glavni admin (mi) — globalni račun brez šole.
     main_admin = db.query(User).filter(User.username == settings.MAIN_ADMIN_USERNAME).first()
     if main_admin is None:
-        from passlib.context import CryptContext
-        pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
         main_admin = User(
             username=settings.MAIN_ADMIN_USERNAME,
             email=settings.MAIN_ADMIN_EMAIL or None,
@@ -1209,7 +1238,6 @@ def bootstrap_tenancy(db: Session) -> "object":
         school_admin = db.query(User).filter(User.username == "admin").first()
 
     if school_admin is None:
-        pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
         school_admin = User(
             username=admin_username,
             email=settings.ADMIN_EMAIL or None,

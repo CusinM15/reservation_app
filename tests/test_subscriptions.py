@@ -576,3 +576,80 @@ def test_settings_button_label_depends_on_state(client, make_user):
 
     _set_until(date.today() + timedelta(days=10))
     assert "Podaljšaj naročnino" in client.get("/settings").text
+
+
+# ── 12. Zaklenitev po registraciji (piškotek school_ctx) ─────────────
+#
+# Napaka, ki jo je uporabnik doživel 28. 9. 2026: po ustvarjanju nove šole je
+# vsaka stran vrnila 403 »Nimate dostopa do podatkov te šole.«, ker je v
+# brskalniku ostal piškotek school_ctx prejšnje šole, novi admin pa pripada
+# drugi šoli. Piškotek za šolske vloge ne sme imeti veljave.
+
+def _nova_sola_iz_tenancy(name: str = "Druga šola") -> int:
+    from app.tenancy import create_school
+
+    db = SessionLocal()
+    try:
+        suffix = uuid4().hex[:6]
+        school = create_school(db, name=f"{name} {suffix}", slug=f"druga-{suffix}")
+        db.commit()
+        return int(school.id)
+    finally:
+        db.close()
+
+
+def test_registration_sets_school_ctx(client):
+    _set_selling(True)
+    suffix = uuid4().hex[:6]
+    r = client.post(
+        "/registracija",
+        data={
+            "name": f"Nova šola {suffix}", "slug": f"nova-{suffix}",
+            "username": f"novi_{suffix}", "email": "",
+            "first_name": "", "last_name": "",
+            "password": "Geslo12345", "password2": "Geslo12345",
+        },
+        follow_redirects=False,
+    )
+    assert r.status_code == 303
+    assert client.cookies.get("school_ctx")            # nastavljen na novo šolo
+
+    # ključno: takoj po registraciji mora aplikacija DELOVATI
+    assert client.get("/narocnina").status_code == 200
+
+
+def test_stale_school_ctx_does_not_lock_school_user(client, make_user):
+    """Zastarel piškotek school_ctx (druga šola) ne sme vrniti 403."""
+    other_school_id = _nova_sola_iz_tenancy()
+    admin = make_user(role="admin", school_id=other_school_id)
+
+    # napačna (stara) šola — pošljemo kot glavo, da ne onesnažimo piškotkov
+    client.cookies.clear()
+    r = client.post("/auth/login",
+                    data={"username": admin.username, "password": TEST_PASSWORD},
+                    headers={"Cookie": "school_ctx=1"}, follow_redirects=False)
+    assert r.status_code == 303
+
+    assert client.get("/rezervacije").status_code == 200
+    assert client.get("/settings").status_code == 200
+    assert client.get("/narocnina").status_code == 200
+
+
+def test_login_sets_own_school_ctx(client, make_user):
+    other_school_id = _nova_sola_iz_tenancy()
+    admin = make_user(role="admin", school_id=other_school_id)
+
+    client.cookies.clear()
+    client.post("/auth/login",
+                data={"username": admin.username, "password": TEST_PASSWORD},
+                headers={"Cookie": "school_ctx=1"}, follow_redirects=False)
+    assert client.cookies.get("school_ctx") == str(other_school_id)
+
+
+def test_logout_clears_school_ctx(client, make_user):
+    other_school_id = _nova_sola_iz_tenancy()
+    admin = make_user(role="admin", school_id=other_school_id)
+    _login(client, admin.username)
+
+    client.get("/auth/logout", follow_redirects=False)
+    assert not client.cookies.get("school_ctx")

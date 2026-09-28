@@ -245,19 +245,34 @@ def login(
     # nastavil user_id=1 in postal admin (auth bypass).
     response.set_cookie(key="user_id", value=sign_user_id(user.id), httponly=True, samesite="lax")
     response.set_cookie(key="role", value=user.role, httponly=True, samesite="lax")
-    # Če je prijava tekla prek poti šole, si glavni admin zapomni izbrano šolo.
-    school_id = request_school_id(request)
-    if school_id is not None:
-        response.set_cookie(key="school_ctx", value=str(school_id), httponly=True, samesite="lax")
+    # Piškotek school_ctx (katero šolo gleda uporabnik):
+    #  - šolska vloga: VEDNO njihova šola. S tem se zastarela vrednost iz
+    #    prejšnje seje prepiše — brez tega je uporabnik nove šole po registraciji
+    #    dobival »Nimate dostopa do podatkov te šole.«
+    #  - glavni admin: izbrana šola, če je prijava tekla prek poti šole; sicer
+    #    piškotek pobrišemo, da vidi vse šole (privzeto stanje).
+    alias_school = getattr(getattr(request, "state", None), "school_id", None)
+    if is_main_admin(user):
+        if alias_school is not None:
+            response.set_cookie(key="school_ctx", value=str(alias_school), httponly=True, samesite="lax")
+        else:
+            response.delete_cookie("school_ctx")
+    else:
+        response.set_cookie(key="school_ctx", value=str(user.school_id), httponly=True, samesite="lax")
     return response
 
 
 @router.get("/logout")
 def logout():
-    """Odjava — pobriše piškotke in preusmeri na login."""
+    """Odjava — pobriše piškotke in preusmeri na login.
+
+    Pobrišemo tudi school_ctx: sicer bi v istem brskalniku po odjavi ostala
+    izbira prejšnje šole in naslednji uporabnik bi gledal napačno šolo.
+    """
     response = RedirectResponse(url="/auth/login")
     response.delete_cookie("user_id")
     response.delete_cookie("role")
+    response.delete_cookie("school_ctx")
     return response
 
 
