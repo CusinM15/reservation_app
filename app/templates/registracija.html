@@ -64,61 +64,28 @@
   </div>
 
   <div class="card">
-    <h2>Podatki šole in administratorja</h2>
+    <h2>Vpišite ime šole</h2>
+    <p class="muted" style="margin-top:0;">
+      Ostalo uredimo samodejno: kratico šole naredimo iz imena, administratorski račun
+      pa ustvarimo z uporabniškim imenom <code>admin_&lt;kratica&gt;</code> in naključnim
+      geslom, ki ga pokažemo takoj po ustvarjanju.
+    </p>
     {% if error %}<div class="bad">{{ error }}</div>{% endif %}
 
     <form method="POST" action="/registracija">
       <label>Polno ime šole *</label>
-      <input type="text" name="name" value="{{ name or '' }}" required
+      <input type="text" name="name" value="{{ name or '' }}" required autofocus
              placeholder="npr. Osnovna šola Toneta Čufarja Jesenice">
 
-      <label>Kratica šole (za naslov v brskalniku)</label>
-      <input type="text" name="slug" value="{{ slug or '' }}" placeholder="npr. ostcj">
-      <div class="hint">Neobvezno. Uporablja se v naslovu, npr. <code>/ostcj</code>. Če pustite prazno,
-        jo naredimo iz imena.</div>
-
-      <div class="grid" style="margin-top:6px;">
-        <div>
-          <label>Ime administratorja</label>
-          <input type="text" name="first_name" value="{{ first_name or '' }}" placeholder="npr. Matej">
-        </div>
-        <div>
-          <label>Priimek administratorja</label>
-          <input type="text" name="last_name" value="{{ last_name or '' }}" placeholder="npr. Cusin">
-        </div>
-      </div>
-
-      <div class="grid" style="margin-top:6px;">
-        <div>
-          <label>Uporabniško ime *</label>
-          <input type="text" name="username" value="{{ username or '' }}" required
-                 placeholder="npr. admin_ostcj">
-        </div>
-        <div>
-          <label>E-pošta administratorja</label>
-          <input type="email" name="email" value="{{ email or '' }}" placeholder="npr. ravnatelj@os-primer.si">
-          <div class="hint">Na ta naslov pošiljamo varnostne kopije in obvestila.</div>
-        </div>
-      </div>
-
-      <div class="grid" style="margin-top:6px;">
-        <div>
-          <label>Geslo *</label>
-          <input type="password" name="password" required>
-        </div>
-        <div>
-          <label>Ponovite geslo *</label>
-          <input type="password" name="password2" required>
-        </div>
-      </div>
-
       <div class="info">
-        Z oddajo se ustvari šola in njen administratorski račun. Naročnina
+        Z oddajo se ustvari šola in njen administratorski račun. E-pošto šole (za
+        varnostne kopije) in druge podatke uredite pozneje v
+        <em>Nastavitve šole</em>. Naročnina
         {% if cfg.free %}je brezplačna{% else %}znaša {{ cfg.price_eur }} € na mesec{% endif %};
         po plačilu jo potrdimo in učitelji bodo lahko vstopili.
       </div>
 
-      <p><button class="btn" type="submit">Ustvari šolski račun</button></p>
+      <p><button class="btn" type="submit">Ustvari šolo</button></p>
     </form>
 
     <p class="muted">

@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="sl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Šola je ustvarjena — Šolski app</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 0; background: #f5f5f5; color: #222; }
+        .wrap { max-width: 700px; margin: 36px auto; padding: 0 16px 48px; }
+        .card { background: #fff; padding: 26px 30px; border-radius: 10px;
+                box-shadow: 0 0 10px rgba(0,0,0,0.08); }
+        h1 { font-size: 1.45rem; margin: 0 0 6px; }
+        h2 { font-size: 1.05rem; margin: 22px 0 8px; }
+        p, li { line-height: 1.55; }
+        .muted { color: #666; font-size: 0.92rem; }
+        .ok { background: #dcfce7; color: #14532d; padding: 12px 14px; border-radius: 6px;
+              margin: 0 0 16px; font-weight: 600; }
+        .creds { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px;
+                 padding: 16px 18px; margin: 10px 0 6px; }
+        .creds dt { font-size: 0.8rem; color: #64748b; text-transform: uppercase;
+                    letter-spacing: 0.04em; margin-top: 10px; }
+        .creds dd { margin: 4px 0 0; font-size: 1.15rem; }
+        code, .pw { font-family: "DejaVu Sans Mono", Consolas, monospace; }
+        .pw { font-size: 1.35rem; font-weight: bold; letter-spacing: 0.06em;
+              background: #fff7ed; border: 1px dashed #fb923c; border-radius: 6px;
+              padding: 8px 12px; display: inline-block; color: #7c2d12; }
+        .warn { background: #fef3c7; color: #78350f; padding: 12px 14px; border-radius: 6px;
+                margin: 14px 0; }
+        .btn { display: inline-block; padding: 12px 20px; background: #007bff; color: #fff;
+               border-radius: 6px; text-decoration: none; font-weight: 600; }
+        .btn:hover { background: #0056b3; }
+        .btn-secondary { background: #6c757d; font-weight: normal; padding: 10px 16px;
+                         font-size: 0.9rem; }
+    </style>
+</head>
+<body>
+<div class="wrap">
+  <div class="card">
+    <div class="ok">Šola je ustvarjena.</div>
+    <h1>{{ school.name }}</h1>
+    <p class="muted">Kratica šole: <code>{{ school.slug }}</code> — pod to oznako je dostopna
+      tudi pot v brskalniku.</p>
+
+    <h2>Podatki za prijavo</h2>
+    <p class="muted" style="margin-bottom:4px;">
+      Ustvarili smo administratorski račun. <strong>Geslo si zapišite zdaj</strong> — prikaže se
+      samo to pot. Pozneje ga lahko spremenite v aplikaciji (menjava gesla) ali obnovite prek
+      »Pozabljeno geslo?«.
+    </p>
+    <dl class="creds">
+      <dt>Uporabniško ime</dt>
+      <dd><code>{{ username }}</code></dd>
+      <dt>Geslo</dt>
+      <dd><span class="pw">{{ geslo }}</span></dd>
+    </dl>
+
+    <div class="warn">
+      Prijavljeni ste že zdaj. E-pošto šole (na katero pošiljamo varnostne kopije) vpišite
+      v <em>Nastavitve šole → E-pošta</em>; uporabniška imena in gesla za učitelje in vodstvo
+      pa ustvarite v <em>Nastavitve šole</em> oziroma v upravljanju uporabnikov.
+    </div>
+
+    <h2>Naslednji korak: naročnina</h2>
+    <p class="muted">
+      {% if cfg.free %}
+        Uporaba je v tej namestitvi brezplačna — nič ni treba plačati.
+      {% else %}
+        Naročnina znaša {{ cfg.price_eur }} € na mesec. Plačajte in sporočite plačilo;
+        ko ga potrdimo, se bodo lahko prijavili tudi vaši učitelji.
+      {% endif %}
+    </p>
+    <p>
+      <a class="btn" href="/narocnina">Uredi naročnino</a>
+      <a class="btn btn-secondary" href="/settings" style="margin-left:8px;">Nastavitve šole</a>
+    </p>
+  </div>
+</div>
+</body>
+</html>

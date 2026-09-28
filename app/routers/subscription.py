@@ -9,6 +9,7 @@
 # v bazi je le evidenca (znesek, sklic, opomba, kdo je potrdil).
 # ─────────────────────────────────────────────────────────────────────────
 
+import secrets
 from datetime import datetime
 
 from fastapi import APIRouter, Depends, Form, HTTPException, Request
@@ -31,7 +32,13 @@ from app.subscriptions import (
     set_auto_renew,
     subscription_state,
 )
-from app.tenancy import create_school, get_request_user, is_main_admin, slugify
+from app.tenancy import (
+    create_school,
+    default_school_admin_username,
+    get_request_user,
+    is_main_admin,
+    slugify,
+)
 
 router = APIRouter(tags=["narocnina"])
 templates = Jinja2Templates(directory="app/templates")
@@ -87,20 +94,51 @@ def registracija_page(
     )
 
 
+def _generirano_geslo(dolzina: int = 12) -> str:
+    """Sestavi naključno geslo, ki ustreza pravilom šole.
+
+    Znake, ki se radi zamešajo (O/0, l/1), namenoma izpustimo — geslo bo
+    uporabnik prepisoval z zaslona. Pravila (male/velike črke + številka)
+    zagotovimo z zanko, da je rezultat vedno veljaven.
+    """
+    alphabet = "abcdefghijkmnpqrstuvwxyzABCDEFGHJKLMNPQRSTUVWXYZ23456789"
+    for _ in range(50):
+        kandidat = "".join(secrets.choice(alphabet) for _ in range(dolzina))
+        if validate_password_strength(kandidat) is None:
+            return kandidat
+    # Sem pridemo le teoretično; dodamo vsiljeno številko in veliko črko.
+    return "".join(secrets.choice(alphabet) for _ in range(dolzina - 2)) + "9K"
+
+
+def _prost_slug(db: Session, osnova: str) -> str:
+    """Vrni prosto kratico šole; ob zasedenosti doda -2, -3 ...
+
+    Zakaj? Kratico naredimo samodejno iz imena šole, zato ob morebitnem
+    podvajanju (npr. dve »Osnovna šola«) uporabnika ne ustavimo z napako,
+    ampak mu dodelimo prosto različico.
+    """
+    osnova = osnova or "sola"
+    kandidat = osnova
+    stevec = 2
+    while db.query(School).filter(School.slug == kandidat).first():
+        kandidat = f"{osnova}-{stevec}"
+        stevec += 1
+    return kandidat
+
+
 @router.post("/registracija")
 def registracija_submit(
     request: Request,
     name: str = Form(""),
-    slug: str = Form(""),
-    username: str = Form(""),
-    email: str = Form(""),
-    first_name: str = Form(""),
-    last_name: str = Form(""),
-    password: str = Form(""),
-    password2: str = Form(""),
     db: Session = Depends(get_db),
 ):
-    """Ustvari novo šolo + njenega administratorja in ju prijavi."""
+    """Ustvari novo šolo; administratorja določimo SAMODEJNO.
+
+    Zakaj tako? Uporabnik pri registraciji vpiše le šolo — kratico, uporabniško
+    ime in geslo administratorja določimo mi (kratico iz imena, uporabniško ime
+    `admin_<kratica>`, geslo naključno). Geslo pokažemo enkrat po ustvarjanju,
+    pozneje pa ga lahko uporabnik spremeni v aplikaciji.
+    """
     cfg = selling_config(db)
     if not cfg["enabled"]:
         raise HTTPException(status_code=403, detail="Registracija v tej namestitvi ni mogoča.")
@@ -108,52 +146,30 @@ def registracija_submit(
     def napaka(sporocilo: str):
         return templates.TemplateResponse(
             "registracija.html",
-            {
-                "request": request, "cfg": cfg, "error": sporocilo,
-                "name": name, "slug": slug, "username": username,
-                "email": email, "first_name": first_name, "last_name": last_name,
-            },
+            {"request": request, "cfg": cfg, "error": sporocilo, "name": name},
             status_code=400,
         )
 
     name = (name or "").strip()
-    username = (username or "").strip()
-    email = (email or "").strip()
-
     if len(name) < 3:
         return napaka("Vpišite polno ime šole (najmanj 3 znake).")
-    if len(username) < 3:
-        return napaka("Uporabniško ime mora imeti najmanj 3 znake.")
-    if email and ("@" not in email or "." not in email.split("@")[-1]):
-        return napaka("E-poštni naslov ni videti pravilen.")
-    if password != password2:
-        return napaka("Gesli se ne ujemata.")
-    err = validate_password_strength(password)
-    if err:
-        return napaka(err)
 
-    # Uporabniško ime mora biti prosto po CELI namestitvi: prijava sicer zahteva
-    # navedbo poti šole, kar je za nove šole neprijetno presenečenje.
-    if db.query(User).filter(User.username == username).first():
-        return napaka(f"Uporabniško ime »{username}« je že zasedeno. Izberite drugo.")
-
-    # Kratica (slug) gre v naslov šole; poenotimo jo, da v URL-ju ni presledkov.
-    cleaned_slug = None
-    if (slug or "").strip():
-        cleaned_slug = slugify(slug.strip())
+    slug = _prost_slug(db, slugify(name))
+    username = default_school_admin_username(slug)
+    geslo = _generirano_geslo()
 
     try:
-        school = create_school(db, name=name, slug=cleaned_slug)
+        school = create_school(db, name=name, slug=slug)
     except ValueError as exc:
         return napaka(str(exc))
 
     admin = User(
         school_id=school.id,
         username=username,
-        email=email or None,
-        first_name=(first_name or "").strip(),
-        last_name=(last_name or "").strip(),
-        password_hash=get_password_hash(password),
+        email=None,
+        first_name="Administrator",
+        last_name="",
+        password_hash=get_password_hash(geslo),
         role=RoleEnum.admin,
     )
     db.add(admin)
@@ -162,15 +178,21 @@ def registracija_submit(
     log_audit(
         db, admin.id, admin.username, "register_school",
         f"school_id={school.id}, slug={school.slug}, name={school.name}, "
-        f"cena={cfg['price_eur']} EUR",
+        f"cena={cfg['price_eur']} EUR, admin={username} (geslo generirano)",
         school_id=school.id,
     )
 
-    # Takoj prijavimo administratorja, da lahko naročnino uredi brez ovinkov.
-    response = RedirectResponse(
-        url="/narocnina?info=Račun je ustvarjen. Naročnina še ni veljavna — "
-            "po plačilu jo potrdimo in učitelji bodo lahko vstopili.",
-        status_code=303,
+    # Prijavimo administratorja in pokažemo ustvarjene podatke (geslo se prikaže
+    # samo enkrat — zato stran, ne preusmeritev, da geslo ne pride v naslov).
+    response = templates.TemplateResponse(
+        "registracija_uspeh.html",
+        {
+            "request": request,
+            "cfg": cfg,
+            "school": school,
+            "username": username,
+            "geslo": geslo,
+        },
     )
     response.set_cookie(key="user_id", value=sign_user_id(admin.id), httponly=True, samesite="lax")
     response.set_cookie(key="role", value=admin.role, httponly=True, samesite="lax")

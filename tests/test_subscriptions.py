@@ -10,6 +10,7 @@
 # šoli na k3s), aplikacija deluje brez kakršnihkoli omejitev.
 # ─────────────────────────────────────────────────────────────────────────
 
+import re
 from datetime import date, timedelta
 from uuid import uuid4
 
@@ -18,7 +19,8 @@ import pytest
 from app.app_settings import get_app_setting, is_free, price_eur, save_selling_config
 from app.config import settings as app_config
 from app.database import SessionLocal
-from app.models import AuditLog, Payment, School, User
+from app.models import AuditLog, Payment, RoleEnum, School, User
+from app.tenancy import default_school_admin_username
 from app.subscriptions import (
     auto_renew_enabled,
     days_left,
@@ -361,11 +363,13 @@ def test_nakup_page_when_selling_off(client):
 
 
 def test_login_buy_button_points_to_registration(client):
-    """Na prijavni strani je pot za šolo, ki računa še NI (ustvarjanje šole)."""
+    """Na prijavni strani je le pot za novo šolo, oznaka je »Nova šola«
+    (brez cene, kot je zahteval uporabnik)."""
     _set_selling(True)
     html = client.get("/auth/login").text
     assert 'href="/registracija"' in html
-    assert "Ustvari šolski račun" in html
+    assert re.search(r'href="/registracija"[^>]*>\s*Nova šola', html)
+    assert "30 €" not in html
     assert 'href="/narocnina"' not in html
 
 
@@ -381,14 +385,14 @@ def test_school_admin_settings_link_goes_to_protected_page(client, make_user):
 
 # ── 8. Prijavna stran in nastavitve šole ─────────────────────────────
 
-def test_login_page_shows_buy_option_when_selling(client):
+def test_login_page_shows_registration_link_when_selling(client):
     r = client.get("/auth/login")
-    assert "Ustvari šolski račun" not in r.text
+    assert 'href="/registracija"' not in r.text
 
     _set_selling(True, price=30)
     r2 = client.get("/auth/login")
-    assert "Ustvari šolski račun" in r2.text
-    assert "30 €" in r2.text
+    assert 'href="/registracija"' in r2.text
+    assert "Nova šola" in r2.text
 
 
 def test_school_settings_shows_subscription_box(client, make_user):
@@ -463,61 +467,69 @@ def test_registracija_requires_selling(client):
     assert "/auth/login" in r.headers.get("location", "")
 
 
-def test_registracija_creates_school_and_admin(client):
+def test_registracija_creates_school_and_auto_admin(client):
+    """Uporabnik vpiše ZGOLJ ime šole — administrator se določi samodejno
+    (uporabniško ime admin_<kratica>, naključno geslo, prikazano enkrat)."""
     _set_selling(True)
-    suffix = uuid4().hex[:6]
-    slug = f"test-{suffix}"
-    username = f"admin_{suffix}"
+    ime = f"Testna šola {uuid4().hex[:6]}"
 
-    r = client.post(
-        "/registracija",
-        data={
-            "name": f"Testna šola {suffix}",
-            "slug": slug,
-            "username": username,
-            "email": f"{suffix}@test.invalid",
-            "first_name": "Test",
-            "last_name": "Admin",
-            "password": "Geslo12345",
-            "password2": "Geslo12345",
-        },
-        follow_redirects=False,
-    )
-    assert r.status_code == 303
-    assert "/narocnina" in r.headers.get("location", "")
+    r = client.post("/registracija", data={"name": ime}, follow_redirects=False)
+    assert r.status_code == 200                      # stran s podatki (ne preusmeritev)
+    assert "Šola je ustvarjena" in r.text
 
-    # piškotek prijave je nastavljen → administrator je takoj prijavljen
+    # geslo iz strani mora delovati pri prijavi
+    zadetek = re.search(r'class="pw">([^<]+)<', r.text)
+    assert zadetek, "na strani ni izpisanega gesla"
+    geslo = zadetek.group(1).strip()
+
     assert "user_id" in client.cookies
+    assert client.cookies.get("school_ctx")          # nastavljen na novo šolo
 
     db = SessionLocal()
     try:
-        school = db.query(School).filter(School.slug == slug).first()
+        school = db.query(School).filter(School.name == ime).first()
         assert school is not None
-        admin = db.query(User).filter(User.username == username).first()
-        assert admin is not None and admin.school_id == school.id
+        admin = db.query(User).filter(User.school_id == school.id,
+                                      User.role == RoleEnum.admin).first()
+        assert admin is not None
+        # uporabniško ime je samodejno: admin_<kratica>
+        assert admin.username == default_school_admin_username(school.slug)
+        assert admin.first_name == "Administrator"
         # nova šola še nima naročnine → učitelji se ne morejo prijaviti
         assert is_active(db, school.id) is False
     finally:
         db.close()
 
+    # prijava z generiranim geslom deluje (tudi po odjavi)
+    client.get("/auth/logout", follow_redirects=False)
+    prijava = client.post("/auth/login", data={"username": admin.username, "password": geslo},
+                          follow_redirects=False)
+    assert prijava.status_code == 303
+
 
 def test_registracija_rejects_bad_input(client):
     _set_selling(True)
-    suffix = uuid4().hex[:6]
-    data = {
-        "name": "Testna šola", "slug": f"t-{suffix}", "username": f"u_{suffix}",
-        "email": "", "first_name": "", "last_name": "",
-        "password": "Geslo12345", "password2": "DrugoGeslo123",
-    }
-    r = client.post("/registracija", data=data, follow_redirects=False)
+    r = client.post("/registracija", data={"name": "ab"}, follow_redirects=False)
     assert r.status_code == 400
-    assert "Gesli se ne ujemata" in r.text
+    assert "ime šole" in r.text
 
-    data["password2"] = "Geslo12345"
-    data["username"] = "mainadmin"          # zasedeno ime glavnega admina
-    r2 = client.post("/registracija", data=data, follow_redirects=False)
-    assert r2.status_code == 400
-    assert "že zasedeno" in r2.text
+
+def test_registracija_slug_collision_gets_suffix(client):
+    """Dve šoli z enakim imenom: kratici se razlikujeta (-2), registracija uspe."""
+    _set_selling(True)
+    ime = f"Podvojena šola {uuid4().hex[:4]}"
+    r1 = client.post("/registracija", data={"name": ime}, follow_redirects=False)
+    assert r1.status_code == 200
+    r2 = client.post("/registracija", data={"name": ime}, follow_redirects=False)
+    assert r2.status_code == 200
+
+    db = SessionLocal()
+    try:
+        sole = db.query(School).filter(School.name == ime).order_by(School.id).all()
+        assert len(sole) == 2
+        assert sole[1].slug == f"{sole[0].slug}-2"
+    finally:
+        db.close()
 
 
 # ── 11. Samodejno mesečno plačilo ────────────────────────────────────
@@ -600,22 +612,14 @@ def _nova_sola_iz_tenancy(name: str = "Druga šola") -> int:
 
 def test_registration_sets_school_ctx(client):
     _set_selling(True)
-    suffix = uuid4().hex[:6]
-    r = client.post(
-        "/registracija",
-        data={
-            "name": f"Nova šola {suffix}", "slug": f"nova-{suffix}",
-            "username": f"novi_{suffix}", "email": "",
-            "first_name": "", "last_name": "",
-            "password": "Geslo12345", "password2": "Geslo12345",
-        },
-        follow_redirects=False,
-    )
-    assert r.status_code == 303
+    r = client.post("/registracija", data={"name": f"Nova šola {uuid4().hex[:6]}"},
+                    follow_redirects=False)
+    assert r.status_code == 200
     assert client.cookies.get("school_ctx")            # nastavljen na novo šolo
 
     # ključno: takoj po registraciji mora aplikacija DELOVATI
     assert client.get("/narocnina").status_code == 200
+    assert client.get("/settings").status_code == 200
 
 
 def test_stale_school_ctx_does_not_lock_school_user(client, make_user):
