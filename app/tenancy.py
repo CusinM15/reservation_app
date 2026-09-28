@@ -179,6 +179,51 @@ def default_school_admin_username(slug: str) -> str:
     return f"admin_{base}"
 
 
+# Besede, ki pri inicialkah ne nosijo pomena (jih preskočimo).
+_INICIALKE_STOPWORDS = {
+    "in", "ter", "za", "na", "ob", "do", "od", "po", "z", "s", "k", "v", "pri", "pod",
+}
+
+# Črke s strešicami → osnovne, da je uporabniško ime lažje vtipkati.
+_TRANSLIT_INICIALK = str.maketrans({"č": "c", "š": "s", "ž": "z", "ć": "c", "đ": "d"})
+
+# Testni naslovi za novo šolo (dokler jih admin ne uredi v Nastavitvah šole).
+TEST_EMAIL_PLACEHOLDER = "test@example.invalid"
+
+
+def school_admin_username_from_initials(name: str) -> str:
+    """Uporabniško ime admina iz INICIALK imena šole.
+
+    Primer: »Osnovna šola Toneta Čufarja Jesenice« → `admin_ostcj`.
+    Zakaj inicialke? Uporabniško ime je kratko in prepoznavno, šoli pa se ga ni
+    treba izmišljati — ob registraciji ga določimo samodejno. Če inicialk ne
+    moremo sestaviti (prekratko ime), vrnemo prazen niz in klicatelj uporabi
+    oznako šole.
+    """
+    besede = re.findall(r"[A-Za-zČŠŽčšžĆćĐđ]+", name or "")
+    crke: list[str] = []
+    for beseda in besede:
+        if beseda.lower() in _INICIALKE_STOPWORDS:
+            continue
+        crke.append(beseda[0].lower().translate(_TRANSLIT_INICIALK))
+    osnova = re.sub(r"[^a-z0-9]", "", "".join(crke))
+    if len(osnova) < 2:
+        return ""
+    return f"admin_{osnova}"
+
+
+def apply_test_email_settings(db: Session, school_id: int) -> None:
+    """Novi šoli zapiši TESTNE naslove e-pošte.
+
+    Zakaj? Ob ustvarjanju šole se nastavitve napolnijo iz .env — tam je naslov
+    pošiljatelja (MAIL_FROM) vezan na našo šolo, prav tako naslova za obvestila
+    in varnostne kopije. Nova šola zato dobi začasne testne vrednosti, ki jih
+    admin zamenja v Nastavitvah šole (glej stran Navodila za nastavitev).
+    """
+    for key in ("MAIL_FROM", "BACKUP_EMAIL", "ADMIN_EMAIL"):
+        set_school_setting(db, school_id, key, TEST_EMAIL_PLACEHOLDER)
+
+
 def parse_alias_path(path: str) -> tuple[str | None, str | None]:
     """Razbij pot na (alias, kanonična pot).
 

@@ -17,7 +17,7 @@ from datetime import date, datetime
 
 from sqlalchemy.orm import Session
 
-from app.app_settings import selling_enabled
+from app.app_settings import is_free, selling_enabled
 from app.tenancy import get_school_config, set_school_setting
 
 KEY_VALID_UNTIL = "NAROCNINA_DO"
@@ -94,10 +94,17 @@ def maybe_expired(db: Session, school_id: int) -> bool:
 def is_active(db: Session, school_id: int) -> bool:
     """Ali šola lahko uporablja aplikacijo?
 
-    Če prodaja v tej namestitvi ni vklopljena, je odgovor VEDNO True (šolska
-    namestitev se po posodobitvi ne obnaša nič drugače kot prej).
+    Trije primeri:
+      - prodaja izklopljena → VEDNO True (šolska namestitev se po posodobitvi ne
+        obnaša nič drugače kot prej),
+      - cena 0 (brezplačno) → VEDNO True: ni česa plačati, zato nikogar ne
+        zapiramo (tudi šole brez datuma veljavnosti ne) — s tem je mogoče
+        preizkusiti delovanje brez plačil,
+      - sicer → odloča datum veljavnosti (NAROCNINA_DO).
     """
     if not selling_enabled(db):
+        return True
+    if is_free(db):
         return True
     return not maybe_expired(db, school_id)
 

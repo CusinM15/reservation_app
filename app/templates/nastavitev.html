@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="sl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Navodila za nastavitev — {{ school.name }}</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 0; background: #f5f5f5; color: #222; }
+        .wrap { max-width: 900px; margin: 28px auto; padding: 0 16px 48px; }
+        .card { background: #fff; padding: 24px 28px; border-radius: 10px;
+                box-shadow: 0 0 10px rgba(0,0,0,0.08); margin-bottom: 18px; }
+        h1 { font-size: 1.45rem; margin: 0 0 6px; }
+        h2 { font-size: 1.08rem; margin: 22px 0 10px; }
+        p, li { line-height: 1.55; }
+        .muted { color: #666; font-size: 0.92rem; }
+        .napredek { font-size: 1.05rem; font-weight: bold; }
+        table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+        th, td { text-align: left; padding: 10px 8px; border-bottom: 1px solid #eee;
+                 vertical-align: top; }
+        th { font-size: 0.78rem; text-transform: uppercase; letter-spacing: 0.04em;
+             color: #64748b; }
+        .ok { color: #15803d; font-weight: bold; white-space: nowrap; }
+        .ni { color: #b45309; font-weight: bold; white-space: nowrap; }
+        .vrednost { font-family: "DejaVu Sans Mono", Consolas, monospace; font-size: 0.85rem;
+                    color: #475569; word-break: break-word; }
+        .opis { font-size: 0.9rem; color: #444; }
+        a.gumb { display: inline-block; padding: 6px 12px; background: #007bff; color: #fff;
+                 border-radius: 5px; text-decoration: none; font-size: 0.85rem; white-space: nowrap; }
+        .opozorilo { background: #fef3c7; color: #78350f; padding: 12px 14px; border-radius: 6px;
+                     margin: 14px 0; }
+        .navodila { background: #e0f2fe; color: #075985; padding: 12px 14px; border-radius: 6px; }
+        ol.koraki { padding-left: 22px; }
+        ol.koraki li { margin-bottom: 8px; }
+    </style>
+</head>
+<body>
+<div class="wrap">
+  <div class="card">
+    <h1>Navodila za nastavitev šole</h1>
+    <p class="muted">
+      Šola: <strong>{{ school.name }}</strong> (oznaka <code>{{ school.slug }}</code>)<br>
+      Za pravilno delovanje aplikacije uredite spodnje postavke. Kazalnik
+      <span class="ok">✓</span> pomeni, da je urejeno, <span class="ni">✗</span> pomeni,
+      da je treba še urediti.
+    </p>
+    <p class="napredek">Urejeno: {{ stevilo_ok }} od {{ stevilo_vseh }}</p>
+  </div>
+
+  <div class="card">
+    <h2>Kaj je treba urediti</h2>
+    <table>
+      <tr>
+        <th style="width:70px;">Stanje</th>
+        <th>Kaj</th>
+        <th>Trenutna vrednost</th>
+        <th style="width:130px;">Kje</th>
+      </tr>
+      {% for item in items %}
+      <tr>
+        <td>{% if item.ok %}<span class="ok">✓ urejeno</span>{% else %}<span class="ni">✗ uredi</span>{% endif %}</td>
+        <td>
+          <strong>{{ item.naslov }}</strong>
+          <div class="opis">{{ item.opis }}</div>
+        </td>
+        <td><span class="vrednost">{{ item.trenutno }}</span></td>
+        <td><a class="gumb" href="{{ item.kje }}">{{ item.kje_napis }}</a></td>
+      </tr>
+      {% endfor %}
+    </table>
+  </div>
+
+  <div class="card">
+    <h2>Kako po vrsti</h2>
+    <ol class="koraki">
+      <li><strong>Zamenjajte geslo</strong> administratorja (ustvarili smo ga samodejno in ga
+          pokazali ob registraciji). Geslo spremenite v aplikaciji, v meniju uporabnika.</li>
+      <li><strong>Vpišite e-pošto šole</strong> (naslov admina, naslov pošiljatelja in naslov za
+          varnostne kopije). Brez tega obvestila in obnovitev gesla ne delujeta.</li>
+      <li><strong>Preverite SMTP</strong> — strežnik, uporabniško ime in geslo za pošiljanje pošte
+          (če šola uporablja Arnes, vpišite podatke Arnesa).</li>
+      <li><strong>Vpišite razrede</strong> (npr. <code>1. a, 2. a, …</code>) in
+          <strong>prostore</strong> (npr. <code>tablice, računalnica, telovadnica</code>).</li>
+      <li><strong>Ustvarite uporabnike</strong> za učitelje in vodstvo (vsak dobi svoje
+          uporabniško ime in geslo).</li>
+      <li><strong>Uredite naročnino</strong> — po plačilu jo potrdimo in učitelji bodo lahko
+          vstopili (pri ceni 0 je uporaba brezplačna).</li>
+      <li><em>Neobvezno:</em> prilagodite omejitve ocenjevanj, urnik in čas neaktivnosti.</li>
+    </ol>
+    <div class="navodila">
+      Nasvet: vse našteto je na enem mestu v <a href="/settings">Nastavitvah šole</a>;
+      uporabnike urejate pod <a href="/auth/admin/users">Uporabniki</a>.
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>Pogosta vprašanja</h2>
+    <p><strong>Zakaj nova šola dobi testni naslov pošiljatelja?</strong><br>
+       Zato, da pošta ne bi šla z napačnim pošiljateljem (tujega). Testni naslov
+       <code>test@example.invalid</code> je treba zamenjati, sicer pošte ni mogoče dostaviti.</p>
+    <p><strong>Učitelji se ne morejo prijaviti.</strong><br>
+       Preverite postavko »Naročnina« zgoraj. Če naročnina ni veljavna, se lahko prijavi le
+       administrator šole (da jo uredi).</p>
+    <p><strong>Kje so varnostne kopije?</strong><br>
+       Aplikacija vsako noč pripravi kopijo podatkov šole in jo pošlje na »E-pošto za varnostne
+       kopije«; kopijo lahko kadar koli prenesete tudi ročno v nastavitvah šole.</p>
+  </div>
+</div>
+</body>
+</html>

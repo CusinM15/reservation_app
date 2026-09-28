@@ -33,10 +33,12 @@ from app.subscriptions import (
     subscription_state,
 )
 from app.tenancy import (
+    apply_test_email_settings,
     create_school,
     default_school_admin_username,
     get_request_user,
     is_main_admin,
+    school_admin_username_from_initials,
     slugify,
 )
 
@@ -126,6 +128,20 @@ def _prost_slug(db: Session, osnova: str) -> str:
     return kandidat
 
 
+def _prosto_uporabnisko_ime(db: Session, osnova: str) -> str:
+    """Vrni prosto uporabniško ime; ob zasedenosti doda 2, 3 ...
+
+    Uporabniška imena so v bazi unikatna po šoli, prijava pa išče po celem
+    sistemu (brez poti šole) — zato mora biti ime prosto tudi globalno.
+    """
+    kandidat = osnova
+    stevec = 2
+    while db.query(User).filter(User.username == kandidat).first():
+        kandidat = f"{osnova}{stevec}"
+        stevec += 1
+    return kandidat
+
+
 @router.post("/registracija")
 def registracija_submit(
     request: Request,
@@ -155,13 +171,21 @@ def registracija_submit(
         return napaka("Vpišite polno ime šole (najmanj 3 znake).")
 
     slug = _prost_slug(db, slugify(name))
-    username = default_school_admin_username(slug)
+    # Uporabniško ime admina = admin_<inicialke imena šole> (npr. admin_ostcj);
+    # če inicialk ni mogoče sestaviti, uporabimo oznako šole. Ob zasedenosti
+    # dodamo številko.
+    osnova_imena = school_admin_username_from_initials(name) or default_school_admin_username(slug)
+    username = _prosto_uporabnisko_ime(db, osnova_imena)
     geslo = _generirano_geslo()
 
     try:
         school = create_school(db, name=name, slug=slug)
     except ValueError as exc:
         return napaka(str(exc))
+
+    # E-pošta: nova šola dobi TESTNE naslove (namesto naših iz .env) — admin jih
+    # zamenja v Nastavitvah šole, sicer bi pošta šla z napačnim pošiljateljem.
+    apply_test_email_settings(db, school.id)
 
     admin = User(
         school_id=school.id,

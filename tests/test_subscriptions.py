@@ -20,7 +20,13 @@ from app.app_settings import get_app_setting, is_free, price_eur, save_selling_c
 from app.config import settings as app_config
 from app.database import SessionLocal
 from app.models import AuditLog, Payment, RoleEnum, School, User
-from app.tenancy import default_school_admin_username
+from app.tenancy import (
+    TEST_EMAIL_PLACEHOLDER,
+    default_school_admin_username,
+    get_school_config,
+    school_admin_username_from_initials,
+    set_school_setting,
+)
 from app.subscriptions import (
     auto_renew_enabled,
     days_left,
@@ -450,6 +456,26 @@ def test_settings_save_zero_price(client):
         db.close()
 
 
+def test_free_price_never_blocks_school(client, make_user):
+    """Cena 0 = brezplačno: tudi šola s poteklim datumom dela (ni česa plačati).
+
+    Zakaj je to pomembno? Brez tega bi ob ceni 0 šola z pretečenim datumom ostala
+    zaklenjena — uporabnik pa pričakuje, da je pri brezplačni uporabi nihče ne
+    ovira (tako tudi preizkusi delovanje brez plačil)."""
+    _set_selling(True, price=0)
+    _set_until(date.today() - timedelta(days=30))
+
+    db = SessionLocal()
+    try:
+        assert is_active(db, default_school_id()) is True
+    finally:
+        db.close()
+
+    teacher = make_user()
+    assert _login(client, teacher.username).status_code == 303
+    assert client.get("/rezervacije").status_code == 200
+
+
 # ── 10. Registracija nove šole ───────────────────────────────────────
 
 def test_registracija_is_public_when_selling_on(client):
@@ -492,8 +518,11 @@ def test_registracija_creates_school_and_auto_admin(client):
         admin = db.query(User).filter(User.school_id == school.id,
                                       User.role == RoleEnum.admin).first()
         assert admin is not None
-        # uporabniško ime je samodejno: admin_<kratica>
-        assert admin.username == default_school_admin_username(school.slug)
+        # uporabniško ime je samodejno: admin_<inicialke imena šole>
+        assert admin.username == (
+            school_admin_username_from_initials(ime)
+            or default_school_admin_username(school.slug)
+        )
         assert admin.first_name == "Administrator"
         # nova šola še nima naročnine → učitelji se ne morejo prijaviti
         assert is_active(db, school.id) is False
@@ -588,6 +617,85 @@ def test_settings_button_label_depends_on_state(client, make_user):
 
     _set_until(date.today() + timedelta(days=10))
     assert "Podaljšaj naročnino" in client.get("/settings").text
+
+
+# ── 13. Inicialke, testna e-pošta in navodila za nastavitev ──────────
+
+def test_admin_username_from_initials():
+    """Uporabniško ime admina = admin_<inicialke imena šole>."""
+    assert school_admin_username_from_initials(
+        "Osnovna šola Toneta Čufarja Jesenice") == "admin_ostcj"
+    assert school_admin_username_from_initials("OŠ Toneta Čufarja Jesenice") == "admin_otcj"
+    assert school_admin_username_from_initials("Gimnazija Kranj") == "admin_gk"
+    # neveljavno/prekratko ime → prazen niz (klicatelj uporabi oznako šole)
+    assert school_admin_username_from_initials("") == ""
+    assert school_admin_username_from_initials("Šola") == ""
+
+
+def test_registration_uses_initials_for_username(client):
+    _set_selling(True)
+    ime = "OŠ Testna Preizkusna Jesenice"
+    r = client.post("/registracija", data={"name": ime}, follow_redirects=False)
+    assert r.status_code == 200
+
+    db = SessionLocal()
+    try:
+        school = db.query(School).filter(School.name == ime).first()
+        assert school is not None
+        admin = db.query(User).filter(User.school_id == school.id).first()
+        assert admin is not None
+        # inicialke: OŠ Testna Preizkusna Jesenice → otpj
+        assert admin.username.startswith("admin_otpj")
+    finally:
+        db.close()
+
+
+def test_registration_sets_test_email_addresses(client):
+    """Nova šola dobi TESTNE naslove (ne naših iz .env) — admin jih zamenja."""
+    _set_selling(True)
+    ime = f"Testna šola {uuid4().hex[:6]}"
+    r = client.post("/registracija", data={"name": ime}, follow_redirects=False)
+    assert r.status_code == 200
+
+    db = SessionLocal()
+    try:
+        school = db.query(School).filter(School.name == ime).first()
+        cfg = get_school_config(db, school.id)
+        assert cfg.MAIL_FROM == TEST_EMAIL_PLACEHOLDER
+        assert cfg.ADMIN_EMAIL == TEST_EMAIL_PLACEHOLDER
+        assert cfg.BACKUP_EMAIL == TEST_EMAIL_PLACEHOLDER
+    finally:
+        db.close()
+
+
+def test_setup_guide_page(client, make_user):
+    """Stran /nastavitev pokaže kontrolni seznam in opozori na testne naslove."""
+    _set_selling(True)
+    admin = make_user(role="admin")
+    login(client, admin.username)
+
+    r = client.get("/nastavitev")
+    assert r.status_code == 200
+    assert "Navodila za nastavitev šole" in r.text
+    assert "naslov pošiljatelja" in r.text.lower()
+    assert "✗ uredi" in r.text                     # testni naslovi še niso urejeni
+    assert "Naročnina" in r.text
+
+    # ko admin vpiše svoje vrednosti, se kazalniki obrnejo
+    _set_until(date.today() + timedelta(days=10))
+    db = SessionLocal()
+    try:
+        set_school_setting(db, default_school_id(), "ADMIN_EMAIL", "tajnistvo@os-primer.si")
+        set_school_setting(db, default_school_id(), "MAIL_FROM", "tajnistvo@os-primer.si")
+        set_school_setting(db, default_school_id(), "BACKUP_EMAIL", "kopije@os-primer.si")
+        set_school_setting(db, default_school_id(), "RAZREDI", "1. a, 2. a")
+        set_school_setting(db, default_school_id(), "PROSTORI", "tablice, računalnica")
+        db.commit()
+    finally:
+        db.close()
+
+    r2 = client.get("/nastavitev")
+    assert "✓ urejeno" in r2.text
 
 
 # ── 12. Zaklenitev po registraciji (piškotek school_ctx) ─────────────

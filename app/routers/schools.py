@@ -49,6 +49,7 @@ from app.tenancy import (
     get_school_config,
     slugify,
     sync_admin_user_email,
+    TEST_EMAIL_PLACEHOLDER,
 )
 from app.backup_restore import DOMAINS, DOMAIN_LABELS, restore_domain
 from app.school_backup import backup_filename, build_school_sql, send_backup_email
@@ -611,6 +612,134 @@ def _school_chooser_html(db: Session) -> str:
         "<p><a href=\"/schools\">← Pregled vseh šol</a> &nbsp;|&nbsp; "
         "<a href=\"/rezervacije\">← Aplikacija</a></p>"
         "</body></html>"
+    )
+
+
+@router.get("/nastavitev", response_class=HTMLResponse)
+def setup_guide_page(
+    request: Request,
+    school_id: int | None = Query(None),
+    db: Session = Depends(get_db),
+):
+    """Navodila za nastavitev šole — kaj mora admin urediti, da app dela pravilno.
+
+    Kazalniki ✓/✗ se izračunajo iz DEJANSKIH nastavitev šole, zato admin takoj
+    vidi, kaj še manjka (npr. testni naslov pošiljatelja, ki ga dobi nova šola ob
+    registraciji, mora zamenjati s svojim).
+    """
+    user = get_request_user(request, db)
+    if not user:
+        return RedirectResponse(url="/auth/login")
+    try:
+        school = _manageable_school(db, request, school_id)
+    except HTTPException as exc:
+        if exc.status_code == 400 and is_main_admin(user):
+            return HTMLResponse(_school_chooser_html(db), status_code=200)
+        return HTMLResponse(exc.detail, status_code=exc.status_code)
+
+    cfg = get_school_config(db, school.id)
+    testni = TEST_EMAIL_PLACEHOLDER
+
+    def _nastavljeno(value: str | None) -> bool:
+        text = (value or "").strip()
+        return bool(text) and text != testni
+
+    uporabniki = (
+        db.query(User).filter(User.school_id == school.id, User.is_active == True).count()  # noqa: E712
+    )
+    ucitelji = (
+        db.query(User)
+        .filter(User.school_id == school.id, User.role == RoleEnum.teacher, User.is_active == True)  # noqa: E712
+        .count()
+    )
+    stanje = subscription_state(db, school.id)
+
+    items = [
+        {
+            "naslov": "E-pošta šolskega admina",
+            "opis": "Naslov, na katerega prejmete obvestila in povezavo za obnovitev gesla.",
+            "ok": _nastavljeno(cfg.ADMIN_EMAIL),
+            "trenutno": cfg.ADMIN_EMAIL,
+            "kje": "/settings",
+            "kje_napis": "Nastavitve šole",
+        },
+        {
+            "naslov": "Naslov pošiljatelja (From)",
+            "opis": ("Naslov, s katerim aplikacija pošilja pošto (obvestila, obnovitev gesla, "
+                     "varnostne kopije). Nova šola dobi testni naslov — zamenjajte ga s svojim, "
+                     "sicer pošta ne bo dostavljena."),
+            "ok": _nastavljeno(cfg.MAIL_FROM),
+            "trenutno": cfg.MAIL_FROM,
+            "kje": "/settings",
+            "kje_napis": "Nastavitve šole",
+        },
+        {
+            "naslov": "E-pošta za varnostne kopije",
+            "opis": "Kam naj gre nočna varnostna kopija podatkov šole.",
+            "ok": _nastavljeno(cfg.BACKUP_EMAIL),
+            "trenutno": cfg.BACKUP_EMAIL,
+            "kje": "/settings",
+            "kje_napis": "Nastavitve šole",
+        },
+        {
+            "naslov": "SMTP strežnik (pošiljanje pošte)",
+            "opis": ("Strežnik, uporabniško ime in geslo za pošiljanje pošte. Privzeto so vpisani "
+                     "podatki ponudnika — za svojo šolo vpišite svojega (npr. Arnes)."),
+            "ok": bool((cfg.MAIL_SERVER or "").strip()) and bool((cfg.MAIL_USERNAME or "").strip())
+                  and bool(cfg.get_str("MAIL_PASSWORD", "")),
+            "trenutno": cfg.MAIL_SERVER or "",
+            "kje": "/settings",
+            "kje_napis": "Nastavitve šole",
+        },
+        {
+            "naslov": "Razredi",
+            "opis": "Seznam oddelkov, vejica-ločeno (npr. 1. a, 2. a, 9. č).",
+            "ok": bool(cfg.RAZREDI),
+            "trenutno": ", ".join(cfg.RAZREDI) if cfg.RAZREDI else "",
+            "kje": "/settings",
+            "kje_napis": "Nastavitve šole",
+        },
+        {
+            "naslov": "Prostori in oprema",
+            "opis": "Prostori, ki jih je mogoče rezervirati, in njihove kapacitete.",
+            "ok": bool(cfg.PROSTORI),
+            "trenutno": ", ".join(cfg.PROSTORI) if cfg.PROSTORI else "",
+            "kje": "/settings",
+            "kje_napis": "Nastavitve šole",
+        },
+        {
+            "naslov": "Uporabniki (učitelji in vodstvo)",
+            "opis": ("Ustvarite račune za učitelje in vodstvo — vsak dobi svoje uporabniško ime "
+                     "in geslo."),
+            "ok": ucitelji > 0,
+            "trenutno": f"{uporabniki} aktivnih uporabnikov, od tega {ucitelji} učiteljev",
+            "kje": "/auth/admin/users",
+            "kje_napis": "Uporabniki",
+        },
+        {
+            "naslov": "Naročnina",
+            "opis": "Uporaba je veljavna, ko je naročnina potrjena (ali je cena 0 — brezplačno).",
+            "ok": bool(stanje.get("active")),
+            "trenutno": (
+                f"veljavna do {stanje['until'].strftime('%d. %m. %Y')}"
+                if stanje.get("until") and stanje.get("active")
+                else "ni veljavna"
+            ),
+            "kje": "/narocnina",
+            "kje_napis": "Naročnina",
+        },
+    ]
+
+    return templates.TemplateResponse(
+        "nastavitev.html",
+        {
+            "request": request,
+            "school": school,
+            "items": items,
+            "stevilo_ok": sum(1 for i in items if i["ok"]),
+            "stevilo_vseh": len(items),
+            "is_main_admin": is_main_admin(user),
+        },
     )
 
 
