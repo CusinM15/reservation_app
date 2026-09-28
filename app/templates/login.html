@@ -99,17 +99,21 @@
             </form>
 
             {% if selling and selling.enabled %}
-            <!-- NAKUP NAROČNINE: prikazano le, kadar ta namestitev prodaja
-                 naročnine (npr. na gostovanju). Ob poteku se lahko prijavi le
-                 administrator šole, ki naročnino obnovi na strani /narocnina. -->
+            <!-- NOVA ŠOLA: na prijavni strani je le pot za šolo, ki računa še NI.
+                 Šola, ki ji je naročnina potekla, se prijavi kot administrator
+                 šole in jo podaljša v Nastavitvah šole (povezava /narocnina). -->
             <div style="margin-top:18px;padding-top:14px;border-top:1px solid #eee;text-align:center;">
                 <div style="font-size:0.85rem;color:#555;margin-bottom:8px;">
-                    Vaša šola še nima naročnine ali ji je potekla?
+                    Nimate še naročnine oziroma vaša šola še nima računa?
                 </div>
-                <a href="/narocnina" style="display:inline-block;padding:10px 16px;background:#0070ba;
+                <a href="/registracija" style="display:inline-block;padding:10px 16px;background:#007bff;
                    color:#fff;border-radius:5px;text-decoration:none;font-size:0.9rem;">
-                    Nakup / podaljšanje naročnine ({{ selling.price_eur }} € na mesec)
+                    Ustvari šolski račun{% if not selling.free %} ({{ selling.price_eur }} € na mesec){% endif %}
                 </a>
+                <div style="font-size:0.78rem;color:#777;margin-top:8px;">
+                    Naročnina vaše šole je potekla? Prijavite se kot administrator šole — v
+                    Nastavitvah šole jo lahko podaljšate.
+                </div>
             </div>
             {% endif %}
 

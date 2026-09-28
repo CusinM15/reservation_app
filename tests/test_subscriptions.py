@@ -11,18 +11,21 @@
 # ─────────────────────────────────────────────────────────────────────────
 
 from datetime import date, timedelta
+from uuid import uuid4
 
 import pytest
 
-from app.app_settings import get_app_setting, save_selling_config
+from app.app_settings import get_app_setting, is_free, price_eur, save_selling_config
 from app.config import settings as app_config
 from app.database import SessionLocal
-from app.models import AuditLog, Payment, User
+from app.models import AuditLog, Payment, School, User
 from app.subscriptions import (
+    auto_renew_enabled,
     days_left,
     extend_subscription,
     get_valid_until,
     is_active,
+    next_charge_day,
     set_valid_until,
 )
 from tests.conftest import TEST_PASSWORD, default_school_id, login
@@ -336,15 +339,55 @@ def test_selling_settings_are_main_admin_only(client, make_user):
         db.close()
 
 
-# ── 6. Prijavna stran in nastavitve šole ─────────────────────────────
+# ── 7. Javna stran za nakup (popravek napake »klik ne naredi nič«) ───
+
+def test_nakup_page_is_public(client):
+    """Gumb za nakup je na PRIJAVNI strani, kjer uporabnik še ni prijavljen —
+    zato mora biti stran za nakup dosegljiva BREZ prijave. Če bi kazala na
+    zaščiteno /narocnina, bi middleware obiskovalca vrnil na prijavo in klik
+    bi izgledal, kot da ne naredi nič."""
+    _set_selling(True, price=30)
+    r = client.get("/nakup")
+    assert r.status_code == 200
+    assert "30 €" in r.text
+    assert PAYPAL in r.text
+    assert "Kako kupite" in r.text
+
+
+def test_nakup_page_when_selling_off(client):
+    r = client.get("/nakup")
+    assert r.status_code == 200
+    assert "niso v prodaji" in r.text
+
+
+def test_login_buy_button_points_to_registration(client):
+    """Na prijavni strani je pot za šolo, ki računa še NI (ustvarjanje šole)."""
+    _set_selling(True)
+    html = client.get("/auth/login").text
+    assert 'href="/registracija"' in html
+    assert "Ustvari šolski račun" in html
+    assert 'href="/narocnina"' not in html
+
+
+def test_school_admin_settings_link_goes_to_protected_page(client, make_user):
+    """Šolski admin je prijavljen, zato njegova povezava vodi na /narocnina
+    (tam je stanje in sporočanje plačila)."""
+    _set_selling(True)
+    admin = make_user(role="admin")
+    login(client, admin.username)
+    html = client.get("/settings").text
+    assert "/narocnina?school_id=" in html
+
+
+# ── 8. Prijavna stran in nastavitve šole ─────────────────────────────
 
 def test_login_page_shows_buy_option_when_selling(client):
     r = client.get("/auth/login")
-    assert "Nakup / podaljšanje naročnine" not in r.text
+    assert "Ustvari šolski račun" not in r.text
 
     _set_selling(True, price=30)
     r2 = client.get("/auth/login")
-    assert "Nakup / podaljšanje naročnine" in r2.text
+    assert "Ustvari šolski račun" in r2.text
     assert "30 €" in r2.text
 
 
@@ -357,10 +400,179 @@ def test_school_settings_shows_subscription_box(client, make_user):
     r = client.get("/settings")
     assert r.status_code == 200
     assert "Naročnina šole" in r.text
-    assert "Nakup / podaljšanje naročnine" in r.text
+    assert "Podaljšaj naročnino" in r.text
 
 
 def test_settings_hide_subscription_box_when_selling_off(client, make_user):
     admin = make_user(role="admin")
     login(client, admin.username)
     assert "Naročnina šole" not in client.get("/settings").text
+
+
+# ── 9. Cena 0 = brezplačno ───────────────────────────────────────────
+
+def test_price_zero_is_allowed(client):
+    """Uporabnik je poročal, da obrazec zavrne ceno 0 — 0 mora pomeniti
+    »brezplačno« (npr. za lastno šolo ali poskusno obdobje)."""
+    _set_selling(True, price=0)
+    db = SessionLocal()
+    try:
+        assert price_eur(db) == 0
+        assert is_free(db) is True
+    finally:
+        db.close()
+
+
+def test_price_zero_hides_payment(client):
+    _set_selling(True, price=0)
+    r = client.get("/nakup")
+    assert r.status_code == 200
+    assert "Brezplačno" in r.text
+
+
+def test_settings_save_zero_price(client):
+    login(client, app_config.MAIN_ADMIN_USERNAME, app_config.MAIN_ADMIN_PASSWORD)
+    r = client.post(
+        "/narocnina/nastavitve",
+        data={"selling": "1", "price_eur": "0", "paypal_url": PAYPAL,
+              "paypal_sub_url": "", "payment_note": "x"},
+        follow_redirects=False,
+    )
+    assert r.status_code in (303, 307)
+    db = SessionLocal()
+    try:
+        assert price_eur(db) == 0
+    finally:
+        db.close()
+
+
+# ── 10. Registracija nove šole ───────────────────────────────────────
+
+def test_registracija_is_public_when_selling_on(client):
+    _set_selling(True)
+    r = client.get("/registracija")
+    assert r.status_code == 200
+    assert "Nova šola" in r.text
+    assert "Kaj aplikacija dela" in r.text
+    assert "Zakaj jo potrebujemo" in r.text
+
+
+def test_registracija_requires_selling(client):
+    r = client.get("/registracija", follow_redirects=False)
+    assert r.status_code == 303
+    assert "/auth/login" in r.headers.get("location", "")
+
+
+def test_registracija_creates_school_and_admin(client):
+    _set_selling(True)
+    suffix = uuid4().hex[:6]
+    slug = f"test-{suffix}"
+    username = f"admin_{suffix}"
+
+    r = client.post(
+        "/registracija",
+        data={
+            "name": f"Testna šola {suffix}",
+            "slug": slug,
+            "username": username,
+            "email": f"{suffix}@test.invalid",
+            "first_name": "Test",
+            "last_name": "Admin",
+            "password": "Geslo12345",
+            "password2": "Geslo12345",
+        },
+        follow_redirects=False,
+    )
+    assert r.status_code == 303
+    assert "/narocnina" in r.headers.get("location", "")
+
+    # piškotek prijave je nastavljen → administrator je takoj prijavljen
+    assert "user_id" in client.cookies
+
+    db = SessionLocal()
+    try:
+        school = db.query(School).filter(School.slug == slug).first()
+        assert school is not None
+        admin = db.query(User).filter(User.username == username).first()
+        assert admin is not None and admin.school_id == school.id
+        # nova šola še nima naročnine → učitelji se ne morejo prijaviti
+        assert is_active(db, school.id) is False
+    finally:
+        db.close()
+
+
+def test_registracija_rejects_bad_input(client):
+    _set_selling(True)
+    suffix = uuid4().hex[:6]
+    data = {
+        "name": "Testna šola", "slug": f"t-{suffix}", "username": f"u_{suffix}",
+        "email": "", "first_name": "", "last_name": "",
+        "password": "Geslo12345", "password2": "DrugoGeslo123",
+    }
+    r = client.post("/registracija", data=data, follow_redirects=False)
+    assert r.status_code == 400
+    assert "Gesli se ne ujemata" in r.text
+
+    data["password2"] = "Geslo12345"
+    data["username"] = "mainadmin"          # zasedeno ime glavnega admina
+    r2 = client.post("/registracija", data=data, follow_redirects=False)
+    assert r2.status_code == 400
+    assert "že zasedeno" in r2.text
+
+
+# ── 11. Samodejno mesečno plačilo ────────────────────────────────────
+
+def test_auto_renew_toggle(client, make_user):
+    _set_selling(True)
+    _set_until(date.today() + timedelta(days=5))
+    admin = make_user(role="admin")
+    login(client, admin.username)
+
+    r = client.post("/narocnina/avto", data={"auto": "1"}, follow_redirects=False)
+    assert r.status_code in (303, 307)
+    db = SessionLocal()
+    try:
+        assert auto_renew_enabled(db, default_school_id()) is True
+        assert next_charge_day(db, default_school_id()) == (date.today() + timedelta(days=5)).day
+    finally:
+        db.close()
+
+    page = client.get("/narocnina")
+    assert "Samodejno mesečno plačilo" in page.text
+    assert "Vklopljeno" in page.text
+
+    client.post("/narocnina/avto", data={"auto": "0"}, follow_redirects=False)
+    db = SessionLocal()
+    try:
+        assert auto_renew_enabled(db, default_school_id()) is False
+    finally:
+        db.close()
+
+
+def test_monthly_paypal_link_is_saved(client):
+    login(client, app_config.MAIN_ADMIN_USERNAME, app_config.MAIN_ADMIN_PASSWORD)
+    sub_url = "https://www.paypal.com/webapps/billing/plans/PRIMER"
+    r = client.post(
+        "/narocnina/nastavitve",
+        data={"selling": "1", "price_eur": "30", "paypal_url": PAYPAL,
+              "paypal_sub_url": sub_url, "payment_note": "x"},
+        follow_redirects=False,
+    )
+    assert r.status_code in (303, 307)
+    db = SessionLocal()
+    try:
+        assert get_app_setting(db, "SUBSCRIPTION_PAYPAL_SUB_URL") == sub_url
+    finally:
+        db.close()
+
+
+def test_settings_button_label_depends_on_state(client, make_user):
+    _set_selling(True)
+    admin = make_user(role="admin")
+    login(client, admin.username)
+
+    _set_until(date.today() - timedelta(days=1))
+    assert "Kupi naročnino" in client.get("/settings").text
+
+    _set_until(date.today() + timedelta(days=10))
+    assert "Podaljšaj naročnino" in client.get("/settings").text

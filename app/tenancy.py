@@ -84,10 +84,12 @@ SCHOOL_SETTING_KEYS = [
     "ASSESSMENT_MAX_PER_DAY",
     "ASSESSMENT_MAX_PER_WEEK_WITH_RETAKE",
     "ASSESSMENT_MAX_CONSECUTIVE_DAYS",
-    # Naročnina: datum veljavnosti (ISO, npr. 2026-10-25). Nastavi se ob
-    # potrjenem plačilu (glej app/subscriptions.py) — šolski admin je ne ureja
-    # ročno, zato polja ni v SCHOOL_SETTING_FIELDS.
+    # Naročnina: datum veljavnosti (ISO, npr. 2026-10-25) in samodejno mesečno
+    # plačilo (NAROCNINA_AVTO). Nastavita se ob potrjenem plačilu oziroma v
+    # obrazcu naročnine — šolski admin jih ne ureja prek seznama polj, zato ju
+    # ni v SCHOOL_SETTING_FIELDS.
     "NAROCNINA_DO",
+    "NAROCNINA_AVTO",
 ]
 
 # Privzeto ime številske spremenljivke za kapaciteto prostorov »kot Tablice«.

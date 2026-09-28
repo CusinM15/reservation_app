@@ -23,12 +23,14 @@ _SELLING_CACHE_AT: float = 0.0
 
 # Ključi v tabeli app_settings
 KEY_SELLING = "SUBSCRIPTION_SELLING"          # "1" = prodaja vklopljena, "0" = izklopljena
-KEY_PRICE = "SUBSCRIPTION_PRICE_EUR"          # cena v evrih (celo število)
-KEY_PAYPAL = "SUBSCRIPTION_PAYPAL_URL"        # povezava do PayPal plačila (izdelek/načrt)
+KEY_PRICE = "SUBSCRIPTION_PRICE_EUR"          # cena v evrih (celo število; 0 = brezplačno)
+KEY_PAYPAL = "SUBSCRIPTION_PAYPAL_URL"        # povezava do enkratnega plačila (izdelek)
+KEY_PAYPAL_SUB = "SUBSCRIPTION_PAYPAL_SUB_URL"  # povezava do MESEČNEGA (naročniškega) plačila
 KEY_NOTE = "SUBSCRIPTION_PAYMENT_NOTE"        # navodila ob plačilu (sklic, kako sporočiti)
 
 DEFAULT_PRICE_EUR = 30
 DEFAULT_PAYPAL_URL = ""
+DEFAULT_PAYPAL_SUB_URL = ""
 DEFAULT_NOTE = (
     "Po plačilu prek spodnjega gumba klikni »Sporoči plačilo« in vpiši sklic "
     "oziroma kodo transakcije — naročnino bomo potrdili ter podaljšali za en mesec."
@@ -84,18 +86,33 @@ def selling_enabled(db: Session) -> bool:
 
 
 def price_eur(db: Session) -> int:
-    """Cena mesečne naročnine v evrih."""
+    """Cena mesečne naročnine v evrih (0 = brezplačno).
+
+    Vrednost 0 je dovoljena namenoma: tako lahko šolo daš brezplačno (poskusno
+    obdobje, lastna šola), ne da bi moral izklopiti prodajo za vse. Neveljaven
+    ali negativen vnos pade na privzeto ceno.
+    """
     raw = get_app_setting(db, KEY_PRICE, str(DEFAULT_PRICE_EUR))
     try:
         value = int(float(str(raw).replace(",", ".").strip()))
     except (TypeError, ValueError):
         return DEFAULT_PRICE_EUR
-    return value if value > 0 else DEFAULT_PRICE_EUR
+    return value if value >= 0 else DEFAULT_PRICE_EUR
+
+
+def is_free(db: Session) -> bool:
+    """Ali je uporaba brezplačna (cena 0)?"""
+    return price_eur(db) == 0
 
 
 def paypal_url(db: Session) -> str:
-    """Povezava do plačila (PayPal izdelek/načrt). Prazno = še ni nastavljeno."""
+    """Povezava do enkratnega plačila (PayPal izdelek). Prazno = ni nastavljeno."""
     return get_app_setting(db, KEY_PAYPAL, DEFAULT_PAYPAL_URL)
+
+
+def paypal_subscription_url(db: Session) -> str:
+    """Povezava do mesečnega (naročniškega) plačila — za samodejno obnavljanje."""
+    return get_app_setting(db, KEY_PAYPAL_SUB, DEFAULT_PAYPAL_SUB_URL)
 
 
 def payment_note(db: Session) -> str:
@@ -108,7 +125,9 @@ def selling_config(db: Session) -> dict:
     return {
         "enabled": selling_enabled(db),
         "price_eur": price_eur(db),
+        "free": is_free(db),
         "paypal_url": paypal_url(db),
+        "paypal_sub_url": paypal_subscription_url(db),
         "note": payment_note(db),
     }
 
@@ -120,9 +139,25 @@ def save_selling_config(
     price: str | int | None,
     paypal: str | None,
     note: str | None,
+    paypal_sub: str | None = None,
 ) -> None:
-    """Shrani nastavitve prodaje (kliče glavni admin)."""
+    """Shrani nastavitve prodaje (kliče glavni admin).
+
+    Cena 0 je dovoljena (brezplačna uporaba); prazna/neveljavna vrednost pade na
+    privzeto ceno, da se v obrazcu ne da »pokvariti« nastavitve s tipkarsko napako.
+    """
+    price_text = str(price if price is not None else "").strip()
+    if price_text == "":
+        price_text = str(DEFAULT_PRICE_EUR)
+    else:
+        try:
+            if float(price_text.replace(",", ".")) < 0:
+                price_text = str(DEFAULT_PRICE_EUR)
+        except ValueError:
+            price_text = str(DEFAULT_PRICE_EUR)
+
     set_app_setting(db, KEY_SELLING, "1" if enabled else "0")
-    set_app_setting(db, KEY_PRICE, str(price or DEFAULT_PRICE_EUR).strip())
+    set_app_setting(db, KEY_PRICE, price_text)
     set_app_setting(db, KEY_PAYPAL, (paypal or "").strip())
+    set_app_setting(db, KEY_PAYPAL_SUB, (paypal_sub or "").strip())
     set_app_setting(db, KEY_NOTE, (note or "").strip())

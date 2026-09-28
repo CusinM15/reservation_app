@@ -21,6 +21,28 @@ from app.app_settings import selling_enabled
 from app.tenancy import get_school_config, set_school_setting
 
 KEY_VALID_UNTIL = "NAROCNINA_DO"
+KEY_AUTO = "NAROCNINA_AVTO"       # "1" = samodejno mesečno plačilo prek PayPala
+
+
+def auto_renew_enabled(db: Session, school_id: int) -> bool:
+    """Ali ima šola vklopljeno samodejno mesečno plačilo?"""
+    return (get_school_config(db, school_id).get_str(KEY_AUTO, "") or "") == "1"
+
+
+def set_auto_renew(db: Session, school_id: int, enabled: bool) -> None:
+    """Vklopi/izklopi samodejno mesečno plačilo za šolo."""
+    set_school_setting(db, school_id, KEY_AUTO, "1" if enabled else "0")
+
+
+def next_charge_day(db: Session, school_id: int) -> int | None:
+    """Na kateri dan v mesecu se obnavlja (dan veljavnosti), npr. 28.
+
+    Zakaj dan veljavnosti? Naročnina se obnavlja »na isti dan v mesecu«, kot je
+    bila potrjena — uporabniku to tudi pokažemo, da ve, kdaj bo naslednje
+    plačilo.
+    """
+    until = get_valid_until(db, school_id)
+    return until.day if until else None
 
 
 def _parse_day(value) -> date | None:

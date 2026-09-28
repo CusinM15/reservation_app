@@ -200,7 +200,8 @@
             {% endif %}
             <a class="btn btn-primary" href="/narocnina?school_id={{ school.id }}"
                style="text-decoration:none;display:inline-block;">
-                Nakup / podaljšanje naročnine ({{ prodaja.price_eur }} € na mesec)
+                {% if narocnina.until and narocnina.active %}Podaljšaj naročnino{% else %}Kupi naročnino{% endif %}
+                {% if prodaja.free %}(brezplačno){% else %}({{ prodaja.price_eur }} € na mesec){% endif %}
             </a>
         </div>
         {% endif %}
