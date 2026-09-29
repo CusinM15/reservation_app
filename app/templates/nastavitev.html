@@ -83,8 +83,9 @@
   <div class="card">
     <h2>Kako po vrsti</h2>
     <ol class="koraki">
-      <li><strong>Zamenjajte geslo</strong> administratorja (ustvarili smo ga samodejno in ga
-          pokazali ob registraciji). Geslo spremenite v aplikaciji, v meniju uporabnika.</li>
+      <li><strong>Nastavite svoje geslo.</strong> Po registraciji ste že prijavljeni. Takoj ko
+          vpišete e-pošto šole (naslov pošiljatelja), na svoj naslov prejmete povezavo za
+          nastavitev oziroma spremembo gesla — gesel vam ni treba prepisovati od nikoder.</li>
       <li><strong>Vpišite e-pošto šole</strong> (naslov admina, naslov pošiljatelja in naslov za
           varnostne kopije). Brez tega obvestila in obnovitev gesla ne delujeta.</li>
       <li><strong>Preverite SMTP</strong> — strežnik, uporabniško ime in geslo za pošiljanje pošte
@@ -104,17 +105,61 @@
           na strani <a href="/auth/admin/users">Uporabniki</a> z gumbom
           <strong>»📥 Uvozi CSV«</strong>. Glava stolpcev ni obvezna; če je ni, velja vrstni
           red <code>uporabniško ime, email, ime, priimek, vloga, geslo</code> (npr.
-          <code>mt.cusin@gmail.com,mt.cusin@gmail.com,ime,priimek,učitelj</code>). Geslo ni
+          <code>ana.novak@guest.arnes.si,ana.novak@guest.arnes.si,ime,priimek,učitelj</code>). Geslo ni
           potrebno — če ga v vrstici ni, si ga aplikacija izmisli in vam ga pokaže v povzetku
           uvoza, da ga razdelite. Obstaječa uporabniška imena se preskočijo.</li>
+      {% if prodaja and prodaja.enabled %}
       <li><strong>Uredite naročnino</strong> — po plačilu jo potrdimo in učitelji bodo lahko
           vstopili. Naročnino je treba redno obnoviti (izbrano obdobje), sicer aplikacija za
           šolo ne dela.</li>
+      {% endif %}
       <li><em>Neobvezno:</em> prilagodite omejitve ocenjevanj, urnik in čas neaktivnosti.</li>
     </ol>
     <div class="navodila">
       Nasvet: vse našteto je na enem mestu v <a href="/settings">Nastavitvah šole</a>;
       uporabnike urejate pod <a href="/auth/admin/users">Uporabniki</a>.
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>Pravila ocenjevanja (omejitve)</h2>
+    <p class="muted">
+      V <a href="/settings">Nastavitvah šole</a> so štiri številke, ki določajo, koliko ocenjevanj
+      sme posamezni učitelj vnesti. Aplikacija vnos zavrne z opozorilom, ko je meja presežena.
+    </p>
+    <table>
+      <tr><th>Nastavitev</th><th>Kaj pomeni</th><th>Privzeto</th></tr>
+      <tr>
+        <td><strong>Največ na teden</strong></td>
+        <td>Koliko ocenjevanj lahko učitelj vpiše v istem tednu (za svoj predmet in razred).</td>
+        <td>2</td>
+      </tr>
+      <tr>
+        <td><strong>Največ na dan</strong></td>
+        <td>Največ ocenjevanj istega dne (običajno 1).</td>
+        <td>1</td>
+      </tr>
+      <tr>
+        <td><strong>Največ na teden (z ponavljanjem)</strong></td>
+        <td>Velja, kadar je vnos označen kot <em>ponavljanje</em> (popravljanje ocene, PIP):
+            meja je višja od običajne tedenske.</td>
+        <td>3</td>
+      </tr>
+      <tr>
+        <td><strong>Največ zaporednih dni</strong></td>
+        <td>Ne dovoli ocenjevanj tri ali več dni zaporedoma (šteto po koledarskih dneh).</td>
+        <td>2</td>
+      </tr>
+    </table>
+    <p class="muted">
+      Dodatna omejitev so <strong>zasedeni datumi</strong> (športni dan, izlet, prireditve): na te
+      datume ocenjevanj ni mogoče vpisovati, učitelji pa jih vidijo v koledarju. Doda jih vodstvo
+      oziroma administrator v istih nastavitvah.
+    </p>
+    <div class="navodila">
+      Primer: če šola dovoli 3 ocenjevanja na teden, povečajte »Največ na teden« na 3 (in po
+      potrebi »z ponavljanjem« na 4). Če želite strožje, znižajte vrednosti — npr. 1 na teden in
+      1 na dan.
     </div>
   </div>
 

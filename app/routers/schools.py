@@ -22,7 +22,7 @@ from fastapi.templating import Jinja2Templates
 from sqlalchemy.orm import Session
 
 from app.database import get_db
-from app.app_settings import selling_config
+from app.app_settings import selling_config, selling_enabled
 from app.subscriptions import subscription_state
 from app.models import School, SchoolAlias, User, Reservation, Assessment, ActivityDay, RoleEnum
 from app.audit import log_audit
@@ -716,7 +716,13 @@ def setup_guide_page(
             "kje": "/auth/admin/users",
             "kje_napis": "Uporabniki",
         },
-        {
+    ]
+
+    # Postavka »Naročnina« ima smisel le tam, kjer se naročnine prodajajo.
+    # Na šolski namestitvi (prodaja izklopljena) je ne prikazujemo — navodila za
+    # nastavitev naj bodo o nastavitvah šole, ne o plačevanju.
+    if selling_enabled(db):
+        items.append({
             "naslov": "Naročnina",
             "opis": "Uporaba je veljavna, ko je naročnina potrjena (tudi pri ceni 0 € jo je treba redno obnoviti).",
             "ok": bool(stanje.get("active")),
@@ -727,8 +733,7 @@ def setup_guide_page(
             ),
             "kje": "/narocnina",
             "kje_napis": "Naročnina",
-        },
-    ]
+        })
 
     return templates.TemplateResponse(
         "nastavitev.html",

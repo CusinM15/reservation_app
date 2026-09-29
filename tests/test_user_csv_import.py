@@ -4,7 +4,7 @@
 # Poročilo uporabnika: »import csv uporabnikov mi nikakor ne dela« — poskusil je
 # vnesti CSV BREZ glave, z SLOVENSKO vlogo in BREZ gesel:
 #
-#   mt.cusin@gmail.com,mt.cusin@gmail.com,ime1,priimek1,učitelj
+#   ana.novak@guest.arnes.si,ana.novak@guest.arnes.si,ime1,priimek1,učitelj
 #   ...
 #
 # Prej je importer zahteval glavo username/email/first_name/last_name/role/password,
@@ -55,9 +55,9 @@ def test_user_exact_csv_without_header(client, make_user):
     napako (trije enaki računi ne morejo obstajati — prijava bi bila dvoumna)."""
     _admin(client, make_user)
     csv_text = (
-        "mt.cusin@gmail.com,mt.cusin@gmail.com,ime1,priimek1,učitelj\n"
-        "mt.cusin@gmail.com,mt.cusin@gmail.com,ime2,priimek2,učitelj\n"
-        "mt.cusin@gmail.com,mt.cusin@gmail.com,ime3,priimek3,učitelj\n"
+        "ana.novak@guest.arnes.si,ana.novak@guest.arnes.si,ime1,priimek1,učitelj\n"
+        "ana.novak@guest.arnes.si,ana.novak@guest.arnes.si,ime2,priimek2,učitelj\n"
+        "ana.novak@guest.arnes.si,ana.novak@guest.arnes.si,ime3,priimek3,učitelj\n"
     )
     r = _import(client, csv_text)
     assert r.status_code == 200, r.text
@@ -69,7 +69,7 @@ def test_user_exact_csv_without_header(client, make_user):
     assert len(data["users"]) == 1
     assert data["users"][0]["password"]
 
-    u = _school_users()["mt.cusin@gmail.com"]
+    u = _school_users()["ana.novak@guest.arnes.si"]
     assert u.role.value == "teacher"
     assert u.first_name == "ime1"
 

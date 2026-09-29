@@ -511,7 +511,7 @@ _SCHOOL_ROLES = {RoleEnum.teacher.value, RoleEnum.vodstvo.value, RoleEnum.admin.
 
 # ── Uvoz uporabnikov iz CSV: preslikave (tolerantno na SI/EN in velikost črk) ──
 # Zakaj? V praksi šole pripravijo CSV v Excelu brez glave in v slovenščini
-# (npr. `mt.cusin@gmail.com,mt.cusin@gmail.com,ime,priimek,učitelj`) — vrstni
+# (npr. `ana.novak@guest.arnes.si,ana.novak@guest.arnes.si,ime,priimek,učitelj`) — vrstni
 # red je enak, le imena stolpcev/vlog so drugačna. Zato prevedemo tako glave
 # kot vloge; če glave NI, uporabimo privzeti vrstni red.
 _FOLD_MAP = str.maketrans({"č": "c", "š": "s", "ž": "z", "ć": "c", "đ": "d"})

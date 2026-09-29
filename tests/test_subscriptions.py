@@ -508,19 +508,20 @@ def test_registracija_requires_selling(client):
 
 
 def test_registracija_creates_school_and_auto_admin(client):
-    """Uporabnik vpiše ZGOLJ ime šole — administrator se določi samodejno
-    (uporabniško ime admin_<kratica>, naključno geslo, prikazano enkrat)."""
+    """Uporabnik vpiše ZGOLJ ime šole — administrator se določi samodejno.
+
+    Zahteva uporabnika 2026-09-29: gesla se NIKJER ne izpišejo. Administrator je po
+    registraciji že prijavljen, svoje geslo pa nastavi prek povezave, ki jo prejme na
+    e-pošto šole (ko je SMTP nastavljen).
+    """
     _set_selling(True)
     ime = f"Testna šola {uuid4().hex[:6]}"
 
     r = client.post("/registracija", data={"name": ime}, follow_redirects=False)
     assert r.status_code == 200                      # stran s podatki (ne preusmeritev)
     assert "Šola je ustvarjena" in r.text
-
-    # geslo iz strani mora delovati pri prijavi
-    zadetek = re.search(r'class="pw">([^<]+)<', r.text)
-    assert zadetek, "na strani ni izpisanega gesla"
-    geslo = zadetek.group(1).strip()
+    assert 'class="pw"' not in r.text                # gesla NE izpisujemo
+    assert "povezavo za" in r.text                   # pojasnilo, kako do gesla (e-pošta)
 
     assert "user_id" in client.cookies
     assert client.cookies.get("school_ctx")          # nastavljen na novo šolo
@@ -543,11 +544,8 @@ def test_registracija_creates_school_and_auto_admin(client):
     finally:
         db.close()
 
-    # prijava z generiranim geslom deluje (tudi po odjavi)
-    client.get("/auth/logout", follow_redirects=False)
-    prijava = client.post("/auth/login", data={"username": admin.username, "password": geslo},
-                          follow_redirects=False)
-    assert prijava.status_code == 303
+    # seja po registraciji deluje (admin je že prijavljen)
+    assert client.get("/settings").status_code == 200
 
 
 def test_registracija_rejects_bad_input(client):
