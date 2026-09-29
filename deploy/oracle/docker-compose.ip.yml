@@ -1,0 +1,20 @@
+# ─────────────────────────────────────────────────────────────────────────
+# deploy/oracle/docker-compose.ip.yml — DOSTOP PREKO JAVNEGA IP (brez domene)
+#
+# Namen: dokler ni domene, aplikacijo izpostavimo kar na vrata 80 javnega IP-ja.
+# HTTPS na goli IP ni mogoč (Let's Encrypt ne izda potrdila za IP), zato Caddy
+# tu NE teče. Ko boš imel domeno, ta datoteka ni več potrebna — uporabi privzeto:
+#   docker compose up -d --build
+#
+# Zagon (skupaj s privzeto datoteko):
+#   docker compose -f docker-compose.yml -f docker-compose.ip.yml up -d --build
+# ─────────────────────────────────────────────────────────────────────────
+
+services:
+  app:
+    ports:
+      - "80:8002"
+
+  # Caddy izklopimo, dokler ni domene (profil »domain«).
+  caddy:
+    profiles: ["domain"]
