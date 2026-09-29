@@ -171,7 +171,7 @@ def registracija_submit(
         return napaka("Vpišite polno ime šole (najmanj 3 znake).")
 
     slug = _prost_slug(db, slugify(name))
-    # Uporabniško ime admina = admin_<inicialke imena šole> (npr. admin_ostcj);
+    # Uporabniško ime admina = admin_<inicialke imena šole> (npr. admin_ost);
     # če inicialk ni mogoče sestaviti, uporabimo oznako šole. Ob zasedenosti
     # dodamo številko.
     osnova_imena = school_admin_username_from_initials(name) or default_school_admin_username(slug)

@@ -622,10 +622,10 @@ def test_settings_button_label_depends_on_state(client, make_user):
 # ── 13. Inicialke, testna e-pošta in navodila za nastavitev ──────────
 
 def test_admin_username_from_initials():
-    """Uporabniško ime admina = admin_<inicialke imena šole>."""
+    """Uporabniško ime admina = admin_<največ 3 inicialke imena šole>."""
     assert school_admin_username_from_initials(
-        "Osnovna šola Toneta Čufarja Jesenice") == "admin_ostcj"
-    assert school_admin_username_from_initials("OŠ Toneta Čufarja Jesenice") == "admin_otcj"
+        "Osnovna šola Toneta Čufarja Jesenice") == "admin_ost"
+    assert school_admin_username_from_initials("OŠ Toneta Čufarja Jesenice") == "admin_otc"
     assert school_admin_username_from_initials("Gimnazija Kranj") == "admin_gk"
     # neveljavno/prekratko ime → prazen niz (klicatelj uporabi oznako šole)
     assert school_admin_username_from_initials("") == ""
@@ -644,8 +644,8 @@ def test_registration_uses_initials_for_username(client):
         assert school is not None
         admin = db.query(User).filter(User.school_id == school.id).first()
         assert admin is not None
-        # inicialke: OŠ Testna Preizkusna Jesenice → otpj
-        assert admin.username.startswith("admin_otpj")
+        # inicialke (največ 3): OŠ Testna Preizkusna Jesenice → otp
+        assert admin.username.startswith("admin_otp")
     finally:
         db.close()
 

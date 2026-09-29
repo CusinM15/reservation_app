@@ -194,9 +194,10 @@ TEST_EMAIL_PLACEHOLDER = "test@example.invalid"
 def school_admin_username_from_initials(name: str) -> str:
     """Uporabniško ime admina iz INICIALK imena šole.
 
-    Primer: »Osnovna šola Toneta Čufarja Jesenice« → `admin_ostcj`.
+    Primer: »Osnovna šola Toneta Čufarja Jesenice« → `admin_ost`.
     Zakaj inicialke? Uporabniško ime je kratko in prepoznavno, šoli pa se ga ni
-    treba izmišljati — ob registraciji ga določimo samodejno. Če inicialk ne
+    treba izmišljati — ob registraciji ga določimo samodejno. Uporabimo največ
+    TRI inicialke, da ostane ime kratko in lahko za vtipkanje. Če inicialk ne
     moremo sestaviti (prekratko ime), vrnemo prazen niz in klicatelj uporabi
     oznako šole.
     """
@@ -209,7 +210,9 @@ def school_admin_username_from_initials(name: str) -> str:
     osnova = re.sub(r"[^a-z0-9]", "", "".join(crke))
     if len(osnova) < 2:
         return ""
-    return f"admin_{osnova}"
+    # Največ 3 inicialke (zahteva uporabnika 2026-09-29): uporabniško ime
+    # admina naj bo krajše, npr. admin_ost namesto admin_ostcj.
+    return f"admin_{osnova[:3]}"
 
 
 def apply_test_email_settings(db: Session, school_id: int) -> None:
