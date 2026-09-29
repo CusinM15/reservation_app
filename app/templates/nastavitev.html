@@ -44,11 +44,17 @@
       da je treba še urediti.
     </p>
     <p class="napredek">Urejeno: {{ stevilo_ok }} od {{ stevilo_vseh }}</p>
+    {% if prodaja and prodaja.enabled %}
     <div class="opozorilo">
-      <strong>Cena: 0 €</strong> — dodatnega plačila ni, a naročnino je treba
-      <strong>obnoviti vsak mesec</strong>, da aplikacija dela. Brez veljavne naročnine se
-      učitelji ne morejo prijaviti (prijavi se lahko le administrator šole).
+      <strong>Cena:</strong> {% if prodaja.free %}0 €{% else %}{{ prodaja.price_label }}{% endif %} —
+      naročnino je treba <strong>redno obnoviti</strong>, da aplikacija dela. Brez veljavne naročnine
+      se učitelji ne morejo prijaviti (prijavi se lahko le administrator šole).
     </div>
+    {% else %}
+    <div class="opozorilo">
+      V tej namestitvi prodaja naročnin ni vklopljena — aplikacija deluje brez omejitev.
+    </div>
+    {% endif %}
   </div>
 
   <div class="card">
@@ -102,7 +108,7 @@
           potrebno — če ga v vrstici ni, si ga aplikacija izmisli in vam ga pokaže v povzetku
           uvoza, da ga razdelite. Obstaječa uporabniška imena se preskočijo.</li>
       <li><strong>Uredite naročnino</strong> — po plačilu jo potrdimo in učitelji bodo lahko
-          vstopili. Tudi pri ceni 0 € naročnino obnovimo vsak mesec, sicer aplikacija za
+          vstopili. Naročnino je treba redno obnoviti (izbrano obdobje), sicer aplikacija za
           šolo ne dela.</li>
       <li><em>Neobvezno:</em> prilagodite omejitve ocenjevanj, urnik in čas neaktivnosti.</li>
     </ol>

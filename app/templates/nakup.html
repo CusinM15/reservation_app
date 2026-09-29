@@ -45,12 +45,17 @@
     {% else %}
 
       {% if cfg.free %}
-        <p class="price">0 € <span class="muted" style="font-size:1rem;">/ mesec</span></p>
-        <p class="muted">Plačila ni, a naročnino je treba obnoviti vsak mesec — brez
+        <p class="price">0 €</p>
+        <p class="muted">Plačila ni, a naročnino je treba obnoviti za vsako obdobje — brez
            veljavne naročnine aplikacija za šolo ne dela.</p>
       {% else %}
-        <p class="price">{{ cfg.price_eur }} € <span class="muted" style="font-size:1rem;">/ mesec</span></p>
-        <p class="muted">Cena velja za eno šolo in en mesec uporabe (DDV ni obračunan, če niste zavezanec).</p>
+        <table>
+          <tr><th>Obdobje</th><th>Cena</th></tr>
+          {% for p in cfg.plans %}
+          <tr><td>{{ p.label }} ({{ p.months }} mes.)</td><td><strong>{{ p.price }} €</strong></td></tr>
+          {% endfor %}
+        </table>
+        <p class="muted">Cena velja za eno šolo (DDV ni obračunan, če niste zavezanec).</p>
       {% endif %}
 
       <h2>Kaj dobite</h2>
@@ -64,21 +69,25 @@
 
       <h2>Kako kupite</h2>
       <ol>
-        <li>Plačajte {{ cfg.price_eur }} € s spodnjim gumbom (PayPal). V opombo pri plačilu
-            napišite ime šole in mesec, npr. <em>OŠ Primer – naročnina 10/2026</em>.</li>
+        {% if cfg.free %}
+        <li>Plačila ni (cena je 0 €). Naročnino vseeno obnovimo za vsako obdobje.</li>
+        {% else %}
+        <li>Plačajte izbrano ceno ({{ cfg.price_label }}) s spodnjim gumbom (PayPal). V opombo pri plačilu
+            napišite ime šole, npr. <em>OŠ Primer – naročnina</em>.</li>
+        {% endif %}
         <li>Prijavite se kot <strong>administrator šole</strong> in v
             <em>Nastavitve šole → Naročnina šole</em> kliknite <em>Sporoči plačilo</em>
             ter vpišite kodo transakcije iz PayPal potrdila.</li>
-        <li>Naročnino potrdimo in velja en mesec od potrditve.</li>
+        <li>Naročnino potrdimo in velja izbrano obdobje od potrditve.</li>
       </ol>
 
-      {% if cfg.paypal_url %}
+      {% if cfg.paypal_url and not cfg.free %}
         <p style="margin-top:20px;">
           <a class="btn" href="{{ cfg.paypal_url }}" target="_blank" rel="noopener">
-            Plačaj {{ cfg.price_eur }} € s PayPalom
+            Plačaj prek PayPala
           </a>
         </p>
-      {% else %}
+      {% elif not cfg.free %}
         <div class="info">
           Povezava do plačila še ni nastavljena — obrnite se na ponudnika aplikacije.
         </div>
@@ -93,10 +102,10 @@
       </div>
 
       {% if not cfg.free %}
-      <h2>Mesečno samodejno plačilo</h2>
+      <h2>Samodejno plačilo</h2>
       <p class="muted">
-        Naročnina se lahko obnavlja sama vsak mesec na isti dan — v <em>Nastavitve šole →
-        Naročnina šole</em> vklopite »Samodejno mesečno plačilo«.
+        Naročnina se lahko obnavlja sama ob vsakem obdobju na isti dan — v <em>Nastavitve šole →
+        Naročnina šole</em> vklopite »Samodejno obnavljanje«.
       </p>
       {% endif %}
 

@@ -23,17 +23,30 @@ _SELLING_CACHE_AT: float = 0.0
 
 # Ključi v tabeli app_settings
 KEY_SELLING = "SUBSCRIPTION_SELLING"          # "1" = prodaja vklopljena, "0" = izklopljena
-KEY_PRICE = "SUBSCRIPTION_PRICE_EUR"          # cena v evrih (celo število; 0 = brez plačila)
+KEY_PRICE = "SUBSCRIPTION_PRICE_EUR"          # cena za LETO (12 mes.) v €; 0 = brez plačila
+KEY_PRICE_HALF = "SUBSCRIPTION_PRICE_HALF_EUR"  # cena za POL LETA (6 mes.) v €; 0 = brez plačila
 KEY_PAYPAL = "SUBSCRIPTION_PAYPAL_URL"        # povezava do enkratnega plačila (izdelek)
-KEY_PAYPAL_SUB = "SUBSCRIPTION_PAYPAL_SUB_URL"  # povezava do MESEČNEGA (naročniškega) plačila
+KEY_PAYPAL_SUB = "SUBSCRIPTION_PAYPAL_SUB_URL"  # povezava do SAMODEJNEGA (naročniškega) plačila
 KEY_NOTE = "SUBSCRIPTION_PAYMENT_NOTE"        # navodila ob plačilu (sklic, kako sporočiti)
 
-DEFAULT_PRICE_EUR = 30
+# Planа naročnine — šola izbere POL LETA ali LETO (mesečne možnosti NI).
+# Zahteva uporabnika 2026-09-29: 7 €/pol leta, 13 €/leto. Pri letni ceni 13 € ena
+# šola pokrije domeno (~12 €/leto): neto = 0,971 × 13 − 0,35 (PayPal 2,9 % + 0,35 €)
+# = 12,27 €/leto.
+PLAN_ORDER = ("polletje", "leto")
+PLAN_MONTHS = {"polletje": 6, "leto": 12}
+PLAN_LABELS = {"polletje": "pol leta", "leto": "leto"}
+PLAN_PER_LABELS = {"polletje": "na pol leta", "leto": "na leto"}
+PLAN_PRICE_KEYS = {"polletje": KEY_PRICE_HALF, "leto": KEY_PRICE}
+PLAN_PRICE_DEFAULTS = {"polletje": 7, "leto": 13}
+
+DEFAULT_PRICE_HALF_EUR = PLAN_PRICE_DEFAULTS["polletje"]
+DEFAULT_PRICE_EUR = PLAN_PRICE_DEFAULTS["leto"]
 DEFAULT_PAYPAL_URL = ""
 DEFAULT_PAYPAL_SUB_URL = ""
 DEFAULT_NOTE = (
     "Po plačilu prek spodnjega gumba klikni »Sporoči plačilo« in vpiši sklic "
-    "oziroma kodo transakcije — naročnino bomo potrdili ter podaljšali za en mesec."
+    "oziroma kodo transakcije — naročnino bomo potrdili ter podaljšali za izbrano obdobje."
 )
 
 
@@ -85,26 +98,65 @@ def selling_enabled(db: Session) -> bool:
     return value
 
 
-def price_eur(db: Session) -> int:
-    """Cena mesečne naročnine v evrih (0 = brez plačila).
-
-    Vrednost 0 je dovoljena: tako lahko šolo daš brez plačila (poskusno obdobje,
-    lastna šola), ne da bi moral izklopiti prodajo za vse. POZOR: cena 0 NE
-    pomeni »brez omejitev« — naročnino je treba tudi takrat mesečno obnoviti,
-    sicer aplikacija za šolo ne dela (glavni admin jo podaljša brez plačila).
-    Neveljaven ali negativen vnos pade na privzeto ceno.
-    """
-    raw = get_app_setting(db, KEY_PRICE, str(DEFAULT_PRICE_EUR))
+def _parse_price(raw, default: int) -> int:
+    """Pretvori shranjeno vrednost v nenegativno celo število; neveljavno → default."""
     try:
         value = int(float(str(raw).replace(",", ".").strip()))
     except (TypeError, ValueError):
-        return DEFAULT_PRICE_EUR
-    return value if value >= 0 else DEFAULT_PRICE_EUR
+        return default
+    return value if value >= 0 else default
+
+
+def plan_price(db: Session, plan_id: str) -> int:
+    """Cena za posamezni plan (``polletje``/``leto``) v €; 0 = brez plačila."""
+    plan_id = plan_id if plan_id in PLAN_MONTHS else "leto"
+    key = PLAN_PRICE_KEYS[plan_id]
+    return _parse_price(
+        get_app_setting(db, key, str(PLAN_PRICE_DEFAULTS[plan_id])),
+        PLAN_PRICE_DEFAULTS[plan_id],
+    )
+
+
+def plans(db: Session) -> list[dict]:
+    """Seznam planov (pol leta, leto) s cenami — za prikaz in izbiro šole."""
+    return [_plan_dict(db, pid) for pid in PLAN_ORDER]
+
+
+def plan_by_id(db: Session, plan_id: str) -> dict:
+    """Vrni plan po oznaki (``polletje``/``leto``); neznano → LETNI plan.
+
+    Nikoli ne vrne None — klicatelj dobi vedno veljaven plan (privzeto letni).
+    """
+    for plan in plans(db):
+        if plan["id"] == plan_id:
+            return plan
+    return _plan_dict(db, "leto")
+
+
+def _plan_dict(db: Session, plan_id: str) -> dict:
+    """Sestavi slovar enega plana (brez iskanja) — uporablja plan_by_id."""
+    return {
+        "id": plan_id,
+        "months": PLAN_MONTHS[plan_id],
+        "label": PLAN_LABELS[plan_id],
+        "per_label": PLAN_PER_LABELS[plan_id],
+        "price": plan_price(db, plan_id),
+    }
+
+
+def price_eur(db: Session) -> int:
+    """Cena LETNEGA plana (12 mes.) v €; 0 = brez plačila (za nazajzdružljivost).
+
+    Vrednost 0 je dovoljena (poskusno obdobje, lastna šola), a NE pomeni »brez
+    omejitev« — naročnino je treba obnoviti za vsako obdobje, sicer aplikacija za
+    šolo ne dela (glavni admin jo podaljša brez plačila).
+    """
+    return plan_price(db, "leto")
 
 
 def is_free(db: Session) -> bool:
-    """Ali je naročnina brezplačna (cena 0)? Vpliva le na prikaz, ne na veljavnost."""
-    return price_eur(db) == 0
+    """Ali so VSI plani brezplačni (cena 0)? Vpliva le na prikaz, ne na veljavnost."""
+    return all(plan["price"] == 0 for plan in plans(db))
 
 
 def paypal_url(db: Session) -> str:
@@ -113,7 +165,7 @@ def paypal_url(db: Session) -> str:
 
 
 def paypal_subscription_url(db: Session) -> str:
-    """Povezava do mesečnega (naročniškega) plačila — za samodejno obnavljanje."""
+    """Povezava do samodejnega (naročniškega) plačila — za samodejno obnavljanje."""
     return get_app_setting(db, KEY_PAYPAL_SUB, DEFAULT_PAYPAL_SUB_URL)
 
 
@@ -124,10 +176,14 @@ def payment_note(db: Session) -> str:
 
 def selling_config(db: Session) -> dict:
     """Vse za prodajo naročnin na enem mestu (za predloge in preverjanja)."""
+    plan_list = plans(db)
     return {
         "enabled": selling_enabled(db),
-        "price_eur": price_eur(db),
+        "price_eur": price_eur(db),                 # letni plan (nazajzdružljivost)
         "free": is_free(db),
+        "plans": plan_list,
+        # Povzetek cen za besedila, npr. »7 € / pol leta ali 13 € / leto«.
+        "price_label": " ali ".join(f"{p['price']} € / {p['label']}" for p in plan_list),
         "paypal_url": paypal_url(db),
         "paypal_sub_url": paypal_subscription_url(db),
         "note": payment_note(db),
@@ -142,25 +198,31 @@ def save_selling_config(
     paypal: str | None,
     note: str | None,
     paypal_sub: str | None = None,
+    price_half: str | int | None = None,
 ) -> None:
     """Shrani nastavitve prodaje (kliče glavni admin).
 
-    Cena 0 pomeni »brez plačila« (naročnino je treba vseeno mesečno obnoviti);
-    prazna/neveljavna vrednost pade na privzeto ceno, da se v obrazcu ne da
-    »pokvariti« nastavitve s tipkarsko napako.
+    `price` je cena LETNEGA plana, `price_half` cena POLETNEGA; če `price_half`
+    ni podan, se obstoječa vrednost ne spremeni. Cena 0 pomeni »brez plačila«
+    (naročnino je treba vseeno obnoviti za vsako obdobje); prazna/neveljavna
+    vrednost pade na privzeto ceno, da se v obrazcu ne da »pokvariti« nastavitve
+    s tipkarsko napako.
     """
-    price_text = str(price if price is not None else "").strip()
-    if price_text == "":
-        price_text = str(DEFAULT_PRICE_EUR)
-    else:
+    def _clean(value, default: int) -> str:
+        text = str(value if value is not None else "").strip()
+        if text == "":
+            return str(default)
         try:
-            if float(price_text.replace(",", ".")) < 0:
-                price_text = str(DEFAULT_PRICE_EUR)
+            if float(text.replace(",", ".")) < 0:
+                return str(default)
         except ValueError:
-            price_text = str(DEFAULT_PRICE_EUR)
+            return str(default)
+        return text
 
     set_app_setting(db, KEY_SELLING, "1" if enabled else "0")
-    set_app_setting(db, KEY_PRICE, price_text)
+    set_app_setting(db, KEY_PRICE, _clean(price, DEFAULT_PRICE_EUR))
+    if price_half is not None:
+        set_app_setting(db, KEY_PRICE_HALF, _clean(price_half, DEFAULT_PRICE_HALF_EUR))
     set_app_setting(db, KEY_PAYPAL, (paypal or "").strip())
     set_app_setting(db, KEY_PAYPAL_SUB, (paypal_sub or "").strip())
     set_app_setting(db, KEY_NOTE, (note or "").strip())

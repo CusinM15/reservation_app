@@ -16,7 +16,14 @@ from uuid import uuid4
 
 import pytest
 
-from app.app_settings import get_app_setting, is_free, price_eur, save_selling_config
+from app.app_settings import (
+    get_app_setting,
+    is_free,
+    plan_by_id,
+    plans,
+    price_eur,
+    save_selling_config,
+)
 from app.config import settings as app_config
 from app.database import SessionLocal
 from app.models import AuditLog, Payment, RoleEnum, School, User
@@ -41,10 +48,12 @@ from tests.conftest import TEST_PASSWORD, default_school_id, login
 PAYPAL = "https://www.paypal.com/ncp/payment/PRIMER123"
 
 
-def _set_selling(enabled: bool, price: int = 30, paypal: str = PAYPAL, note: str = "Navodila"):
+def _set_selling(enabled: bool, price: int = 30, price_half: int = 30, paypal: str = PAYPAL,
+                 note: str = "Navodila"):
     db = SessionLocal()
     try:
-        save_selling_config(db, enabled=enabled, price=price, paypal=paypal, note=note)
+        save_selling_config(db, enabled=enabled, price=price, price_half=price_half,
+                            paypal=paypal, note=note)
         db.commit()
     finally:
         db.close()
@@ -163,7 +172,7 @@ def test_school_admin_can_always_log_in(client, make_user):
     r = _login(client, admin.username)
     assert r.status_code == 303                     # admin se prijavi
     assert client.get("/narocnina").status_code == 200
-    assert "Nakup enega meseca" in client.get("/narocnina").text
+    assert "Nakup naročnine" in client.get("/narocnina").text
 
 
 def test_main_admin_can_always_log_in(client):
@@ -206,7 +215,7 @@ def test_teacher_sees_notice_not_error(client, make_user):
     r = client.get("/narocnina")
     assert r.status_code == 200
     assert "Kaj zdaj?" in r.text
-    assert "Nakup enega meseca" not in r.text       # nakup je le za admina
+    assert "Nakup naročnine" not in r.text       # nakup je le za admina
 
 
 # ── 4. Logika podaljševanja ──────────────────────────────────────────
@@ -427,7 +436,7 @@ def test_price_zero_is_allowed(client):
     Cena 0 pomeni »nič za plačati« — a NE »brez omejitev«: naročnino je treba
     vseeno mesečno obnoviti (zahteva uporabnika 2026-09-29).
     """
-    _set_selling(True, price=0)
+    _set_selling(True, price=0, price_half=0)
     db = SessionLocal()
     try:
         assert price_eur(db) == 0
@@ -437,7 +446,7 @@ def test_price_zero_is_allowed(client):
 
 
 def test_price_zero_shows_zero_eur(client):
-    _set_selling(True, price=0)
+    _set_selling(True, price=0, price_half=0)
     r = client.get("/nakup")
     assert r.status_code == 200
     assert "0 €" in r.text
@@ -466,7 +475,7 @@ def test_price_zero_still_requires_subscription(client, make_user):
     Zahteva uporabnika 2026-09-29: »cena je 0 €, toda potrebno je mesečno
     plačati/obnoviti, da app dela«. Cena 0 torej ne odvezuje veljavnosti.
     """
-    _set_selling(True, price=0)
+    _set_selling(True, price=0, price_half=0)
     _set_until(date.today() - timedelta(days=30))
 
     db = SessionLocal()
@@ -584,7 +593,7 @@ def test_auto_renew_toggle(client, make_user):
         db.close()
 
     page = client.get("/narocnina")
-    assert "Samodejno mesečno plačilo" in page.text
+    assert "Samodejno plačilo" in page.text
     assert "Vklopljeno" in page.text
 
     client.post("/narocnina/avto", data={"auto": "0"}, follow_redirects=False)
@@ -770,3 +779,65 @@ def test_logout_clears_school_ctx(client, make_user):
 
     client.get("/auth/logout", follow_redirects=False)
     assert not client.cookies.get("school_ctx")
+
+
+# ── 14. Planа naročnine: pol leta (6 mes.) in leto (12 mes.) ─────────
+
+def test_half_year_plan_reports_six_months(client, make_user):
+    """Plan »pol leta«: znesek 7 €, podaljšanje za 6 mesecev."""
+    _set_selling(True, price=13, price_half=7)
+    _set_until(date.today() - timedelta(days=1))
+    admin = make_user(role="admin")
+    login(client, admin.username)
+
+    r = client.post("/narocnina/sporoci-placilo",
+                    data={"reference": "PP-H", "plan": "polletje"}, follow_redirects=False)
+    assert r.status_code == 303
+    row = _payment_rows(default_school_id())[0]
+    assert row.amount_eur == 7
+    assert row.months == 6
+
+    client.get("/auth/logout")
+    _login(client, app_config.MAIN_ADMIN_USERNAME, app_config.MAIN_ADMIN_PASSWORD)
+    client.post(f"/narocnina/potrdi/{row.id}", follow_redirects=False)
+    db = SessionLocal()
+    try:
+        until = get_valid_until(db, default_school_id())
+        assert until >= date.today() + timedelta(days=175)
+    finally:
+        db.close()
+
+
+def test_yearly_plan_reports_twelve_months(client, make_user):
+    """Plan »leto«: znesek 13 €, podaljšanje za 12 mesecev."""
+    _set_selling(True, price=13, price_half=7)
+    _set_until(date.today() - timedelta(days=1))
+    admin = make_user(role="admin")
+    login(client, admin.username)
+
+    r = client.post("/narocnina/sporoci-placilo",
+                    data={"reference": "PP-Y", "plan": "leto"}, follow_redirects=False)
+    assert r.status_code == 303
+    row = _payment_rows(default_school_id())[0]
+    assert row.amount_eur == 13
+    assert row.months == 12
+
+
+def test_nakup_shows_both_plans(client):
+    _set_selling(True, price=13, price_half=7)
+    r = client.get("/nakup")
+    assert "7 €" in r.text and "13 €" in r.text
+    assert "pol leta" in r.text and "leto" in r.text
+
+
+def test_default_plans_are_seven_and_thirteen():
+    """Brez zapisa v bazi sta privzeti ceni 7 € (pol leta) in 13 € (leto)."""
+    db = SessionLocal()
+    try:
+        seznam = plans(db)
+        assert [p["id"] for p in seznam] == ["polletje", "leto"]
+        assert plan_by_id(db, "polletje")["months"] == 6
+        assert plan_by_id(db, "leto")["months"] == 12
+        assert plan_by_id(db, "neznano")["id"] == "leto"      # neznano → letni plan
+    finally:
+        db.close()

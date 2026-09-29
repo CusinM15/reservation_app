@@ -70,24 +70,24 @@
     {% if cfg.free %}
       <h2>Naročnina: 0 €</h2>
       <p class="muted">
-        Plačila ni, a naročnino je treba <strong>obnoviti vsak mesec</strong>, da aplikacija
+        Plačila ni, a naročnino je treba <strong>obnoviti za vsako obdobje</strong>, da aplikacija
         dela. Veljavnost podaljša glavni admin (»Podaljšaj brez plačila« spodaj).
       </p>
     {% else %}
-    <h2>Nakup enega meseca — {{ cfg.price_eur }} €</h2>
+    <h2>Nakup naročnine — {{ cfg.price_label }}</h2>
     {% set do_placila = state.days_left is none or state.days_left <= 0 %}
     <p class="muted">
       {% if do_placila %}
-        Naročnino obnovite tako, da plačate {{ cfg.price_eur }} € in nato sporočite plačilo.
+        Izberite obdobje, plačajte in sporočite plačilo — naročnino bomo potrdili.
       {% else %}
-        Podaljšanje je mogoče kadarkoli — dodani mesec se prišteje k veljavnosti
+        Podaljšanje je mogoče kadarkoli — izbrano obdobje se prišteje k veljavnosti
         ({{ state.until.strftime('%d. %m. %Y') }}), tako da ne izgubite že plačanih dni.
       {% endif %}
     </p>
 
     {% if cfg.paypal_url %}
       <p><a class="btn btn-pay" href="{{ cfg.paypal_url }}" target="_blank" rel="noopener">
-        Plačaj s PayPalom ({{ cfg.price_eur }} €)</a></p>
+        Plačaj prek PayPala</a> <span class="muted">(znesek naj ustreza izbranemu obdobju)</span></p>
     {% else %}
       <div class="info">
         Povezava do plačila še ni nastavljena.
@@ -99,6 +99,13 @@
 
     <form method="POST" action="/narocnina/sporoci-placilo">
       <input type="hidden" name="school_id" value="{{ school.id }}">
+      <label>Obdobje naročnine</label>
+      {% for p in cfg.plans %}
+      <label style="display:block;margin:4px 0;font-weight:400;">
+        <input type="radio" name="plan" value="{{ p.id }}" {% if loop.last %}checked{% endif %}>
+        <strong>{{ p.label }}</strong> — {{ p.price }} € ({{ p.months }} mes.)
+      </label>
+      {% endfor %}
       <div class="grid">
         <div>
           <label>Sklic oziroma koda transakcije</label>
@@ -116,22 +123,22 @@
       </p>
     </form>
 
-    <!-- ── Samodejno mesečno plačilo ──────────────────────────────────
-         Za šole, ki ne želijo vsak mesec ročno plačevati: vklopijo samodejno
+    <!-- ── Samodejno plačilo ──────────────────────────────────────────
+         Za šole, ki ne želijo vsako obdobje ročno plačevati: vklopijo samodejno
          obnavljanje, plačilo pa uredijo prek PayPal naročniške povezave. -->
     <hr style="border:none;border-top:1px solid #eee;margin:20px 0;">
-    <h2>Samodejno mesečno plačilo</h2>
+    <h2>Samodejno plačilo</h2>
     {% if avto %}
       <p class="ok" style="margin-top:0;">
-        <strong>Vklopljeno.</strong> Obnavljanje je predvideno vsak mesec na dan
+        <strong>Vklopljeno.</strong> Obnavljanje je predvideno vsako obdobje na dan
         <strong>{{ dan_obnove }}</strong>.
         {% if state.until %}Trenutna veljavnost: {{ state.until.strftime('%d. %m. %Y') }}.{% endif %}
       </p>
       {% if cfg.paypal_sub_url %}
         <p><a class="btn btn-pay" href="{{ cfg.paypal_sub_url }}" target="_blank" rel="noopener">
-          Uredi mesečno plačilo prek PayPala</a></p>
+          Uredi samodejno plačilo prek PayPala</a></p>
       {% else %}
-        <div class="info">Povezava za mesečno plačilo še ni nastavljena — vnese jo glavni admin.</div>
+        <div class="info">Povezava za samodejno plačilo še ni nastavljena — vnese jo glavni admin.</div>
       {% endif %}
       <form method="POST" action="/narocnina/avto">
         <input type="hidden" name="school_id" value="{{ school.id }}">
@@ -140,8 +147,8 @@
       </form>
     {% else %}
       <p class="muted" style="margin-top:0;">
-        Če želite, da se naročnina obnavlja sama vsak mesec na isti dan, vklopite
-        samodejno obnavljanje in uredite mesečno plačilo prek PayPala.
+        Če želite, da se naročnina obnavlja sama ob vsakem obdobju na isti dan, vklopite
+        samodejno obnavljanje in uredite plačilo prek PayPala.
       </p>
       <form method="POST" action="/narocnina/avto">
         <input type="hidden" name="school_id" value="{{ school.id }}">
@@ -149,7 +156,7 @@
         <button class="btn btn-sm" type="submit">Vklopi samodejno obnavljanje</button>
       </form>
       {% if not cfg.paypal_sub_url %}
-        <div class="info">Povezava za mesečno plačilo še ni nastavljena — vnese jo glavni admin
+        <div class="info">Povezava za samodejno plačilo še ni nastavljena — vnese jo glavni admin
           (Nastavitve prodaje).</div>
       {% endif %}
     {% endif %}
@@ -203,7 +210,7 @@
         <td>{{ p.reference or '—' }}{% if p.note %} · {{ p.note }}{% endif %}</td>
         <td>
           <form method="POST" action="/narocnina/potrdi/{{ p.id }}" style="display:inline;">
-            <button class="btn btn-sm btn-ok" type="submit">Potrdi (+1 mesec)</button>
+            <button class="btn btn-sm btn-ok" type="submit">Potrdi (podaljšaj za izbrano obdobje)</button>
           </form>
           <form method="POST" action="/narocnina/zavrni/{{ p.id }}" style="display:inline;">
             <button class="btn btn-sm btn-no" type="submit">Zavrni</button>
@@ -226,22 +233,25 @@
         <option value="0" {% if not cfg.enabled %}selected{% endif %}>izklopljena</option>
       </select>
       <div class="grid" style="margin-top:10px;">
+        {% for p in cfg.plans %}
         <div>
-          <label>Cena na mesec (€)</label>
-          <input type="number" name="price_eur" min="0" value="{{ cfg.price_eur }}">
-          <div class="muted" style="margin-top:4px;">0 = brez plačila; naročnino je treba vseeno mesečno obnoviti, sicer aplikacija za šolo ne dela.</div>
+          <label>Cena — {{ p.label }} (€)</label>
+          <input type="number" name="{% if p.id == 'leto' %}price_eur{% else %}price_half{% endif %}" min="0" value="{{ p.price }}">
         </div>
+        {% endfor %}
         <div>
           <label>PayPal povezava — enkratno plačilo</label>
           <input type="text" name="paypal_url" value="{{ cfg.paypal_url }}"
                  placeholder="https://www.paypal.com/ncp/payment/...">
         </div>
       </div>
-      <label>PayPal povezava — mesečno (samodejno) plačilo</label>
+      <div class="muted" style="margin-top:4px;">0 = brez plačila; naročnino je treba vseeno obnoviti za vsako obdobje, sicer aplikacija za šolo ne dela.</div>
+      <label>PayPal povezava — samodejno plačilo</label>
       <input type="text" name="paypal_sub_url" value="{{ cfg.paypal_sub_url }}"
              placeholder="npr. https://www.paypal.com/webapps/billing/... (naročniški načrt)">
       <div class="muted" style="margin-top:4px;">
-        Uporabi se, ko šola vklopi »Samodejno mesečno plačilo«.
+        Uporabi se, ko šola vklopi »Samodejno obnavljanje«. Načrt v PayPal-u naj ustreza izbranemu
+        obdobju (mesečni ali letni).
       </div>
       <label>Navodila ob plačilu (vidijo šole)</label>
       <textarea name="payment_note" rows="3">{{ cfg.note }}</textarea>
@@ -253,8 +263,8 @@
     <p class="muted">Za vašo šolo ali za poskusno obdobje.</p>
     <form method="POST" action="/narocnina/podaljsaj">
       <input type="hidden" name="school_id" value="{{ school.id }}">
-      <label>Število mesecev</label>
-      <input type="number" name="months" min="1" value="1" style="max-width:140px;">
+      <label>Število mesecev (12 = leto, 6 = pol leta)</label>
+      <input type="number" name="months" min="1" value="12" style="max-width:140px;">
       <p style="margin-top:14px;"><button class="btn btn-sm btn-ok" type="submit">Podaljšaj to šolo</button></p>
     </form>
   </div>

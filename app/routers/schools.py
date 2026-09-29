@@ -718,7 +718,7 @@ def setup_guide_page(
         },
         {
             "naslov": "Naročnina",
-            "opis": "Uporaba je veljavna, ko je naročnina potrjena (tudi pri ceni 0 € jo je treba mesečno obnoviti).",
+            "opis": "Uporaba je veljavna, ko je naročnina potrjena (tudi pri ceni 0 € jo je treba redno obnoviti).",
             "ok": bool(stanje.get("active")),
             "trenutno": (
                 f"veljavna do {stanje['until'].strftime('%d. %m. %Y')}"
@@ -739,6 +739,7 @@ def setup_guide_page(
             "stevilo_ok": sum(1 for i in items if i["ok"]),
             "stevilo_vseh": len(items),
             "is_main_admin": is_main_admin(user),
+            "prodaja": selling_config(db),
         },
     )
 

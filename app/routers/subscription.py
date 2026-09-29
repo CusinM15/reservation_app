@@ -17,7 +17,7 @@ from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.templating import Jinja2Templates
 from sqlalchemy.orm import Session
 
-from app.app_settings import save_selling_config, selling_config
+from app.app_settings import plan_by_id, save_selling_config, selling_config
 from app.audit import log_audit
 from app.config import validate_password_strength
 from app.database import get_db
@@ -202,7 +202,7 @@ def registracija_submit(
     log_audit(
         db, admin.id, admin.username, "register_school",
         f"school_id={school.id}, slug={school.slug}, name={school.name}, "
-        f"cena={cfg['price_eur']} EUR, admin={username} (geslo generirano)",
+        f"cena={cfg['price_label']}, admin={username} (geslo generirano)",
         school_id=school.id,
     )
 
@@ -233,7 +233,7 @@ def toggle_auto_renew(
     school_id: int | None = Form(None),
     db: Session = Depends(get_db),
 ):
-    """Vklop/izklop samodejnega mesečnega plačila za šolo (šolski ali glavni admin)."""
+    """Vklop/izklop samodejnega plačila za šolo (šolski ali glavni admin)."""
     school = _manageable_school(db, request, school_id)
     user = get_request_user(request, db)
     set_auto_renew(db, school.id, str(auto) == "1")
@@ -246,7 +246,7 @@ def toggle_auto_renew(
     )
     stanje = "vklopljeno" if str(auto) == "1" else "izklopljeno"
     return RedirectResponse(
-        url=f"/narocnina?school_id={school.id}&info=Samodejno mesečno plačilo je {stanje}.",
+        url=f"/narocnina?school_id={school.id}&info=Samodejno plačilo je {stanje}.",
         status_code=303,
     )
 
@@ -333,18 +333,23 @@ def report_payment(
     request: Request,
     reference: str = Form(""),
     note: str = Form(""),
+    plan: str = Form("leto"),
     school_id: int | None = Form(None),
     db: Session = Depends(get_db),
 ):
-    """Šola sporoči, da je plačala — glavni admin nato potrdi in podaljša."""
+    """Šola sporoči, da je plačala (izbere plan: pol leta ali leto).
+
+    Znesek in število mesecev se določita iz izbranega plana; glavni admin nato
+    potrdi in podaljša naročnino za toliko mesecev.
+    """
     school = _manageable_school(db, request, school_id)
     user = get_request_user(request, db)
-    cfg = selling_config(db)
+    izbrani = plan_by_id(db, plan) or plan_by_id(db, "leto")
 
     db.add(Payment(
         school_id=school.id,
-        amount_eur=cfg["price_eur"],
-        months=1,
+        amount_eur=izbrani["price"],
+        months=izbrani["months"],
         reference=(reference or "").strip(),
         note=(note or "").strip(),
         status="pending",
@@ -354,12 +359,14 @@ def report_payment(
     log_audit(
         db, user.id if user else None, user.username if user else "?",
         "report_payment",
-        f"school_id={school.id}, znesek={cfg['price_eur']} EUR, sklic={reference}",
+        f"school_id={school.id}, znesek={izbrani['price']} EUR, "
+        f"plan={izbrani['id']} ({izbrani['months']} mes.), sklic={reference}",
         school_id=school.id,
     )
     return RedirectResponse(
         url=f"/narocnina?school_id={school.id}&info=Plačilo je zabeleženo. "
-            "Ko bo nakazilo prejeto, bo naročnina podaljšana za en mesec.",
+            f"Ko bo nakazilo prejeto, bo naročnina podaljšana za {izbrani['label']} "
+            f"({izbrani['months']} mes.).",
         status_code=303,
     )
 
@@ -425,18 +432,22 @@ def reject_payment(
 @router.post("/narocnina/podaljsaj")
 def grant_months(
     request: Request,
-    months: int = Form(1),
+    months: int | None = Form(None),
     school_id: int | None = Form(None),
     db: Session = Depends(get_db),
 ):
-    """Glavni admin podaljša naročnino brez plačila (npr. za svojo šolo)."""
+    """Glavni admin podaljša naročnino brez plačila (npr. za svojo šolo).
+
+    Če število mesecev ni podano, podaljšamo za LETO (12 mesecev).
+    """
     user = _require_main_admin(db, request)
     school = _manageable_school(db, request, school_id)
-    until = extend_subscription(db, school.id, months or 1)
+    koliko = int(months) if months else plan_by_id(db, "leto")["months"]
+    until = extend_subscription(db, school.id, koliko)
     db.commit()
     log_audit(
         db, user.id, user.username, "grant_subscription",
-        f"school_id={school.id}, mesecev={months}, veljavnost do {until.isoformat()}",
+        f"school_id={school.id}, mesecev={koliko}, veljavnost do {until.isoformat()}",
         school_id=school.id,
     )
     return RedirectResponse(
@@ -450,18 +461,20 @@ def grant_months(
 def save_settings(
     request: Request,
     selling: str = Form("0"),
-    price_eur: str = Form("30"),
+    price_eur: str = Form("13"),
+    price_half: str = Form("7"),
     paypal_url: str = Form(""),
     paypal_sub_url: str = Form(""),
     payment_note: str = Form(""),
     db: Session = Depends(get_db),
 ):
-    """Glavni admin shrani nastavitve prodaje (cena, PayPal povezavi, navodila)."""
+    """Glavni admin shrani nastavitve prodaje (ceni obeh planov, PayPal, navodila)."""
     user = _require_main_admin(db, request)
     save_selling_config(
         db,
         enabled=(str(selling) == "1"),
         price=price_eur,
+        price_half=price_half,
         paypal=paypal_url,
         paypal_sub=paypal_sub_url,
         note=payment_note,
@@ -470,8 +483,9 @@ def save_settings(
     log_audit(
         db, user.id, user.username, "save_selling_settings",
         f"prodaja={'vklopljena' if str(selling) == '1' else 'izklopljena'}, "
-        f"cena={price_eur} EUR, paypal={'nastavljen' if paypal_url else 'prazen'}, "
-        f"mesečni paypal={'nastavljen' if paypal_sub_url else 'prazen'}",
+        f"cena_leto={price_eur} EUR, cena_polleta={price_half} EUR, "
+        f"paypal={'nastavljen' if paypal_url else 'prazen'}, "
+        f"samodejni paypal={'nastavljen' if paypal_sub_url else 'prazen'}",
         school_id=None,
     )
     return RedirectResponse(

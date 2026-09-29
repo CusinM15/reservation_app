@@ -63,10 +63,10 @@
     <h2>Naslednji korak: naročnina</h2>
     <p class="muted">
       {% if cfg.free %}
-        Plačila ni (cena 0 €), a naročnino je treba obnoviti vsak mesec; ko jo glavni admin
+        Plačila ni (cena 0 €), a naročnino je treba obnoviti za vsako obdobje; ko jo glavni admin
         podaljša, se bodo lahko prijavili tudi vaši učitelji.
       {% else %}
-        Naročnina znaša {{ cfg.price_eur }} € na mesec. Plačajte in sporočite plačilo;
+        Naročnina znaša {{ cfg.price_label }}. Plačajte in sporočite plačilo;
         ko ga potrdimo, se bodo lahko prijavili tudi vaši učitelji.
       {% endif %}
     </p>
