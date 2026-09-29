@@ -1,0 +1,8 @@
+# ─────────────────────────────────────────────────────────────────────────
+# deploy/oracle/Caddyfile — samodejni HTTPS (Let's Encrypt) za domeno
+# Domena pride iz .env (BASE_HOST). Vrata 80/443 morajo biti odprta.
+# ─────────────────────────────────────────────────────────────────────────
+{$BASE_HOST} {
+    encode gzip
+    reverse_proxy app:8002
+}

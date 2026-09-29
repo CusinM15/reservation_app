@@ -1,0 +1,101 @@
+# ─────────────────────────────────────────────────────────────────────────
+# deploy/oracle/docker-compose.yml — aplikacija na Oracle Cloud (Always Free)
+#
+# Namen: ena VM (ARM Ampere A1, 2 OCPU / 12 GB) gosti CELO aplikacijo za VSE
+# šole — app + PostgreSQL + Caddy (samodejni HTTPS). Enaka slika kot na k3s.
+#
+# Zagon:  docker compose up -d --build
+# Dnevnik: docker compose logs -f app
+# Backup:  ./backup.sh   (kliče storitev »backup«)
+# ─────────────────────────────────────────────────────────────────────────
+
+x-app-env: &app-env
+  DATABASE_URL: postgresql://sola:${POSTGRES_PASSWORD}@db:5432/sola
+  PORT: "8002"
+  APP_PORT: "8002"
+  SECRET_KEY: ${SECRET_KEY}
+  BASE_URL: ${BASE_URL}
+  SCHOOL_NAME: ${SCHOOL_NAME}
+  DEFAULT_SCHOOL_SLUG: ${DEFAULT_SCHOOL_SLUG}
+  MAIN_ADMIN_USERNAME: ${MAIN_ADMIN_USERNAME}
+  MAIN_ADMIN_PASSWORD: ${MAIN_ADMIN_PASSWORD}
+  MAIN_ADMIN_EMAIL: ${MAIN_ADMIN_EMAIL}
+  MAIL_SERVER: ${MAIL_SERVER}
+  MAIL_PORT: ${MAIL_PORT}
+  MAIL_USERNAME: ${MAIL_USERNAME}
+  MAIL_PASSWORD: ${MAIL_PASSWORD}
+  MAIL_FROM: ${MAIL_FROM}
+  ADMIN_EMAIL: ${ADMIN_EMAIL}
+  BACKUP_EMAIL: ${BACKUP_EMAIL}
+  WEB_WORKERS: ${WEB_WORKERS}
+
+services:
+  db:
+    image: postgres:18
+    restart: always
+    environment:
+      POSTGRES_USER: sola
+      POSTGRES_DB: sola
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U sola -d sola"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+    networks: [sola]
+
+  app:
+    build:
+      context: ../..
+      dockerfile: Dockerfile
+    image: sola-app:oracle
+    restart: always
+    depends_on:
+      db:
+        condition: service_healthy
+    environment: *app-env
+    volumes:
+      - backups:/backups
+    expose:
+      - "8002"
+    networks: [sola]
+
+  caddy:
+    image: caddy:2
+    restart: always
+    ports:
+      - "80:80"
+      - "443:443"
+    environment:
+      BASE_HOST: ${BASE_HOST}
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on:
+      - app
+    networks: [sola]
+
+  # Nočna varnostna kopija — zažene host cron:  ./backup.sh
+  backup:
+    image: sola-app:oracle
+    profiles: ["backup"]
+    depends_on:
+      db:
+        condition: service_healthy
+    environment: *app-env
+    volumes:
+      - backups:/backups
+    command: ["python", "-m", "scripts.school_backups", "--save", "/backups", "--no-email"]
+    networks: [sola]
+
+volumes:
+  pgdata:
+  backups:
+  caddy_data:
+  caddy_config:
+
+networks:
+  sola:
