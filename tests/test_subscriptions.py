@@ -419,11 +419,14 @@ def test_settings_hide_subscription_box_when_selling_off(client, make_user):
     assert "Naročnina šole" not in client.get("/settings").text
 
 
-# ── 9. Cena 0 = brezplačno ───────────────────────────────────────────
+# ── 9. Cena 0 = brez plačila (a naročnina je vseeno obvezna) ─────────
 
 def test_price_zero_is_allowed(client):
-    """Uporabnik je poročal, da obrazec zavrne ceno 0 — 0 mora pomeniti
-    »brezplačno« (npr. za lastno šolo ali poskusno obdobje)."""
+    """Obrazec sprejme ceno 0 (npr. za lastno šolo ali poskusno obdobje).
+
+    Cena 0 pomeni »nič za plačati« — a NE »brez omejitev«: naročnino je treba
+    vseeno mesečno obnoviti (zahteva uporabnika 2026-09-29).
+    """
     _set_selling(True, price=0)
     db = SessionLocal()
     try:
@@ -433,11 +436,12 @@ def test_price_zero_is_allowed(client):
         db.close()
 
 
-def test_price_zero_hides_payment(client):
+def test_price_zero_shows_zero_eur(client):
     _set_selling(True, price=0)
     r = client.get("/nakup")
     assert r.status_code == 200
-    assert "Brezplačno" in r.text
+    assert "0 €" in r.text
+    assert "Brezplačno" not in r.text
 
 
 def test_settings_save_zero_price(client):
@@ -456,24 +460,25 @@ def test_settings_save_zero_price(client):
         db.close()
 
 
-def test_free_price_never_blocks_school(client, make_user):
-    """Cena 0 = brezplačno: tudi šola s poteklim datumom dela (ni česa plačati).
+def test_price_zero_still_requires_subscription(client, make_user):
+    """Tudi pri ceni 0 mora biti naročnina veljavna, sicer šola ne dela.
 
-    Zakaj je to pomembno? Brez tega bi ob ceni 0 šola z pretečenim datumom ostala
-    zaklenjena — uporabnik pa pričakuje, da je pri brezplačni uporabi nihče ne
-    ovira (tako tudi preizkusi delovanje brez plačil)."""
+    Zahteva uporabnika 2026-09-29: »cena je 0 €, toda potrebno je mesečno
+    plačati/obnoviti, da app dela«. Cena 0 torej ne odvezuje veljavnosti.
+    """
     _set_selling(True, price=0)
     _set_until(date.today() - timedelta(days=30))
 
     db = SessionLocal()
     try:
-        assert is_active(db, default_school_id()) is True
+        assert is_active(db, default_school_id()) is False
     finally:
         db.close()
 
     teacher = make_user()
-    assert _login(client, teacher.username).status_code == 303
-    assert client.get("/rezervacije").status_code == 200
+    r = _login(client, teacher.username)
+    assert r.status_code == 200                     # ostane na prijavni strani
+    assert "Naročnina vaše šole je potekla" in r.text
 
 
 # ── 10. Registracija nove šole ───────────────────────────────────────

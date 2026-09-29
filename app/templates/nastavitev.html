@@ -44,6 +44,11 @@
       da je treba še urediti.
     </p>
     <p class="napredek">Urejeno: {{ stevilo_ok }} od {{ stevilo_vseh }}</p>
+    <div class="opozorilo">
+      <strong>Cena: 0 €</strong> — dodatnega plačila ni, a naročnino je treba
+      <strong>obnoviti vsak mesec</strong>, da aplikacija dela. Brez veljavne naročnine se
+      učitelji ne morejo prijaviti (prijavi se lahko le administrator šole).
+    </div>
   </div>
 
   <div class="card">
@@ -78,12 +83,27 @@
           varnostne kopije). Brez tega obvestila in obnovitev gesla ne delujeta.</li>
       <li><strong>Preverite SMTP</strong> — strežnik, uporabniško ime in geslo za pošiljanje pošte
           (če šola uporablja Arnes, vpišite podatke Arnesa).</li>
-      <li><strong>Vpišite razrede</strong> (npr. <code>1. a, 2. a, …</code>) in
-          <strong>prostore</strong> (npr. <code>tablice, računalnica, telovadnica</code>).</li>
+      <li><strong>Vpišite razrede</strong> (npr. <code>1. a, 2. a, …</code>).</li>
+      <li><strong>Dodajte prostore</strong> — vsak prostor preprosto dodate z gumbom
+          <strong>»＋ Dodaj prostor«</strong> (brez težav tudi pozneje, kadar koli).
+          Prostor je lahko tudi <strong>prostor z več enotami</strong>: obkljukajte
+          <strong>»število«</strong> in ga povežete s številsko spremenljivko
+          (npr. <code>Število računalnikov = 5</code>). Takrat si lahko isto enoto
+          izposodi več učiteljev hkrati — vsak navede količino, skupna vsota na uro pa je
+          omejena s spremenljivko. Primer: <em>5 računalnikov, ki si jih učitelji izposojajo</em>
+          (<code>racunalnica</code> s kljukico »število« in <code>Število računalnikov = 5</code>).
+          Brez kljukice je prostor ekskluziven — ena rezervacija na uro.</li>
       <li><strong>Ustvarite uporabnike</strong> za učitelje in vodstvo (vsak dobi svoje
-          uporabniško ime in geslo).</li>
+          uporabniško ime in geslo) ali pa jih <strong>uvozite iz CSV datoteke</strong>
+          na strani <a href="/auth/admin/users">Uporabniki</a> z gumbom
+          <strong>»📥 Uvozi CSV«</strong>. Glava stolpcev ni obvezna; če je ni, velja vrstni
+          red <code>uporabniško ime, email, ime, priimek, vloga, geslo</code> (npr.
+          <code>mt.cusin@gmail.com,mt.cusin@gmail.com,ime,priimek,učitelj</code>). Geslo ni
+          potrebno — če ga v vrstici ni, si ga aplikacija izmisli in vam ga pokaže v povzetku
+          uvoza, da ga razdelite. Obstaječa uporabniška imena se preskočijo.</li>
       <li><strong>Uredite naročnino</strong> — po plačilu jo potrdimo in učitelji bodo lahko
-          vstopili (pri ceni 0 je uporaba brezplačna).</li>
+          vstopili. Tudi pri ceni 0 € naročnino obnovimo vsak mesec, sicer aplikacija za
+          šolo ne dela.</li>
       <li><em>Neobvezno:</em> prilagodite omejitve ocenjevanj, urnik in čas neaktivnosti.</li>
     </ol>
     <div class="navodila">
@@ -100,6 +120,19 @@
     <p><strong>Učitelji se ne morejo prijaviti.</strong><br>
        Preverite postavko »Naročnina« zgoraj. Če naročnina ni veljavna, se lahko prijavi le
        administrator šole (da jo uredi).</p>
+    <p><strong>Kako dodam nov prostor?</strong><br>
+       V <a href="/settings">Nastavitvah šole</a> pod »Prostori« kliknite <strong>»＋ Dodaj prostor«</strong>,
+       vpišite ime in shranite. Prostor lahko dodate kadar koli, tudi pozneje — brez težav.</p>
+    <p><strong>Kako dodam prostor z več enotami (npr. 5 računalnikov)?</strong><br>
+       Pod »Prostori« dodajte prostor in obkljukajte <strong>»število«</strong>, nato pa ga povežite s
+       številsko spremenljivko (pod »Števila« npr. <code>Število računalnikov = 5</code>).
+       Tako lahko več učiteljev hkrati rezervira isto enoto (vsak navede količino, skupna vsota na uro
+       je omejena s spremenljivko). Enako deluje za tablice ali katero koli drugo opremo.</p>
+    <p><strong>Ali lahko uporabnike uvozim naenkrat?</strong><br>
+       Da. Na strani <a href="/auth/admin/users">Uporabniki</a> izberite CSV datoteko in kliknite
+       <strong>»📥 Uvozi CSV«</strong>. Glava stolpcev ni obvezna (privzeti vrstni red:
+       <code>uporabniško ime, email, ime, priimek, vloga, geslo</code>), geslo pa lahko izpustite —
+       aplikacija si ga izmisli in ga pokaže v povzetku.</p>
     <p><strong>Kje so varnostne kopije?</strong><br>
        Aplikacija vsako noč pripravi kopijo podatkov šole in jo pošlje na »E-pošto za varnostne
        kopije«; kopijo lahko kadar koli prenesete tudi ročno v nastavitvah šole.</p>

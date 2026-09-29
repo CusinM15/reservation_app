@@ -23,7 +23,7 @@ _SELLING_CACHE_AT: float = 0.0
 
 # Ključi v tabeli app_settings
 KEY_SELLING = "SUBSCRIPTION_SELLING"          # "1" = prodaja vklopljena, "0" = izklopljena
-KEY_PRICE = "SUBSCRIPTION_PRICE_EUR"          # cena v evrih (celo število; 0 = brezplačno)
+KEY_PRICE = "SUBSCRIPTION_PRICE_EUR"          # cena v evrih (celo število; 0 = brez plačila)
 KEY_PAYPAL = "SUBSCRIPTION_PAYPAL_URL"        # povezava do enkratnega plačila (izdelek)
 KEY_PAYPAL_SUB = "SUBSCRIPTION_PAYPAL_SUB_URL"  # povezava do MESEČNEGA (naročniškega) plačila
 KEY_NOTE = "SUBSCRIPTION_PAYMENT_NOTE"        # navodila ob plačilu (sklic, kako sporočiti)
@@ -86,11 +86,13 @@ def selling_enabled(db: Session) -> bool:
 
 
 def price_eur(db: Session) -> int:
-    """Cena mesečne naročnine v evrih (0 = brezplačno).
+    """Cena mesečne naročnine v evrih (0 = brez plačila).
 
-    Vrednost 0 je dovoljena namenoma: tako lahko šolo daš brezplačno (poskusno
-    obdobje, lastna šola), ne da bi moral izklopiti prodajo za vse. Neveljaven
-    ali negativen vnos pade na privzeto ceno.
+    Vrednost 0 je dovoljena: tako lahko šolo daš brez plačila (poskusno obdobje,
+    lastna šola), ne da bi moral izklopiti prodajo za vse. POZOR: cena 0 NE
+    pomeni »brez omejitev« — naročnino je treba tudi takrat mesečno obnoviti,
+    sicer aplikacija za šolo ne dela (glavni admin jo podaljša brez plačila).
+    Neveljaven ali negativen vnos pade na privzeto ceno.
     """
     raw = get_app_setting(db, KEY_PRICE, str(DEFAULT_PRICE_EUR))
     try:
@@ -101,7 +103,7 @@ def price_eur(db: Session) -> int:
 
 
 def is_free(db: Session) -> bool:
-    """Ali je uporaba brezplačna (cena 0)?"""
+    """Ali je naročnina brezplačna (cena 0)? Vpliva le na prikaz, ne na veljavnost."""
     return price_eur(db) == 0
 
 
@@ -143,8 +145,9 @@ def save_selling_config(
 ) -> None:
     """Shrani nastavitve prodaje (kliče glavni admin).
 
-    Cena 0 je dovoljena (brezplačna uporaba); prazna/neveljavna vrednost pade na
-    privzeto ceno, da se v obrazcu ne da »pokvariti« nastavitve s tipkarsko napako.
+    Cena 0 pomeni »brez plačila« (naročnino je treba vseeno mesečno obnoviti);
+    prazna/neveljavna vrednost pade na privzeto ceno, da se v obrazcu ne da
+    »pokvariti« nastavitve s tipkarsko napako.
     """
     price_text = str(price if price is not None else "").strip()
     if price_text == "":

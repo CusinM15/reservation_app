@@ -718,7 +718,7 @@ def setup_guide_page(
         },
         {
             "naslov": "Naročnina",
-            "opis": "Uporaba je veljavna, ko je naročnina potrjena (ali je cena 0 — brezplačno).",
+            "opis": "Uporaba je veljavna, ko je naročnina potrjena (tudi pri ceni 0 € jo je treba mesečno obnoviti).",
             "ok": bool(stanje.get("active")),
             "trenutno": (
                 f"veljavna do {stanje['until'].strftime('%d. %m. %Y')}"

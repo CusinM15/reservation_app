@@ -45,8 +45,9 @@
     {% else %}
 
       {% if cfg.free %}
-        <p class="price">Brezplačno</p>
-        <p class="muted">V tej namestitvi je uporaba za šole brezplačna.</p>
+        <p class="price">0 € <span class="muted" style="font-size:1rem;">/ mesec</span></p>
+        <p class="muted">Plačila ni, a naročnino je treba obnoviti vsak mesec — brez
+           veljavne naročnine aplikacija za šolo ne dela.</p>
       {% else %}
         <p class="price">{{ cfg.price_eur }} € <span class="muted" style="font-size:1rem;">/ mesec</span></p>
         <p class="muted">Cena velja za eno šolo in en mesec uporabe (DDV ni obračunan, če niste zavezanec).</p>

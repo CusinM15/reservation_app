@@ -68,10 +68,10 @@
   {% if cfg.enabled and not view_only %}
   <div class="card">
     {% if cfg.free %}
-      <h2>Naročnina: brezplačno</h2>
+      <h2>Naročnina: 0 €</h2>
       <p class="muted">
-        V tej namestitvi je uporaba brezplačna, zato plačila in sporočanja plačil ni.
-        Za veljavnost poskrbi glavni admin (»Podaljšaj brez plačila« spodaj).
+        Plačila ni, a naročnino je treba <strong>obnoviti vsak mesec</strong>, da aplikacija
+        dela. Veljavnost podaljša glavni admin (»Podaljšaj brez plačila« spodaj).
       </p>
     {% else %}
     <h2>Nakup enega meseca — {{ cfg.price_eur }} €</h2>
@@ -229,7 +229,7 @@
         <div>
           <label>Cena na mesec (€)</label>
           <input type="number" name="price_eur" min="0" value="{{ cfg.price_eur }}">
-          <div class="muted" style="margin-top:4px;">0 = uporaba je brezplačna.</div>
+          <div class="muted" style="margin-top:4px;">0 = brez plačila; naročnino je treba vseeno mesečno obnoviti, sicer aplikacija za šolo ne dela.</div>
         </div>
         <div>
           <label>PayPal povezava — enkratno plačilo</label>
