@@ -47,10 +47,13 @@ services:
     networks: [sola]
 
   app:
+    # Slika je objavljena (Docker Hub) — majhnemu VM-ju (1 GB) ni treba graditi:
+    #   docker compose pull && docker compose ... up -d --no-build
+    # Če slike ni (ali na ARM), gradimo lokalno:  docker compose up -d --build
+    image: mato12345/sola-app:latest
     build:
       context: ../..
       dockerfile: Dockerfile
-    image: sola-app:oracle
     restart: always
     depends_on:
       db:
@@ -80,7 +83,7 @@ services:
 
   # Nočna varnostna kopija — zažene host cron:  ./backup.sh
   backup:
-    image: sola-app:oracle
+    image: mato12345/sola-app:latest
     profiles: ["backup"]
     depends_on:
       db:

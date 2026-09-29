@@ -55,16 +55,32 @@ if [ ! -f .env ]; then
     exit 0
 fi
 
-# Če je v .env prava domena → privzeti način (Caddy + HTTPS), sicer IP-način.
+COMPOSE_FILES=(-f docker-compose.yml)
 if grep -qE '^BASE_HOST=[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+' .env; then
     echo "→ IP-način (brez Caddyja, app na vratih 80)"
-    sudo docker compose -f docker-compose.yml -f docker-compose.ip.yml up -d --build
+    COMPOSE_FILES+=(-f docker-compose.ip.yml)
 else
     echo "→ Domena zaznana (Caddy + samodejni HTTPS)"
-    sudo docker compose up -d --build
 fi
 
-sudo docker compose ps
+MEM_MB="$(awk '/MemTotal/{printf "%d", $2/1024}' /proc/meminfo)"
+if [ "${MEM_MB:-0}" -lt 2000 ]; then
+    echo "→ Malo RAM (${MEM_MB} MB): dodajam 2 GB swap in uporabljam objavljeno sliko (brez gradnje)"
+    if ! swapon --show 2>/dev/null | grep -q .; then
+        sudo fallocate -l 2G /swapfile
+        sudo chmod 600 /swapfile
+        sudo mkswap /swapfile
+        sudo swapon /swapfile
+        grep -q '/swapfile' /etc/fstab || echo '/swapfile none swap sw 0 0' | sudo tee -a /etc/fstab >/dev/null
+    fi
+    echo "   (namestitev swap naredi build vseeno mogoč: docker compose ${COMPOSE_FILES[*]} up -d --build)"
+    sudo docker compose "${COMPOSE_FILES[@]}" pull
+    sudo docker compose "${COMPOSE_FILES[@]}" up -d --no-build
+else
+    sudo docker compose "${COMPOSE_FILES[@]}" up -d --build
+fi
+
+sudo docker compose "${COMPOSE_FILES[@]}" ps
 IP="$(curl -fsS --max-time 5 https://api.ipify.org || echo '<JAVNI_IP>')"
 echo
 echo "==> Aplikacija:  http://${IP}/health   (in http://${IP}/auth/login)"

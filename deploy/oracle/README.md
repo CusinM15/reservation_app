@@ -38,6 +38,28 @@ Poraba ene šole je majhna (~0,2 GB RAM, ~0,2 vCPU, <1 GB diska), zato Always Fr
    - **Boot volume**: privzeto (50 GB) je v Always Free
 3. Klikni **Create**. Po ~1 minuti instanca teče; na seznamu si zapiši **Public IP address**.
 
+## 1b. Majhen VM (VM.Standard.E2.1.Micro, 1 GB) — povsem v redu, če ne gradiš na njem
+
+Micro (x86, 1/8 OCPU, 1 GB) zdrži aplikacijo, a **build slike** (apt + pip) zlahka požre >1 GB
+in pade. Zato:
+
+```bash
+# 1) 2 GB swap
+sudo fallocate -l 2G /swapfile && sudo chmod 600 /swapfile
+sudo mkswap /swapfile && sudo swapon /swapfile
+echo '/swapfile none swap sw 0 0' | sudo tee -a /etc/fstab
+
+# 2) poženi objavljeno sliko (brez gradnje)
+cd ~/reservation_app_sell/deploy/oracle
+sudo docker compose -f docker-compose.yml -f docker-compose.ip.yml pull
+sudo docker compose -f docker-compose.yml -f docker-compose.ip.yml up -d --no-build
+```
+
+`bootstrap.sh` to naredi sam, če zazna <2 GB RAM (doda swap in uporabi `pull` + `--no-build`).
+Slika `mato12345/sola-app:latest` je objavljena (x86/amd64) — enaka tisti na k3s.
+
+> ARM (VM.Standard.A1.Flex, 12 GB) gradi brez težav lokalno (`up -d --build`), ker ima dovolj pomnilnika.
+
 ## 2. Odpri vrata 80 in 443 (DVE mesti!)
 
 **(a) Oracle Security List**
