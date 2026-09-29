@@ -9,6 +9,15 @@ Poraba ene šole je majhna (~0,2 GB RAM, ~0,2 vCPU, <1 GB diska), zato Always Fr
 > Hitra pot brez domene: aplikacija je dosegljiva kar na `http://<JAVNI_IP>`.
 > Točno tako narediš spodaj (koraki 1–5, uporabiš `docker-compose.ip.yml`).
 
+> **Še hitreje — en ukaz na VM (Docker + Hermes agent + aplikacija):**
+> ```bash
+> git clone https://github.com/CusinM15/reservation_app_sell.git
+> cd reservation_app_sell/deploy/oracle && ./bootstrap.sh
+> ```
+> Prvič ustvari `.env` in te ustavi — izpolni ga, nato poženi `./bootstrap.sh` še enkrat.
+> Skript sam odpre vrata 80/443 v iptables, namesti Docker in Hermes agenta, klonira app in
+> požene stack (IP-način, če je v `.env` IP; sicer Caddy + HTTPS).
+
 ---
 
 ## 1. Oracle račun in VM
@@ -133,6 +142,33 @@ docker compose -f docker-compose.yml -f docker-compose.ip.yml up -d --build   # 
 Na sveži bazi sta privzeti ceni že pravi: **pol leta = 7 €**, **leto = 13 €**; šola ob nakupu
 izbere obdobje. V **Naročnina → Nastavitve prodaje** le vklopi *Prodaja naročnin* in vnesi
 PayPal povezavo + navodila ob plačilu.
+
+## Hermes agent na VM
+
+Namesti se z `bootstrap.sh` (uradni `install.sh`). Ročno:
+
+```bash
+curl -fsSL https://hermes-agent.nousresearch.com/install.sh | bash
+export PATH="$HOME/.local/bin:$PATH"
+hermes --version
+hermes doctor
+```
+
+Povezava na model (ključ je tvoj — npr. OpenRouter):
+
+```bash
+hermes model                 # izbira ponudnika/modela (interaktivno)
+# ali ročno v ~/.hermes/.env:  OPENROUTER_API_KEY=...
+hermes config set model.default <provider>/<model>
+hermes chat -q "preveri: docker compose ps v ~/reservation_app_sell/deploy/oracle"
+```
+
+Uporabno na VM:
+- `hermes gateway install` — da agent teče v ozadju (Telegram/Discord/…), in
+  `sudo loginctl enable-linger $USER`, da preživi odjavo SSH.
+- Agent ima poln dostop do strežnika → lahko sam posodablja app
+  (`git pull && docker compose up -d --build`) in bere loge.
+- Ključev ne commitaj; živijo v `~/.hermes/.env` na VM.
 
 ## Kaj moraš vedeti
 
