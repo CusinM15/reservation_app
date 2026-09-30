@@ -22,7 +22,21 @@ MEM_REPO_URL="https://github.com/CusinM15/documentation.git"
 MEM_REPO="${HOME}/agent-memory-repo"
 HH="${HERMES_HOME:-$HOME/.hermes}"
 
-echo "=== 1/4  Hermes agent"
+echo "=== 0/5  Swap (1 GB VM se pri namestitvi zaduši brez swapa)"
+MEM_MB="$(awk '/MemTotal/{printf "%d", $2/1024}' /proc/meminfo 2>/dev/null || echo 0)"
+if [ "${MEM_MB:-0}" -lt 2000 ] && ! swapon --show 2>/dev/null | grep -q .; then
+    echo "  malo RAM (${MEM_MB} MB) — dodajam 2 GB swap"
+    sudo fallocate -l 2G /swapfile
+    sudo chmod 600 /swapfile
+    sudo mkswap /swapfile
+    sudo swapon /swapfile
+    grep -q '/swapfile' /etc/fstab || echo '/swapfile none swap sw 0 0' | sudo tee -a /etc/fstab >/dev/null
+    free -h | head -3
+else
+    echo "  RAM ${MEM_MB} MB / swap: $(swapon --show --noheadings 2>/dev/null | awk '{print $1, $3}' | tr '\n' ' ')"
+fi
+
+echo "=== 1/5  Hermes agent"
 if command -v hermes >/dev/null 2>&1; then
     echo "že nameščen: $(hermes --version 2>/dev/null || echo '?')"
 else
@@ -32,7 +46,7 @@ export PATH="${HOME}/.local/bin:${PATH}"
 grep -q '.local/bin' "${HOME}/.bashrc" 2>/dev/null || \
     echo 'export PATH="$HOME/.local/bin:$PATH"' >> "${HOME}/.bashrc"
 
-echo "=== 2/4  Izvoz spomina in skillov (CusinM15/documentation)"
+echo "=== 2/5  Izvoz spomina in skillov (CusinM15/documentation)"
 if [ -d "${MEM_REPO}/.git" ]; then
     git -C "${MEM_REPO}" pull --rebase --quiet || true
 else
@@ -41,7 +55,7 @@ fi
 SRC="${MEM_REPO}/agent-memory"
 [ -d "${SRC}" ] || { echo "NAPAKA: v repu ni mape agent-memory/"; exit 1; }
 
-echo "=== 3/4  Preselitev v ${HH}"
+echo "=== 3/5  Preselitev v ${HH}"
 mkdir -p "${HH}/memories" "${HH}/skills" "${HH}/cron"
 
 # Obstoječe nastavitve ohranimo (config.yaml in .env se NIKOLI ne prepišeta).
@@ -56,7 +70,7 @@ cp -r "${SRC}/skills/."   "${HH}/skills/"
 chmod 700 "${HH}" 2>/dev/null || true
 [ -f "${HH}/.env" ] && chmod 600 "${HH}/.env" || true
 
-echo "=== 4/4  Preverjanje"
+echo "=== 4/5  Preverjanje"
 echo -n "  spomin: "; ls "${HH}/memories" | tr '\n' ' '; echo
 echo -n "  skillov: "; find "${HH}/skills" -name SKILL.md | wc -l
 hermes --version 2>/dev/null || true
