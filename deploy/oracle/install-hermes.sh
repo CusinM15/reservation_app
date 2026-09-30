@@ -22,7 +22,7 @@ MEM_REPO_URL="https://github.com/CusinM15/documentation.git"
 MEM_REPO="${HOME}/agent-memory-repo"
 HH="${HERMES_HOME:-$HOME/.hermes}"
 
-echo "=== 0/5  Swap (1 GB VM se pri namestitvi zaduši brez swapa)"
+echo "=== 0/6  Swap (1 GB VM se pri namestitvi zaduši brez swapa)"
 MEM_MB="$(awk '/MemTotal/{printf "%d", $2/1024}' /proc/meminfo 2>/dev/null || echo 0)"
 if [ "${MEM_MB:-0}" -lt 2000 ] && ! swapon --show 2>/dev/null | grep -q .; then
     echo "  malo RAM (${MEM_MB} MB) — dodajam 2 GB swap"
@@ -36,7 +36,15 @@ else
     echo "  RAM ${MEM_MB} MB / swap: $(swapon --show --noheadings 2>/dev/null | awk '{print $1, $3}' | tr '\n' ' ')"
 fi
 
-echo "=== 1/5  Hermes agent"
+echo "=== 1/6  Sistemske knjižnice (Oracle Ubuntu je minimalen: node rabi libatomic1)"
+if ! ldconfig -p 2>/dev/null | grep -q 'libatomic\.so\.1'; then
+    echo "  nameščam libatomic1 (+ libstdc++6)"
+    sudo apt-get update -y >/dev/null 2>&1 || true
+    sudo apt-get install -y libatomic1 libstdc++6 || \
+        echo "  OPOMBA: namestitev ni uspela — namesti ročno: sudo apt-get install -y libatomic1"
+fi
+
+echo "=== 2/6  Hermes agent"
 if command -v hermes >/dev/null 2>&1; then
     echo "že nameščen: $(hermes --version 2>/dev/null || echo '?')"
 else
@@ -46,7 +54,7 @@ export PATH="${HOME}/.local/bin:${PATH}"
 grep -q '.local/bin' "${HOME}/.bashrc" 2>/dev/null || \
     echo 'export PATH="$HOME/.local/bin:$PATH"' >> "${HOME}/.bashrc"
 
-echo "=== 2/5  Izvoz spomina in skillov (CusinM15/documentation)"
+echo "=== 3/6  Izvoz spomina in skillov (CusinM15/documentation)"
 if [ -d "${MEM_REPO}/.git" ]; then
     git -C "${MEM_REPO}" pull --rebase --quiet || true
 else
@@ -55,7 +63,7 @@ fi
 SRC="${MEM_REPO}/agent-memory"
 [ -d "${SRC}" ] || { echo "NAPAKA: v repu ni mape agent-memory/"; exit 1; }
 
-echo "=== 3/5  Preselitev v ${HH}"
+echo "=== 4/6  Preselitev v ${HH}"
 mkdir -p "${HH}/memories" "${HH}/skills" "${HH}/cron"
 
 # Obstoječe nastavitve ohranimo (config.yaml in .env se NIKOLI ne prepišeta).
@@ -70,7 +78,7 @@ cp -r "${SRC}/skills/."   "${HH}/skills/"
 chmod 700 "${HH}" 2>/dev/null || true
 [ -f "${HH}/.env" ] && chmod 600 "${HH}/.env" || true
 
-echo "=== 4/5  Preverjanje"
+echo "=== 5/6  Preverjanje"
 echo -n "  spomin: "; ls "${HH}/memories" | tr '\n' ' '; echo
 echo -n "  skillov: "; find "${HH}/skills" -name SKILL.md | wc -l
 hermes --version 2>/dev/null || true
