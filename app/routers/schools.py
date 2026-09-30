@@ -459,6 +459,12 @@ async def update_school_settings(school_id: int, request: Request, db: Session =
     if unknown:
         raise HTTPException(status_code=400, detail=f"Neznane nastavitve: {', '.join(sorted(unknown))}")
 
+    # Polja tipa »password« (npr. SMTP geslo) se v obrazcu NIKOLI ne predizpolnijo,
+    # zato prazna vrednost pomeni »pusti obstoječe geslo« in je ne zapišemo čez.
+    for field in SCHOOL_SETTING_FIELDS:
+        if field["type"] == "password" and not str(values.get(field["key"], "")).strip():
+            values.pop(field["key"], None)
+
     # Preprosta validacija tipov: int polja morajo biti cela števila,
     # SCHEDULE mora biti veljaven JSON.
     import json as _json

@@ -107,8 +107,11 @@
           <strong>»📥 Uvozi CSV«</strong>. Glava stolpcev ni obvezna; če je ni, velja vrstni
           red <code>uporabniško ime, email, ime, priimek, vloga, geslo</code> (npr.
           <code>ana.novak@guest.arnes.si,ana.novak@guest.arnes.si,ime,priimek,učitelj</code>). Geslo ni
-          potrebno — če ga v vrstici ni, si ga aplikacija izmisli in vam ga pokaže v povzetku
-          uvoza, da ga razdelite. Obstaječa uporabniška imena se preskočijo.</li>
+          potrebno in se <strong>nikoli ne izpiše</strong> — če ga v vrstici ni, si ga aplikacija
+          izmisli, a ga ne pokaže nikjer. Uporabnik si geslo nastavi sam na prijavni strani z
+          gumbom <em>»Pozabljeno geslo?«</em> (vpiše e-pošto, prejme povezavo za novo geslo);
+          zato sta <strong>uporabniško ime in e-pošta enaka</strong>. Obstoječa uporabniška imena se
+          preskočijo.</li>
       {% if prodaja and prodaja.enabled %}
       <li><strong>Uredite naročnino</strong> — po plačilu jo potrdimo in učitelji bodo lahko
           vstopili. Naročnino je treba redno obnoviti (izbrano obdobje), sicer aplikacija za

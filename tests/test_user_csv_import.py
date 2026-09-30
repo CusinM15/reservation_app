@@ -65,18 +65,22 @@ def test_user_exact_csv_without_header(client, make_user):
     assert data["created"] == 1
     assert len(data["errors"]) == 2
     assert all("naveden večkrat" in e for e in data["errors"])
-    # geslo si je aplikacija izmislila in ga vrnila
+    # geslo se NE vrača — gesel ne izpisujemo nikoli (zahteva 2026-09-29)
     assert len(data["users"]) == 1
-    assert data["users"][0]["password"]
+    assert "password" not in data["users"][0]
 
     u = _school_users()["ana.novak@guest.arnes.si"]
     assert u.role.value == "teacher"
     assert u.first_name == "ime1"
 
 
-def test_distinct_usernames_all_created_and_login_works(client, make_user):
-    """Ločena uporabniška imena, brez gesel → vsi se uvozijo, vsak dobi svoje
-    izmišljeno geslo, s katerim se lahko PRIJAVI (geslo je veljavno)."""
+def test_distinct_usernames_all_created_without_passwords_in_response(client, make_user):
+    """Ločena uporabniška imena, brez gesel → vsi se uvozijo.
+
+    Gesla se NIKOLI ne vrnejo (zahteva uporabnika 2026-09-29: gesla uporabnikov se
+    nikjer ne prikažejo). Uporabnik si geslo nastavi sam prek »Pozabljeno geslo« —
+    zato sta uporabniško ime in e-pošta enaka.
+    """
     _admin(client, make_user)
     csv_text = (
         "ana.novak@test.si,ana.novak@test.si,Ana,Novak,učitelj\n"
@@ -87,21 +91,18 @@ def test_distinct_usernames_all_created_and_login_works(client, make_user):
     assert r.status_code == 200, r.text
     data = r.json()
     assert data["created"] == 3 and data["errors"] == []
-    passwords = {u["username"]: u["password"] for u in data["users"]}
-    assert len(passwords) == 3
-    assert all(validate_password_strength(pw) is None for pw in passwords.values())
+    # v odgovoru NI nobenega gesla
+    assert all("password" not in u for u in data["users"])
+    assert {u["username"] for u in data["users"]} == {
+        "ana.novak@test.si", "bor.kralj@test.si", "cvetka.zupan@test.si",
+    }
 
     users = _school_users()
     assert users["ana.novak@test.si"].role.value == "teacher"
     assert users["bor.kralj@test.si"].role.value == "teacher"      # profesor → učitelj
     assert users["cvetka.zupan@test.si"].role.value == "vodstvo"
-    # geslo res deluje (hash ustreza izmišljenemu geslu)
-    assert verify_password(passwords["ana.novak@test.si"],
-                           users["ana.novak@test.si"].password_hash)
-
-    # ... in prijava z njim uspe
-    r2 = login(client, "ana.novak@test.si", passwords["ana.novak@test.si"])
-    assert r2.status_code in (200, 303), r2.text
+    # vsak dobi veljaven hash (račun deluje), a gesla ne pozna nihče
+    assert all(u.password_hash for u in users.values())
 
 
 # ── 2. Slovenske glave in vloge ───────────────────────────────────────
@@ -114,8 +115,8 @@ def test_slovenian_header_aliases(client, make_user):
     )
     data = _import(client, csv_text).json()
     assert data["created"] == 1 and data["errors"] == []
-    # gesla iz datoteke NE vračamo nazaj (ni razkrito v povzetku)
-    assert data["users"][0]["password"] is None
+    # v odgovoru NI nobenega gesla (tudi iz datoteke ne)
+    assert "password" not in data["users"][0]
     u = _school_users()["dana.d@test.si"]
     assert u.role.value == "teacher" and u.last_name == "Dolenc"
 

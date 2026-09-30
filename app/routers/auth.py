@@ -699,12 +699,14 @@ async def import_users_csv(request: Request, db: Session = Depends(get_db)):
         angleška (username, first_name, role, password);
       * vloga je lahko slovenska — učitelj, vodstvo, admin (tudi profesor,
         ravnatelj, skrbnik);
-      * GESLO JE NEOBVezno: če ga v vrstici ni, si ga aplikacija izmisli
-        (naključno, veljavno po pravilih šole) in ga vrne v povzetku, da ga
-        admin razdelí.
+      * GESLO JE NEOBVEZNO in se NIKOLI ne izpiše: če ga v vrstici ni, si
+        aplikacija izmisli naključno (veljavno po pravilih šole), a ga NIKJER
+        ne pokaže. Uporabnik si geslo nastavi sam prek »Pozabljeno geslo« na
+        prijavni strani — zato sta uporabniško ime in e-pošta enaka.
 
-    Vrne JSON povzetek: {created, skipped, errors, users} kjer `users` vsebuje
-    le uporabnike z GENERIRANIM geslom (gesla iz datoteke se ne vračajo).
+    Vrne JSON povzetek: {created, skipped, errors, users} — `users` vsebuje le
+    uporabniška imena in e-pošte; GESEL router ne vrača nikoli (zahteva
+    uporabnika 2026-09-29: gesla uporabnikov se nikjer ne prikazujejo).
     """
     current_user, school_id, error = _user_admin_scope(request, db)
     if error is not None:
@@ -782,8 +784,8 @@ async def import_users_csv(request: Request, db: Session = Depends(get_db)):
         new_users.append({
             "username": username,
             "email": item.get("email", ""),
-            # Vrnemo SAMO generirana gesla (gesel iz datoteke ne razkrivamo).
-            "password": password if generated else None,
+            # GESLA NE VRAČAMO NIKOLI (tudi generiranega ne). Uporabnik si ga
+            # nastavi sam prek »Pozabljeno geslo« (uporabniško ime = e-pošta).
         })
 
     try:
@@ -794,8 +796,7 @@ async def import_users_csv(request: Request, db: Session = Depends(get_db)):
 
     log_audit(db, user_id=current_user.id, username=current_user.username,
               action="import_users",
-              details=(f"school_id={school_id}, created={created}, skipped={skipped}, "
-                       f"generated_passwords={sum(1 for u in new_users if u['password'])}"),
+              details=(f"school_id={school_id}, created={created}, skipped={skipped}"),
               school_id=school_id)
     return {"created": created, "skipped": skipped, "errors": errors, "users": new_users}
 

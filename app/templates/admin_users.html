@@ -72,8 +72,11 @@
                     <p style="font-size:13px;color:#666;margin:4px 0;">
                         <strong>Vloga</strong> je lahko slovenska: <code>učitelj</code> (tudi profesor),
                         <code>vodstvo</code>, <code>admin</code>.
-                        <strong>Geslo ni potrebno</strong> — če ga v vrstici ni, si ga aplikacija
-                        izmisli in vam ga pokaže v povzetku (tega razdelite uporabnikom).
+                        <strong>Geslo ni potrebno in se nikoli ne izpiše.</strong> Če ga v vrstici ni,
+                        si ga aplikacija izmisli, a ga NE pokaže nikjer. Uporabnik si geslo nastavi
+                        sam na prijavni strani z gumbom <em>»Pozabljeno geslo?«</em> — vpiše svojo
+                        e-pošto in prejme povezavo za novo geslo. Zato sta <strong>uporabniško ime in
+                        e-pošta enaka</strong> (glej stolpec <code>email</code> zgoraj).
                         Uporabniki se dodajo v šolo, ki jo trenutno upravljate; obstoječa
                         uporabniška imena se preskočijo.
                     </p>
@@ -267,10 +270,10 @@
                                 return;
                             }
                             let msg = '✅ Uvoženih: ' + data.created + ', preskočenih: ' + data.skipped + '.';
-                            const gen = (data.users || []).filter(u => u.password);
-                            if (gen.length) {
-                                msg += '\n🔑 Izmišljena gesla (razdelite jih uporabnikom):';
-                                gen.forEach(u => { msg += '\n   ' + u.username + ' → ' + u.password; });
+                            if (data.created) {
+                                msg += '\n🔑 Gesel ne izpisujemo. Uporabniki si ga nastavijo sami:';
+                                msg += '\n   prijavna stran → »Pozabljeno geslo?« → vpišejo svojo e-pošto,';
+                                msg += '\n   na katero prejmejo povezavo za novo geslo (uporabniško ime = e-pošta).';
                             }
                             if ((data.errors || []).length) msg += '\n⚠️ Napake: ' + data.errors.join('; ');
                             box.style.color = (data.errors || []).length ? '#92400e' : 'green';

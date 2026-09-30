@@ -91,7 +91,8 @@
                 {% if f.type == 'csv' or f.type == 'json' %}
                 <textarea name="{{ f.key }}" rows="3">{{ values.get(f.key, '') }}</textarea>
                 {% elif f.type == 'password' %}
-                <input type="password" name="{{ f.key }}" value="{{ values.get(f.key, '') }}">
+                {# Gesla ne izpisujemo v HTML; prazno = ohrani obstoječe. #}
+                <input type="password" name="{{ f.key }}" value="" autocomplete="new-password">
                 {% else %}
                 <input type="text" name="{{ f.key }}" value="{{ values.get(f.key, '') }}">
                 {% endif %}
@@ -164,7 +165,11 @@
                 <label>{{ f.label }}</label>
                 <span class="key">{{ f.key }}</span>
                 {% if f.type == 'password' %}
-                <input type="password" name="{{ f.key }}" value="{{ values.get(f.key, '') }}">
+                {# Gesla NIKOLI ne izpisujemo v HTML (tudi ne predizpolnjeno).
+                   Prazno polje ob shranjevanju pomeni »ohrani obstoječe geslo«. #}
+                <input type="password" name="{{ f.key }}" value=""
+                       placeholder="{% if values.get(f.key) %}••••••  (nastavljeno — pusti prazno za nespremenjeno){% else %}Geslo{% endif %}"
+                       autocomplete="new-password">
                 {% else %}
                 <input type="text" name="{{ f.key }}" value="{{ values.get(f.key, '') }}">
                 {% endif %}
