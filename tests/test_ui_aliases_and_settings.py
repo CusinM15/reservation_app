@@ -306,6 +306,8 @@ def test_nastavitev_demo_je_javen_s_psevdo_podatki(client):
     assert "OŠ Primer" in r.text
     assert "Predogled navodil" in r.text
     assert "test@example.invalid" in r.text
+    # V predogledu NI stolpca "Kje" (gumbi bi neprijavljenega poslali v prijavo).
+    assert 'class="gumb"' not in r.text
 
 
 def test_nastavitev_brez_prijave_brez_demo_preusmeri_na_prijavo(client):

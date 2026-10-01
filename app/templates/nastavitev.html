@@ -88,7 +88,7 @@
         <th style="width:70px;">Stanje</th>
         <th>Kaj</th>
         <th>Trenutna vrednost</th>
-        <th style="width:130px;">Kje</th>
+        {% if not demo %}<th style="width:130px;">Kje</th>{% endif %}
       </tr>
       {% for item in items %}
       <tr>
@@ -98,7 +98,7 @@
           <div class="opis">{{ item.opis }}</div>
         </td>
         <td><span class="vrednost">{{ item.trenutno }}</span></td>
-        <td><a class="gumb" href="{{ item.kje }}">{{ item.kje_napis }}</a></td>
+        {% if not demo %}<td><a class="gumb" href="{{ item.kje }}">{{ item.kje_napis }}</a></td>{% endif %}
       </tr>
       {% endfor %}
     </table>
@@ -181,13 +181,70 @@
     </table>
     <p class="muted">
       Dodatna omejitev so <strong>zasedeni datumi</strong> (športni dan, izlet, prireditve): na te
-      datume ocenjevanj ni mogoče vpisovati, učitelji pa jih vidijo v koledarju. Doda jih vodstvo
-      oziroma administrator v istih nastavitvah.
+      datume ocenjevanj ni mogoče vpisovati, učitelji pa jih vidijo v koledarju.
+      <strong>Ne urejajo se v teh nastavitvah</strong> — vodstvo oziroma administrator jih označi
+      v <strong>koledarju</strong> na glavni strani aplikacije (gumb za dneve dejavnosti, kjer izbere
+      razrede in obdobje). Več o tem spodaj.
     </p>
     <div class="navodila">
       Primer: če šola dovoli 3 ocenjevanja na teden, povečajte »Največ na teden« na 3 (in po
       potrebi »z ponavljanjem« na 4). Če želite strožje, znižajte vrednosti — npr. 1 na teden in
       1 na dan.
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>Dnevi dejavnosti (Vnos dejavnosti)</h2>
+    <p class="muted">
+      Dejavnosti (športni dan, izlet, kulturni dan, naravoslovni dan …) se urejajo na posebni
+      strani <strong>»Vnos dejavnosti«</strong> — povezava je v zavihku
+      <em>Ocenjevanje in dnevi dejavnosti</em> (pot <code>/dejavnosti</code>). Ureja jih vodstvo
+      oziroma administrator; učitelji stran vidijo samo za branje.
+    </p>
+
+    <h2 style="font-size:1rem;margin-top:16px;">Kako se doda</h2>
+    <ol class="koraki">
+      <li>Na strani <strong>»Vnos dejavnosti«</strong> kliknite <strong>»＋ Nova dejavnost«</strong>.</li>
+      <li>Vpišite <strong>naziv</strong> (npr. <em>Športni dan</em>) in <strong>datum</strong> (ali
+          razpon »Več dni / Do«).</li>
+      <li>Izberite <strong>razrede</strong>, ki jih dejavnost zadeva (npr. 3. a, 3. b).</li>
+      <li>Neobvezno izberite <strong>prostore</strong> (npr. telovadnico) in <strong>vodjo</strong>.</li>
+      <li>Obkljukajte <strong>»Celoten dan«</strong>, če dejavnost traja ves dan (glej spodaj), in
+          shranite.</li>
+    </ol>
+
+    <h2 style="font-size:1rem;margin-top:16px;">Kako vpliva</h2>
+    <table>
+      <tr><th>Nastavitev</th><th>Kaj pomeni</th></tr>
+      <tr>
+        <td><strong>Celoten dan</strong> (obkljukano)</td>
+        <td>Dan se <strong>zablokira za ocenjevanja</strong> za izbrane razrede — morebitna
+            ocenjevanja na ta dan se izbrišejo, prizadeti učitelji pa prejmejo obvestilo po e-pošti.
+            Če so izbrani prostori, se <strong>rezervirajo ure 1–5</strong> v teh prostorih. Dan se
+            prikaže v koledarju (vijolično).</td>
+      </tr>
+      <tr>
+        <td><strong>Celoten dan</strong> (brez kljukice)</td>
+        <td>Krajša dejavnost: ocenjevanja <strong>niso</strong> blokirana in dan se v koledarju ne
+            prikaže kot blokada. Primerno, kadar dejavnost traja le del dneva.</td>
+      </tr>
+      <tr>
+        <td><strong>Ročna blokada v koledarju</strong></td>
+        <td>Če želite zaseden dan <em>brez</em> zapisa v dejavnostih, ga označite v
+            <strong>koledarju</strong> na glavni strani (gumb za dneve dejavnosti: izberete razrede in
+            obdobje). Taka blokada v dejavnostih nima zapisa — v koledarju je označena kot
+            »ročno blokirano«.</td>
+      </tr>
+      <tr>
+        <td><strong>Urejanje / brisanje</strong></td>
+        <td>Ko dejavnost uredite ali izbrišete, aplikacija samodejno odstrani stare blokade in
+            rezervacije za ta zapis ter postavi nove — koledar vedno odraža trenutno stanje.</td>
+      </tr>
+    </table>
+    <div class="navodila">
+      Primer: <em>Športni dan za 3. a in 3. b, 14. 9. 2026, telovadnica, »Celoten dan«</em> — ob
+      shranjevanju se 14. 9. 2026 zablokira za ocenjevanja obeh razredov, ure 1–5 pa se rezervirajo v
+      telovadnici.
     </div>
   </div>
 
