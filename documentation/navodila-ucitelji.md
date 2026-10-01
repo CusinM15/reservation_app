@@ -3,17 +3,17 @@
 
 > 👋 **Pozdravljeni, kolegice in kolegi!**
 >
-> Aplikacija za rezervacijo prostorov (računalnice, ladje, gospodinjske učilnice in tablic) in za napoved pisnih testov. Tale vodnik je kratek in jedrnat — skozi slike boste v trenutku ugotovili, kako vse deluje. 😊
+> Aplikacija za rezervacijo prostorov (npr. računalnice in tablice) in za napoved pisnih testov. Tale vodnik je kratek in jedrnat — skozi slike boste v trenutku ugotovili, kako vse deluje. 😊
 
 ---
 
-# 👩‍🏫 Navodila za učitelje — OŠ Toneta Čufarja Jesenice
+# 👩‍🏫 Navodila za učitelje
 
 ---
 
 ## 1. Kako vstopiti v aplikacijo?
 
-Obiščite [aplikacijo](https://ostc-app.org). Da dobite geslo, pritisnite gumb **Pozabljeno geslo?** in vnesite svoj **šolski e-poštni naslov** (@guest.arnes.si). V kratkem boste prejeli e-pošto od `os-toneta.cufarja-jesenice@guest.arnes.si`.
+Obiščite spletni naslov aplikacije svoje šole. Da dobite geslo, pritisnite gumb **Pozabljeno geslo?** in vnesite svoj **šolski e-poštni naslov**. V kratkem boste prejeli e-pošto s pošiljateljevega naslova vaše šole.
 
 Če sporočila ne prejmete, javite administratorju, naj preveri, ali je vaš e-poštni naslov pravilno vnesen v bazo (v sporočilu navedite svoj pravilni e-poštni naslov).
 
@@ -52,14 +52,12 @@ Po uspešni prijavi se odpre stran **Rezervacije**.
 
 ## 4. Rezervacije
 
-Na voljo so **4 različni prostori**:
+Katere prostore lahko rezervirate, je odvisno od **nastavitev vaše šole**. Poznamo dve vrsti:
 
-| Prostor | Kako deluje? |
+| Vrsta prostora | Kako deluje? |
 |---|---|
-| 🖥️ **Računalnica** | Samo **ena** rezervacija na termin |
-| 🚢 **Ladja** | Samo **ena** rezervacija na termin |
-| 📱 **Tablice** | Več učiteljev **lahko rezervira** sočasno — skupaj največ **28 tablic** |
-| 🍳 **Gospodinjska učilnica** | Samo **ena** rezervacija na termin |
+| **Ekskluzivni prostor** | Samo **ena** rezervacija na termin (npr. računalnica) |
+| **Prostor z več enotami** | Več učiteljev lahko rezervira **sočasno** — vsak navede količino, skupna vsota na uro pa je omejena s kapaciteto prostora (npr. tablice) |
 
 ![Stran z rezervacijami](slike/ucitelji_img_2.png)
 
@@ -73,14 +71,14 @@ Vse podatke nastavite v oknu, ki se odpre.
 
 ![Okno za novo rezervacijo](slike/ucitelji_img_4.png)
 
-V tem oknu izberete **Prostor** iz spustnega menija. Ure so po urniku zadnje triade. Pri **Računalnici**, **Gospodinjski učilnici** in **Ladji** je to vse, pri **Tablicah** pa morate izbrati tudi **število tablic**. V vsakem polju je prikazano, koliko tablic je še prostih (oblika `x/28`).
+V tem oknu izberete **Prostor** iz spustnega menija; ure so po urniku vaše šole. Pri prostoru z več enotami izberete tudi **količino** — pri vsakem je prikazano, koliko enot je še prostih (oblika `x/N`).
 
 ![Podrobnosti rezervacije](slike/ucitelji_img_5.png)
 
-> ⚠️ **Opomba:** Če so tablice za posamezen termin že delno rezervirane, rezervacije prek gumba `+` ni mogoče izvesti — uporabite gumb **Nova rezervacija**.
+> ⚠️ **Opomba:** Če je prostor z več enotami za posamezen termin že delno rezerviran, rezervacije prek gumba `+` ni mogoče izvesti — uporabite gumb **Nova rezervacija**.
 
 **Brisanje rezervacije:**
-Vodstvo ima pravico do brisanja **kakršnekoli** rezervacije, učitelji pa lahko brišejo **samo lastne**. Vodstvo ima poleg tega na voljo še 2 dodatna načina za ustvarjanje rezervacij. Če imate vi za ta termin že rezerviran prostor, se vaša rezervacija ob tem prekliče (razen pri tablicah, kadar skupna vsota ni presežena).
+Vodstvo ima pravico do brisanja **kakršnekoli** rezervacije, učitelji pa lahko brišejo **samo lastne**. Vodstvo ima poleg tega na voljo še 2 dodatna načina za ustvarjanje rezervacij. Če imate vi za ta termin že rezerviran prostor, se vaša rezervacija ob tem prekliče (razen pri prostorih z več enotami, kadar skupna vsota ni presežena).
 
 ![Pregled rezervacij](slike/ucitelji_img_3.png)
 
@@ -120,6 +118,21 @@ V oknu je na voljo tudi **Ponavljanje** – ko ga obkljukate, se spremenijo prav
 Vodstvo lahko določene datume označi kot **dan dejavnosti** (npr. športni dan). Če ste imeli za ta dan že napovedano ocenjevanje, boste prejeli samodejno e-poštno obvestilo.
 
 ![Stran z dnevi dejavnosti](slike/ucitelji_img_9.png)
+
+### 🟣 Vijolično polje »Dejavnosti:« v koledarju
+
+V koledarju je pri dnevu, ko ima kateri od vaših razredov dejavnost, **vijolično
+polje »Dejavnosti:«**. Klik na to polje odpre seznam vseh dejavnosti tega dne.
+
+V seznamu je za vsako dejavnost naveden **razred** in oznaka:
+
+| Oznaka | Pomen |
+|---|---|
+| 🟣 **Celoten dan** | Dejavnost traja **ves dan** — na ta dan za ta razred ocenjevanja **niso mogoča**. Če ste jih imeli napovedana, so bila izbrisana in prejeli ste obvestilo. |
+| 🟢 **Ne traja cel dan** | **Krajša** dejavnost — ocenjevanja so na ta dan **še vedno mogoča**. |
+
+> 💡 Tako na prvi pogled veste, kateri dan je »zaprt« za teste (cela dejavnost)
+> in kdaj lahko test vseeno napoveste (krajša dejavnost).
 
 Na strani za ocenjevanje je na voljo tudi **spustni meni za filtriranje**:
 Izberete posamezen razred ali — za 8. in 9. razred — celotno generacijo. S filtri lažje pregledate, kateri dan kdo še lahko piše.

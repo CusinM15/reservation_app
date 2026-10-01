@@ -5,8 +5,8 @@
 > Vodstvo in učitelji tega dokumenta ne vidijo.
 >
 > Administrator skrbi za **nastavitve šole, uporabnike, e-pošto, naročnino in
-> varnostne kopije**. Za vsakodnevno delo (rezervacije, ocenjevanja, dnevi
-> dejavnosti) glejte *Navodila za vodstvo* in *Navodila za učitelje*.
+> varnostne kopije**. Za vsakodnevno delo (rezervacije, ocenjevanja) glejte
+> *Navodila za vodstvo* in *Navodila za učitelje*.
 
 ---
 
@@ -23,6 +23,7 @@
 | 🧭 **Navodila za nastavitev šole** (kaj še urediti) | <code>/nastavitev</code> |
 | 💶 **Naročnina šole** | ⚙️ Nastavitve šole → razdelek *Naročnina šole* (ali <code>/narocnina</code>) |
 | 💾 **Varnostna kopija in obnova** | ⚙️ Nastavitve šole → *Varnostna kopija* / *Obnova* |
+| 🗓️ **Dnevi dejavnosti** | Stran **Vnos dejavnosti** (zavihek *Ocenjevanje in dnevi dejavnosti*, <code>/dejavnosti</code>) ali **koledar** |
 | 📋 **Dnevnik sprememb (audit log)** | Zgornji meni → **📋 Audit log** |
 
 > 💡 **Namig:** Skoraj vse administratorjeve nastavitve so na enem mestu —
@@ -36,15 +37,11 @@ Uporabniško ime uporabnika je **njegov šolski e-poštni naslov**. Gesla se
 **nikjer ne izpisujejo** — vsak uporabnik si ga nastavi sam prek gumba
 **Pozabljeno geslo?** na prijavni strani.
 
-### Ročno urejanje (Admin panel)
+### Ročni vnos uporabnikov
 
-| Funkcija | Opis |
-|---|---|
-| Dodajanje | Vnesete e-pošto, ime, priimek in vlogo |
-| Pregled | Tabela vseh uporabnikov (klik na stolpec za razvrščanje) |
-| Urejanje | »Uredi« — če geslo pustite prazno, ostane nespremenjeno |
-| Deaktivacija / Aktivacija | Uporabniku onemogočite ali ponovno omogočite dostop |
-| Brisanje | Trajno izbriše uporabnika (glavni admin, ID=1, je zaščiten) |
+Priporočljivo **samo med šolskim letom** (ko nastopi nov učitelj sredi leta in ga
+je treba dodati sproti). Na začetku šolskega leta je bolje uporabiti uvoz
+(glej spodaj).
 
 ### Uvoz iz CSV datoteke
 
@@ -56,19 +53,34 @@ preskočijo.
 
 ### Uvoz zaposlenih s skripto
 
-Skripta prebere seznam zaposlenih kar s šolske spletne strani (samo bere, nič
-ne spreminja):
+Skripta **samodejno prebere seznam zaposlenih kar s šolske spletne strani** — ni
+ročnega vnašanja, ni Excel tabel. Prebere vse tabele z zaposlenimi (vodstvo,
+učitelje, administracijo, tehnično osebje). Skripta samo **bere**, na spletni
+strani ničesar ne spreminja.
 
 ```bash
 cd /home/admin/reservation_app
 python3 scripts/import_teachers.py --base-url https://ostc-app.org
 
-# Preizkus (brez dejanskih sprememb):
+# Preizkus (brez dejanskih sprememb) — pokaže, koga bi uvozilo:
 python3 scripts/import_teachers.py --dry-run
 
 # Z administracijo in tehničnim osebjem:
 python3 scripts/import_teachers.py --base-url https://ostc-app.org --include-all
 ```
+
+### Upravljanje uporabnikov
+
+**Dostop:** V zgornji navigaciji kliknite **Admin panel**.
+
+| Funkcija | Opis |
+|---|---|
+| Dodajanje | Vnesete e-pošto, ime, priimek, geslo, vlogo |
+| Pregled | Tabela vseh uporabnikov — klik na stolpec za razvrščanje |
+| Urejanje | Kliknite »Uredi«. Če geslo pustite prazno, ostane nespremenjeno |
+| Deaktivacija / Aktivacija | Uporabniku onemogočite ali ponovno omogočite dostop |
+| Brisanje | Trajno izbriše uporabnika (glavni admin, ID=1, je zaščiten) |
+| Sprememba gesla | Admin lahko kadarkoli spremeni geslo uporabniku |
 
 ---
 
@@ -79,12 +91,23 @@ Na strani **⚙️ Nastavitve šole** uredite vse, kar določa delovanje za vaš
 
 | Razdelek | Kaj urejate |
 |---|---|
-| **Razredi** | Seznam oddelkov (npr. `1. a`). Vsak razred v svoji vrstici; dodate z **＋ Dodaj razred** |
+| **Razredi** | Seznam oddelkov. Vsak razred v svoji vrstici; dodate z **＋ Dodaj razred** |
 | **Števila** | Imenovane številske spremenljivke (npr. `Število tablic = 28`) |
 | **Prostori** | Prostori za rezervacijo. Kljukica **»število«** poveže prostor s številsko spremenljivko — tak prostor si lahko izposodi več učiteljev hkrati (vsak navede količino) |
 | **Urnik** | Ure pouka (npr. `07:30-08:15`) |
 | **Pravila ocenjevanja** | Največ ocenjevanj na teden / dan / z ponavljanjem / zaporednih dni |
 | **E-pošta (SMTP)** | Naslov admina, naslov pošiljatelja (From), naslov za varnostne kopije, SMTP strežnik, uporabniško ime in geslo |
+
+### Razredi = skupine od 1. do 9. razreda
+
+V polju **Razredi** vpišete vse oddelke (skupine) šole — **od 1. do 9. razreda**.
+Vsak razred v svojo vrstico, npr. `1. a`, `1. b`, `2. a`, … `9. č`. Uporabljajo se
+pri rezervacijah, ocenjevanjih in **dnevih dejavnosti**, zato morajo biti vpisani
+točno tako, kot jih šola uporablja.
+
+> ℹ️ Za **8. in 9. razred** se pogosto uporabljajo *skupinsko-razredne oznake*
+> (npr. `8. a` in `8. 1`), kjer številka pomeni skupino. Vpišite jih enako kot
+> velja pri vas — aplikacija jih obravnava kot ločene razrede.
 
 > 🔒 **Geslo SMTP se nikoli ne izpiše.** Če polje pustite prazno, se obstoječe
 > geslo **ohrani**. Novo geslo vpišete le, ko ga želite zamenjati.
@@ -159,19 +182,67 @@ s podatki iz kopije; podatki drugih šol ostanejo nedotaknjeni.
 
 ---
 
-## 7. Dnevi dejavnosti in zasedeni datumi
+## 7. Dnevi dejavnosti — kaj in kako dela
 
-Urejajo se **v koledarju** (glavna stran aplikacije) oziroma na strani
-**Vnos dejavnosti** — **ne** v Nastavitvah šole. Podrobno je opisano v
-*Navodilih za vodstvo* (razdelek *Ocenjevanje in dnevi dejavnosti*).
+**Dan dejavnosti** je dan, ko razred ne more pisati ocenjevanj in (običajno) ni
+pouka — npr. športni dan, kulturni dan, naravoslovni dan, tehniški dan, ekskurzija,
+šolska prireditev.
+
+Dejavnosti se urejajo na strani **Vnos dejavnosti** (povezava v zavihku
+*Ocenjevanje in dnevi dejavnosti*, pot `/dejavnosti`). Ureja jih **vodstvo ali
+admin**; učitelji stran vidijo samo za branje. Vsak razred (generacija od 1. do 9.)
+ima svoj zavihek.
+
+### Kako se doda
+
+1. Odprite razred (zavihek **1.–9.**) in kliknite **＋ [vrsta] DAN** (npr.
+   **＋ ŠPORTNI DAN**) ali **＋ Dodaj dogodek / tedensko rezervacijo**.
+2. Vpišite **naziv** dejavnosti in po potrebi **pod dejavnost**.
+3. Obkljukajte **»Celoten dan«**, če dejavnost traja ves dan (glej spodaj).
+4. V razdelku **Datumi** vpišite datum (**Od**) in izberite **razrede**
+   (posamezne oddelke npr. `3. a`, `3. b` — ali **Vsi razredi generacije**).
+5. Po potrebi izberite **prostore** (npr. telovadnico) in **vodjo** ter shranite.
+
+### Večdnevna dejavnost (npr. ekskurzija za več dni)
+
+1. V razdelku **Datumi** kliknite **＋ Dodaj datum**.
+2. Vpišite **Od** (prvi dan).
+3. Obkljukajte **»Več dni«** in v polje **Do** vpišite **zadnji dan**.
+4. Shranite — dejavnost velja **za vsak zaporedni dan v tem obsegu** (za izbrane
+   razrede). Vsak dan posebej se zablokira za ocenjevanja in (ob izbranih
+   prostorih) rezervira ure 1–5.
+
+> 💡 Za isto dejavnost lahko dodate tudi **več ločenih datumov** (vsak s svojimi
+> razredi) — kliknete **＋ Dodaj datum** tolikokrat, kolikor terminov potrebujete.
+
+### Kako vpliva
+
+| Nastavitev | Kaj pomeni |
+|---|---|
+| **»Celoten dan« (obkljukano)** | Dan se **zablokira za ocenjevanja** za izbrane razrede — obstoječa ocenjevanja na ta dan se izbrišejo, prizadeti učitelji pa prejmejo obvestilo po e-pošti. Če so izbrani prostori, se **rezervirajo ure 1–5** v teh prostorih. Dan se prikaže v koledarju (vijolično polje **Dejavnosti:**). |
+| **»Celoten dan« (brez kljukice)** | Krajša dejavnost: ocenjevanja **niso** blokirana in dan se v koledarju ne prikaže kot blokada. Primerno, kadar dejavnost traja le del dneva. |
+| **Ročna blokada v koledarju** | Če želite zaseden dan **brez** zapisa v dejavnostih, ga označite v **koledarju** na glavni strani (gumb za dneve dejavnosti: izberete razrede in obdobje). Taka blokada v dejavnostih nima zapisa — v koledarju je označena kot »ročno blokirano«. |
+| **Urejanje / brisanje** | Ko dejavnost uredite ali izbrišete, aplikacija samodejno odstrani stare blokade in rezervacije za ta zapis ter postavi nove — koledar vedno odraža trenutno stanje. |
+
+> ⚠️ Če posamezno rezervacijo izbrišete z `✕` (v rezervacijah), **nihče ne dobi
+> obvestila**. Za samodejno obveščanje uporabite dneve dejavnosti.
 
 ---
 
 ## 8. Audit log (dnevnik sprememb)
 
-**📋 Audit log** omogoča pregled vseh pomembnih sprememb — kdo je kaj naredil in
-kdaj (rezervacije, serije, ocenjevanja, dnevi dejavnosti, uporabniki, spremembe
-gesel, nastavitve prodaje …). Uporabno za sledljivost in odpravljanje napak.
+**📋 Audit log** omogoča **pregled vseh pomembnih sprememb v sistemu** — kdo je kaj
+naredil in kdaj. Uporabno za sledljivost in odpravljanje napak.
+
+| Akcija | Opis |
+|--------|------|
+| `create_rezervacija` / `delete_rezervacija` | Ustvarjena / izbrisana rezervacija |
+| `create_series` / `delete_series` | Ustvarjena / izbrisana serija |
+| `create_ocenjevanje` / `delete_ocenjevanje` | Napovedano / izbrisano ocenjevanje |
+| `create_blocked_dates` / `delete_blocked_date` | Dodani / odstranjeni dnevi dejavnosti |
+| `create_user` / `update_user` / `delete_user` | Spremembe uporabnikov |
+| `change_password` | Sprememba gesla |
+| `save_selling_settings` | Sprememba nastavitev prodaje |
 
 ---
 
@@ -184,6 +255,8 @@ gesel, nastavitve prodaje …). Uporabno za sledljivost in odpravljanje napak.
 | **Učitelj** | Vsi pedagoški delavci | Osnovne rezervacije in ocenjevanja |
 
 **Z eno besedo:** admin skrbi za sistem, vodstvo za urnik, učitelji za pouk.
+
+> Pravilna dodelitev vlog preprečuje težave in zlorabe.
 
 ---
 

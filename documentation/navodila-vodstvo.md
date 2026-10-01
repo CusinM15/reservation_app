@@ -75,6 +75,33 @@ To uporabite za:
 | Od datuma | Prvi dan dejavnosti |
 | Do datuma | Zadnji dan dejavnosti |
 
+### Razredi (skupine) od 1. do 9. razreda
+
+Dejavnosti so urejene **po razredih (generacijah) od 1. do 9. razreda** — vsak
+razred ima na strani *Vnos dejavnosti* svoj zavihek. V vsaki vrstici termina
+izberete, za katere **razrede (skupine)** dejavnost velja: posamezne črkovne
+oddelke (npr. `3. a`, `3. b`) ali kar **»Vsi razredi generacije«**.
+
+> ℹ️ Za **8. in 9. razred** se pogosto uporabljajo skupinsko-razredne oznake
+> (npr. `8. a` in `8. 1`), kjer številka pomeni skupino.
+
+### Večdnevna dejavnost (npr. ekskurzija za več dni)
+
+1. V razdelku **Datumi** kliknite **＋ Dodaj datum**.
+2. Vpišite **Od** (prvi dan).
+3. Obkljukajte **»Več dni«** in v polje **Do** vpišite **zadnji dan**.
+4. Shranite — dejavnost velja za **vsak zaporedni dan v tem obsegu**; vsak dan se
+   zablokira za ocenjevanja in (ob izbranih prostorih) rezervira ure 1–5.
+
+> 💡 Za isto dejavnost lahko dodate tudi **več ločenih datumov** — kliknete
+> **＋ Dodaj datum** tolikokrat, kolikor terminov potrebujete.
+
+### Celi dan ali krajša dejavnost
+
+- **»Celoten dan«** (obkljukano): dan se zablokira za ocenjevanja, obstoječa se
+  izbrišejo (učitelji dobijo e-pošto), ob izbranih prostorih se rezervirajo ure 1–5.
+- **Brez kljukice**: krajša dejavnost — ocenjevanja **niso** blokirana.
+
 Prav tako učitelji ne morejo napovedati ocenjevanja na dan, ko ima razred dan dejavnosti.
 
 **Kaj se zgodi, ko shranite:**
@@ -147,78 +174,8 @@ Uporaba teh navodil je enaka kot pri navodilih za učitelje (razložena v tistih
 >
 > 📄 **Podrobna navodila za administratorja** so v ločenem dokumentu
 > **»Navodila za administratorja«** — v aplikaciji je zanj gumb **🛠️ Admin** na
-> desni strani, ki ga vidi **samo admin**.
-
----
-
-## 📋 Audit log — dnevnik sprememb
-
-![Audit log pregled — filter, tabela, iskanje po akcijah](diagrams/audit-log-zgodovina.png)
-
-Audit log omogoča **pregled vseh pomembnih sprememb v sistemu** — kdo je kaj naredil in kdaj.
-
-**Kaj se beleži:**
-
-| Akcija | Opis |
-|--------|------|
-| `create_rezervacija` | Ustvarjena enkratna rezervacija |
-| `delete_rezervacija` | Izbrisana rezervacija |
-| `create_series` | Ustvarjena tedenska/celodnevna serija |
-| `delete_series` | Izbrisana celotna serija |
-| `create_ocenjevanje` | Napovedano ocenjevanje |
-| `delete_ocenjevanje` | Izbrisano ocenjevanje |
-| `create_blocked_dates` | Dodani dnevi dejavnosti |
-| `delete_blocked_date` | Odstranjen dan dejavnosti |
-| `create_user` | Ustvarjen nov uporabnik |
-| `update_user` | Posodobljen uporabnik |
-| `delete_user` | Izbrisan uporabnik |
-| `change_password` | Sprememba gesla |
-
-### Ročni vnos uporabnikov
-
-**Priporočljivo samo med šolskim letom** — ko nastopi nov učitelj sredi leta in ga
-je treba dodati sproti.
-
-Na začetku šolskega leta je bolje:
-1. Izbrisati vse uporabnike
-2. Uvoziti jih na novo s skripto (glej spodaj)
-
-### Uvoz zaposlenih s skripto
-
-Skripta **samodejno prebere seznam zaposlenih kar s šolske spletne strani** —
-ni ročnega vnašanja, ni Excel tabel, ni prepisovanja.
-
-**Od kod vzame podatke?**
-Skripta gre na `https://www.tonecufar.si/o-soli/zaposleni/` in
-samodejno prebere vse tabele z zaposlenimi — vodstvo, učitelje,
-administracijo, tehnično osebje. Vse kar morate vedeti je, da
-**podatki prihajajo neposredno s šolske spletne strani**.
-
-**(Ne skrbite — skripta samo bere, ne spreminja ničesar na spletni strani.)**
-
-```bash
-cd /home/admin/reservation_app
-python3 scripts/import_teachers.py --base-url https://ostc-app.org
-
-# Preizkus (brez dejanskih sprememb) — pokaže koga bi uvozilo:
-python3 scripts/import_teachers.py --dry-run
-
-# Z vključitvijo administracije in tehničnega osebja:
-python3 scripts/import_teachers.py --base-url https://ostc-app.org --include-all
-```
-
-### Upravljanje uporabnikov
-
-**Dostop:** V zgornji navigaciji kliknite **Admin panel**.
-
-| Funkcija | Opis |
-|---|---|
-| Dodajanje | Vnesete email, ime, priimek, geslo, vlogo |
-| Pregled | Tabela vseh uporabnikov — klik na stolpec za razvrščanje |
-| Urejanje | Kliknite »Uredi«. Če geslo pustite prazno, ostane nespremenjeno |
-| Deaktivacija / Aktivacija | Uporabniku onemogočite ali ponovno omogočite dostop |
-| Brisanje | Trajno izbriše uporabnika (admin z ID=1 je zaščiten) |
-| Sprememba gesla | Admin lahko kadarkoli spremeni geslo uporabniku |
+> desni strani, ki ga vidi **samo admin** (nastavitve šole, uporabniki, e-pošta,
+> naročnina, varnostne kopije, audit log).
 
 ---
 

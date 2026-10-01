@@ -63,10 +63,11 @@ DOC_LABELS = {
 # Noto Color Emoji (barvni emojiji — brez njega bi bili tofu kvadratki).
 # Stil namerno posnema /docs/html/{name} preview: iste barve (#1a1a2e,
 # #4a6cf7, #f8f9fa), iste oblike (rounded vogali, podčrtani naslovi).
-# Strani so A4 z marginami 2cm, z nogo "OŠ Toneta Čufarja Jesenice".
+# Strani so A4 z marginami 2cm, z nevtralno nogo "Šolska rezervacijska aplikacija"
+# (BREZ imena posamezne šole — navodila so splošna in uporabna za vsako šolo).
 
 _PDF_CSS = """
-@page { margin: 1.8cm 2cm; @bottom-center { content: "OŠ Toneta Čufarja Jesenice"; font-size: 8pt; color: #999; } }
+@page { margin: 1.8cm 2cm; @bottom-center { content: "Šolska rezervacijska aplikacija"; font-size: 8pt; color: #999; } }
 body { font-family: 'Noto Sans', 'DejaVu Sans', sans-serif; font-size: 11pt; line-height: 1.6; color: #333; }
 h1 { font-size: 19pt; color: #1a1a2e; border-bottom: 2px solid #4a6cf7; padding-bottom: 4pt; margin-top: 20pt; font-family: 'Noto Sans', 'DejaVu Sans', sans-serif; }
 h2 { font-size: 15pt; color: #1a1a2e; border-bottom: 2px solid #4a6cf7; padding-bottom: 3pt; margin-top: 16pt; font-family: 'Noto Sans', 'DejaVu Sans', sans-serif; }
@@ -136,7 +137,7 @@ def _make_pdf(md_content: str, title: str) -> bytes:
 <body>
 <div class="title-page">
   <h1>{html_mod.escape(title)}</h1>
-  <p class="sub">OŠ Toneta Čufarja Jesenice</p>
+  <p class="sub">Navodila za uporabo</p>
   <hr>
 </div>
 {body_html}

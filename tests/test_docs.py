@@ -38,3 +38,19 @@ def test_admin_doc_pdf(client):
     assert r.status_code == 200
     assert r.headers["content-type"].startswith("application/pdf")
     assert r.content[:4] == b"%PDF"
+
+
+def test_ucitelji_navodila_so_splosna(client):
+    """Navodila za učitelje so SPLOŠNA — brez imena posamezne šole in brez njenih
+    specifičnih prostorov, da so uporabna za vsako šolo."""
+    r = client.get("/docs/html/navodila-ucitelji")
+    assert r.status_code == 200
+    for bad in ("Toneta", "Čufar", "Cufar", "tonecufar", "ostc-app", "Ladja"):
+        assert bad not in r.text, f"v navodilih ostaja specifično: {bad}"
+
+
+def test_ucitelji_en_navodila_so_splosna(client):
+    r = client.get("/docs/html/navodila-ucitelji-en")
+    assert r.status_code == 200
+    for bad in ("Toneta", "Cufar", "tonecufar", "ostc-app", "Ship"):
+        assert bad not in r.text, f"v navodilih ostaja specifično: {bad}"

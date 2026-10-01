@@ -75,6 +75,34 @@ Use this for:
 | From date | First activity day |
 | To date | Last activity day |
 
+### Classes (groups) from grade 1 to 9
+
+Activities are organised **by class (generation) from grade 1 to grade 9** — each
+class has its own tab on the *Activity entry* page. In every date row you choose
+which **classes (groups)** the activity applies to: individual classes
+(e.g. `3. a`, `3. b`) or **"All classes of the generation"**.
+
+> ℹ️ For **grades 8 and 9**, group-class notation is often used (e.g. `8. a` and
+> `8. 1`), where the number means the group.
+
+### Multi-day activity (e.g. a trip over several days)
+
+1. In the **Dates** section click **＋ Add date**.
+2. Enter **From** (the first day).
+3. Tick **»Multi-day«** and enter the **last day** in the **To** field.
+4. Save — the activity applies to **every consecutive day in that range**; each day
+   is blocked for assessments and (with selected rooms) reserves periods 1–5.
+
+> 💡 You can also add **several separate dates** for the same activity — click
+> **＋ Add date** as many times as you need.
+
+### Full day or shorter activity
+
+- **»Full day«** (ticked): the day is blocked for assessments, existing ones are
+  deleted (teachers get an email), and with selected rooms periods 1–5 are
+  reserved.
+- **Not ticked**: a shorter activity — assessments are **not** blocked.
+
 Teachers also cannot schedule an assessment on a day when their class has an activity day.
 
 **What happens when you save:**
@@ -143,76 +171,8 @@ These instructions are used exactly the same way as the teacher instructions (de
 >
 > 📄 **Detailed administrator instructions** live in a separate document,
 > **"Administrator Guide"** — in the app it has its own **🛠️ Admin** button on the
-> right-hand side, visible to the **admin only**.
-
----
-
-## 📋 Audit Log — Change History
-
-![Audit log overview — filter, table, search by action](../diagrams/audit-log-zgodovina.png)
-
-The audit log provides an **overview of all important changes in the system** — who did what and when.
-
-**What is logged:**
-
-| Action | Description |
-|---|---|
-| `create_rezervacija` | One-time reservation created |
-| `delete_rezervacija` | Reservation deleted |
-| `create_series` | Weekly/full-day series created |
-| `delete_series` | Entire series deleted |
-| `create_ocenjevanje` | Assessment scheduled |
-| `delete_ocenjevanje` | Assessment deleted |
-| `create_blocked_dates` | Activity days added |
-| `delete_blocked_date` | Activity day removed |
-| `create_user` | User created |
-| `update_user` | User updated |
-| `delete_user` | User deleted |
-| `change_password` | Password changed |
-
-### Manual User Entry
-
-**Recommended only during the school year** — when a new teacher joins mid-year and needs to be added on the spot.
-
-At the beginning of the school year, it's better to:
-1. Delete all users
-2. Re-import them using the script (see below)
-
-### Importing Employees via Script
-
-The script **automatically reads the employee list from the school website** — no manual entry, no Excel tables, no copying.
-
-**Where does it get the data?**
-The script goes to `https://www.tonecufar.si/o-soli/zaposleni/` and
-automatically reads all employee tables — management, teachers,
-administration, technical staff. All you need to know is that
-**data comes directly from the school website**.
-
-**(Don't worry — the script only reads, it doesn't change anything on the website.)**
-
-```bash
-cd /home/admin/reservation_app
-python3 scripts/import_teachers.py --base-url https://ostc-app.org
-
-# Dry run (no actual changes) — shows who would be imported:
-python3 scripts/import_teachers.py --dry-run
-
-# Including administration and technical staff:
-python3 scripts/import_teachers.py --base-url https://ostc-app.org --include-all
-```
-
-### User Management
-
-**Access:** In the top navigation, click **Admin panel**.
-
-| Function | Description |
-|---|---|
-| Adding | Enter email, first name, last name, password, role |
-| Overview | Table of all users — click a column to sort |
-| Editing | Click "Edit". Leave password blank to keep it unchanged |
-| Deactivation / Activation | Disable or re-enable a user's access |
-| Deleting | Permanently delete a user (admin with ID=1 is protected) |
-| Change password | Admin can change any user's password at any time |
+> right-hand side, visible to the **admin only** (school settings, users, email,
+> subscription, backups, audit log).
 
 ---
 

@@ -3,17 +3,17 @@
 
 > 👋 **Hello, colleagues!**
 >
-> This app lets you reserve rooms (computer lab, ship, home economics classroom, and tablets) and schedule written tests. This guide is short and to the point — the screenshots will help you figure everything out in no time. 😊
+> This app lets you reserve rooms (e.g. computer lab and tablets) and schedule written tests. This guide is short and to the point — the screenshots will help you figure everything out in no time. 😊
 
 ---
 
-# 👩‍🏫 Teacher Instructions — OŠ Toneta Čufarja Jesenice
+# 👩‍🏫 Teacher Instructions
 
 ---
 
 ## 1. How to access the app?
 
-Go to [the app](https://ostc-app.org). To get a password, click **Forgot password?** and enter your **school email address** (@guest.arnes.si). You will shortly receive an email from `os-toneta.cufarja-jesenice@guest.arnes.si`.
+Go to your school's app address. To get a password, click **Forgot password?** and enter your **school email address**. You will shortly receive an email from your school's sender address.
 
 If the email doesn't arrive, let the administrator know — they will check if your email address is correctly entered in the database (your message should include your correct email address).
 
@@ -52,14 +52,12 @@ After a successful login, the **Reservations** page opens.
 
 ## 4. Reservations
 
-There are **4 different rooms** available:
+Which rooms you can reserve depends on **your school's settings**. There are two types:
 
-| Room | How it works |
+| Room type | How it works |
 |---|---|
-| 🖥️ **Computer lab** | Only **one** reservation per slot |
-| 🚢 **Ship** | Only **one** reservation per slot |
-| 📱 **Tablets** | Multiple teachers can reserve at the same time — max **28 tablets** total |
-| 🍳 **Home economics classroom** | Only **one** reservation per slot |
+| **Exclusive room** | Only **one** reservation per slot (e.g. computer lab) |
+| **Room with multiple units** | Multiple teachers can reserve **at the same time** — each states a quantity, and the total per hour is limited by the room's capacity (e.g. tablets) |
 
 ![Reservations page](../slike/ucitelji_img_2.png)
 
@@ -73,14 +71,14 @@ Fill in all the details in the window that opens.
 
 ![New reservation window](../slike/ucitelji_img_4.png)
 
-In this window, select the **Room** from the dropdown menu. The time slots follow the school schedule's last triad. For the **Computer lab**, **Home economics classroom** and **Ship**, that's all you need. For **Tablets**, you also need to enter the **number of tablets**. Each field shows how many tablets are still available (format `x/28`).
+In this window, select the **Room** from the dropdown menu; the periods follow your school's timetable. For a room with multiple units you also enter the **quantity** — each shows how many units are still available (format `x/N`).
 
 ![Reservation details](../slike/ucitelji_img_5.png)
 
-> ⚠️ **Note:** If tablets for a specific slot are already partially reserved, you cannot use the `+` button — use the **New reservation** button instead.
+> ⚠️ **Note:** If a room with multiple units is already partially reserved for a slot, you cannot use the `+` button — use the **New reservation** button instead.
 
 **Deleting a reservation:**
-Management can delete **any** reservation, while teachers can only delete **their own**. Management also has 2 additional ways to create reservations. If you already have a reservation for that slot, it will be cancelled (except for tablets, as long as the total isn't exceeded).
+Management can delete **any** reservation, while teachers can only delete **their own**. Management also has 2 additional ways to create reservations. If you already have a reservation for that slot, it will be cancelled (except for rooms with multiple units, as long as the total isn't exceeded).
 
 ![Reservations overview](../slike/ucitelji_img_3.png)
 
@@ -120,6 +118,22 @@ The window also has a **Retake** checkbox — when checked, the rules change sli
 Management can mark certain dates as **activity days** (e.g. sports day). If you already had an assessment scheduled for that day, you will receive an automatic email notification.
 
 ![Activity days page](../slike/ucitelji_img_9.png)
+
+### 🟣 The purple "Activities:" field in the calendar
+
+In the calendar, on a day when any of your classes has an activity, there is a
+**purple "Activities:" field**. Clicking it opens a list of all that day's
+activities.
+
+In the list, each activity shows its **class** and a tag:
+
+| Tag | Meaning |
+|---|---|
+| 🟣 **Full day** | The activity lasts **all day** — on that day assessments for that class are **not possible**. If you had any scheduled, they were deleted and you were notified. |
+| 🟢 **Not a full day** | A **shorter** activity — assessments on that day are **still possible**. |
+
+> 💡 This way you can see at a glance which day is "closed" for tests (full-day
+> activity) and when you can still schedule a test (shorter activity).
 
 The assessment page also has a **filter dropdown**:
 Select a specific class or — for grades 8 and 9 — an entire cohort. Filters help you see which days are still available for testing.
