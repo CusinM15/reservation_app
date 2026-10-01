@@ -23,10 +23,25 @@
         }
         .field input[type=password] { font-family: Arial, sans-serif; }
         .field textarea { resize: vertical; min-height: 64px; }
-        .btn { padding: 9px 14px; background: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 14px; margin: 2px; }
-        .btn-success { background: #28a745; }
-        .btn-warn { background: #b45309; }
-        .btn-cancel { background: #6c757d; }
+        /* Enoten videz gumbov: vsi gumbi (Shrani, Naredi backup, obnova, Kupi
+           naročnino, + Dodaj, ✕ odstrani, Prekliči ...) so videti enako —
+           enaka oblika, velikost pisave, zaobljenost in barva. */
+        .btn, .btn-primary, .btn-success, .btn-warn, .btn-cancel {
+            display: inline-block;
+            padding: 9px 16px;
+            background: #007bff;
+            color: #fff;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-family: inherit;
+            font-size: 14px;
+            line-height: 1.2;
+            text-decoration: none;
+            margin: 3px 4px 3px 0;
+        }
+        .btn:hover, .btn-primary:hover, .btn-success:hover,
+        .btn-warn:hover, .btn-cancel:hover { background: #0056b3; }
         .hint { color: #666; font-size: 13px; }
         .ok { color: #155724; background: #d4edda; padding: 12px; border-radius: 5px; margin: 12px 0; }
         .err { color: #721c24; background: #f8d7da; padding: 12px; border-radius: 5px; margin: 12px 0; }

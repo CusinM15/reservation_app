@@ -236,7 +236,7 @@
         {% for p in cfg.plans %}
         <div>
           <label>Cena — {{ p.label }} (€)</label>
-          <input type="number" name="{% if p.id == 'leto' %}price_eur{% else %}price_half{% endif %}" min="0" value="{{ p.price }}">
+          <input type="number" name="price_eur" min="0" value="{{ p.price }}">
         </div>
         {% endfor %}
         <div>
@@ -263,7 +263,7 @@
     <p class="muted">Za vašo šolo ali za poskusno obdobje.</p>
     <form method="POST" action="/narocnina/podaljsaj">
       <input type="hidden" name="school_id" value="{{ school.id }}">
-      <label>Število mesecev (12 = leto, 6 = pol leta)</label>
+      <label>Število mesecev (12 = leto)</label>
       <input type="number" name="months" min="1" value="12" style="max-width:140px;">
       <p style="margin-top:14px;"><button class="btn btn-sm btn-ok" type="submit">Podaljšaj to šolo</button></p>
     </form>

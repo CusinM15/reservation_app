@@ -24,23 +24,20 @@ _SELLING_CACHE_AT: float = 0.0
 # Ključi v tabeli app_settings
 KEY_SELLING = "SUBSCRIPTION_SELLING"          # "1" = prodaja vklopljena, "0" = izklopljena
 KEY_PRICE = "SUBSCRIPTION_PRICE_EUR"          # cena za LETO (12 mes.) v €; 0 = brez plačila
-KEY_PRICE_HALF = "SUBSCRIPTION_PRICE_HALF_EUR"  # cena za POL LETA (6 mes.) v €; 0 = brez plačila
 KEY_PAYPAL = "SUBSCRIPTION_PAYPAL_URL"        # povezava do enkratnega plačila (izdelek)
 KEY_PAYPAL_SUB = "SUBSCRIPTION_PAYPAL_SUB_URL"  # povezava do SAMODEJNEGA (naročniškega) plačila
 KEY_NOTE = "SUBSCRIPTION_PAYMENT_NOTE"        # navodila ob plačilu (sklic, kako sporočiti)
 
-# Planа naročnine — šola izbere POL LETA ali LETO (mesečne možnosti NI).
-# Zahteva uporabnika 2026-09-29: 7 €/pol leta, 13 €/leto. Pri letni ceni 13 € ena
-# šola pokrije domeno (~12 €/leto): neto = 0,971 × 13 − 0,35 (PayPal 2,9 % + 0,35 €)
-# = 12,27 €/leto.
-PLAN_ORDER = ("polletje", "leto")
-PLAN_MONTHS = {"polletje": 6, "leto": 12}
-PLAN_LABELS = {"polletje": "pol leta", "leto": "leto"}
-PLAN_PER_LABELS = {"polletje": "na pol leta", "leto": "na leto"}
-PLAN_PRICE_KEYS = {"polletje": KEY_PRICE_HALF, "leto": KEY_PRICE}
-PLAN_PRICE_DEFAULTS = {"polletje": 7, "leto": 13}
+# Plan naročnine — zaenkrat SAMO LETO (12 mes.); polletni plan odstranjen
+# (zahteva uporabnika 2026-10-01). Cena letnega plana je nastavljiva prek
+# SUBSCRIPTION_PRICE_EUR (na šolski namestitvi ostc-app.org je 0 €).
+PLAN_ORDER = ("leto",)
+PLAN_MONTHS = {"leto": 12}
+PLAN_LABELS = {"leto": "leto"}
+PLAN_PER_LABELS = {"leto": "na leto"}
+PLAN_PRICE_KEYS = {"leto": KEY_PRICE}
+PLAN_PRICE_DEFAULTS = {"leto": 13}
 
-DEFAULT_PRICE_HALF_EUR = PLAN_PRICE_DEFAULTS["polletje"]
 DEFAULT_PRICE_EUR = PLAN_PRICE_DEFAULTS["leto"]
 DEFAULT_PAYPAL_URL = ""
 DEFAULT_PAYPAL_SUB_URL = ""
@@ -108,7 +105,7 @@ def _parse_price(raw, default: int) -> int:
 
 
 def plan_price(db: Session, plan_id: str) -> int:
-    """Cena za posamezni plan (``polletje``/``leto``) v €; 0 = brez plačila."""
+    """Cena LETNEGA plana v €; 0 = brez plačila."""
     plan_id = plan_id if plan_id in PLAN_MONTHS else "leto"
     key = PLAN_PRICE_KEYS[plan_id]
     return _parse_price(
@@ -118,12 +115,12 @@ def plan_price(db: Session, plan_id: str) -> int:
 
 
 def plans(db: Session) -> list[dict]:
-    """Seznam planov (pol leta, leto) s cenami — za prikaz in izbiro šole."""
+    """Seznam planov (samo leto) s ceno — za prikaz in izbiro šole."""
     return [_plan_dict(db, pid) for pid in PLAN_ORDER]
 
 
 def plan_by_id(db: Session, plan_id: str) -> dict:
-    """Vrni plan po oznaki (``polletje``/``leto``); neznano → LETNI plan.
+    """Vrni plan po oznaki (``leto``); neznano → LETNI plan (privzeti).
 
     Nikoli ne vrne None — klicatelj dobi vedno veljaven plan (privzeto letni).
     """
@@ -182,7 +179,7 @@ def selling_config(db: Session) -> dict:
         "price_eur": price_eur(db),                 # letni plan (nazajzdružljivost)
         "free": is_free(db),
         "plans": plan_list,
-        # Povzetek cen za besedila, npr. »7 € / pol leta ali 13 € / leto«.
+        # Povzetek cen za besedila, npr. »13 € / leto«.
         "price_label": " ali ".join(f"{p['price']} € / {p['label']}" for p in plan_list),
         "paypal_url": paypal_url(db),
         "paypal_sub_url": paypal_subscription_url(db),
@@ -198,15 +195,12 @@ def save_selling_config(
     paypal: str | None,
     note: str | None,
     paypal_sub: str | None = None,
-    price_half: str | int | None = None,
 ) -> None:
     """Shrani nastavitve prodaje (kliče glavni admin).
 
-    `price` je cena LETNEGA plana, `price_half` cena POLETNEGA; če `price_half`
-    ni podan, se obstoječa vrednost ne spremeni. Cena 0 pomeni »brez plačila«
-    (naročnino je treba vseeno obnoviti za vsako obdobje); prazna/neveljavna
-    vrednost pade na privzeto ceno, da se v obrazcu ne da »pokvariti« nastavitve
-    s tipkarsko napako.
+    `price` je cena LETNEGA plana. Cena 0 pomeni »brez plačila« (naročnino je
+    treba vseeno obnoviti za vsako obdobje); prazna/neveljavna vrednost pade na
+    privzeto ceno, da se v obrazcu ne da »pokvariti« nastavitve s tipkarsko napako.
     """
     def _clean(value, default: int) -> str:
         text = str(value if value is not None else "").strip()
@@ -221,8 +215,6 @@ def save_selling_config(
 
     set_app_setting(db, KEY_SELLING, "1" if enabled else "0")
     set_app_setting(db, KEY_PRICE, _clean(price, DEFAULT_PRICE_EUR))
-    if price_half is not None:
-        set_app_setting(db, KEY_PRICE_HALF, _clean(price_half, DEFAULT_PRICE_HALF_EUR))
     set_app_setting(db, KEY_PAYPAL, (paypal or "").strip())
     set_app_setting(db, KEY_PAYPAL_SUB, (paypal_sub or "").strip())
     set_app_setting(db, KEY_NOTE, (note or "").strip())

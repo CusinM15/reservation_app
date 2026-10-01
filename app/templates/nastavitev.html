@@ -24,8 +24,14 @@
         .vrednost { font-family: "DejaVu Sans Mono", Consolas, monospace; font-size: 0.85rem;
                     color: #475569; word-break: break-word; }
         .opis { font-size: 0.9rem; color: #444; }
-        a.gumb { display: inline-block; padding: 6px 12px; background: #007bff; color: #fff;
-                 border-radius: 5px; text-decoration: none; font-size: 0.85rem; white-space: nowrap; }
+        /* Gumbi na tej strani so videti enako kot gumbi v Nastavitvah šole
+           (enaka oblika, velikost, zaobljenost in barva). */
+        a.gumb { display: inline-block; padding: 9px 16px; background: #007bff; color: #fff;
+                 border-radius: 6px; text-decoration: none; font-size: 14px;
+                 line-height: 1.2; white-space: nowrap; }
+        a.gumb:hover { background: #0056b3; }
+        .nav { margin-bottom: 14px; }
+        .nav a { margin-right: 14px; }
         .opozorilo { background: #fef3c7; color: #78350f; padding: 12px 14px; border-radius: 6px;
                      margin: 14px 0; }
         .navodila { background: #e0f2fe; color: #075985; padding: 12px 14px; border-radius: 6px; }
@@ -35,6 +41,11 @@
 </head>
 <body>
 <div class="wrap">
+  <div class="nav">
+    <a href="/rezervacije">Aplikacija</a>
+    <a href="/settings">Nastavitve šole</a>
+    <a href="/auth/logout">Odjava</a>
+  </div>
   <div class="card">
     <h1>Navodila za nastavitev šole</h1>
     <p class="muted">

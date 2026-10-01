@@ -48,11 +48,11 @@ from tests.conftest import TEST_PASSWORD, default_school_id, login
 PAYPAL = "https://www.paypal.com/ncp/payment/PRIMER123"
 
 
-def _set_selling(enabled: bool, price: int = 30, price_half: int = 30, paypal: str = PAYPAL,
+def _set_selling(enabled: bool, price: int = 30, paypal: str = PAYPAL,
                  note: str = "Navodila"):
     db = SessionLocal()
     try:
-        save_selling_config(db, enabled=enabled, price=price, price_half=price_half,
+        save_selling_config(db, enabled=enabled, price=price,
                             paypal=paypal, note=note)
         db.commit()
     finally:
@@ -436,7 +436,7 @@ def test_price_zero_is_allowed(client):
     Cena 0 pomeni »nič za plačati« — a NE »brez omejitev«: naročnino je treba
     vseeno mesečno obnoviti (zahteva uporabnika 2026-09-29).
     """
-    _set_selling(True, price=0, price_half=0)
+    _set_selling(True, price=0)
     db = SessionLocal()
     try:
         assert price_eur(db) == 0
@@ -446,7 +446,7 @@ def test_price_zero_is_allowed(client):
 
 
 def test_price_zero_shows_zero_eur(client):
-    _set_selling(True, price=0, price_half=0)
+    _set_selling(True, price=0)
     r = client.get("/nakup")
     assert r.status_code == 200
     assert "0 €" in r.text
@@ -475,7 +475,7 @@ def test_price_zero_still_requires_subscription(client, make_user):
     Zahteva uporabnika 2026-09-29: »cena je 0 €, toda potrebno je mesečno
     plačati/obnoviti, da app dela«. Cena 0 torej ne odvezuje veljavnosti.
     """
-    _set_selling(True, price=0, price_half=0)
+    _set_selling(True, price=0)
     _set_until(date.today() - timedelta(days=30))
 
     db = SessionLocal()
@@ -781,34 +781,9 @@ def test_logout_clears_school_ctx(client, make_user):
 
 # ── 14. Planа naročnine: pol leta (6 mes.) in leto (12 mes.) ─────────
 
-def test_half_year_plan_reports_six_months(client, make_user):
-    """Plan »pol leta«: znesek 7 €, podaljšanje za 6 mesecev."""
-    _set_selling(True, price=13, price_half=7)
-    _set_until(date.today() - timedelta(days=1))
-    admin = make_user(role="admin")
-    login(client, admin.username)
-
-    r = client.post("/narocnina/sporoci-placilo",
-                    data={"reference": "PP-H", "plan": "polletje"}, follow_redirects=False)
-    assert r.status_code == 303
-    row = _payment_rows(default_school_id())[0]
-    assert row.amount_eur == 7
-    assert row.months == 6
-
-    client.get("/auth/logout")
-    _login(client, app_config.MAIN_ADMIN_USERNAME, app_config.MAIN_ADMIN_PASSWORD)
-    client.post(f"/narocnina/potrdi/{row.id}", follow_redirects=False)
-    db = SessionLocal()
-    try:
-        until = get_valid_until(db, default_school_id())
-        assert until >= date.today() + timedelta(days=175)
-    finally:
-        db.close()
-
-
 def test_yearly_plan_reports_twelve_months(client, make_user):
     """Plan »leto«: znesek 13 €, podaljšanje za 12 mesecev."""
-    _set_selling(True, price=13, price_half=7)
+    _set_selling(True, price=13)
     _set_until(date.today() - timedelta(days=1))
     admin = make_user(role="admin")
     login(client, admin.username)
@@ -821,21 +796,37 @@ def test_yearly_plan_reports_twelve_months(client, make_user):
     assert row.months == 12
 
 
-def test_nakup_shows_both_plans(client):
-    _set_selling(True, price=13, price_half=7)
+def test_unknown_plan_falls_back_to_year(client, make_user):
+    """Neznana oznaka plana (npr. odstranjeni »polletje«) pade na LETNI plan."""
+    _set_selling(True, price=13)
+    _set_until(date.today() - timedelta(days=1))
+    admin = make_user(role="admin")
+    login(client, admin.username)
+
+    r = client.post("/narocnina/sporoci-placilo",
+                    data={"reference": "PP-X", "plan": "polletje"}, follow_redirects=False)
+    assert r.status_code == 303
+    row = _payment_rows(default_school_id())[0]
+    assert row.amount_eur == 13
+    assert row.months == 12
+
+
+def test_nakup_shows_only_yearly_plan(client):
+    """Nakupna stran ponudi samo LETNI plan (polletni je odstranjen)."""
+    _set_selling(True, price=13)
     r = client.get("/nakup")
-    assert "7 €" in r.text and "13 €" in r.text
-    assert "pol leta" in r.text and "leto" in r.text
+    assert "13 €" in r.text and "pol leta" not in r.text
+    assert "leto" in r.text
 
 
-def test_default_plans_are_seven_and_thirteen():
-    """Brez zapisa v bazi sta privzeti ceni 7 € (pol leta) in 13 € (leto)."""
+def test_default_plan_is_yearly_only():
+    """Brez zapisa v bazi je na voljo zgolj LETNI plan (privzeto 13 €)."""
     db = SessionLocal()
     try:
         seznam = plans(db)
-        assert [p["id"] for p in seznam] == ["polletje", "leto"]
-        assert plan_by_id(db, "polletje")["months"] == 6
+        assert [p["id"] for p in seznam] == ["leto"]
         assert plan_by_id(db, "leto")["months"] == 12
-        assert plan_by_id(db, "neznano")["id"] == "leto"      # neznano → letni plan
+        assert plan_by_id(db, "polletje")["id"] == "leto"      # odstranjen → letni
+        assert plan_by_id(db, "neznano")["id"] == "leto"
     finally:
         db.close()

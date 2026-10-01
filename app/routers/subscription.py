@@ -337,7 +337,7 @@ def report_payment(
     school_id: int | None = Form(None),
     db: Session = Depends(get_db),
 ):
-    """Šola sporoči, da je plačala (izbere plan: pol leta ali leto).
+    """Šola sporoči, da je plačala (plan: leto).
 
     Znesek in število mesecev se določita iz izbranega plana; glavni admin nato
     potrdi in podaljša naročnino za toliko mesecev.
@@ -462,19 +462,17 @@ def save_settings(
     request: Request,
     selling: str = Form("0"),
     price_eur: str = Form("13"),
-    price_half: str = Form("7"),
     paypal_url: str = Form(""),
     paypal_sub_url: str = Form(""),
     payment_note: str = Form(""),
     db: Session = Depends(get_db),
 ):
-    """Glavni admin shrani nastavitve prodaje (ceni obeh planov, PayPal, navodila)."""
+    """Glavni admin shrani nastavitve prodaje (cena letnega plana, PayPal, navodila)."""
     user = _require_main_admin(db, request)
     save_selling_config(
         db,
         enabled=(str(selling) == "1"),
         price=price_eur,
-        price_half=price_half,
         paypal=paypal_url,
         paypal_sub=paypal_sub_url,
         note=payment_note,
@@ -483,7 +481,7 @@ def save_settings(
     log_audit(
         db, user.id, user.username, "save_selling_settings",
         f"prodaja={'vklopljena' if str(selling) == '1' else 'izklopljena'}, "
-        f"cena_leto={price_eur} EUR, cena_polleta={price_half} EUR, "
+        f"cena_leto={price_eur} EUR, "
         f"paypal={'nastavljen' if paypal_url else 'prazen'}, "
         f"samodejni paypal={'nastavljen' if paypal_sub_url else 'prazen'}",
         school_id=None,
