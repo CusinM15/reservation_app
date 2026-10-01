@@ -42,10 +42,23 @@
 <body>
 <div class="wrap">
   <div class="nav">
+    {% if demo %}
+    <a href="/auth/login">← Nazaj na prijavo</a>
+    {% else %}
     <a href="/rezervacije">Aplikacija</a>
     <a href="/settings">Nastavitve šole</a>
     <a href="/auth/logout">Odjava</a>
+    {% endif %}
   </div>
+  {% if demo %}
+  <div class="card">
+    <div class="opozorilo" style="margin:0;">
+      <strong>Predogled navodil.</strong> Prikazani so <strong>psevdo (demo) podatki</strong> —
+      vrednosti so izmišljene in služijo le prikazu, kako je videti izpolnjena šola.
+      Svoje prave nastavitve uredite po <a href="/auth/login">prijavi</a>.
+    </div>
+  </div>
+  {% endif %}
   <div class="card">
     <h1>Navodila za nastavitev šole</h1>
     <p class="muted">

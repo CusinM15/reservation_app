@@ -296,3 +296,20 @@ def test_settings_main_admin_without_school_gets_chooser(client, make_user):
     assert "Izberite šolo" in r.text
     assert "Šola B" in r.text
     assert "school_id=" in r.text
+
+
+def test_nastavitev_demo_je_javen_s_psevdo_podatki(client):
+    """Povezava z prijavne strani (?demo=1) deluje BREZ prijave in prikaže
+    predogled navodil s psevdo (demo) podatki."""
+    r = client.get("/nastavitev?demo=1")
+    assert r.status_code == 200
+    assert "OŠ Primer" in r.text
+    assert "Predogled navodil" in r.text
+    assert "test@example.invalid" in r.text
+
+
+def test_nastavitev_brez_prijave_brez_demo_preusmeri_na_prijavo(client):
+    """Brez ?demo=1 neprijavljen uporabnik ne sme videti navodil."""
+    r = client.get("/nastavitev", follow_redirects=False)
+    assert r.status_code in (302, 303, 307)
+    assert "/auth/login" in r.headers.get("location", "")

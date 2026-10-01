@@ -23,9 +23,12 @@
         }
         .field input[type=password] { font-family: Arial, sans-serif; }
         .field textarea { resize: vertical; min-height: 64px; }
-        /* Enoten videz gumbov: vsi gumbi (Shrani, Naredi backup, obnova, Kupi
-           naročnino, + Dodaj, ✕ odstrani, Prekliči ...) so videti enako —
-           enaka oblika, velikost pisave, zaobljenost in barva. */
+        /* Enotna OBLIKA gumbov (velikost, zaobljenost, pisava, poravnava), a
+           ohranjene BARVNE vloge:
+             - zeleno (.btn-success):  Shrani nastavitve, Naredi backup;
+             - oranžno (.btn-warn):    gumbi za obnovo iz varnostne kopije;
+             - sivo (.btn-cancel):     ✕ odstrani, Prekliči;
+             - modro (.btn/.btn-primary): + Dodaj …, Kupi/Podaljšaj naročnino. */
         .btn, .btn-primary, .btn-success, .btn-warn, .btn-cancel {
             display: inline-block;
             padding: 9px 16px;
@@ -40,8 +43,13 @@
             text-decoration: none;
             margin: 3px 4px 3px 0;
         }
-        .btn:hover, .btn-primary:hover, .btn-success:hover,
-        .btn-warn:hover, .btn-cancel:hover { background: #0056b3; }
+        .btn:hover, .btn-primary:hover { background: #0056b3; }
+        .btn-success { background: #28a745; }
+        .btn-success:hover { background: #1e7e34; }
+        .btn-warn { background: #b45309; }
+        .btn-warn:hover { background: #92400e; }
+        .btn-cancel { background: #6c757d; }
+        .btn-cancel:hover { background: #565e64; }
         .hint { color: #666; font-size: 13px; }
         .ok { color: #155724; background: #d4edda; padding: 12px; border-radius: 5px; margin: 12px 0; }
         .err { color: #721c24; background: #f8d7da; padding: 12px; border-radius: 5px; margin: 12px 0; }

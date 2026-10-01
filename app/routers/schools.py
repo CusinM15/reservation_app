@@ -621,10 +621,81 @@ def _school_chooser_html(db: Session) -> str:
     )
 
 
+def _demo_setup_items() -> list[dict]:
+    """Primer postavk z PSEVDO podatki — za javni predogled navodil
+    (neprijavljen uporabnik). Vrednosti so izmišljene in služijo le prikazu,
+    kako je videti izpolnjena šola; ena postavka je namenoma ✗, da je vidna
+    tudi oblika »še uredi«.
+    """
+    return [
+        {
+            "naslov": "E-pošta šolskega admina",
+            "opis": "Naslov, na katerega prejmete obvestila in povezavo za obnovitev gesla.",
+            "ok": True,
+            "trenutno": "ravnatelj@guest.arnes.si",
+            "kje": "/settings",
+            "kje_napis": "Nastavitve šole",
+        },
+        {
+            "naslov": "Naslov pošiljatelja (From)",
+            "opis": ("Naslov, s katerim aplikacija pošilja pošto (obvestila, obnovitev gesla, "
+                     "varnostne kopije). Nova šola dobi testni naslov — zamenjajte ga s svojim, "
+                     "sicer pošta ne bo dostavljena."),
+            "ok": False,
+            "trenutno": "test@example.invalid",
+            "kje": "/settings",
+            "kje_napis": "Nastavitve šole",
+        },
+        {
+            "naslov": "E-pošta za varnostne kopije",
+            "opis": "Kam naj gre nočna varnostna kopija podatkov šole.",
+            "ok": True,
+            "trenutno": "arhiv@guest.arnes.si",
+            "kje": "/settings",
+            "kje_napis": "Nastavitve šole",
+        },
+        {
+            "naslov": "SMTP strežnik (pošiljanje pošte)",
+            "opis": ("Strežnik, uporabniško ime in geslo za pošiljanje pošte. Privzeto so vpisani "
+                     "podatki ponudnika — za svojo šolo vpišite svojega (npr. Arnes)."),
+            "ok": True,
+            "trenutno": "mail.arnes.si",
+            "kje": "/settings",
+            "kje_napis": "Nastavitve šole",
+        },
+        {
+            "naslov": "Razredi",
+            "opis": "Seznam oddelkov, vejica-ločeno (npr. 1. a, 2. a, 9. č).",
+            "ok": True,
+            "trenutno": "1. a, 1. b, 2. a, 2. b, 3. a",
+            "kje": "/settings",
+            "kje_napis": "Nastavitve šole",
+        },
+        {
+            "naslov": "Prostori in oprema",
+            "opis": "Prostori, ki jih je mogoče rezervirati, in njihove kapacitete.",
+            "ok": True,
+            "trenutno": "telovadnica, računalnica, knjižnica, tablice",
+            "kje": "/settings",
+            "kje_napis": "Nastavitve šole",
+        },
+        {
+            "naslov": "Uporabniki (učitelji in vodstvo)",
+            "opis": ("Ustvarite račune za učitelje in vodstvo — vsak dobi svoje uporabniško ime "
+                     "in geslo."),
+            "ok": True,
+            "trenutno": "28 aktivnih uporabnikov, od tega 25 učiteljev",
+            "kje": "/auth/admin/users",
+            "kje_napis": "Uporabniki",
+        },
+    ]
+
+
 @router.get("/nastavitev", response_class=HTMLResponse)
 def setup_guide_page(
     request: Request,
     school_id: int | None = Query(None),
+    demo: bool = Query(False),
     db: Session = Depends(get_db),
 ):
     """Navodila za nastavitev šole — kaj mora admin urediti, da app dela pravilno.
@@ -632,9 +703,28 @@ def setup_guide_page(
     Kazalniki ✓/✗ se izračunajo iz DEJANSKIH nastavitev šole, zato admin takoj
     vidi, kaj še manjka (npr. testni naslov pošiljatelja, ki ga dobi nova šola ob
     registraciji, mora zamenjati s svojim).
+
+    S parametrom ``?demo=1`` (ali za neprijavljenega uporabnika prek povezave na
+    prijavni strani) se prikaže PREDOGLED s psevdo podatki — brez prijave, da
+    obiskovalec vidi, kako so videti navodila, preden si ustvari račun.
     """
     user = get_request_user(request, db)
     if not user:
+        if demo:
+            items = _demo_setup_items()
+            return templates.TemplateResponse(
+                "nastavitev.html",
+                {
+                    "request": request,
+                    "demo": True,
+                    "school": {"name": "OŠ Primer", "slug": "primer"},
+                    "items": items,
+                    "stevilo_ok": sum(1 for i in items if i["ok"]),
+                    "stevilo_vseh": len(items),
+                    "is_main_admin": False,
+                    "prodaja": selling_config(db),
+                },
+            )
         return RedirectResponse(url="/auth/login")
     try:
         school = _manageable_school(db, request, school_id)

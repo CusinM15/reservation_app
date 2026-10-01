@@ -169,6 +169,10 @@ class AuthMiddleware(BaseHTTPMiddleware):
         # ter statične datoteke in dokumentacija.
         public = ["/auth/login", "/auth/forgot-password", "/auth/reset-password", "/health", "/", "/history", "/api/razredi", "/api/prostori", "/api/schedule", "/nakup", "/registracija"]
         is_public = any(path == p for p in public) or path.startswith("/static") or path.startswith("/slike") or path.startswith("/docs/")
+        # Javni predogled navodil za neprijavljene: /nastavitev?demo=1 prikaže
+        # psevdo (demo) podatke brez prijave (povezava je na prijavni strani).
+        if path == "/nastavitev" and request.query_params.get("demo") in ("1", "true", "yes"):
+            is_public = True
         if not is_public and not get_current_user_id(request):
             return RedirectResponse(url="/auth/login")
 
