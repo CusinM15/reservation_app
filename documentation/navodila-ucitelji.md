@@ -3,7 +3,7 @@
 
 > 👋 **Pozdravljeni, kolegice in kolegi!**
 >
-> Aplikacija za rezervacijo prostorov (npr. računalnice in tablice) in za napoved pisnih testov. Tale vodnik je kratek in jedrnat — skozi slike boste v trenutku ugotovili, kako vse deluje. 😊
+> Aplikacija za rezervacijo prostorov (npr. računalnice in tablice) in za napoved pisnih testov. Tale vodnik je kratek in jedrnat — skozi primere boste v trenutku ugotovili, kako vse deluje. 😊
 
 ---
 
@@ -13,11 +13,22 @@
 
 ## 1. Kako vstopiti v aplikacijo?
 
-Obiščite spletni naslov aplikacije svoje šole. Da dobite geslo, pritisnite gumb **Pozabljeno geslo?** in vnesite svoj **šolski e-poštni naslov**. V kratkem boste prejeli e-pošto s pošiljateljevega naslova vaše šole.
+Obiščite spletni naslov aplikacije svoje šole. Da dobite geslo, pritisnite gumb **Pozabljeno geslo?** in vnesite svoj **šolski e-poštni naslov**. V kratkem boste prejeli e-pošto s pošiljateljevega naslova vaše šole:
+
+```text
+Od:      Šola <posiljatelj@guest.arnes.si>
+Zadeva:  Ponastavitev gesla
+
+Pozdravljeni!
+
+Za nastavitev novega gesla kliknite spodnjo povezavo:
+   https://<naslov-aplikacije>/auth/reset-password?token=...
+
+Povezava je veljavna omejen čas.
+Če je niste zahtevali vi, sporočilo ignorirajte.
+```
 
 Če sporočila ne prejmete, javite administratorju, naj preveri, ali je vaš e-poštni naslov pravilno vnesen v bazo (v sporočilu navedite svoj pravilni e-poštni naslov).
-
-![Prijavna stran](slike/ucitelji_img_1.png)
 
 ---
 
@@ -44,9 +55,19 @@ Ko ste geslo nastavili, se prijavite:
 | **Uporabniško ime** | Vaš šolski e-poštni naslov |
 | **Geslo** | Geslo, ki ste ga nastavili |
 
+```text
+Prijava v sistem
+
+  Uporabniško ime:  [ vase.ime@guest.arnes.si ]
+  Geslo:            [ •••••••• ]  (oko = prikaži/skrij)
+
+  [ Prijava ]
+  Pozabljeno geslo?  ·  Nova šola
+```
+
 > ⚠️ Če prijava ne deluje, najprej sami še nekajkrat poskusite ponastaviti geslo. Administratorja kontaktirajte šele, ko se težava ne reši.
 
-Po uspešni prijavi se odpre stran **Rezervacije**.
+> 💡 V meniju je tudi gumb **Spremeni geslo** (glej poglavje 7).
 
 ---
 
@@ -59,7 +80,19 @@ Katere prostore lahko rezervirate, je odvisno od **nastavitev vaše šole**. Poz
 | **Ekskluzivni prostor** | Samo **ena** rezervacija na termin (npr. računalnica) |
 | **Prostor z več enotami** | Več učiteljev lahko rezervira **sočasno** — vsak navede količino, skupna vsota na uro pa je omejena s kapaciteto prostora (npr. tablice) |
 
-![Stran z rezervacijami](slike/ucitelji_img_2.png)
+```text
+Stran »Rezervacije«
+
+  [ Nova rezervacija ]              teden: 14. 9. – 18. 9. 2026
+
+  Prostor        Pon    Tor    Sre    Čet    Pet
+  ---------------------------------------------------------
+  Računalnica     +      +      +      +      +
+  Tablice       2/28     +      +      +      +
+  ...
+  (Pri vsakem prostoru in uri je gumb +; pri prostorih z več
+   enotami je izpisano, koliko enot je še prostih, npr. 2/28.)
+```
 
 Rezerviramo lahko na **2 načina**:
 
@@ -69,18 +102,31 @@ Datum se samodejno nastavi na datum, pri katerem ste pritisnili `+` (datum lahko
 **Način 2 — klik na gumb `Nova rezervacija`:**
 Vse podatke nastavite v oknu, ki se odpre.
 
-![Okno za novo rezervacijo](slike/ucitelji_img_4.png)
+```text
+Okno »Nova rezervacija«
+
+  Prostor:  [ spustni seznam ]
+  Datum:    [ 14. 9. 2026 ]
+  Ura:      [ 3. ura ]
+  Količina: [ 5 ]        <- samo pri prostoru z več enotami
+
+  [ Shrani ]   [ Prekliči ]
+```
 
 V tem oknu izberete **Prostor** iz spustnega menija; ure so po urniku vaše šole. Pri prostoru z več enotami izberete tudi **količino** — pri vsakem je prikazano, koliko enot je še prostih (oblika `x/N`).
-
-![Podrobnosti rezervacije](slike/ucitelji_img_5.png)
 
 > ⚠️ **Opomba:** Če je prostor z več enotami za posamezen termin že delno rezerviran, rezervacije prek gumba `+` ni mogoče izvesti — uporabite gumb **Nova rezervacija**.
 
 **Brisanje rezervacije:**
 Vodstvo ima pravico do brisanja **kakršnekoli** rezervacije, učitelji pa lahko brišejo **samo lastne**. Vodstvo ima poleg tega na voljo še 2 dodatna načina za ustvarjanje rezervacij. Če imate vi za ta termin že rezerviran prostor, se vaša rezervacija ob tem prekliče (razen pri prostorih z več enotami, kadar skupna vsota ni presežena).
 
-![Pregled rezervacij](slike/ucitelji_img_3.png)
+```text
+Pregled rezervacij (tedenski koledar)
+
+  Pon    Tor    Sre    Čet    Pet
+  [R]    [R]     —     [T]     —
+  R = vaša rezervacija        T = delno zaseden prostor z več enotami
+```
 
 ---
 
@@ -88,13 +134,21 @@ Vodstvo ima pravico do brisanja **kakršnekoli** rezervacije, učitelji pa lahko
 
 Ocenjevanje lahko napoveste na **2 načina**:
 
-**Način 1 — s pritiskom na polje pri želenem datumu:**
-Deluje samo, kadar datum za noben razred ni označen kot **dan dejavnosti**. Datum se nastavi skladno s poljem, na katerega ste pritisnili.
+**Način 1 — s klikom na gumb `+` v koledarju:**
+V koledarju ocenjevanj ima vsak delavnik v spodnjem desnem kotu celice gumb **`+`** (*Dodaj ocenjevanje*). Klik nanj ustvari novo ocenjevanje — odpre se okno z **že izpolnjenim datumom** (razred in datum lahko spremenite). Gumb `+` se prikaže tudi, kadar je na ta dan že ocenjevanje ali dan dejavnosti.
 
 **Način 2 — z gumbom `Novo ocenjevanje`:**
 Ročno izberete razred in datum.
 
-![Okno za ocenjevanje](slike/ucitelji_img_7.png)
+```text
+Okno »Novo ocenjevanje«
+
+  Razred:       [ 3. a ]
+  Datum:        [ 14. 9. 2026 ]
+  Ponavljanje:  [ ]   (obkljukaj pri popravljanju ocene / PIP)
+
+  [ Shrani ]   [ Prekliči ]
+```
 
 **Pravila, ki jih sistem samodejno preverja (za razrede od 1. do 7.):**
 
@@ -105,7 +159,21 @@ Ročno izberete razred in datum.
 | 🗓️ **Največ 3 ocenjevanja skupaj na teden** | Vključno s ponavljanji |
 | 🔄 **Ponavljanje dovoljuje 3. test v tednu** | Vendar trije zaporedni dnevi s testom niso dovoljeni |
 
-![Pregled koledarja ocenjevanj](slike/ucitelji_img_8.png)
+```text
+Koledar ocenjevanj (mesec)
+
+  Pon            Tor            Sre
+  ─────────────────────────────────────────────
+  14             15             16
+  [Ocenjevanje]                 📋 Dejavnost: 3. a
+  +              +              +
+
+  Legenda:  modro = običajno ocenjevanje
+            rdeče = ponavljanje
+            zeleno = IP/NIP/ID
+            vijolično = dan dejavnosti
+            + = dodaj ocenjevanje
+```
 
 > ℹ️ Za **8. in 9. razred** (skupinsko-razredne oznake s črkami in številkami, kjer številke predstavljajo skupine) aplikacija teh pogojev ne preverja samodejno. Učitelji morate sami skrbeti za spoštovanje pravil glede na to, kdo je v kateri skupini in razredu.
 
@@ -117,12 +185,19 @@ V oknu je na voljo tudi **Ponavljanje** – ko ga obkljukate, se spremenijo prav
 
 Vodstvo lahko določene datume označi kot **dan dejavnosti** (npr. športni dan). Če ste imeli za ta dan že napovedano ocenjevanje, boste prejeli samodejno e-poštno obvestilo.
 
-![Stran z dnevi dejavnosti](slike/ucitelji_img_9.png)
-
 ### 🟣 Vijolično polje »Dejavnosti:« v koledarju
 
 V koledarju je pri dnevu, ko ima kateri od vaših razredov dejavnost, **vijolično
-polje »Dejavnosti:«**. Klik na to polje odpre seznam vseh dejavnosti tega dne.
+polje »Dejavnosti:«**. Klik na to polje odpre seznam vseh dejavnosti tega dne:
+
+```text
+Dejavnosti — 14. 9. 2026
+
+  Razred   Dejavnost
+  ─────────────────────────────────────────────
+  3. a     Športni dan            [ Celoten dan ]
+  3. b     Naravoslovni dan       [ Ne traja cel dan ]
+```
 
 V seznamu je za vsako dejavnost naveden **razred** in oznaka:
 
@@ -152,12 +227,23 @@ Izberete posamezen razred ali — za 8. in 9. razred — celotno generacijo. S f
 > Ste pozabili geslo? Na prijavni strani kliknite **Pozabljeno geslo?**, vnesite svoj e-poštni naslov in sledite navodilom v e-pošti.
 
 ---
+
 ## 8. Dostop do teh navodil znotraj aplikacije
 
-![Navodila](slike/ucitelji_img_10.png)
-Na desni strani **aplikacije** je gumb `Učitelji`. Ko se z miško pomaknete nanj, se v manjšem oknu odprejo ta navodila, po katerih se lahko pomikate z miško. Na koncu okna je tudi gumb **Prenesi PDF**, s katerim si navodila prenesete na svoj računalnik.
+Na desni strani **aplikacije** je gumb **`👩‍🏫 Učitelji`**. Ko se z miško pomaknete nanj, se v manjšem oknu odprejo ta navodila, po katerih se lahko pomikate z miško. Na koncu okna je tudi gumb **Prenesi PDF**, s katerim si navodila prenesete na svoj računalnik.
+
+```text
+Desna stran aplikacije
+
+  [ Učitelji ]   <- ob prehodu z miško se odpre predogled navodil
+  [ Vodstvo ]      (vidno le vodstvu in adminu)
+  [ Admin ]        (vidno le adminu)
+
+  Na dnu okna:  [ Prenesi PDF ]
+```
 
 ---
+
 > 🫶 **Upam, da vam bo aplikacija v pomoč. Želim vam vse dobro pri uporabi!**
 >
 > **Avtor:** Matej Čušin
