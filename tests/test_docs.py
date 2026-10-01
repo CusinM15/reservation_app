@@ -54,3 +54,24 @@ def test_ucitelji_en_navodila_so_splosna(client):
     assert r.status_code == 200
     for bad in ("Toneta", "Cufar", "tonecufar", "ostc-app", "Ship"):
         assert bad not in r.text, f"v navodilih ostaja specifično: {bad}"
+
+
+def test_vodstvo_navodila_brez_admin_navodil(client):
+    """Navodila za vodstvo ne smejo vsebovati (admin) skrbniške plošče —
+    ta je prestavljena v ločena Navodila za administratorja."""
+    for key in ("navodila-vodstvo", "navodila-vodstvo-en"):
+        r = client.get(f"/docs/html/{key}")
+        assert r.status_code == 200
+        for bad in ("Skrbniška plošča", "Admin Panel", "create_rezervacija",
+                    "Administrator Guide", "Upravljanje uporabnikov"):
+            assert bad not in r.text, f"{key}: ostaja admin vsebina: {bad}"
+
+
+def test_vodstvo_navodila_poudarjajo_dejavnosti(client):
+    """Vodstvo naj dela predvsem prek strani /dejavnosti."""
+    for key, needle in (("navodila-vodstvo", "/dejavnosti"),
+                        ("navodila-vodstvo-en", "/dejavnosti")):
+        r = client.get(f"/docs/html/{key}")
+        assert r.status_code == 200
+        assert needle in r.text
+    assert "Vnos dejavnosti" in client.get("/docs/html/navodila-vodstvo").text
