@@ -326,6 +326,14 @@
         onclick="downloadDoc('navodila-vodstvo')">
         👑 Vodstvo
       </button>
+      <!-- GUMB ZA ADMINA — skrit, dokler JS ne preveri vloge.
+           Vidi ga ZGOLJ administrator (admin/main_admin); vodstvo in učitelji ne. -->
+      <button class="side-doc-btn" id="sideBtnAdmin" style="display:none;"
+        onmouseenter="showDocPreview('navodila-admin', 'Navodila za administratorja')"
+        onmouseleave="scheduleHidePreview()"
+        onclick="downloadDoc('navodila-admin')">
+        🛠️ Admin
+      </button>
     </div>
     <!-- UPORABNIŠKE INFORMACIJE — prikažejo ime in vlogo po prijavi.
          Desno poravnano (spacer prej), vedno vidno. -->
@@ -905,6 +913,8 @@
         title.textContent = lang === 'sl' ? 'Navodila za učitelje' : 'Teacher Instructions';
       } else if (currentPreviewDoc === 'navodila-vodstvo') {
         title.textContent = lang === 'sl' ? 'Navodila za vodstvo' : 'Management & Admin Guide';
+      } else if (currentPreviewDoc === 'navodila-admin') {
+        title.textContent = lang === 'sl' ? 'Navodila za administratorja' : 'Administrator Guide';
       }
       const body = document.getElementById('navodilaPreviewBody');
       body.textContent = 'Nalagam ...';
@@ -2092,6 +2102,10 @@
           document.getElementById('navodilaSidebar').style.display = 'flex';
           if (currentUser.role === 'vodstvo' || currentUser.role === 'admin') {
             document.getElementById('sideBtnVodstvo').style.display = 'block';
+          }
+          // Gumb 🛠️ Admin vidi ZGOLJ administrator (admin ali glavni admin).
+          if (currentUser.role === 'admin' || currentUser.role === 'main_admin') {
+            document.getElementById('sideBtnAdmin').style.display = 'block';
           }
         }
       }

@@ -40,13 +40,17 @@ ALLOWED = {
     "navodila-ucitelji-en": ["en/navodila-ucitelji.md"],
     "navodila-vodstvo": ["navodila-vodstvo.md"],
     "navodila-vodstvo-en": ["en/navodila-vodstvo.md"],
+    "navodila-admin": ["navodila-admin.md"],
+    "navodila-admin-en": ["en/navodila-admin.md"],
 }
 
 DOC_LABELS = {
     "navodila-ucitelji": "Navodila za učitelje",
     "navodila-ucitelji-en": "Teacher Instructions (English)",
-    "navodila-vodstvo": "Navodila za vodstvo in admin",
+    "navodila-vodstvo": "Navodila za vodstvo",
     "navodila-vodstvo-en": "Management Guide (English)",
+    "navodila-admin": "Navodila za administratorja",
+    "navodila-admin-en": "Administrator Guide (English)",
 }
 
 

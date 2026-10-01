@@ -28,7 +28,7 @@ poskrbi za vse.
 | Dan v tednu | 0 = ponedeljek, 1 = torek … 6 = nedelja |
 | Od datuma | Prvi dan serije |
 | Do datuma | Zadnji dan serije |
-| Število tablic | Samo pri rezervaciji tablic. Če se polje ne prikaže takoj, zamenjajte prostor in nato znova izberite tablice |
+| Število | Samo pri rezervaciji tablic. Če se polje ne prikaže takoj, zamenjajte prostor in nato znova izberite tablice |
 
 ### Celodnevna serija
 
@@ -40,7 +40,7 @@ Zasede cel dan (vse ure) za več dni zapored.
 | Prostor | Kateri prostor rezervirate |
 | Od datuma | Datum začetka |
 | Do datuma | Datum konca |
-| Število tablic | Samo pri tablicah |
+| Število | Samo pri tablicah |
 | Ure | Če prazno → zasede vse ure 0–7. Lahko naštejete samo določene: `1 3 5` |
 
 ### 🔥 Brisanje rezervacij
@@ -144,6 +144,10 @@ Uporaba teh navodil je enaka kot pri navodilih za učitelje (razložena v tistih
 
 > ⛔ **Vodstvo do tega dela nima dostopa.** Sledi samo za informacijo, kaj dela
 > vaš administrator.
+>
+> 📄 **Podrobna navodila za administratorja** so v ločenem dokumentu
+> **»Navodila za administratorja«** — v aplikaciji je zanj gumb **🛠️ Admin** na
+> desni strani, ki ga vidi **samo admin**.
 
 ---
 

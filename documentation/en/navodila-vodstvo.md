@@ -29,7 +29,7 @@ Instead of manually entering the same reservation for 10 Mondays in a row, set u
 | Day of week | 0 = Monday, 1 = Tuesday … 6 = Sunday |
 | From date | First day of the series |
 | To date | Last day of the series |
-| Number of tablets | Only for tablet reservations. If the field doesn't appear right away, switch the room and then select tablets again |
+| Number | Only for tablet reservations. If the field doesn't appear right away, switch the room and then select tablets again |
 
 ### Full-day Series
 
@@ -41,7 +41,7 @@ Reserves the entire day (all periods) for multiple consecutive days.
 | Room | Which room to reserve |
 | From date | Start date |
 | To date | End date |
-| Number of tablets | Only for tablets |
+| Number | Only for tablets |
 | Periods | If empty → reserves all periods 0–7. You can list specific ones: `1 3 5` |
 
 ### 🔥 Deleting reservations
@@ -140,6 +140,10 @@ These instructions are used exactly the same way as the teacher instructions (de
 ## 🛡️ Admin Panel — ADMIN ONLY
 
 > ⛔ **Management does not have access to this section.** This is just for information about what your administrator does.
+>
+> 📄 **Detailed administrator instructions** live in a separate document,
+> **"Administrator Guide"** — in the app it has its own **🛠️ Admin** button on the
+> right-hand side, visible to the **admin only**.
 
 ---
 
