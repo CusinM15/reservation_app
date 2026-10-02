@@ -9,6 +9,11 @@ spec:
   concurrencyPolicy: Forbid
   jobTemplate:
     spec:
+      # Brez ponavljanja: pošiljanje e-pošte ni ponovljivo dejanje, zato ob
+      # napaki zagon TAKOJ odpove (brez retryjev) — sicer bi vsak retry znova
+      # poslal kopijo vsem šolam (dokazano 2026-10-02: 7 zagonov = 7 e-poštnih
+      # sporočil, ker je ena šola imela neveljaven BACKUP_EMAIL).
+      backoffLimit: 0
       template:
         spec:
           containers:
