@@ -974,3 +974,25 @@ def test_nakup_priced_calculator(client):
     assert "Izračun cene" in r.text
     assert "6 €" in r.text and "12 €" in r.text
     assert "01. 03. 2027" in r.text and "01. 09. 2027" in r.text
+
+
+# ── 17. /nastavitev: SMTP uporabniško ime/geslo iz nastavitev šole ───
+
+def test_setup_guide_shows_school_smtp_credentials(client, make_user):
+    """Postavki »SMTP uporabniško ime« in »SMTP geslo« se bereta iz nastavitev šole."""
+    _set_selling(True)
+    db = SessionLocal()
+    try:
+        set_school_setting(db, default_school_id(), "MAIL_USERNAME", "moje-ime")
+        set_school_setting(db, default_school_id(), "MAIL_PASSWORD", "moje-geslo")
+        db.commit()
+    finally:
+        db.close()
+
+    admin = make_user(role="admin")
+    login(client, admin.username)
+    r = client.get("/nastavitev")
+    assert r.status_code == 200
+    assert "moje-ime" in r.text
+    assert "moje-geslo" in r.text
+    assert "EnTest1" not in r.text
