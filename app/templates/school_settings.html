@@ -81,10 +81,6 @@
             Poti šole (klik odpre aplikacijo v tej šoli):
             {% for a in school.aliases %}<a href="/{{ a }}"><code>/{{ a }}</code></a> {% endfor %}
         </p>
-        <p class="hint">
-            Te vrednosti so prej živele v <code>.env</code>/ConfigMap; zdaj so shranjene v bazi
-            za vsako šolo posebej in jih lahko urejate tukaj. Spremembe veljajo takoj po shranjevanju.
-        </p>
 
         <div id="msg"></div>
 
