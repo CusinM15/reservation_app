@@ -1,4 +1,3 @@
-
 ---
 
 > 🛠️ **Namenjeno izključno administratorju šole** (skrbniku sistema).
@@ -10,7 +9,7 @@
 
 ---
 
-# 🛠️ Navodila za administratorja — OŠ Toneta Čufarja Jesenice
+# 🛠️ Navodila za administratorja 
 
 ---
 
@@ -18,8 +17,8 @@
 
 | Kaj | Kje |
 |---|---|
-| 👥 **Uporabniki** (računi učiteljev, vodstva) | Zgornji meni → **Admin panel** (ali <code>/auth/admin/users</code>) |
-| ⚙️ **Nastavitve šole** (razredi, prostori, števila, urnik, e-pošta) | Zgornji meni → **⚙️ Nastavitve šole** (ali <code>/settings</code>) |
+| 👥 **Uporabniki** (računi učiteljev, vodstva) | Zgornji meni → **Admin panel**  |
+| ⚙️ **Nastavitve šole** (razredi, prostori, števila, urnik, e-pošta) | Zgornji meni → **⚙️ Nastavitve šole**  |
 | 🧭 **Navodila za nastavitev šole** (kaj še urediti) | <code>/nastavitev</code> |
 | 💶 **Naročnina šole** | ⚙️ Nastavitve šole → razdelek *Naročnina šole* (ali <code>/narocnina</code>) |
 | 💾 **Varnostna kopija in obnova** | ⚙️ Nastavitve šole → *Varnostna kopija* / *Obnova* |

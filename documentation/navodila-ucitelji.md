@@ -3,7 +3,7 @@
 
 > 👋 **Pozdravljeni, kolegice in kolegi!**
 >
-> Aplikacija za rezervacijo prostorov (npr. računalnice in tablice) in za napoved pisnih testov. Tale vodnik je kratek in jedrnat — skozi primere boste v trenutku ugotovili, kako vse deluje. 😊
+> Aplikacija za rezervacijo prostorov/"stvari" (npr. računalnice in tablic) in za napoved pisnih testov. Tale vodnik je kratek in jedrnat — skozi primere boste v trenutku ugotovili, kako vse deluje. 😊
 
 ---
 
@@ -24,8 +24,11 @@ Pozdravljeni!
 Za nastavitev novega gesla kliknite spodnjo povezavo:
    https://<naslov-aplikacije>/auth/reset-password?token=...
 
-Povezava je veljavna omejen čas.
 Če je niste zahtevali vi, sporočilo ignorirajte.
+
+Lep pozdrav,
+Šolski App
+
 ```
 
 Če sporočila ne prejmete, javite administratorju, naj preveri, ali je vaš e-poštni naslov pravilno vnesen v bazo (v sporočilu navedite svoj pravilni e-poštni naslov).
@@ -78,7 +81,7 @@ Katere prostore lahko rezervirate, je odvisno od **nastavitev vaše šole**. Poz
 | Vrsta prostora | Kako deluje? |
 |---|---|
 | **Ekskluzivni prostor** | Samo **ena** rezervacija na termin (npr. računalnica) |
-| **Prostor z več enotami** | Več učiteljev lahko rezervira **sočasno** — vsak navede količino, skupna vsota na uro pa je omejena s kapaciteto prostora (npr. tablice) |
+| **"Prostor" z več enotami** | Več učiteljev lahko rezervira **sočasno** — vsak navede količino, skupna vsota na uro pa je omejena s kapaciteto "prostora" (npr. tablice) |
 
 ```text
 Stran »Rezervacije«
@@ -118,7 +121,7 @@ V tem oknu izberete **Prostor** iz spustnega menija; ure so po urniku vaše šol
 > ⚠️ **Opomba:** Če je prostor z več enotami za posamezen termin že delno rezerviran, rezervacije prek gumba `+` ni mogoče izvesti — uporabite gumb **Nova rezervacija**.
 
 **Brisanje rezervacije:**
-Vodstvo ima pravico do brisanja **kakršnekoli** rezervacije, učitelji pa lahko brišejo **samo lastne**. Vodstvo ima poleg tega na voljo še 2 dodatna načina za ustvarjanje rezervacij. Če imate vi za ta termin že rezerviran prostor, se vaša rezervacija ob tem prekliče (razen pri prostorih z več enotami, kadar skupna vsota ni presežena).
+Vodstvo ima pravico do brisanja **kakršnekoli** rezervacije, učitelji pa lahko brišejo **samo lastne**. Vodstvo ima možnost tudi serijskih rezervacij, priporočam da večino teh naredijo preko `/dejavnosti`. 
 
 ```text
 Pregled rezervacij (tedenski koledar)
@@ -135,7 +138,7 @@ Pregled rezervacij (tedenski koledar)
 Ocenjevanje lahko napoveste na **2 načina**:
 
 **Način 1 — s klikom na gumb `+` v koledarju:**
-V koledarju ocenjevanj ima vsak delavnik v spodnjem desnem kotu celice gumb **`+`** (*Dodaj ocenjevanje*). Klik nanj ustvari novo ocenjevanje — odpre se okno z **že izpolnjenim datumom** (razred in datum lahko spremenite). Gumb `+` se prikaže tudi, kadar je na ta dan že ocenjevanje ali dan dejavnosti.
+V koledarju ocenjevanj ima vsak delavnik v spodnjem desnem kotu celice gumb **`+`**. Klik nanj ustvari novo ocenjevanje — odpre se okno z **že izpolnjenim datumom** (razred in datum lahko spremenite). Gumb `+` se prikaže tudi, kadar je na ta dan že ocenjevanje ali dan dejavnosti.
 
 **Način 2 — z gumbom `Novo ocenjevanje`:**
 Ročno izberete razred in datum.
@@ -149,6 +152,8 @@ Okno »Novo ocenjevanje«
 
   [ Shrani ]   [ Prekliči ]
 ```
+
+**Ponavlanje:** Imate možnost tudi da označite, da je pisni test ponavlanje, tako da drugače delujejo pravila za ocenjevanje.
 
 **Pravila, ki jih sistem samodejno preverja (za razrede od 1. do 7.):**
 
@@ -177,7 +182,7 @@ Koledar ocenjevanj (mesec)
 
 > ℹ️ Za **8. in 9. razred** (skupinsko-razredne oznake s črkami in številkami, kjer številke predstavljajo skupine) aplikacija teh pogojev ne preverja samodejno. Učitelji morate sami skrbeti za spoštovanje pravil glede na to, kdo je v kateri skupini in razredu.
 
-V oknu je na voljo tudi **Ponavljanje** – ko ga obkljukate, se spremenijo pravila za preverjanje (3. test v tednu je dovoljen).
+> ℹ️ Za izbirni predmet je označen z drugo barvo in pri filtriranju prikazan za vse filtre od 6. razreda do 9. razreda, je pa treba preveriti pri učencih kdo dejansko piše na tisti datum.
 
 ---
 
@@ -204,13 +209,13 @@ V seznamu je za vsako dejavnost naveden **razred** in oznaka:
 | Oznaka | Pomen |
 |---|---|
 | 🟣 **Celoten dan** | Dejavnost traja **ves dan** — na ta dan za ta razred ocenjevanja **niso mogoča**. Če ste jih imeli napovedana, so bila izbrisana in prejeli ste obvestilo. |
-| 🟢 **Ne traja cel dan** | **Krajša** dejavnost — ocenjevanja so na ta dan **še vedno mogoča**. |
+| 🟢 **Ne traja cel dan** | **Krajša** dejavnost — ocenjevanja so na ta dan **še vedno mogoča**, tako da mora učitelj sam preveriti ali je ta dejavnost ravno med vašo uro. |
 
 > 💡 Tako na prvi pogled veste, kateri dan je »zaprt« za teste (cela dejavnost)
 > in kdaj lahko test vseeno napoveste (krajša dejavnost).
 
 Na strani za ocenjevanje je na voljo tudi **spustni meni za filtriranje**:
-Izberete posamezen razred ali — za 8. in 9. razred — celotno generacijo. S filtri lažje pregledate, kateri dan kdo še lahko piše.
+Izberete posamezen razred ali — za 8. in 9. razred — celotno generacijo. S filtri lažje pregledate, kateri dan kdo še lahko piše. Poleg tega je za izbirni predmet prikazan pri vseh razredih od 6. razreda naprej.
 
 > 💡 **Opomba:** Po izboru filtra pritisnite gumb **Osveži**, da se prikažejo posodobljeni podatki.
 
@@ -224,7 +229,7 @@ Izberete posamezen razred ali — za 8. in 9. razred — celotno generacijo. S f
 4. Potrdite novo geslo
 5. Kliknite **Spremeni geslo**
 
-> Ste pozabili geslo? Na prijavni strani kliknite **Pozabljeno geslo?**, vnesite svoj e-poštni naslov in sledite navodilom v e-pošti.
+> Ste pozabili geslo? Na prijavni strani kliknite **Pozabljeno geslo?**, dobite e-poštno sporoččilo in spremenite geslo tam.
 
 ---
 
