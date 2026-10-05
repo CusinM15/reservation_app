@@ -106,9 +106,9 @@ function buildTabs(){
 
 async function loadGrade(grade){
   $('msg').className = 'msg';
-  // 1–9 razred: samo dejavnosti iz xlsx (dnevi dejavnosti).
+  // 1–9 razred: dnevi dejavnosti.
   // IP/POUK: vse ročne dejavnosti (source=manual) iz vseh razredov,
-  // ki nimajo sekcije (KULTURNI/…) — torej niso v Excel predlogi.
+  // ki nimajo sekcije (KULTURNI/…).
   let url, rows;
   if (isGradeNumeric(grade)) {
     url = '/api/dejavnosti?grade=' + encodeURIComponent(grade) + '&source=xlsx';
@@ -167,8 +167,8 @@ function renderGrade(grade){
   let html = `<h3>PREGLED DEJAVNOSTI ${label.toUpperCase()}</h3>`;
 
   if(isGradeNumeric(grade)){
-    // 1–9 razred: sekcije (dnevi dejavnosti iz xlsx)
-    html += `<p class="hint">Dejavnosti iz predloge (dnevi_dejavnosti_v_evrih.xlsx). Za urejanje shrani vrstico — blokade/rezervacije se izvedejo pri datum+celoten dan+prostori.</p>`;
+    // 1–9 razred: sekcije (dnevi dejavnosti)
+    html += `<p class="hint">Dnevi dejavnosti. Za urejanje shrani vrstico — blokade/rezervacije se izvedejo pri datum + celoten dan + prostori.</p>`;
     html += `<div class="toolbar">`;
     SECTIONS.forEach(s => {
       if (USER_ROLE !== 'teacher') html += `<button class="btn btn-success" onclick="addRow('${s}','xlsx')">＋ ${s} DAN</button>`;
@@ -182,7 +182,7 @@ function renderGrade(grade){
   }else{
     // IP/POUK: brez sekcij — ročne dejavnosti + tedenske rezervacije
     const rows = (sectionsData[grade] && sectionsData[grade]['_all']) || [];
-    html += `<p class="hint">Sem sodijo sami ročno dodani dogodki in tedenske rezervacije, ki niso v Excel predlogi.</p>`;
+    html += `<p class="hint">Sem sodijo ročno dodani dogodki in tedenske rezervacije.</p>`;
     if (USER_ROLE !== 'teacher') html += `<div class="toolbar"><button class="btn btn-success" onclick="openEditor({grade:'${grade}', section:'', title:'', subtitle:'', full_day:false, recurring:true, date_from:'', date_to:'', date_undetermined:false, date_text:'', all_classes:false, classes:'', prostori:'', cena:'', vodja:'', opomba:''})">＋ Dodaj dogodek / tedensko rezervacijo</button></div>`;
     html += `<div class="section-title">Ročne dejavnosti (${rows.length})</div>`;
     if(rows.length === 0){
@@ -197,7 +197,7 @@ function renderGrade(grade){
 }
 
 function renderSectionTable(grade, section, rows, isManual){
-  // Prikaz po vzoru xlsx predloge: Dejavnost | čas | vodja | cena | opomba |
+  // Prikaz stolpcev: Dejavnost | čas | vodja | cena | opomba |
   // Računalnica | Tablice | Ladja | Gospodinjska učilnica | Akcije
   const rooms = ['racunalnica', 'tablice', 'ladja', 'gospodinjska-ucilnica'];
   let html = `<table><thead><tr>

@@ -219,7 +219,7 @@ class AuditLog(Base):
 # ne vidijo (vendar posledice — blokirani datumi, rezervacije,
 # preklini ocenjevanj — so vidne vsem).
 #
-# Uvoz iz Excel predloge (dnevi_dejavnosti_v_evrih.xlsx, listi po razredih)
+# Dnevi dejavnosti (activity_days) — vnosi po razredih
 # polni VEČ vrstic za isti grade iz enega lista — zato ni unikatne omejitve
 # na (grade, section, title).
 #
@@ -249,7 +249,7 @@ class ActivityDay(Base):
     vodja = Column(String, nullable=True, default="")
     opomba = Column(Text, nullable=True, default="")
     parent_title = Column(String, nullable=True, default="", index=True)  # glavni naslov skupine (npr. "TEHNIŠKI DAN"), če so to poddejavnosti
-    source = Column(String, nullable=False, default="manual", index=True)  # "xlsx" (iz datoteke) ali "manual"
+    source = Column(String, nullable=False, default="manual", index=True)  # interni izvor: "xlsx" = sekcijski vnos, "manual" = ročni
     termini = Column(JSONB, nullable=True, default=list)  # seznam [{date, classes}] — več datumov (po razredih) pod eno dejavnost
 
     created_by_id = Column(Integer, ForeignKey("users.id"), nullable=True)

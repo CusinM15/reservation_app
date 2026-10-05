@@ -11,7 +11,7 @@
 #        - ustvari BlockedDate za izbrane razrede/datume (dan dejavnosti)
 #        - izbriše ocenjevanja za te razrede/datume + email učiteljem
 #        - ustvari serijske rezervacije prostorov za ure 1–5
-#   3. Uvoz iz Excel predloge (dnevi_dejavnosti_v_evrih.xlsx) — listi po razredih.
+#   3. Ročni vnos (brez uvoza iz datotek).
 #
 # Pravice: SAMO vodstvo/admin (in obstoječi ALLOWED_USER_IDS iz blocked_dates).
 # Učitelji te strani ne vidijo; posledice (blokade, rezervacije, preklini
@@ -276,7 +276,7 @@ def _apply_sync(db: Session, data: ActivityDayCreate, user, config: SchoolConfig
 
 # ── Seznam dejavnosti (po razredu) ───────────────────────────────────
 
-# Vrstni red sekcij mora slediti Excel predlogi: KULTURNI → NARAVOSLOVNI
+# Vrstni red sekcij: KULTURNI → NARAVOSLOVNI
 # → TEHNIŠKI → ŠPORTNI. Privzeti lexikografski ORDER BY section bi dal
 # TEHNIŠKI za ŠPORTNIM (Š < T), zato uporabimo eksplicitno prioriteto.
 _SECTION_ORDER = {"KULTURNI": 0, "NARAVOSLOVNI": 1, "TEHNIŠKI": 2, "ŠPORTNI": 3, "DRUGO": 4}
@@ -317,7 +317,7 @@ def dejavnosti_meta(request: Request, db: Session = Depends(get_db)):
     Vrednosti so iz nastavitev ŠOLE uporabnika (razredi/prostori/urnik so
     lahko po šolah različni).
     """
-    # Razredi 1..9 so "dnevi dejavnosti" (iz xlsx). IP/POUK je en sam zavíhek.
+    # Razredi 1..9 so "dnevi dejavnosti". IP/POUK je en sam zavíhek.
     grades = [str(i) for i in range(1, 10)] + ["ip"]
     config = config_for_request(request, db)
     return {
