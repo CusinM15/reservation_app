@@ -28,7 +28,10 @@ from app.security import sign_user_id
 from app.subscriptions import (
     auto_renew_enabled,
     extend_subscription,
+    extend_to_school_year,
     next_charge_day,
+    school_year_target,
+    self_extend_open,
     set_auto_renew,
     subscription_state,
 )
@@ -317,6 +320,9 @@ def narocnina_page(
             "payments": payments,
             "pending": pending,
             "is_main_admin": is_main_admin(user),
+            "is_admin": bool(user and user.role in (RoleEnum.admin, RoleEnum.main_admin)),
+            "extend_open": self_extend_open(),
+            "extend_until": school_year_target(),
             "view_only": view_only,
             "avto": auto_renew_enabled(db, school.id),
             "dan_obnove": next_charge_day(db, school.id),
@@ -448,6 +454,50 @@ def grant_months(
     log_audit(
         db, user.id, user.username, "grant_subscription",
         f"school_id={school.id}, mesecev={koliko}, veljavnost do {until.isoformat()}",
+        school_id=school.id,
+    )
+    return RedirectResponse(
+        url=f"/narocnina?school_id={school.id}&info="
+            f"Naročnina podaljšana do {until.day}. {until.month}. {until.year}.",
+        status_code=303,
+    )
+
+
+@router.post("/narocnina/podaljsaj-sola")
+def extend_school_year_self(
+    request: Request,
+    school_id: int | None = Form(None),
+    db: Session = Depends(get_db),
+):
+    """Šolski admin (ali glavni admin) SAM podaljša naročnino svoje šole.
+
+    Veljavnost se nastavi na **1. 9. naslednje leto** (celo šolsko leto naprej).
+    Dovoljeno je **od 15. 8. dalje**; zunaj tega okna vrne opozorilo in ne spremeni
+    ničesar.
+    """
+    user = get_request_user(request, db)
+    if user is None or user.role not in (RoleEnum.admin, RoleEnum.main_admin):
+        raise HTTPException(
+            status_code=403,
+            detail="Naročnino lahko podaljša le administrator šole.",
+        )
+    school = _manageable_school(db, request, school_id)
+
+    if not self_extend_open():
+        target = school_year_target()
+        return RedirectResponse(
+            url=f"/narocnina?school_id={school.id}&error="
+                f"Podaljšanje naročnine je mogoče šele od 15. 8. "
+                f"(do {target.day}. {target.month}. {target.year}).",
+            status_code=303,
+        )
+
+    until = extend_to_school_year(db, school.id)
+    db.commit()
+    log_audit(
+        db, user.id, user.username, "extend_subscription_school_year",
+        f"school_id={school.id}, veljavnost do {until.isoformat()} "
+        f"(samopostrežno, 1. 9. naslednje leto)",
         school_id=school.id,
     )
     return RedirectResponse(

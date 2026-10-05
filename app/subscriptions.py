@@ -121,6 +121,36 @@ def extend_subscription(db: Session, school_id: int, months: int = 1) -> date:
     return new_until
 
 
+# ── Samopostrežno podaljšanje šolskega leta (šolski admin) ─────────────
+# Pravilo (zahteva uporabnika 2026-10-02):
+#   * naročnina velja do 1. 9.;
+#   * admin jo lahko podaljša SAM od 15. 8. dalje;
+#   * podaljšanje nastavi veljavnost na 1. 9. NASLEDNJE leto (celo šolsko leto
+#     naprej) — npr. klik 20. 8. 2026 → velja do 1. 9. 2027;
+#   * NE podaljšuje za »14 dni« ali mesece od danes.
+EXTEND_FROM_MONTH = 8   # avgust
+EXTEND_FROM_DAY = 15    # 15. 8.
+
+
+def self_extend_open(today: date | None = None) -> bool:
+    """Ali je samopostrežno podaljšanje dovoljeno (od 15. 8. dalje)?"""
+    d = today or date.today()
+    return (d.month, d.day) >= (EXTEND_FROM_MONTH, EXTEND_FROM_DAY)
+
+
+def school_year_target(today: date | None = None) -> date:
+    """Ciljni datum veljavnosti ob podaljšanju: 1. 9. NASLEDNJE leto."""
+    d = today or date.today()
+    return date(d.year + 1, 9, 1)
+
+
+def extend_to_school_year(db: Session, school_id: int, today: date | None = None) -> date:
+    """Podaljšaj naročnino do 1. 9. naslednje leto in vrni nov datum veljavnosti."""
+    new_until = school_year_target(today)
+    set_valid_until(db, school_id, new_until)
+    return new_until
+
+
 def subscription_state(db: Session, school_id: int) -> dict:
     """Stanje naročnine za predloge: prodaja, aktivnost, do kdaj, koliko dni."""
     until = get_valid_until(db, school_id)

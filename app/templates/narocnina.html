@@ -196,6 +196,31 @@
   </div>
   {% endif %}
 
+  {% if is_admin and not view_only %}
+  <!-- SAMOPOSTREŽNO PODALJŠANJE: administrator šole podaljša naročnino sam,
+       brez čakanja na glavnega admina. Veljavnost se nastavi na 1. 9. naslednje
+       leto; gumb je aktiven od 15. 8. dalje. -->
+  <div class="card">
+    <h2>Podaljšaj naročnino</h2>
+    <p class="muted">
+      Kot administrator šole lahko naročnino podaljšate <strong>sami, brez plačila</strong>.
+      Naročnina velja do <strong>1. 9.</strong>; podaljšate jo lahko <strong>od 15. 8. dalje</strong>,
+      veljavnost pa se nastavi na <strong>1. 9. {{ extend_until.year }}</strong> (celo šolsko leto naprej).
+    </p>
+    {% if extend_open %}
+    <form method="POST" action="/narocnina/podaljsaj-sola" style="display:inline;">
+      <input type="hidden" name="school_id" value="{{ school.id }}">
+      <button class="btn btn-ok" type="submit">Podaljšaj do 1. 9. {{ extend_until.year }}</button>
+    </form>
+    {% else %}
+    <div class="info">
+      Podaljšanje bo mogoče <strong>od 15. 8. {{ extend_until.year - 1 }}</strong> dalje
+      (takrat se bo veljavnost nastavila na 1. 9. {{ extend_until.year }}).
+    </div>
+    {% endif %}
+  </div>
+  {% endif %}
+
   {% if is_main_admin %}
   <div class="card">
     <h2>Nerešena plačila (vse šole)</h2>

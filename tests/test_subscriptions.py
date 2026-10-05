@@ -38,9 +38,12 @@ from app.subscriptions import (
     auto_renew_enabled,
     days_left,
     extend_subscription,
+    extend_to_school_year,
     get_valid_until,
     is_active,
     next_charge_day,
+    school_year_target,
+    self_extend_open,
     set_valid_until,
 )
 from tests.conftest import TEST_PASSWORD, default_school_id, login
@@ -830,3 +833,83 @@ def test_default_plan_is_yearly_only():
         assert plan_by_id(db, "neznano")["id"] == "leto"
     finally:
         db.close()
+
+
+# ── 15. Samopostrežno podaljšanje šolskega leta (1. 9.) ──────────────
+
+def test_self_extend_open_window():
+    """Podaljšanje je dovoljeno OD 15. 8. dalje."""
+    assert self_extend_open(date(2026, 8, 14)) is False
+    assert self_extend_open(date(2026, 8, 15)) is True
+    assert self_extend_open(date(2026, 9, 1)) is True
+    assert self_extend_open(date(2026, 10, 2)) is True
+    assert self_extend_open(date(2026, 6, 1)) is False
+
+
+def test_school_year_target_is_next_september():
+    """Cilj veljavnosti = 1. 9. NASLEDNJE leto (celo šolsko leto naprej)."""
+    assert school_year_target(date(2026, 8, 20)) == date(2027, 9, 1)
+    assert school_year_target(date(2026, 10, 2)) == date(2027, 9, 1)
+
+
+def test_extend_to_school_year_sets_first_of_september(client):
+    _set_until(date(2026, 6, 1))
+    db = SessionLocal()
+    try:
+        until = extend_to_school_year(db, default_school_id(), date(2026, 8, 20))
+        db.commit()
+        assert until == date(2027, 9, 1)
+        assert get_valid_until(db, default_school_id()) == date(2027, 9, 1)
+    finally:
+        db.close()
+
+
+def test_school_admin_can_extend_in_window(client, make_user, monkeypatch):
+    """Šolski admin sam podaljša naročnino (ko je okno odprto)."""
+    from app.routers import subscription as sub
+    monkeypatch.setattr(sub, "self_extend_open", lambda *a, **k: True)
+    _set_until(date.today() - timedelta(days=5))
+
+    admin = make_user(role="admin")
+    login(client, admin.username)
+    r = client.post("/narocnina/podaljsaj-sola",
+                    data={"school_id": default_school_id()}, follow_redirects=False)
+    assert r.status_code == 303
+
+    db = SessionLocal()
+    try:
+        assert get_valid_until(db, default_school_id()) == \
+            date(date.today().year + 1, 9, 1)
+    finally:
+        db.close()
+
+
+def test_school_admin_extend_blocked_outside_window(client, make_user, monkeypatch):
+    """Zunaj okna (pred 15. 8.) se veljavnost NE spremeni."""
+    from app.routers import subscription as sub
+    monkeypatch.setattr(sub, "self_extend_open", lambda *a, **k: False)
+    _set_until(date(2026, 6, 1))
+
+    admin = make_user(role="admin")
+    login(client, admin.username)
+    r = client.post("/narocnina/podaljsaj-sola",
+                    data={"school_id": default_school_id()}, follow_redirects=False)
+    assert r.status_code == 303
+    assert "error=" in r.headers.get("location", "")
+
+    db = SessionLocal()
+    try:
+        assert get_valid_until(db, default_school_id()) == date(2026, 6, 1)
+    finally:
+        db.close()
+
+
+def test_teacher_cannot_extend_subscription(client, make_user, monkeypatch):
+    """Učitelj ne sme podaljšati naročnine (403)."""
+    from app.routers import subscription as sub
+    monkeypatch.setattr(sub, "self_extend_open", lambda *a, **k: True)
+    t = make_user(role="teacher")
+    login(client, t.username)
+    r = client.post("/narocnina/podaljsaj-sola",
+                    data={"school_id": default_school_id()}, follow_redirects=False)
+    assert r.status_code == 403
