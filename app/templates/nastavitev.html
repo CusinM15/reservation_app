@@ -143,10 +143,9 @@
           zato sta <strong>uporabniško ime in e-pošta enaka</strong>. Obstoječa uporabniška imena se
           preskočijo.</li>
       {% if prodaja and prodaja.enabled %}
-      <li><strong>Uredite naročnino</strong> — po plačilu jo potrdimo in učitelji bodo lahko
-          vstopili. Naročnino je treba redno obnoviti (izbrano obdobje), sicer aplikacija za
-          šolo ne dela.</li>
+      <li><strong>Uredite naročnino</strong> — admin mora pod <strong>Nastavitve šole</strong> - <strong>Podaljšaj naročnino</strong></li>
       {% endif %}
+          Naročnina je vedno do naslednjega 1. 9. (do konca šolskega leta),  podaljšajo lahko šele po 15. 8.). Trenutno je naročnina 0 €, toda ker za to da app teče skrbum, se nebi branil kakšne donacije.
       <li><em>Neobvezno:</em> prilagodite omejitve ocenjevanj, urnik in čas neaktivnosti.</li>
     </ol>
     <div class="navodila">
@@ -159,7 +158,7 @@
     <h2>Pravila ocenjevanja (omejitve)</h2>
     <p class="muted">
       V <a href="/settings">Nastavitvah šole</a> so štiri številke, ki določajo, koliko ocenjevanj
-      sme posamezni učitelj vnesti. Aplikacija vnos zavrne z opozorilom, ko je meja presežena.
+      sme posamezni učitelj vnesti. Aplikacija vnos zavrne z opozorilom, ko je meja presežena. Trenutne nastavitve so skladne s Slovensko zakonodajo za ocenjevanje v osnovni šolah.
     </p>
     <table>
       <tr><th>Nastavitev</th><th>Kaj pomeni</th><th>Privzeto</th></tr>
@@ -175,7 +174,7 @@
       </tr>
       <tr>
         <td><strong>Največ na teden (z ponavljanjem)</strong></td>
-        <td>Velja, kadar je vnos označen kot <em>ponavljanje</em> (popravljanje ocene, PIP):
+        <td>Velja, kadar je vnos označen kot <em>ponavljanje</em> (popravljanje ocene):
             meja je višja od običajne tedenske.</td>
         <td>3</td>
       </tr>
@@ -186,7 +185,7 @@
       </tr>
     </table>
     <p class="muted">
-      Dodatna omejitev so <strong>zasedeni datumi</strong> (športni dan, izlet, prireditve): na te
+      Dodatna omejitev so <strong>zasedeni datumi</strong> (športni dan, izlet, prireditve ...): na te
       datume ocenjevanj ni mogoče vpisovati, učitelji pa jih vidijo v koledarju.
       <strong>Ne urejajo se v teh nastavitvah</strong> — vodstvo oziroma administrator jih označi
       v <strong>koledarju</strong> na glavni strani aplikacije (gumb za dneve dejavnosti, kjer izbere
@@ -203,23 +202,23 @@
     <h2>Dnevi dejavnosti (Vnos dejavnosti)</h2>
     <p class="muted">
       Dejavnosti (športni dan, izlet, kulturni dan, naravoslovni dan …) se urejajo na posebni
-      strani <strong>»Vnos dejavnosti«</strong> — povezava je v zavihku
+      strani <strong>»Dejavnosti«</strong> — povezava je v zavihku
       <em>Ocenjevanje in dnevi dejavnosti</em> (pot <code>/dejavnosti</code>). Ureja jih vodstvo
       oziroma administrator; učitelji stran vidijo samo za branje.
     </p>
 
     <h2 style="font-size:1rem;margin-top:16px;">Kako se doda</h2>
     <ol class="koraki">
-      <li>Na strani <strong>»Vnos dejavnosti«</strong> kliknite <strong>»＋ Nova dejavnost«</strong>.</li>
+      <li>Na strani <strong>»Dejavnosti«</strong> kliknite <strong>»＋ "Tip dejavnosti, ki jo želite dodati"«</strong>.</li>
       <li>Vpišite <strong>naziv</strong> (npr. <em>Športni dan</em>) in <strong>datum</strong> (ali
           razpon »Več dni / Do«).</li>
-      <li>Izberite <strong>razrede</strong>, ki jih dejavnost zadeva (npr. 3. a, 3. b).</li>
+      <li>Izberite <strong>razrede</strong>, ki jih dejavnost zadeva (npr. 3.a, 3.b).</li>
       <li>Neobvezno izberite <strong>prostore</strong> (npr. telovadnico) in <strong>vodjo</strong>.</li>
       <li>Obkljukajte <strong>»Celoten dan«</strong>, če dejavnost traja ves dan (glej spodaj), in
           shranite.</li>
     </ol>
     <div class="navodila">
-      <strong>Večdnevna dejavnost</strong> (npr. ekskurzija za več dni): v razdelku
+      <strong>Večdnevna dejavnost</strong> (npr. šola v naravi, tehnični dan (vsak razred v generaciji ima svoj termin)): v razdelku
       <em>Datumi</em> kliknite <strong>＋ Dodaj datum</strong>, vpišite <strong>Od</strong>,
       obkljukajte <strong>»Več dni«</strong> in v polje <strong>Do</strong> vpišite zadnji dan —
       dejavnost velja za <strong>vsak zaporedni dan v obsegu</strong>. Dejavnosti so urejene po
@@ -240,14 +239,14 @@
       <tr>
         <td><strong>Celoten dan</strong> (brez kljukice)</td>
         <td>Krajša dejavnost: ocenjevanja <strong>niso</strong> blokirana in dan se v koledarju ne
-            prikaže kot blokada. Primerno, kadar dejavnost traja le del dneva.</td>
+            prikaže kot blokada. Primerno, kadar dejavnost traja le del dneva. Mora pa učitelj pri vodstvu/organizatorju dejavnosti preveriti da dejavnost ne poteka med njegovo uro.</td>
       </tr>
       <tr>
         <td><strong>Ročna blokada v koledarju</strong></td>
         <td>Če želite zaseden dan <em>brez</em> zapisa v dejavnostih, ga označite v
             <strong>koledarju</strong> na glavni strani (gumb za dneve dejavnosti: izberete razrede in
             obdobje). Taka blokada v dejavnostih nima zapisa — v koledarju je označena kot
-            »ročno blokirano«.</td>
+            »ročno blokirano« (na ta način vnost odsvetujem, toda obstaja pa).</td>
       </tr>
       <tr>
         <td><strong>Urejanje / brisanje</strong></td>
@@ -256,7 +255,7 @@
       </tr>
     </table>
     <div class="navodila">
-      Primer: <em>Športni dan za 3. a in 3. b, 14. 9. 2026, telovadnica, »Celoten dan«</em> — ob
+      Primer: <em>Športni dan za 3.a in 3.b, 14. 9. 2026, telovadnica, »Celoten dan«</em> — ob
       shranjevanju se 14. 9. 2026 zablokira za ocenjevanja obeh razredov, ure 1–5 pa se rezervirajo v
       telovadnici.
     </div>
@@ -266,7 +265,7 @@
     <h2>Pogosta vprašanja</h2>
     <p><strong>Zakaj nova šola dobi testni naslov pošiljatelja?</strong><br>
        Zato, da pošta ne bi šla z napačnim pošiljateljem (tujega). Testni naslov
-       <code>test@example.invalid</code> je treba zamenjati, sicer pošte ni mogoče dostaviti.</p>
+       <code>test@example.invalid</code> je treba zamenjati, sicer pošte ni mogoče dobiti</p>
     <p><strong>Učitelji se ne morejo prijaviti.</strong><br>
        Preverite postavko »Naročnina« zgoraj. Če naročnina ni veljavna, se lahko prijavi le
        administrator šole (da jo uredi).</p>
@@ -282,7 +281,7 @@
        Da. Na strani <a href="/auth/admin/users">Uporabniki</a> izberite CSV datoteko in kliknite
        <strong>»📥 Uvozi CSV«</strong>. Glava stolpcev ni obvezna (privzeti vrstni red:
        <code>uporabniško ime, email, ime, priimek, vloga, geslo</code>), geslo pa lahko izpustite —
-       aplikacija si ga izmisli in ga pokaže v povzetku.</p>
+       aplikacija si ga izmisli, potem preko >>Pozabljeno geslo?<< nastavi vsak učitelj/ušprabnik sam.</p>
     <p><strong>Kje so varnostne kopije?</strong><br>
        Aplikacija vsako noč pripravi kopijo podatkov šole in jo pošlje na »E-pošto za varnostne
        kopije«; kopijo lahko kadar koli prenesete tudi ročno v nastavitvah šole.</p>
