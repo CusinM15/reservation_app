@@ -29,6 +29,8 @@ from app.database import SessionLocal
 from app.models import AuditLog, Payment, RoleEnum, School, User
 from app.tenancy import (
     TEST_EMAIL_PLACEHOLDER,
+    TEST_MAIL_PASSWORD,
+    TEST_MAIL_USERNAME,
     default_school_admin_username,
     get_school_config,
     school_admin_username_from_initials,
@@ -679,6 +681,10 @@ def test_registration_sets_test_email_addresses(client):
         assert cfg.MAIL_FROM == TEST_EMAIL_PLACEHOLDER
         assert cfg.ADMIN_EMAIL == TEST_EMAIL_PLACEHOLDER
         assert cfg.BACKUP_EMAIL == TEST_EMAIL_PLACEHOLDER
+        # SMTP poverilnice: psevdo, NE od naše šole (Toneta Čufarja).
+        assert cfg.MAIL_USERNAME == TEST_MAIL_USERNAME
+        assert cfg.MAIL_PASSWORD == TEST_MAIL_PASSWORD
+        assert cfg.MAIL_USERNAME != app_config.MAIL_USERNAME
     finally:
         db.close()
 

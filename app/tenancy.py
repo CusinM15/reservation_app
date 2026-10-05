@@ -189,6 +189,11 @@ _TRANSLIT_INICIALK = str.maketrans({"č": "c", "š": "s", "ž": "z", "ć": "c", 
 
 # Testni naslovi za novo šolo (dokler jih admin ne uredi v Nastavitvah šole).
 TEST_EMAIL_PLACEHOLDER = "test@example.invalid"
+# Psevdo SMTP podatki za novo šolo — nova šola NE sme podedovati pravih SMTP
+# poverilnic naše šole (npr. Toneta Čufarja), sicer bi pošiljala pošto z našim
+# računom. Admin jih zamenja v Nastavitvah šole.
+TEST_MAIL_USERNAME = "test@example.invalid"
+TEST_MAIL_PASSWORD = "testno-geslo"
 
 
 def school_admin_username_from_initials(name: str) -> str:
@@ -216,15 +221,17 @@ def school_admin_username_from_initials(name: str) -> str:
 
 
 def apply_test_email_settings(db: Session, school_id: int) -> None:
-    """Novi šoli zapiši TESTNE naslove e-pošte.
+    """Novi šoli zapiši TESTNE vrednosti e-pošte.
 
-    Zakaj? Ob ustvarjanju šole se nastavitve napolnijo iz .env — tam je naslov
-    pošiljatelja (MAIL_FROM) vezan na našo šolo, prav tako naslova za obvestila
-    in varnostne kopije. Nova šola zato dobi začasne testne vrednosti, ki jih
-    admin zamenja v Nastavitvah šole (glej stran Navodila za nastavitev).
+    Zakaj? Ob ustvarjanju šole se nastavitve napolnijo iz .env — tam so povezane
+    z NAŠO šolo (naslov pošiljatelja, obvestila, varnostne kopije) IN tudi SMTP
+    uporabniško ime/geslo. Nova šola zato dobi začasne testne/psevdo vrednosti,
+    ki jih admin zamenja v Nastavitvah šole (glej stran Navodila za nastavitev).
     """
-    for key in ("MAIL_FROM", "BACKUP_EMAIL", "ADMIN_EMAIL"):
+    for key in ("MAIL_FROM", "BACKUP_EMAIL", "ADMIN_EMAIL", "MAIL_USERNAME"):
         set_school_setting(db, school_id, key, TEST_EMAIL_PLACEHOLDER)
+    # SMTP geslo: psevdo vrednost — nova šola NE sme pošiljati z našim računom.
+    set_school_setting(db, school_id, "MAIL_PASSWORD", TEST_MAIL_PASSWORD)
 
 
 def parse_alias_path(path: str) -> tuple[str | None, str | None]:
