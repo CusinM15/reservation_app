@@ -672,7 +672,7 @@ def _demo_setup_items() -> list[dict]:
         },
         {
             "naslov": "SMTP strežnik (pošiljanje pošte)",
-            "opis": ("Strežnik, uporabniško ime in geslo za pošiljanje pošte. Privzeto so vpisani "
+            "opis": ("Strežni za pošiljanje pošte. Privzeto so vpisani "
                      "podatki ponudnika — za svojo šolo vpišite svojega (npr. Arnes)."),
             "ok": True,
             "trenutno": "mail.arnes.si",
@@ -811,7 +811,7 @@ def setup_guide_page(
         },
         {
             "naslov": "SMTP strežnik (pošiljanje pošte)",
-            "opis": ("Strežnik, uporabniško ime in geslo za pošiljanje pošte. Privzeto so vpisani "
+            "opis": ("Strežnik za pošiljanje pošte. Privzeto so vpisani "
                      "podatki ponudnika — za svojo šolo vpišite svojega (npr. Arnes)."),
             "ok": bool((cfg.MAIL_SERVER or "").strip()) and bool((cfg.MAIL_USERNAME or "").strip())
                   and bool(cfg.get_str("MAIL_PASSWORD", "")),
