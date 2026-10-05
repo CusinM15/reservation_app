@@ -45,9 +45,15 @@
     {% else %}
 
       {% if cfg.free %}
-        <p class="price">0 €</p>
-        <p class="muted">Plačila ni, a naročnino je treba obnoviti za vsako obdobje — brez
-           veljavne naročnine aplikacija za šolo ne dela.</p>
+        <p class="price">Brezplačno (0 €)</p>
+        <p class="muted">Aplikacija je <strong>brezplačna</strong>. Naročnino je treba vseeno
+           obnoviti za vsako šolsko leto — brez veljavne naročnine aplikacija za šolo ne dela.</p>
+        {% if cfg.donation_url %}
+        <p class="muted" style="margin-top:10px;">
+          Aplikacijo razvija in vzdržuje posameznik; če ti je v pomoč, lahko
+          <a href="{{ cfg.donation_url }}" target="_blank" rel="noopener">podpreš projekt z donacijo</a>. 🙏
+        </p>
+        {% endif %}
       {% else %}
         <table>
           <tr><th>Obdobje</th><th>Cena</th></tr>
@@ -55,13 +61,28 @@
           <tr><td>{{ p.label }} ({{ p.months }} mes.)</td><td><strong>{{ p.price }} €</strong></td></tr>
           {% endfor %}
         </table>
-        <p class="muted">Cena velja za eno šolo (DDV ni obračunan, če niste zavezanec).</p>
+        <p class="muted">Polna cena velja za <strong>celo leto (1. 9. → 1. 9.)</strong>.
+           Če začnete sredi leta, je cena <strong>sorazmerna</strong> preostanku do 1. 9.
+           (DDV ni obračunan, če niste zavezanec).</p>
+
+        <h2>Izračun cene</h2>
+        <p class="muted">Naročnina <strong>vedno velja do 1. 9.</strong> — izberite datum začetka,
+           cena se sorazmerno zniža (bližje kot je 1. 9., nižja je cena).</p>
+        <form method="GET" action="/nakup" style="margin:10px 0;display:flex;gap:10px;align-items:center;flex-wrap:wrap;">
+          <label>Začetek naročnine:</label>
+          <input type="date" name="start" value="{{ start.isoformat() }}"
+                 style="padding:8px 10px;border:1px solid #ddd;border-radius:6px;">
+          <button class="btn btn-secondary" type="submit">Izračunaj</button>
+        </form>
+        <p class="price" style="margin:2px 0;">{{ prorated }} €</p>
+        <p class="muted">Za obdobje <strong>{{ start.strftime('%d. %m. %Y') }} – {{ period_end.strftime('%d. %m. %Y') }}</strong>
+           (polna cena {{ cfg.price_label }} za celo leto).</p>
       {% endif %}
 
       <h2>Kaj dobite</h2>
       <ul>
         <li>rezervacije prostorov in opreme za vse učitelje,</li>
-        <li>dnevi dejavnosti (uvoz iz tabele, urnik, prostori),</li>
+        <li>dnevi dejavnosti (termini po razredih, urnik, prostori),</li>
         <li>ocenjevanja z omejitvami in izvozom,</li>
         <li>ločeni računi za učitelje, vodstvo in administratorja šole,</li>
         <li>nočna varnostna kopija podatkov šole.</li>

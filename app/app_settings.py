@@ -13,6 +13,7 @@
 from sqlalchemy.orm import Session
 
 import time
+from datetime import date
 
 from app.models import AppSetting
 
@@ -156,6 +157,49 @@ def is_free(db: Session) -> bool:
     return all(plan["price"] == 0 for plan in plans(db))
 
 
+# ── Sorazmerna cena do 1. 9. ───────────────────────────────────────────
+# Pravilo (zahteva uporabnika 2026-10-02): naročnina VEDNO velja do 1. 9.
+# (začetek šolskega leta). Cena je zato sorazmerna preostanku do 1. 9.: polna
+# letna cena × (dni do 1. 9. / 365). Primer: polna cena 12 €, začetek 1. 3. →
+# ~184/365 × 12 ≈ 6 €. Obnovitev se odpre 15. 8.; začetek od 15. 8. dalje velja
+# do 1. 9. NASLEDNJE leto (celo leto), sicer do 1. 9. ISTEGA leta.
+SCHOOL_YEAR_END_MONTH = 9      # 1. september — konec obdobja
+SCHOOL_YEAR_END_DAY = 1
+RENEW_FROM_MONTH = 8           # 15. avgust — od takrat velja za celo leto naprej
+RENEW_FROM_DAY = 15
+DAYS_IN_YEAR = 365
+
+# Donacija (»podpri projekt«) — PayPal povezava iz README (repo reservation_app).
+DONATION_URL = "https://www.paypal.com/ncp/payment/XC7LTYXAWUQMW"
+
+
+def subscription_period_end(start: date | None = None) -> date:
+    """Kdaj se konča naročniško obdobje, ki se začne ob `start` — vedno 1. 9.
+
+    Če je začetek od 15. 8. dalje → 1. 9. NASLEDNJE leto (celo šolsko leto),
+    sicer 1. 9. ISTEGA leta (le preostanek tega šolskega leta).
+    """
+    d = start or date.today()
+    if (d.month, d.day) >= (RENEW_FROM_MONTH, RENEW_FROM_DAY):
+        return date(d.year + 1, SCHOOL_YEAR_END_MONTH, SCHOOL_YEAR_END_DAY)
+    return date(d.year, SCHOOL_YEAR_END_MONTH, SCHOOL_YEAR_END_DAY)
+
+
+def prorated_price_eur(db: Session, start: date | None = None) -> int:
+    """Sorazmerna cena do 1. 9. glede na datum začetka (zaokroženo na cel €).
+
+    Nikoli ne preseže polne letne cene (začetek v oknu 15. 8.–1. 9. bi sicer dal
+    malenkost več kot celo leto).
+    """
+    full = price_eur(db)
+    if full <= 0:
+        return 0
+    d = start or date.today()
+    end = subscription_period_end(d)
+    days = max(0, (end - d).days)
+    return min(full, round(full * days / DAYS_IN_YEAR))
+
+
 def paypal_url(db: Session) -> str:
     """Povezava do enkratnega plačila (PayPal izdelek). Prazno = ni nastavljeno."""
     return get_app_setting(db, KEY_PAYPAL, DEFAULT_PAYPAL_URL)
@@ -184,6 +228,11 @@ def selling_config(db: Session) -> dict:
         "paypal_url": paypal_url(db),
         "paypal_sub_url": paypal_subscription_url(db),
         "note": payment_note(db),
+        # Donacija (»podpri projekt«) — prikazana, ko je app brezplačen.
+        "donation_url": DONATION_URL,
+        # Sorazmerna cena do 1. 9. glede na današnji datum (za prikaz).
+        "prorated_price_eur": prorated_price_eur(db),
+        "period_end": subscription_period_end(),
     }
 
 

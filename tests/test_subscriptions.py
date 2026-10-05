@@ -17,12 +17,15 @@ from uuid import uuid4
 import pytest
 
 from app.app_settings import (
+    DONATION_URL,
     get_app_setting,
     is_free,
     plan_by_id,
     plans,
     price_eur,
+    prorated_price_eur,
     save_selling_config,
+    subscription_period_end,
 )
 from app.config import settings as app_config
 from app.database import SessionLocal
@@ -451,11 +454,12 @@ def test_price_zero_is_allowed(client):
 
 
 def test_price_zero_shows_zero_eur(client):
+    """Pri ceni 0 € stran izpiše, da je aplikacija brezplačna (in 0 €)."""
     _set_selling(True, price=0)
     r = client.get("/nakup")
     assert r.status_code == 200
     assert "0 €" in r.text
-    assert "Brezplačno" not in r.text
+    assert "Brezplačno" in r.text
 
 
 def test_settings_save_zero_price(client):
@@ -919,3 +923,54 @@ def test_teacher_cannot_extend_subscription(client, make_user, monkeypatch):
     r = client.post("/narocnina/podaljsaj-sola",
                     data={"school_id": default_school_id()}, follow_redirects=False)
     assert r.status_code == 403
+
+
+# ── 16. Sorazmerna cena do 1. 9. + donacija ──────────────────────────
+
+def test_subscription_period_end_rule():
+    """Obdobje vedno do 1. 9.; od 15. 8. dalje do NASLEDNJEGA leta."""
+    assert subscription_period_end(date(2027, 3, 1)) == date(2027, 9, 1)
+    assert subscription_period_end(date(2026, 8, 14)) == date(2026, 9, 1)
+    assert subscription_period_end(date(2026, 8, 15)) == date(2027, 9, 1)
+    assert subscription_period_end(date(2026, 10, 2)) == date(2027, 9, 1)
+
+
+def test_prorated_price(client):
+    """Polna cena 12 €; začetek 1. 3. → pol leta → 6 €."""
+    _set_selling(True, price=12)
+    db = SessionLocal()
+    try:
+        assert prorated_price_eur(db, date(2026, 9, 1)) == 12   # celo leto
+        assert prorated_price_eur(db, date(2027, 3, 1)) == 6    # pol leta
+        assert prorated_price_eur(db, date(2027, 6, 1)) == 3    # trije meseci
+    finally:
+        db.close()
+
+
+def test_prorated_free_is_zero(client):
+    _set_selling(True, price=0)
+    db = SessionLocal()
+    try:
+        assert prorated_price_eur(db, date(2027, 3, 1)) == 0
+    finally:
+        db.close()
+
+
+def test_nakup_free_text_and_donation(client):
+    """Pri ceni 0 € stran pove, da je app brezplačen, in ponudi donacijo."""
+    _set_selling(True, price=0)
+    r = client.get("/nakup")
+    assert r.status_code == 200
+    assert "brezplačno" in r.text.lower()
+    assert "podpreš projekt z donacijo" in r.text
+    assert DONATION_URL in r.text
+
+
+def test_nakup_priced_calculator(client):
+    """Pri ceni > 0 stran izračuna sorazmerno ceno do 1. 9."""
+    _set_selling(True, price=12)
+    r = client.get("/nakup?start=2027-03-01")
+    assert r.status_code == 200
+    assert "Izračun cene" in r.text
+    assert "6 €" in r.text and "12 €" in r.text
+    assert "01. 03. 2027" in r.text and "01. 09. 2027" in r.text

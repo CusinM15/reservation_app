@@ -68,11 +68,17 @@
   {% if cfg.enabled and not view_only %}
   <div class="card">
     {% if cfg.free %}
-      <h2>Naročnina: 0 €</h2>
+      <h2>Brezplačno (0 €)</h2>
       <p class="muted">
-        Plačila ni, a naročnino je treba <strong>obnoviti za vsako obdobje</strong>, da aplikacija
-        dela. Veljavnost podaljša glavni admin (»Podaljšaj brez plačila« spodaj).
+        Aplikacija je <strong>brezplačna</strong>. Naročnino je treba vseeno
+        <strong>obnoviti za vsako šolsko leto</strong>, da aplikacija dela.
       </p>
+      {% if cfg.donation_url %}
+      <p class="muted">
+        Aplikacijo razvija in vzdržuje posameznik; če ti je v pomoč, lahko
+        <a href="{{ cfg.donation_url }}" target="_blank" rel="noopener">podpreš projekt z donacijo</a>. 🙏
+      </p>
+      {% endif %}
     {% else %}
     <h2>Nakup naročnine — {{ cfg.price_label }}</h2>
     {% set do_placila = state.days_left is none or state.days_left <= 0 %}

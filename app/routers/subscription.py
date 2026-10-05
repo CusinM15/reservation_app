@@ -10,14 +10,20 @@
 # ─────────────────────────────────────────────────────────────────────────
 
 import secrets
-from datetime import datetime
+from datetime import date, datetime
 
 from fastapi import APIRouter, Depends, Form, HTTPException, Request
 from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.templating import Jinja2Templates
 from sqlalchemy.orm import Session
 
-from app.app_settings import plan_by_id, save_selling_config, selling_config
+from app.app_settings import (
+    plan_by_id,
+    prorated_price_eur,
+    save_selling_config,
+    selling_config,
+    subscription_period_end,
+)
 from app.audit import log_audit
 from app.config import validate_password_strength
 from app.database import get_db
@@ -60,8 +66,23 @@ def _require_main_admin(db: Session, request: Request):
     return user
 
 
+def _parse_iso_date(value: str | None) -> date | None:
+    """Pretvori »YYYY-MM-DD« v date; neveljavno/prazno → None."""
+    text = (value or "").strip()[:10]
+    if not text:
+        return None
+    try:
+        return datetime.strptime(text, "%Y-%m-%d").date()
+    except ValueError:
+        return None
+
+
 @router.get("/nakup", response_class=HTMLResponse)
-def nakup_page(request: Request, db: Session = Depends(get_db)):
+def nakup_page(
+    request: Request,
+    start: str | None = None,
+    db: Session = Depends(get_db),
+):
     """JAVNA stran za nakup naročnine (brez prijave).
 
     Zakaj javna? Gumb »Nakup / podaljšanje naročnine« je na prijavni strani, kjer
@@ -69,10 +90,21 @@ def nakup_page(request: Request, db: Session = Depends(get_db)):
     bi middleware obiskovalca takoj vrnil na prijavo — uporabniku se zdi, da klik
     ne naredi nič. Zato je ponudba javna, stanje in sporočanje plačila pa ostaneta
     za prijavljene (šolski/glavni admin).
+
+    Če je cena > 0, lahko šola izbere datum začetka; cena je SORAZMERNA do 1. 9.
+    (glej prorated_price_eur), zato npr. začetek 1. 3. pri polni ceni 12 € znaša ~6 €.
     """
+    cfg = selling_config(db)
+    izbrani_start = _parse_iso_date(start) or date.today()
     return templates.TemplateResponse(
         "nakup.html",
-        {"request": request, "cfg": selling_config(db)},
+        {
+            "request": request,
+            "cfg": cfg,
+            "start": izbrani_start,
+            "period_end": subscription_period_end(izbrani_start),
+            "prorated": prorated_price_eur(db, izbrani_start),
+        },
     )
 
 
