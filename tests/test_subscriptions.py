@@ -308,7 +308,7 @@ def test_main_admin_confirms_payment_and_extends(client, make_user):
         assert payment.status == "confirmed"
         assert payment.confirmed_by == app_config.MAIN_ADMIN_USERNAME
         assert payment.valid_until == get_valid_until(db, default_school_id())
-        assert get_valid_until(db, default_school_id()) >= date.today() + timedelta(days=27)
+        assert get_valid_until(db, default_school_id()) == date(date.today().year + 1, 9, 1)
         # dogodek je v dnevniku sprememb
         actions = [a.action for a in db.query(AuditLog).all()]
         assert "report_payment" in actions and "confirm_payment" in actions
@@ -325,7 +325,7 @@ def test_main_admin_can_grant_months_without_payment(client):
     assert r.status_code in (303, 307)
     db = SessionLocal()
     try:
-        assert get_valid_until(db, default_school_id()) >= date.today() + timedelta(days=55)
+        assert get_valid_until(db, default_school_id()) == date(date.today().year + 1, 9, 1)
     finally:
         db.close()
 

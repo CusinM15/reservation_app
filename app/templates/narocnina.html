@@ -285,12 +285,10 @@
 
     <hr style="border:none;border-top:1px solid #eee;margin:18px 0;">
     <h2>Podaljšaj brez plačila</h2>
-    <p class="muted">Za vašo šolo ali za poskusno obdobje.</p>
+    <p class="muted">Veljavnost se nastavi na <strong>1. 9. {{ extend_until.year }}</strong> (enotno za vse šole).</p>
     <form method="POST" action="/narocnina/podaljsaj">
       <input type="hidden" name="school_id" value="{{ school.id }}">
-      <label>Število mesecev (12 = leto)</label>
-      <input type="number" name="months" min="1" value="12" style="max-width:140px;">
-      <p style="margin-top:14px;"><button class="btn btn-sm btn-ok" type="submit">Podaljšaj to šolo</button></p>
+      <p style="margin-top:6px;"><button class="btn btn-sm btn-ok" type="submit">Podaljšaj do 1. 9. {{ extend_until.year }}</button></p>
     </form>
   </div>
   {% endif %}

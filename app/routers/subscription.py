@@ -384,13 +384,13 @@ def confirm_payment(
     school_id: int | None = Form(None),
     db: Session = Depends(get_db),
 ):
-    """Glavni admin potrdi prejeto plačilo → naročnina +1 mesec."""
+    """Glavni admin potrdi prejeto plačilo → naročnina velja do 1. 9. naslednje leto."""
     user = _require_main_admin(db, request)
     payment = db.query(Payment).filter(Payment.id == payment_id).first()
     if payment is None:
         raise HTTPException(status_code=404, detail="Plačilo ne obstaja.")
 
-    until = extend_subscription(db, payment.school_id, payment.months or 1)
+    until = extend_to_school_year(db, payment.school_id)
     payment.status = "confirmed"
     payment.valid_until = until
     payment.confirmed_at = datetime.utcnow()
@@ -444,16 +444,16 @@ def grant_months(
 ):
     """Glavni admin podaljša naročnino brez plačila (npr. za svojo šolo).
 
-    Če število mesecev ni podano, podaljšamo za LETO (12 mesecev).
+    Veljavnost se VEDNO nastavi na 1. 9. naslednje leto (enotno za vse šole) —
+    ne glede na morebitno poslano število mesecev.
     """
     user = _require_main_admin(db, request)
     school = _manageable_school(db, request, school_id)
-    koliko = int(months) if months else plan_by_id(db, "leto")["months"]
-    until = extend_subscription(db, school.id, koliko)
+    until = extend_to_school_year(db, school.id)
     db.commit()
     log_audit(
         db, user.id, user.username, "grant_subscription",
-        f"school_id={school.id}, mesecev={koliko}, veljavnost do {until.isoformat()}",
+        f"school_id={school.id}, veljavnost do {until.isoformat()} (1. 9. naslednje leto)",
         school_id=school.id,
     )
     return RedirectResponse(
