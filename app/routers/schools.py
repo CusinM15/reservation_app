@@ -637,6 +637,22 @@ def _demo_setup_items() -> list[dict]:
             "kje_napis": "Nastavitve šole",
         },
         {
+            "naslov": "SMTP uporabniško ime",
+            "opis": "Kratko uporabniško ime za prijavo v Arnes pošto.",
+            "ok": False,
+            "trenutno": "ravnatelj@guest.arnes.si",
+            "kje": "/settings",
+            "kje_napis": "Nastavitve šole",
+        },
+        {
+            "naslov": "SMTP geslo",
+            "opis": "Geslo za ta e-mail.",
+            "ok": False,
+            "trenutno": "ravnatelj@guest.arnes.si",
+            "kje": "/settings",
+            "kje_napis": "Nastavitve šole",
+        },
+        {
             "naslov": "Naslov pošiljatelja (From)",
             "opis": ("Naslov, s katerim aplikacija pošilja pošto (obvestila, obnovitev gesla, "
                      "varnostne kopije). Nova šola dobi testni naslov — zamenjajte ga s svojim, "
