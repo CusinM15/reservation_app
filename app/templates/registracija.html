@@ -42,7 +42,7 @@
     <ul>
       <li><strong>rezervacije prostorov in opreme</strong> — učitelji rezervirajo tablice, računalnice,
           posebne prostore; aplikacija sama pazi na zasedenost in omejitve,</li>
-      <li><strong>dnevi dejavnosti</strong> — termini po razredih, prostori, cene, urnik; uvoz iz tabele,</li>
+      <li><strong>dnevi dejavnosti</strong> — termini po razredih, prostori, cene, urnik,</li>
       <li><strong>ocenjevanja</strong> — napovedani datumi z omejitvami (na teden, na dan, zaporedni dnevi),
           ponavljanja in izvoz za vodstvo,</li>
       <li><strong>ločeni računi</strong> — učitelj, vodstvo in administrator šole vidijo vsak svoje,</li>
@@ -57,6 +57,7 @@
     <h2>Kako poteka</h2>
     <ol class="steps">
       <li>Ustvarite račun šole (spodaj) — traja minuto.</li>
+      <li>Nastaviš e-mail admina, najbolj pomembno je da nastavite e-pošto iz katere bo app pošiljal e-pošto - nastavite *SMTP uporabniško ime*, *SMTP geslo* in *Naslov pošiljatelja (From)*! če za pošiljanje ne boste uporabljali **Arnes** e-pošte, ustrezno nastavite tudi *SMTP strežnik* in *SMTP vrata*.</li>li>
       <li>Uredite naročnino: cena je <strong>{% if cfg.free %}0 € (brez plačila){% else %}{{ cfg.price_label }}{% endif %}</strong>.</li>
       <li>Ko naročnino potrdimo, se lahko prijavijo tudi vaši učitelji in vodstvo.
           Do takrat se lahko prijavi le administrator šole (da uredi naročnino).</li>
