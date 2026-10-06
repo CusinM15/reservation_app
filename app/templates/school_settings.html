@@ -99,8 +99,7 @@
                     <option value="en" {% if values.get('UI_LANGUAGE') == 'en' %}selected{% endif %}>{{ t('set_opt_angleščina', 'angleščina') }}</option>
                 </select>
                 <div class="hint" style="margin-top:6px;">
-                    Jezik, v katerem aplikacija prikaže napise gumbov in pogovornih oken
-                    (besedila se berejo iz tabele <code>ui_strings</code>).
+                    {{ t('set_hint_jezik_1', 'Jezik, v katerem aplikacija prikaže napise gumbov in pogovornih oken (besedila se berejo iz tabele') }} <code>ui_strings</code>).
                 </div>
             </div>
 
@@ -157,7 +156,7 @@
                 <div id="prostori-rows"></div>
                 <button type="button" class="btn" style="margin-top:8px;" onclick="addProstorRow(); return false;">{{ t('set_dodaj_prostor', '＋ Dodaj prostor') }}</button>
                 <div class="hint" style="margin-top:6px;">
-                    {{ t('set_hint_prostori_1', 'Kljukica') }} <strong>»število«</strong> {{ t('set_hint_prostori_2', 'pomeni: v tem prostoru lahko hkrati rezervira več učiteljev, vsak navede količino, skupna vsota na uro pa je omejena z izbrano številsko spremenljivko. Brez kljukice je prostor ekskluziven — ena rezervacija na uro.') }}
+                    {{ t('set_hint_prostori_1', 'Kljukica') }} <strong>{{ t('set_lbl_stevilo_q', '»število«') }}</strong> {{ t('set_hint_prostori_2', 'pomeni: v tem prostoru lahko hkrati rezervira več učiteljev, vsak navede količino, skupna vsota na uro pa je omejena z izbrano številsko spremenljivko. Brez kljukice je prostor ekskluziven — ena rezervacija na uro.') }}
                     Primer: <code>tablice</code> {{ t('set_hint_prostori_3', 's kljukico in spremenljivko') }} <code>Število tablic</code>,
                     <code>racunalnica</code> {{ t('set_hint_prostori_5', 'brez.') }}
                 </div>
@@ -178,8 +177,7 @@
 
             <h3>{{ t('set_pravila_ocenjevanja', 'Pravila ocenjevanja') }}</h3>
             <p class="hint">
-                Privzeto: največ 2 običajni ocenjevanji na teden, največ 1 na dan,
-                izjema do 3 na teden, če je vmes ponavljanje, in prepoved 3 zaporednih dni.
+                {{ t('set_ocenjevanje_privzeto', 'Privzeto: največ 2 običajni ocenjevanji na teden, največ 1 na dan, izjema do 3 na teden, če je vmes ponavljanje, in prepoved 3 zaporednih dni.') }}
             </p>
             {% for f in fields %}{% if f.key.startswith('ASSESSMENT_') %}
             <div class="field">
@@ -220,24 +218,24 @@
         <div class="restore-box">
             {% if narocnina.until and narocnina.active %}
                 <p class="hint" style="margin-top:0;">
-                    Naročnina je veljavna do
+                    {{ t('set_narocnina_veljavna_do', 'Naročnina je veljavna do') }}
                     <strong>{{ narocnina.until.strftime('%d. %m. %Y') }}</strong>
-                    {% if narocnina.days_left is not none %}(še {{ narocnina.days_left }} dni){% endif %}.
+                    {% if narocnina.days_left is not none %}{{ t('set_se', '(še') }} {{ narocnina.days_left }} {{ t('set_dni', 'dni') }}){% endif %}.
                 </p>
             {% elif narocnina.active %}
                 <p class="hint" style="margin-top:0;">
-                    V tej namestitvi naročnina ni potrebna — aplikacija deluje brez omejitev.
+                    {{ t('set_narocnina_ni_potrebna', 'V tej namestitvi naročnina ni potrebna — aplikacija deluje brez omejitev.') }}
                 </p>
             {% else %}
                 <p class="hint" style="margin-top:0;color:#991b1b;">
-                    Naročnina <strong>ni veljavna</strong>{% if narocnina.until %}
-                    (potekla {{ narocnina.until.strftime('%d. %m. %Y') }}){% endif %}.
-                    Aplikacija je za učitelje zaprta, dokler naročnina ni obnovljena.
+                    {{ t('set_narocnina_lbl', 'Naročnina') }} <strong>{{ t('set_ni_veljavna', 'ni veljavna') }}</strong>{% if narocnina.until %}
+                    ({{ t('set_potekla', 'potekla') }} {{ narocnina.until.strftime('%d. %m. %Y') }}){% endif %}.
+                    {{ t('set_narocnina_zaprta', 'Aplikacija je za učitelje zaprta, dokler naročnina ni obnovljena.') }}
                 </p>
             {% endif %}
             <a class="btn btn-primary" href="/narocnina?school_id={{ school.id }}"
                style="text-decoration:none;display:inline-block;">
-                {% if narocnina.until and narocnina.active %}Podaljšaj naročnino{% else %}Kupi naročnino{% endif %}
+                {% if narocnina.until and narocnina.active %}{{ t('btn_podaljsaj_narocnino', 'Podaljšaj naročnino') }}{% else %}{{ t('set_kupi_narocnino', 'Kupi naročnino') }}{% endif %}
                 ({{ prodaja.price_label }})
             </a>
         </div>
@@ -247,7 +245,7 @@
         <div class="restore-box">
             <p class="hint" style="margin-top:0;">
                 {{ t('set_backup_hint_a', 'Sestavi <code>.sql</code> varnostno kopijo podatkov <strong>te šole</strong> (izključno te šole — vrstic drugih šol ne vsebuje) in jo pošlje po e-pošti na') | safe }}
-                <strong>{{ backup_email or '(naslov ni nastavljen — vpišite BACKUP_EMAIL)' }}</strong>.
+                <strong>{{ backup_email or t('set_backup_email_fallback', '(naslov ni nastavljen — vpišite BACKUP_EMAIL)') }}</strong>.
             </p>
             <button type="button" class="btn btn-success" onclick="makeBackup()">{{ t('set_naredi_backup', '📧 Naredi backup') }}</button>
             <div id="backup-msg"></div>
@@ -301,12 +299,12 @@
     <script>
     const SCHOOL_ID = {{ school.id }};
     const DOMAIN_LABELS = {
-        uporabniki: 'Uporabniki (računi šole, z gesli)',
-        nastavitve: 'Nastavitve šole (razredi, prostori, urnik, števila)',
-        dejavnosti: 'Dejavnosti (dnevi dejavnosti + zasedeni datumi)',
-        rezervacije: 'Rezervacije prostorov',
-        ocenjevanje: 'Ocenjevanja',
-        vse: 'Vse (uporabniki, nastavitve, dejavnosti, rezervacije, ocenjevanja)'
+        uporabniki: '{{ t('js_dom_uporabniki', 'Uporabniki (računi šole, z gesli)') }}',
+        nastavitve: '{{ t('js_dom_nastavitve', 'Nastavitve šole (razredi, prostori, urnik, števila)') }}',
+        dejavnosti: '{{ t('js_dom_dejavnosti', 'Dejavnosti (dnevi dejavnosti + zasedeni datumi)') }}',
+        rezervacije: '{{ t('js_dom_rezervacije', 'Rezervacije prostorov') }}',
+        ocenjevanje: '{{ t('js_dom_ocenjevanja', 'Ocenjevanja') }}',
+        vse: '{{ t('js_dom_vse', 'Vse (uporabniki, nastavitve, dejavnosti, rezervacije, ocenjevanja)') }}'
     };
 
     // ── Pomožno ──────────────────────────────────────────────────────
@@ -535,7 +533,7 @@
     async function makeBackup() {
         const box = document.getElementById('backup-msg');
         box.className = '';
-        box.textContent = 'Sestavljam kopijo in pošiljam ...';
+        box.textContent = '{{ t('js_sestavljam', 'Sestavljam kopijo in pošiljam ...') }}';
         try {
             const res = await fetch('/api/schools/' + SCHOOL_ID + '/backup', {
                 method: 'POST', credentials: 'include'
@@ -555,7 +553,7 @@
                 '<br><span style="font-size:0.85rem;color:#555;">{{ t('set_vkljuceno', 'Vključeno —') }} ' + rows + '</span>';
         } catch (e) {
             box.className = 'err';
-            box.textContent = 'Napaka pri povezavi s strežnikom.';
+            box.textContent = '{{ t('js_napaka_povezava', 'Napaka pri povezavi s strežnikom.') }}';
         }
     }
 
@@ -571,7 +569,7 @@
         const razrediVal = collectRazredi();
         if (!razrediVal) {
             box.className = 'err';
-            box.textContent = 'Vpišite vsaj en razred.';
+            box.textContent = '{{ t('js_vpisite_razred', 'Vpišite vsaj en razred.') }}';
             box.scrollIntoView({ behavior: 'smooth', block: 'center' });
             return;
         }
@@ -585,7 +583,7 @@
         const pr = collectProstori();
         if (!pr.prostori) {
             box.className = 'err';
-            box.textContent = 'Vpišite vsaj en prostor.';
+            box.textContent = '{{ t('js_vpisite_prostor', 'Vpišite vsaj en prostor.') }}';
             box.scrollIntoView({ behavior: 'smooth', block: 'center' });
             return;
         }
@@ -608,8 +606,8 @@
         });
         if (badRoom) {
             box.className = 'err';
-            box.textContent = 'Za prostor »' + badRoom + '« izberite številsko spremenljivko ' +
-                '(ali dodajte manjkajočo v razdelku Števila).';
+            box.textContent = '{{ t('js_za_prostor', 'Za prostor »') }}' + badRoom + '{{ t('js_izberite_stevilsko', '« izberite številsko spremenljivko ') }}' +
+                '{{ t('js_ali_dodajte', '(ali dodajte manjkajočo v razdelku Števila).') }}';
             box.scrollIntoView({ behavior: 'smooth', block: 'center' });
             return;
         }
@@ -662,9 +660,9 @@
         const label = DOMAIN_LABELS[restoreDomain] || restoreDomain;
 
         const confirmed = confirm(
-            'Obnovim »' + label + '« iz datoteke ' + file.name + ' ?\n\n' +
-            'Vsi obstoječi podatki te skupine ZA TO ŠOLO bodo zamenjani s podatki iz kopije.\n' +
-            'Podatki drugih šol ostanejo nespremenjeni.'
+            '{{ t('js_obnovim', 'Obnovim »') }}' + label + '{{ t('js_iz_datoteke', '« iz datoteke ') }}' + file.name + ' ?\n\n' +
+            '{{ t('js_vsi_obstojeci', 'Vsi obstoječi podatki te skupine ZA TO ŠOLO bodo zamenjani s podatki iz kopije.') }}\n' +
+            '{{ t('js_podatki_drugih', 'Podatki drugih šol ostanejo nespremenjeni.') }}'
         );
         if (!confirmed) { restoreDomain = null; return; }
 
@@ -696,7 +694,7 @@
                         data.missing.join(', ') + '</strong> (te tabele so ostale nespremenjene).</p>';
             }
             if (data.skipped_other_schools) {
-                html += '<p style="margin:8px 0 0;">Preskočenih vrstic drugih šol: ' +
+                html += '<p style="margin:8px 0 0;">{{ t('js_preskocenih', 'Preskočenih vrstic drugih šol: ') }}' +
                         data.skipped_other_schools + '.</p>';
             }
             html += '</div>';
@@ -704,7 +702,7 @@
             box.scrollIntoView({ behavior: 'smooth', block: 'center' });
         } catch (e) {
             box.className = 'err';
-            box.textContent = 'Napaka pri povezavi s strežnikom.';
+            box.textContent = '{{ t('js_napaka_povezava', 'Napaka pri povezavi s strežnikom.') }}';
         } finally {
             restoreDomain = null;
         }
@@ -725,13 +723,13 @@
             const res = await fetch('/auth/change-password', { method: 'POST', body: formData, credentials: 'include' });
             const json = await res.json().catch(() => ({}));
             if (res.ok) {
-                msgEl.style.color = 'green'; msgEl.textContent = 'Geslo uspešno spremenjeno!';
+                msgEl.style.color = 'green'; msgEl.textContent = '{{ t('js_geslo_spremenjeno', 'Geslo uspešno spremenjeno!') }}';
                 setTimeout(() => closeModal('pw-modal'), 1500);
             } else {
                 msgEl.style.color = 'red'; msgEl.textContent = json.detail || 'Napaka pri spreminjanju gesla.';
             }
         } catch (e) {
-            msgEl.style.color = 'red'; msgEl.textContent = 'Napaka pri povezavi s strežnikom.';
+            msgEl.style.color = 'red'; msgEl.textContent = '{{ t('js_napaka_povezava', 'Napaka pri povezavi s strežnikom.') }}';
         }
     }
     </script>
