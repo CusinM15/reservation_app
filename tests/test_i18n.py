@@ -12,6 +12,7 @@ from app.i18n import (
     t,
 )
 from app.models import UIString
+from app.tenancy import set_school_setting
 from scripts.seed_ui_strings import STRINGS, seed
 from tests.conftest import TEST_PASSWORD, default_school_id, login
 
@@ -88,3 +89,23 @@ def test_navodila_have_no_language_switch(client):
     assert r.status_code == 200
     assert "navodilaLangToggle" not in r.text
     assert "navodila-lang-toggle" not in r.text
+
+
+def test_school_language_switches_whole_ui(client, make_user):
+    """Ko šola izbere angleščino, se napisi vmesnika prikažejo v angleščini."""
+    db = SessionLocal()
+    try:
+        set_school_setting(db, default_school_id(), "UI_LANGUAGE", "en")
+        db.commit()
+    finally:
+        db.close()
+
+    u = make_user(role="teacher")
+    login(client, u.username)
+    r = client.get("/")
+    assert r.status_code == 200
+    # Gumbi, prevedeni prek tabele ui_strings, so zdaj angleški.
+    assert "Cancel" in r.text        # Prekliči → Cancel
+    assert "Close" in r.text         # Zapri → Close
+    # Isti (prej slovenski) napis gumba ni več prisoten kot gumb.
+    assert ">Prekliči<" not in r.text
