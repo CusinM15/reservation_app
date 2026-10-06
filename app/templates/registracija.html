@@ -65,7 +65,8 @@
     </p>
     {% if error %}<div class="bad">{{ error }}</div>{% endif %}
 
-    <form method="POST" action="/registracija">
+    <form method="POST" action="/registracija{% if ui_lang() == 'en' %}?lang=en{% endif %}">
+      <input type="hidden" name="lang" value="{{ ui_lang() }}">
       <label>{{ t('reg_polno_ime', 'Polno ime šole *') }}</label>
       <input type="text" name="name" value="{{ name or '' }}" required autofocus
              placeholder="{{ t('reg_name_ph', 'npr. Osnovna šola Toneta Čufarja Jesenice') }}">

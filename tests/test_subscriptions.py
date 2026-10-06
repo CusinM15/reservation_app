@@ -391,7 +391,7 @@ def test_login_buy_button_points_to_registration(client):
     _set_selling(True)
     html = client.get("/auth/login").text
     assert 'href="/registracija"' in html
-    assert re.search(r'href="/registracija"[^>]*>\s*Nova šola', html)
+    assert re.search(r'href="/registracija"[^>]*>[^<]*Nova šola', html)
     assert "30 €" not in html
     assert 'href="/narocnina"' not in html
 

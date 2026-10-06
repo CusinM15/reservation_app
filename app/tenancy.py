@@ -676,6 +676,7 @@ def create_school(
     slug: str | None = None,
     aliases: list[str] | None = None,
     extra_aliases: list[str] | None = None,
+    ui_language: str = "sl",
 ) -> "object":
     """Ustvari novo šolo z aliasi in privzetimi nastavitvami.
 
@@ -720,6 +721,10 @@ def create_school(
         db.add(SchoolAlias(school_id=school.id, alias=alias, kind=kind))
 
     seed_school_settings(db, school.id)
+    # Jezik vmesnika nove šole = jezik registracijske povezave
+    # (»Nova šola« → sl, »New school« → en).
+    if ui_language in ("sl", "en"):
+        set_school_setting(db, school.id, "UI_LANGUAGE", ui_language)
     db.commit()
     db.refresh(school)
     invalidate_alias_cache()

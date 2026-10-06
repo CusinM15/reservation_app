@@ -157,3 +157,33 @@ def test_login_links_to_english_setup_and_registration(client):
     assert r.status_code == 200
     assert "navodila-admin-en" in r.text          # English setup instructions (admin guide)
     assert "registracija?lang=en" in r.text       # New school in English
+
+
+def test_new_school_language_follows_registration_link(client):
+    """»New school« (lang=en) → nova šola v angleščini; »Nova šola« → slovensko."""
+    from app.models import School
+    from app.tenancy import get_school_config
+
+    db = SessionLocal()
+    try:
+        save_selling_config(db, enabled=True, price=50, paypal="https://x", note="y")
+        db.commit()
+    finally:
+        db.close()
+
+    def jezik_sole(ime_predpona: str) -> str:
+        db = SessionLocal()
+        try:
+            s = db.query(School).filter(School.name.like(ime_predpona + "%")).first()
+            assert s is not None, f"šola {ime_predpona!r} ni bila ustvarjena"
+            return get_school_config(db, s.id).get_str("UI_LANGUAGE", "sl")
+        finally:
+            db.close()
+
+    assert client.post("/registracija", data={"name": "En šola test", "lang": "en"}).status_code == 200
+    assert jezik_sole("En šola test") == "en"
+
+    # Drugi vpis z novim odjemalcem (brez piškotkov prve šole) — »Nova šola«.
+    client.cookies.clear()
+    assert client.post("/registracija", data={"name": "Sl sola test"}).status_code == 200
+    assert jezik_sole("Sl sola test") == "sl"

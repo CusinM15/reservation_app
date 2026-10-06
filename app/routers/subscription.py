@@ -17,6 +17,7 @@ from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.templating import Jinja2Templates
 
 from app.templating import make_templates
+from app.i18n import current_lang
 from sqlalchemy.orm import Session
 
 from app.app_settings import (
@@ -183,6 +184,7 @@ def _prosto_uporabnisko_ime(db: Session, osnova: str) -> str:
 def registracija_submit(
     request: Request,
     name: str = Form(""),
+    lang: str = Form(""),
     db: Session = Depends(get_db),
 ):
     """Ustvari novo šolo; administratorja določimo SAMODEJNO.
@@ -215,8 +217,14 @@ def registracija_submit(
     username = _prosto_uporabnisko_ime(db, osnova_imena)
     geslo = _generirano_geslo()
 
+    # Jezik vmesnika nove šole: iz povezave »Nova šola« (sl) oziroma
+    # »New school« (en); če ni podan, uporabimo jezik trenutne zahteve.
+    _lang = (lang or request.query_params.get("lang") or "").strip().lower()[:2]
+    if _lang not in ("sl", "en"):
+        _lang = current_lang() or "sl"
+
     try:
-        school = create_school(db, name=name, slug=slug)
+        school = create_school(db, name=name, slug=slug, ui_language=_lang)
     except ValueError as exc:
         return napaka(str(exc))
 
