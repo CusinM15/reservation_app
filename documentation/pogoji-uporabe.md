@@ -3,7 +3,7 @@
 
 # 📜 Pogoji uporabe (Terms of Service)
 
-> **Različica:** 1.1 · **Datum:** 6. 10. 2026
+> **Različica:** 1.2 · **Datum:** 6. 10. 2026
 >
 > Ti pogoji veljajo za uporabo šolske aplikacije za rezervacije, dneve dejavnosti in
 > ocenjevanja (v nadaljevanju »aplikacija«). Z uporabo aplikacije se šola in njeni
@@ -15,9 +15,28 @@
 
 | Izraz | Pomen |
 |---|---|
-| **Ponudnik** | Avtor aplikacije (glavni admin). Skrbi za delovanje sistema — strežnik, baza, varnost. **Ni del šole** in **nima obveznosti podpore** (glej poglavje 7). |
+| **Ponudnik** | Ponudnik storitve gostovanja. Skrbi **izključno za delovanje strežnika** (aplikacija in baza). **Ni del šole**, ne odloča o vsebini podatkov in **nima obveznosti podpore** (glej 1.1 in poglavje 7). |
 | **Naročnik (šola)** | Šola, ki aplikacijo uporablja. Ob registraciji ustvari svoj račun in **šolskega admina**. |
 | **Uporabniki** | Osebje šole: **šolski admin**, **vodstvo**, **učitelji**. |
+
+### 1.1 Obseg dela ponudnika (kaj dela in česa ne)
+
+**Ponudnik opravlja izključno:**
+- gostovanje aplikacije in baze podatkov na strežniku,
+- nameščanje posodobitev in vzdrževanje delovanja strežnika,
+- redne varnostne kopije celotne baze.
+
+**Ponudnik NE opravlja in ni dolžan opravljati:**
+- vnosa, urejanja ali preverjanja podatkov šole (rezervacij, ocenjevanj, dni dejavnosti,
+  uporabnikov, nastavitev),
+- preverjanja pravilnosti, popolnosti ali zakonitosti vsebine, ki jo vnese šola,
+- uporabniške podpore, pomoči, usposabljanja ali svetovanja (razen če se izrecno in pismeno
+  dogovori drugače),
+- skrbništva nad dostopi in gesli uporabnikov šole.
+
+Kako je aplikacija videti in kaj vsebuje, je odvisno **od šole same** (npr. nastavitve
+e-pošte/SMTP, seznami razredov in prostorov, uporabniški računi, vneseni termini). Za vse te
+vsebine in nastavitve odgovarja **šola**.
 
 ---
 
@@ -35,9 +54,8 @@ Aplikacija je **večšolska**: vsaka šola vidi samo svoje podatke.
 
 ## 3. Naročnina
 
-- **Vedno velja do 1. 9.** (začetek šolskega leta). Naročnina se sklene za obdobje do
-  **1. 9.** — če se začne sredi leta, velja do  1. 9.;
-  velja do 1. 9., do katere velja, in se nato obnovi ali pa preprosto poteče.
+- **Naročnina vedno velja do 1. 9.** (začetek šolskega leta). Sklenjena je za obdobje do
+  **1. 9.** — tudi če se začne sredi leta, velja le do 1. 9.; nato se obnovi ali preprosto poteče.
 - **Obnova je ročna.** Šolski admin jo obnovi **od 15. 8. dalje**; po obnovi
   velja do **1. 9. naslednje leto**. Aplikacija sama ne obnavlja ničesar.
 - **Cena.** Aplikacija stane **150 €** (z DDV). Velja:
@@ -158,6 +176,26 @@ Aplikacija je **večšolska**: vsaka šola vidi samo svoje podatke.
   brez napak ali neprekinjene dosegljivosti, in ne odgovarja za izgubo podatkov (šola naj
   redno preverja svoje varnostne kopije).
 
+### 7.1 Omejitev odgovornosti
+
+- Ponudnik skrbi **zgolj za delovanje strežnika**. Za vsebino aplikacije, za podatke, ki jih
+  vnese šola, in za posledice uporabe odgovarja **šola**.
+- Ponudnik **ne odgovarja** za:
+  - pravilnost, popolnost ali zakonitost podatkov, ki jih vnese šola,
+  - odločitve šole ali njenih uporabnikov, sprejete na podlagi podatkov iz aplikacije,
+  - škodo, nastalo zaradi napačnih, nepopolnih ali nepravočasnih vnosov šole,
+  - izgubo ali nedosegljivost podatkov zaradi **višje sile**, izpada ponudnika strežnika ali
+    internetne povezave, kibernetskega napada, okvare strojne opreme ali načrtovanega vzdrževanja,
+  - **posredno škodo**, izgubljeni dobiček ali izgubo podatkov (šola naj redno preverja svoje
+    varnostne kopije),
+  - ravnanje tretjih ponudnikov (npr. ponudnik strežnika, ponudnik e-pošte, ponudnik plačil).
+- Aplikacija je **pomoč pri organizaciji**, ne uradna evidenca ali pravni vir; šola je
+  odgovorna za skladnost z lastnimi pravili, predpisi in za svoje notranje procese.
+- **Skupna odgovornost ponudnika** je v vsakem primeru omejena na znesek, ki ga je šola plačala
+  za tekoče naročninsko obdobje.
+- Ponudnik lahko z gostovanjem **kadarkoli preneha** ob koncu plačanega obdobja; šoli omogoči
+  izvoz njenih podatkov.
+
 ---
 
 ## 8. Soglasje s pogoji — kje in kdaj se prikaže
@@ -198,11 +236,17 @@ Z uporabo aplikacije šola in njeni uporabniki potrjujejo, da:
 - v aplikacijo vnašajo **zgolj podatke osebja** in **nobene** podatke otrok/osebnih podatkov
   učencev,
 - se strinjajo, da naročnina **velja do 1. 9.** in je **ni mogoče prekiniti sredi obdobja**,
-- razumejo, da **nič ne izgine samodejno** in da podatke briše **šolski admin**.
+- razumejo, da **nič ne izgine samodejno** in da podatke briše **šolski admin**,
+- **šola je odgovorna** za pravilnost in zakonitost vnesenih podatkov ter za svoje uporabnike
+  (dostope, gesla, pravice),
+- **šola sama** poskrbi za svoje varnostne kopije in za nastavitve e-pošte/SMTP,
+- razumejo, da ponudnik skrbi **zgolj za delovanje strežnika** in **ni odgovoren** za vsebino
+  aplikacije, za odločitve šole ali za posledice uporabe (poglavji 1.1 in 7.1).
 
 ---
 
-> **Avtor / ponudnik:** Matej Čušin
+> **Avtor aplikacije:** Matej Čušin — skrbi **zgolj za delovanje strežnika** (poglavje 1.1); za
+> vsebino in uporabo odgovarja šola (poglavje 7.1).
 >
 > Aplikacija je odprtokodna; če ti je v pomoč, lahko projekt podpreš z donacijo
 > (povezava je v README repozitorija).
