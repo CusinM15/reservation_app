@@ -71,8 +71,8 @@
         <div class="nav">
             {% if is_main_admin %}<a href="/schools">Šole</a>{% endif %}
             <a href="/rezervacije">Aplikacija</a>
-            <a href="#" onclick="openModal('pw-modal'); return false;">Spremeni geslo</a>
-            <a href="/auth/logout">Odjava</a>
+            <a href="#" onclick="openModal('pw-modal'); return false;">{{ t('link_spremeni_geslo', 'Spremeni geslo') }}</a>
+            <a href="/auth/logout">{{ t('btn_odjava', 'Odjava') }}</a>
         </div>
 
         <h2>Nastavitve šole: {{ school.name }}</h2>
@@ -211,7 +211,7 @@
             {% endif %}{% endfor %}
 
             <div class="sticky">
-                <button type="submit" class="btn btn-success">Shrani nastavitve</button>
+                <button type="submit" class="btn btn-success">{{ t('btn_shrani_nastavitve', 'Shrani nastavitve') }}</button>
             </div>
         </form>
 
@@ -220,7 +220,7 @@
         {% if prodaja and prodaja.enabled %}
         <!-- NAROČNINA: v tej namestitvi se naročnine prodajajo, zato šolski
              admin tu vidi stanje in gumb za nakup oziroma podaljšanje. -->
-        <h3>Naročnina šole</h3>
+        <h3>{{ t('narocnina_naslov', 'Naročnina šole') }}</h3>
         <div class="restore-box">
             {% if narocnina.until and narocnina.active %}
                 <p class="hint" style="margin-top:0;">
@@ -258,7 +258,7 @@
             <div id="backup-msg"></div>
         </div>
 
-        <h3>Obnova iz varnostne kopije</h3>
+        <h3>{{ t('backup_obnovi', 'Obnova iz varnostne kopije') }}</h3>
         <div class="restore-box">
             <p class="hint" style="margin-top:0;">
                 Naložite varnostno kopijo (<code>.sql</code>, izpis <code>pg_dump</code>) in izberite,
@@ -268,7 +268,7 @@
             <div>
                 <button type="button" class="btn btn-warn" onclick="startRestore('uporabniki')">👥 Uporabniki</button>
                 <button type="button" class="btn btn-warn" onclick="startRestore('nastavitve')">⚙️ Nastavitve (razredi, prostori)</button>
-                <button type="button" class="btn btn-warn" onclick="startRestore('dejavnosti')">📋 Dejavnosti</button>
+                <button type="button" class="btn btn-warn" onclick="startRestore('dejavnosti')">{{ t('btn_dejavnosti', '📋 Dejavnosti') }}</button>
                 <button type="button" class="btn btn-warn" onclick="startRestore('rezervacije')">📅 Rezervacije</button>
                 <button type="button" class="btn btn-warn" onclick="startRestore('ocenjevanje')">📝 Ocenjevanje</button>
                 <button type="button" class="btn btn-warn" onclick="startRestore('vse')">♻️ Celotna šola (vse)</button>
@@ -285,7 +285,7 @@
 
     <div class="modal-overlay" id="pw-modal">
         <div class="modal">
-            <h3>Sprememba gesla</h3>
+            <h3>{{ t('naslov_sprememba_gesla', 'Sprememba gesla') }}</h3>
             <div class="form-group">
                 <label>Trenutno geslo</label>
                 <input type="password" id="pw-old" placeholder="Vnesite trenutno geslo">
@@ -300,8 +300,8 @@
                 <input type="password" id="pw-new2" placeholder="Ponovite novo geslo">
             </div>
             <div class="form-actions">
-                <button class="btn btn-cancel" onclick="closeModal('pw-modal')">Prekliči</button>
-                <button class="btn" onclick="submitChangePassword()">Spremeni geslo</button>
+                <button class="btn btn-cancel" onclick="closeModal('pw-modal')">{{ t('btn_preklici', 'Prekliči') }}</button>
+                <button class="btn" onclick="submitChangePassword()">{{ t('link_spremeni_geslo', 'Spremeni geslo') }}</button>
             </div>
             <div id="pw-msg" style="margin-top:10px;font-size:0.9rem;"></div>
         </div>

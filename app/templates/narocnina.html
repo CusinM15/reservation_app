@@ -41,7 +41,7 @@
 <div class="wrap">
 
   <div class="card">
-    <h1>Naročnina šole</h1>
+    <h1>{{ t('narocnina_naslov', 'Naročnina šole') }}</h1>
     <p class="muted">
       Šola: <strong>{{ school.name }}</strong>
       {% if is_main_admin %} · prijavljeni ste kot glavni admin{% endif %}
@@ -68,7 +68,7 @@
   {% if cfg.enabled and not view_only %}
   <div class="card">
     {% if cfg.free %}
-      <h2>Brezplačno (0 €)</h2>
+      <h2>{{ t('narocnina_brezplacno', 'Brezplačno (0 €)') }}</h2>
       <p class="muted">
         Aplikacija je <strong>brezplačna</strong>. Naročnino je treba vseeno
         <strong>obnoviti za vsako šolsko leto</strong>, da aplikacija dela.
@@ -93,7 +93,7 @@
 
     {% if cfg.paypal_url %}
       <p><a class="btn btn-pay" href="{{ cfg.paypal_url }}" target="_blank" rel="noopener">
-        Plačaj prek PayPala</a> <span class="muted">(znesek naj ustreza izbranemu obdobju)</span></p>
+        {{ t('btn_placaj_paypal', 'Plačaj prek PayPala') }}</a> <span class="muted">(znesek naj ustreza izbranemu obdobju)</span></p>
     {% else %}
       <div class="info">
         Povezava do plačila še ni nastavljena.
@@ -122,7 +122,7 @@
           <input type="text" name="note" placeholder="npr. plačano 25. 9. 2026">
         </div>
       </div>
-      <p style="margin-top:14px;"><button class="btn" type="submit">Sporoči plačilo</button></p>
+      <p style="margin-top:14px;"><button class="btn" type="submit">{{ t('btn_sporoci_placilo', 'Sporoči plačilo') }}</button></p>
       <p class="muted" style="margin-bottom:0;">
         Naročnino potrdi glavni admin, ko je nakazilo prejeto. Podatkov o kartici ne
         shranjujemo — plačilo poteka na PayPalovi strani.
@@ -133,7 +133,7 @@
          Za šole, ki ne želijo vsako obdobje ročno plačevati: vklopijo samodejno
          obnavljanje, plačilo pa uredijo prek PayPal naročniške povezave. -->
     <hr style="border:none;border-top:1px solid #eee;margin:20px 0;">
-    <h2>Samodejno plačilo</h2>
+    <h2>{{ t('narocnina_samodejno', 'Samodejno plačilo') }}</h2>
     {% if avto %}
       <p class="ok" style="margin-top:0;">
         <strong>Vklopljeno.</strong> Obnavljanje je predvideno vsako obdobje na dan
@@ -149,7 +149,7 @@
       <form method="POST" action="/narocnina/avto">
         <input type="hidden" name="school_id" value="{{ school.id }}">
         <input type="hidden" name="auto" value="0">
-        <button class="btn btn-no btn-sm" type="submit">Izklopi samodejno obnavljanje</button>
+        <button class="btn btn-no btn-sm" type="submit">{{ t('narocnina_izklopi_avto', 'Izklopi samodejno obnavljanje') }}</button>
       </form>
     {% else %}
       <p class="muted" style="margin-top:0;">
@@ -159,7 +159,7 @@
       <form method="POST" action="/narocnina/avto">
         <input type="hidden" name="school_id" value="{{ school.id }}">
         <input type="hidden" name="auto" value="1">
-        <button class="btn btn-sm" type="submit">Vklopi samodejno obnavljanje</button>
+        <button class="btn btn-sm" type="submit">{{ t('narocnina_vklopi_avto', 'Vklopi samodejno obnavljanje') }}</button>
       </form>
       {% if not cfg.paypal_sub_url %}
         <div class="info">Povezava za samodejno plačilo še ni nastavljena — vnese jo glavni admin
@@ -172,7 +172,7 @@
 
   {% if view_only %}
   <div class="card">
-    <h2>Kaj zdaj?</h2>
+    <h2>{{ t('narocnina_kaj_zdaj', 'Kaj zdaj?') }}</h2>
     <p class="muted">
       Naročnino lahko obnovi le administrator šole (ali glavni admin). Obrnite se
       nanj in mu sporočite, da aplikacija za vašo šolo ni več dostopna.
@@ -182,7 +182,7 @@
 
   {% if payments and not view_only %}
   <div class="card">
-    <h2>Sporočena plačila</h2>
+    <h2>{{ t('narocnina_sporocena_placila', 'Sporočena plačila') }}</h2>
     <table>
       <tr><th>Kdaj</th><th>Znesek</th><th>Sklic</th><th>Stanje</th><th>Velja do</th></tr>
       {% for p in payments %}
@@ -207,7 +207,7 @@
        brez čakanja na glavnega admina. Veljavnost se nastavi na 1. 9. naslednje
        leto; gumb je aktiven od 15. 8. dalje. -->
   <div class="card">
-    <h2>Podaljšaj naročnino</h2>
+    <h2>{{ t('btn_podaljsaj_narocnino', 'Podaljšaj naročnino') }}</h2>
     <p class="muted">
       Kot administrator šole lahko naročnino podaljšate <strong>sami, brez plačila</strong>.
       Naročnina velja do <strong>1. 9.</strong>; podaljšate jo lahko <strong>od 15. 8. dalje</strong>,
@@ -229,7 +229,7 @@
 
   {% if is_main_admin %}
   <div class="card">
-    <h2>Nerešena plačila (vse šole)</h2>
+    <h2>{{ t('narocnina_nereesena_placila', 'Nerešena plačila (vse šole)') }}</h2>
     {% if pending %}
     <table>
       <tr><th>Šola</th><th>Sporočeno</th><th>Znesek</th><th>Sklic</th><th>Dejanje</th></tr>
@@ -241,10 +241,10 @@
         <td>{{ p.reference or '—' }}{% if p.note %} · {{ p.note }}{% endif %}</td>
         <td>
           <form method="POST" action="/narocnina/potrdi/{{ p.id }}" style="display:inline;">
-            <button class="btn btn-sm btn-ok" type="submit">Potrdi (podaljšaj za izbrano obdobje)</button>
+            <button class="btn btn-sm btn-ok" type="submit">{{ t('btn_potrdi_podaljsaj', 'Potrdi (podaljšaj za izbrano obdobje)') }}</button>
           </form>
           <form method="POST" action="/narocnina/zavrni/{{ p.id }}" style="display:inline;">
-            <button class="btn btn-sm btn-no" type="submit">Zavrni</button>
+            <button class="btn btn-sm btn-no" type="submit">{{ t('btn_zavrni', 'Zavrni') }}</button>
           </form>
         </td>
       </tr>
@@ -256,7 +256,7 @@
   </div>
 
   <div class="card">
-    <h2>Nastavitve prodaje</h2>
+    <h2>{{ t('narocnina_nastavitve_prodaje', 'Nastavitve prodaje') }}</h2>
     <form method="POST" action="/narocnina/nastavitve">
       <label>Prodaja naročnin</label>
       <select name="selling" style="padding:8px 10px;border:1px solid #ddd;border-radius:5px;">
@@ -286,11 +286,11 @@
       </div>
       <label>Navodila ob plačilu (vidijo šole)</label>
       <textarea name="payment_note" rows="3">{{ cfg.note }}</textarea>
-      <p style="margin-top:14px;"><button class="btn" type="submit">Shrani nastavitve</button></p>
+      <p style="margin-top:14px;"><button class="btn" type="submit">{{ t('btn_shrani_nastavitve', 'Shrani nastavitve') }}</button></p>
     </form>
 
     <hr style="border:none;border-top:1px solid #eee;margin:18px 0;">
-    <h2>Podaljšaj brez plačila</h2>
+    <h2>{{ t('btn_podaljsaj_brez_placila', 'Podaljšaj brez plačila') }}</h2>
     <p class="muted">Veljavnost se nastavi na <strong>1. 9. {{ extend_until.year }}</strong> (enotno za vse šole).</p>
     <form method="POST" action="/narocnina/podaljsaj">
       <input type="hidden" name="school_id" value="{{ school.id }}">
@@ -302,7 +302,7 @@
   <p class="muted">
     <a href="/">Nazaj v aplikacijo</a>
     {% if is_main_admin %} · <a href="/schools">Pregled šol</a>{% endif %}
-    · <a href="/auth/logout">Odjava</a>
+    · <a href="/auth/logout">{{ t('btn_odjava', 'Odjava') }}</a>
   </p>
 </div>
 </body>

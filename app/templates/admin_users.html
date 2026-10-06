@@ -32,15 +32,15 @@
             {% if is_main_admin %}<a href="/schools">Šole</a>{% endif %}
             <a href="/settings">Nastavitve šole</a>
             <a href="/history">Dnevnik dogodkov</a>
-            <a href="/auth/logout">Odjava</a>
+            <a href="/auth/logout">{{ t('btn_odjava', 'Odjava') }}</a>
         </div>
-        <h2>Upravljanje uporabnikov</h2>
+        <h2>{{ t('users_naslov', 'Upravljanje uporabnikov') }}</h2>
         
         {% if error %}
         <div style="color: red;">{{ error }}</div>
         {% endif %}
 
-        <h3>Dodaj uporabnika</h3>
+        <h3>{{ t('users_dodaj', 'Dodaj uporabnika') }}</h3>
         <form method="POST" action="/auth/admin/users">
             <input type="text" name="username" placeholder="AAI uporabniško ime (email)" required style="width:250px;">
             <input type="email" name="email" placeholder="Email (če je drugačen)" style="width:250px;">
@@ -54,10 +54,10 @@
                 <option value="vodstvo">Vodstvo</option>
                 <option value="admin">Admin</option>
             </select>
-            <button type="submit" class="btn">Dodaj</button>
+            <button type="submit" class="btn">{{ t('btn_dodaj', 'Dodaj') }}</button>
                     </form>
 
-                    <h3>Uvoz uporabnikov iz CSV</h3>
+                    <h3>{{ t('users_uvoz_csv_naslov', 'Uvoz uporabnikov iz CSV') }}</h3>
         <p style="font-size:12px;color:#777;margin:2px 0 6px;">
             Opomba: e-pošta uporabnika z vlogo <strong>admin</strong> je vezana na nastavitev
             »E-pošta šolskega admina« na strani <a href="/settings">Nastavitve</a> — v obrazcu je ne urejate.
@@ -82,11 +82,11 @@
                     </p>
                     <div>
                         <input type="file" id="csv-file" accept=".csv,text/csv">
-                        <button type="button" class="btn btn-success" onclick="importUsersCSV()">📥 Uvozi CSV</button>
+                        <button type="button" class="btn btn-success" onclick="importUsersCSV()">{{ t('btn_uvozi_csv', '📥 Uvozi CSV') }}</button>
                     </div>
                     <div id="csv-msg" style="margin-top:8px;font-size:13px;"></div>
 
-                    <h3>Seznam uporabnikov</h3>
+                    <h3>{{ t('users_seznam', 'Seznam uporabnikov') }}</h3>
         <div style="margin-bottom: 10px;">
             <input type="text" id="user-search" placeholder="🔍 Išči po imenu, priimku ali emailu..." style="width:100%;max-width:400px;padding:8px;font-size:14px;" oninput="filterUsers()">
         </div>
@@ -114,19 +114,19 @@
                     <td>{{ user.role }}</td>
                     <td>{{ "Da" if user.is_active else "Ne" }}</td>
                     <td style="white-space:nowrap;">
-                        <a href="#" class="btn btn-warning" onclick="toggleEdit({{ user.id }})">Uredi</a>
+                        <a href="#" class="btn btn-warning" onclick="toggleEdit({{ user.id }})">{{ t('btn_uredi', 'Uredi') }}</a>
                         {% if user.is_active %}
                         <form method="POST" action="/auth/admin/users/{{ user.id }}/deactivate" style="display:inline;">
-                            <button type="submit" class="btn btn-danger">Deaktiviraj</button>
+                            <button type="submit" class="btn btn-danger">{{ t('users_deaktiviraj', 'Deaktiviraj') }}</button>
                         </form>
                         {% else %}
                         <form method="POST" action="/auth/admin/users/{{ user.id }}/activate" style="display:inline;">
-                            <button type="submit" class="btn btn-success">Aktiviraj</button>
+                            <button type="submit" class="btn btn-success">{{ t('users_aktiviraj', 'Aktiviraj') }}</button>
                         </form>
                         {% endif %}
                         {% if user.id != 1 %}
                         <form method="POST" action="/auth/admin/users/{{ user.id }}/delete" style="display:inline;" onsubmit="return confirm('Ste prepričani? Izbrisani bodo tudi vsi podatki uporabnika.');">
-                            <button type="submit" class="btn btn-danger">Izbriši</button>
+                            <button type="submit" class="btn btn-danger">{{ t('btn_izbrisi', 'Izbriši') }}</button>
                         </form>
                         {% endif %}
                     </td>
@@ -171,8 +171,8 @@
                                 <label style="font-size:12px;">Novo geslo (pusti prazno za nespremenjeno)</label>
                                 <input type="password" name="new_password" placeholder="Novo geslo">
                             </div>
-                            <button type="submit" class="btn">Shrani</button>
-                            <button type="button" class="btn btn-danger" onclick="toggleEdit({{ user.id }})">Zapri</button>
+                            <button type="submit" class="btn">{{ t('btn_shrani', 'Shrani') }}</button>
+                            <button type="button" class="btn btn-danger" onclick="toggleEdit({{ user.id }})">{{ t('btn_zapri', 'Zapri') }}</button>
                         </form>
                     </td>
                 </tr>

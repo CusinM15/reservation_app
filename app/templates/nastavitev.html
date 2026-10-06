@@ -47,7 +47,7 @@
     {% else %}
     <a href="/rezervacije">Aplikacija</a>
     <a href="/settings">Nastavitve šole</a>
-    <a href="/auth/logout">Odjava</a>
+    <a href="/auth/logout">{{ t('btn_odjava', 'Odjava') }}</a>
     {% endif %}
   </div>
   {% if demo %}
@@ -60,7 +60,7 @@
   </div>
   {% endif %}
   <div class="card">
-    <h1>Navodila za nastavitev šole</h1>
+    <h1>{{ t('nastavitev_naslov', 'Navodila za nastavitev šole') }}</h1>
     <p class="muted">
       Šola: <strong>{{ school.name }}</strong> (oznaka <code>{{ school.slug }}</code>)<br>
       Za pravilno delovanje aplikacije uredite spodnje postavke. Kazalnik
@@ -82,7 +82,7 @@
   </div>
 
   <div class="card">
-    <h2>Kaj je treba urediti</h2>
+    <h2>{{ t('nastavitev_kaj_urediti', 'Kaj je treba urediti') }}</h2>
     <table>
       <tr>
         <th style="width:70px;">Stanje</th>
@@ -105,7 +105,7 @@
   </div>
 
   <div class="card">
-    <h2>Kako po vrsti</h2>
+    <h2>{{ t('nastavitev_kako_po_vrsti', 'Kako po vrsti') }}</h2>
     <ol class="koraki">
           <li>Nastaviš e-mail admina, 
               <strong>NAJBOLJ POMEMBNO</strong>: je da nastavite e-pošto iz katere bo app pošiljal e-pošto - 
@@ -132,7 +132,7 @@
           omejena s spremenljivko. Primer: <em>5 računalnikov, ki si jih učitelji izposojajo</em>
           (<code>racunalnica</code> s kljukico »število« in <code>Število računalnikov = 5</code>).
           Brez kljukice je prostor ekskluziven — ena rezervacija na termin</li>
-      <li><strong>Ustvarite uporabnike</strong> učitelje uvoziš ali pa ročno vneseš uporabnike (geslo si nastavijo sami preko <strong> >>Pozabljeno geslo?<< </strong>)
+      <li><strong>Ustvarite uporabnike</strong> učitelje uvoziš ali pa ročno vneseš uporabnike (geslo si nastavijo sami preko <strong> >>{{ t('link_pozabljeno_geslo', 'Pozabljeno geslo?') }}<< </strong>)
           na strani <a href="/auth/admin/users">Uporabniki</a> z gumbom
           <strong>»📥 Uvozi CSV«</strong>. Glava stolpcev ni obvezna; če je ni, velja vrstni
           red <code>uporabniško ime, email, ime, priimek, vloga, geslo</code> (npr.
@@ -143,7 +143,7 @@
           zato sta <strong>uporabniško ime in e-pošta enaka</strong>. Obstoječa uporabniška imena se
           preskočijo.</li>
       {% if prodaja and prodaja.enabled %}
-      <li><strong>Uredite naročnino</strong> — admin mora pod <strong>Nastavitve šole</strong> - <strong>Podaljšaj naročnino</strong></li>
+      <li><strong>Uredite naročnino</strong> — admin mora pod <strong>Nastavitve šole</strong> - <strong>{{ t('btn_podaljsaj_narocnino', 'Podaljšaj naročnino') }}</strong></li>
       {% endif %}
           Naročnina je vedno do naslednjega 1. 9. (do konca šolskega leta),  podaljšajo lahko šele po 15. 8.). Trenutno je naročnina 0 €, toda ker za to da app teče skrbum, se nebi branil kakšne donacije.
       <li><em>Neobvezno:</em> prilagodite omejitve ocenjevanj, urnik in čas neaktivnosti.</li>
@@ -155,7 +155,7 @@
   </div>
 
   <div class="card">
-    <h2>Pravila ocenjevanja (omejitve)</h2>
+    <h2>{{ t('nastavitev_pravila_ocenjevanja', 'Pravila ocenjevanja (omejitve)') }}</h2>
     <p class="muted">
       V <a href="/settings">Nastavitvah šole</a> so štiri številke, ki določajo, koliko ocenjevanj
       sme posamezni učitelj vnesti. Aplikacija vnos zavrne z opozorilom, ko je meja presežena. Trenutne nastavitve so skladne s Slovensko zakonodajo za ocenjevanje v osnovni šolah.
@@ -199,7 +199,7 @@
   </div>
 
   <div class="card">
-    <h2>Dnevi dejavnosti (Vnos dejavnosti)</h2>
+    <h2>{{ t('nastavitev_dnevi_dejavnosti', 'Dnevi dejavnosti (Vnos dejavnosti)') }}</h2>
     <p class="muted">
       Dejavnosti (športni dan, izlet, kulturni dan, naravoslovni dan …) se urejajo na posebni
       strani <strong>»Dejavnosti«</strong> — povezava je v zavihku
@@ -207,7 +207,7 @@
       oziroma administrator; učitelji stran vidijo samo za branje.
     </p>
 
-    <h2 style="font-size:1rem;margin-top:16px;">Kako se doda</h2>
+    <h2 style="font-size:1rem;margin-top:16px;">{{ t('nastavitev_kako_se_doda', 'Kako se doda') }}</h2>
     <ol class="koraki">
       <li>Na strani <strong>»Dejavnosti«</strong> kliknite <strong>»＋ "Tip dejavnosti, ki jo želite dodati"«</strong>.</li>
       <li>Vpišite <strong>naziv</strong> (npr. <em>Športni dan</em>) in <strong>datum</strong> (ali
@@ -226,18 +226,18 @@
       posamezne razrede ali »Vsi razredi generacije«.
     </div>
 
-    <h2 style="font-size:1rem;margin-top:16px;">Kako vpliva</h2>
+    <h2 style="font-size:1rem;margin-top:16px;">{{ t('nastavitev_kako_vpliva', 'Kako vpliva') }}</h2>
     <table>
       <tr><th>Nastavitev</th><th>Kaj pomeni</th></tr>
       <tr>
-        <td><strong>Celoten dan</strong> (obkljukano)</td>
+        <td><strong>{{ t('label_celoten_dan', 'Celoten dan') }}</strong> (obkljukano)</td>
         <td>Dan se <strong>zablokira za ocenjevanja</strong> za izbrane razrede — morebitna
             ocenjevanja na ta dan se izbrišejo, prizadeti učitelji pa prejmejo obvestilo po e-pošti.
             Če so izbrani prostori, se <strong>rezervirajo ure 1–5</strong> v teh prostorih. Dan se
             prikaže v koledarju (vijolično).</td>
       </tr>
       <tr>
-        <td><strong>Celoten dan</strong> (brez kljukice)</td>
+        <td><strong>{{ t('label_celoten_dan', 'Celoten dan') }}</strong> (brez kljukice)</td>
         <td>Krajša dejavnost: ocenjevanja <strong>niso</strong> blokirana in dan se v koledarju ne
             prikaže kot blokada. Primerno, kadar dejavnost traja le del dneva. Mora pa učitelj pri vodstvu/organizatorju dejavnosti preveriti da dejavnost ne poteka med njegovo uro.</td>
       </tr>
@@ -262,7 +262,7 @@
   </div>
 
   <div class="card">
-    <h2>Pogosta vprašanja</h2>
+    <h2>{{ t('nastavitev_pogosta_vprasanja', 'Pogosta vprašanja') }}</h2>
     <p><strong>Zakaj nova šola dobi testni naslov pošiljatelja?</strong><br>
        Zato, da pošta ne bi šla z napačnim pošiljateljem (tujega). Testni naslov
        <code>test@example.invalid</code> je treba zamenjati, sicer pošte ni mogoče dobiti</p>
@@ -281,7 +281,7 @@
        Da. Na strani <a href="/auth/admin/users">Uporabniki</a> izberite CSV datoteko in kliknite
        <strong>»📥 Uvozi CSV«</strong>. Glava stolpcev ni obvezna (privzeti vrstni red:
        <code>uporabniško ime, email, ime, priimek, vloga, geslo</code>), geslo pa lahko izpustite —
-       aplikacija si ga izmisli, potem preko >>Pozabljeno geslo?<< nastavi vsak učitelj/ušprabnik sam.</p>
+       aplikacija si ga izmisli, potem preko >>{{ t('link_pozabljeno_geslo', 'Pozabljeno geslo?') }}<< nastavi vsak učitelj/ušprabnik sam.</p>
     <p><strong>Kje so varnostne kopije?</strong><br>
        Aplikacija vsako noč pripravi kopijo podatkov šole in jo pošlje na »E-pošto za varnostne
        kopije«; kopijo lahko kadar koli prenesete tudi ročno v nastavitvah šole.</p>

@@ -95,7 +95,7 @@
                         </svg>
                     </span>
                 </div>
-                <button type="submit">Prijava</button>
+                <button type="submit">{{ t('btn_prijava', 'Prijava') }}</button>
             </form>
 
             <!-- JAVASCRIPT: PREKLOP PRIKAZA GESLA (togglePw)
@@ -126,10 +126,10 @@
             </script>
 
             <div style="text-align:center;margin-top:15px;">
-                <a href="/auth/forgot-password" style="color:#007bff;text-decoration:none;font-size:0.85rem;">Pozabljeno geslo?</a>
+                <a href="/auth/forgot-password" style="color:#007bff;text-decoration:none;font-size:0.85rem;">{{ t('link_pozabljeno_geslo', 'Pozabljeno geslo?') }}</a>
                 {% if selling and selling.enabled %}
                 <span style="color:#ccc;margin:0 6px;">·</span>
-                <a href="/registracija" style="color:#007bff;text-decoration:none;font-size:0.85rem;">Nova šola</a>
+                <a href="/registracija" style="color:#007bff;text-decoration:none;font-size:0.85rem;">{{ t('link_nova_sola', 'Nova šola') }}</a>
                 {% endif %}
             </div>
         </div>
@@ -189,7 +189,7 @@
                 <p style="font-size:0.8rem;color:#666;margin:-5px 0 10px;">
                     Geslo mora biti dolgo vsaj 5 znakov ter vsebovati vsaj eno malo črko, eno veliko črko in eno številko.
                 </p>
-                <button type="submit">Spremeni geslo</button>
+                <button type="submit">{{ t('link_spremeni_geslo', 'Spremeni geslo') }}</button>
             </form>
 
             <!-- JAVASCRIPT: PREVERJANJE GESEL PRED POŠILJANJEM

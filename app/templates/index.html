@@ -284,8 +284,8 @@
     <!-- IZVOZNE POVEZAVE — prikazane za admin in vodstvo.
          Vodstvo potrebuje izvoz podatkov za poročila, zato ima dostop,
          čeprav nima admin pravice. -->
-    <a href="#" id="export-rez-link" style="display:none;" onclick="openExportRezModal(); return false;">📥 Izvoz rezervacij</a>
-    <a href="#" id="export-oc-link" style="display:none;" onclick="openExportOcModal(); return false;">📥 Izvoz ocenjevanj</a>
+    <a href="#" id="export-rez-link" style="display:none;" onclick="openExportRezModal(); return false;">{{ t('izvoz_rezervacij', '📥 Izvoz rezervacij') }}</a>
+    <a href="#" id="export-oc-link" style="display:none;" onclick="openExportOcModal(); return false;">{{ t('izvoz_ocenjevanj', '📥 Izvoz ocenjevanj') }}</a>
     <span class="spacer"></span>
 
     <!-- PREDOGLED NAVODIL (popup) — prikaže se ob hoverju na stranski gumb.
@@ -299,7 +299,7 @@
       </div>
       <div class="navodila-preview-body" id="navodilaPreviewBody">Nalagam ...</div>
       <div class="navodila-preview-footer">
-        <button class="btn btn-sm btn-primary" onclick="downloadPreviewDoc()">📥 Prenesi PDF</button>
+        <button class="btn btn-sm btn-primary" onclick="downloadPreviewDoc()">{{ t('doc_prenesi_pdf', '📥 Prenesi PDF') }}</button>
       </div>
     </div>
 
@@ -312,7 +312,7 @@
         onmouseenter="showDocPreview('navodila-ucitelji', 'Navodila za učitelje')"
         onmouseleave="scheduleHidePreview()"
         onclick="downloadDoc('navodila-ucitelji')">
-        👩‍🏫 Učitelji
+        {{ t('doc_ucitelji', '👩‍🏫 Učitelji') }}
       </button>
       <!-- GUMB ZA VODSTVO — skrit, dokler JS ne preveri vloge.
            Vodstvo in admin ga vidita, učitelj ne. -->
@@ -320,7 +320,7 @@
         onmouseenter="showDocPreview('navodila-vodstvo', 'Navodila za vodstvo')"
         onmouseleave="scheduleHidePreview()"
         onclick="downloadDoc('navodila-vodstvo')">
-        👑 Vodstvo
+        {{ t('doc_vodstvo', '👑 Vodstvo') }}
       </button>
       <!-- GUMB ZA ADMINA — skrit, dokler JS ne preveri vloge.
            Vidi ga ZGOLJ administrator (admin/main_admin); vodstvo in učitelji ne. -->
@@ -328,14 +328,14 @@
         onmouseenter="showDocPreview('navodila-admin', 'Navodila za administratorja')"
         onmouseleave="scheduleHidePreview()"
         onclick="downloadDoc('navodila-admin')">
-        🛠️ Admin
+        {{ t('doc_admin', '🛠️ Admin') }}
       </button>
     </div>
     <!-- UPORABNIŠKE INFORMACIJE — prikažejo ime in vlogo po prijavi.
          Desno poravnano (spacer prej), vedno vidno. -->
     <span class="user-info" id="userInfo"></span>
-    <a href="#" onclick="openChangePasswordModal(); return false;">Spremeni geslo</a>
-    <a href="/auth/logout">Odjava</a>
+    <a href="#" onclick="openChangePasswordModal(); return false;">{{ t('link_spremeni_geslo', 'Spremeni geslo') }}</a>
+    <a href="/auth/logout">{{ t('btn_odjava', 'Odjava') }}</a>
   </nav>
 
   <!-- ================================================================
@@ -366,14 +366,14 @@
             <label>Začetek tedna</label>
             <input type="date" id="rez-week-start" onchange="loadAllReservations()">
           </div>
-          <button class="btn btn-primary" onclick="loadAllReservations()">Osveži</button>
-          <button class="btn btn-outline" onclick="openRezModal()">+ Nova rezervacija</button>
+          <button class="btn btn-primary" onclick="loadAllReservations()">{{ t('btn_osvezi', 'Osveži') }}</button>
+          <button class="btn btn-outline" onclick="openRezModal()">{{ t('btn_nova_rezervacija_plus', '+ Nova rezervacija') }}</button>
           <!-- GUMBI ZA SERIJE — skriti privzeto, prikažejo se le za
                vodstvo in admin. Serije omogočajo množično ustvarjanje
                ponavljajočih rezervacij (npr. vsak ponedeljek). -->
           <div id="series-buttons" style="display:none;">
-            <button class="btn btn-outline" onclick="openWeeklySeriesModal()">📅 Tedenska serija</button>
-            <button class="btn btn-outline" onclick="openFullDaySeriesModal()">☀️ Celodnevna serija</button>
+            <button class="btn btn-outline" onclick="openWeeklySeriesModal()">{{ t('btn_tedenska_serija', '📅 Tedenska serija') }}</button>
+            <button class="btn btn-outline" onclick="openFullDaySeriesModal()">{{ t('btn_celodnevna_serija', '☀️ Celodnevna serija') }}</button>
           </div>
         </div>
         <!-- ZAVIHKI PROSTOROV — dinamično generirani prek JS glede na
@@ -392,23 +392,23 @@
          ================================================================ -->
     <div id="section-ocenjevanja" class="section">
       <div class="card">
-        <h2>Ocenjevanja</h2>
+        <h2>{{ t('naslov_ocenjevanja', 'Ocenjevanja') }}</h2>
         <!-- FILTRI — izbira razreda, osveži, novo ocenjevanje in
              upravljanje dni dejavnosti. Gumb "Dnevi dejavnosti" je
              viden le pooblaščenim uporabnikom (prek JS). -->
         <div class="filters">
           <div>
-            <label>Razred</label>
+            <label>{{ t('label_razred', 'Razred') }}</label>
             <select id="oc-razred"></select>
           </div>
-          <button class="btn btn-primary" onclick="loadAssessments()">Osveži</button>
-          <button class="btn btn-outline" onclick="openOcModal()">+ Novo ocenjevanje</button>
+          <button class="btn btn-primary" onclick="loadAssessments()">{{ t('btn_osvezi', 'Osveži') }}</button>
+          <button class="btn btn-outline" onclick="openOcModal()">{{ t('btn_novo_ocenjevanje_plus', '+ Novo ocenjevanje') }}</button>
           <!-- GUMB »Vnos dejavnosti« — viden vsem (učitelj vidi samo branje). -->
-          <button class="btn btn-outline" onclick="location.href='{{ nav_ocenjevanje }}/dejavnosti'">📋 Dejavnosti</button>
+          <button class="btn btn-outline" onclick="location.href='{{ nav_ocenjevanje }}/dejavnosti'">{{ t('btn_dejavnosti', '📋 Dejavnosti') }}</button>
           <!-- GUMB ZA DNEVE DEJAVNOSTI — prikazan le uporabnikom z
                ID 1-4 ali vlogo admin/vodstvo.  -->
           <span id="block-btn-container">
-            <button class="btn btn-outline" onclick="openBlockModal()">🚫 Dnevi dejavnosti</button>
+            <button class="btn btn-outline" onclick="openBlockModal()">{{ t('btn_dnevi_dejavnosti', '🚫 Dnevi dejavnosti') }}</button>
           </span>
         </div>
         <!-- KOLEDAR — dinamično generiran mesečni pregled. -->
@@ -426,17 +426,17 @@
        ================================================================ -->
   <div class="modal-overlay" id="rez-modal">
     <div class="modal">
-      <h3>Nova rezervacija</h3>
+      <h3>{{ t('btn_nova_rezervacija', 'Nova rezervacija') }}</h3>
       <div class="form-group">
-        <label>Prostor</label>
+        <label>{{ t('label_prostor', 'Prostor') }}</label>
         <select id="rez-form-prostor"></select>
       </div>
       <div class="form-group">
-        <label>Datum</label>
+        <label>{{ t('label_datum', 'Datum') }}</label>
         <input type="date" id="rez-form-date">
       </div>
       <div class="form-group">
-        <label>Ura</label>
+        <label>{{ t('label_ura', 'Ura') }}</label>
         <select id="rez-form-hour"></select>
       </div>
       <!-- POLJE ZA ŠTEVILO TABLIC — prikazano le, ko je izbran prostor
@@ -447,8 +447,8 @@
         <input type="number" id="rez-form-qty" min="1" max="28" value="1">
       </div>
       <div class="form-actions">
-        <button class="btn btn-cancel" onclick="closeModal('rez-modal')">Prekliči</button>
-        <button class="btn btn-primary" onclick="submitRezervacija()">Shrani</button>
+        <button class="btn btn-cancel" onclick="closeModal('rez-modal')">{{ t('btn_preklici', 'Prekliči') }}</button>
+        <button class="btn btn-primary" onclick="submitRezervacija()">{{ t('btn_shrani', 'Shrani') }}</button>
       </div>
     </div>
   </div>
@@ -460,9 +460,9 @@
        ================================================================ -->
   <div class="modal-overlay" id="weekly-series-modal">
     <div class="modal" style="max-width:500px;">
-      <h3>Tedenska ponavljajoča rezervacija</h3>
+      <h3>{{ t('label_tedenska_ponavljajoca', 'Tedenska ponavljajoča rezervacija') }}</h3>
       <div class="form-group">
-        <label>Prostor</label>
+        <label>{{ t('label_prostor', 'Prostor') }}</label>
         <select id="weekly-prostor"></select>
       </div>
       <div class="form-group">
@@ -478,11 +478,11 @@
         <input type="number" id="weekly-weekday" min="0" max="6" step="1" value="0">
       </div>
       <div class="form-group">
-        <label>Od datuma</label>
+        <label>{{ t('label_od_datuma', 'Od datuma') }}</label>
         <input type="date" id="weekly-date-from">
       </div>
       <div class="form-group">
-        <label>Do datuma</label>
+        <label>{{ t('label_do_datuma', 'Do datuma') }}</label>
         <input type="date" id="weekly-date-to">
       </div>
       <!-- POLJE ZA ŠTEVILO TABLIC (tedenska serija) — prikazano le za
@@ -522,8 +522,8 @@
         </select>
       </div>
       <div class="form-actions">
-        <button class="btn btn-cancel" onclick="closeModal('weekly-series-modal')">Prekliči</button>
-        <button class="btn btn-primary" onclick="submitWeeklySeries()">Ustvari serijo</button>
+        <button class="btn btn-cancel" onclick="closeModal('weekly-series-modal')">{{ t('btn_preklici', 'Prekliči') }}</button>
+        <button class="btn btn-primary" onclick="submitWeeklySeries()">{{ t('btn_ustvari_serijo', 'Ustvari serijo') }}</button>
       </div>
       <hr style="margin:1rem 0;border:none;border-top:1px solid #eee;">
       <!-- SEZNAM OBSTOJEČIH SERIJ — prikaže vse aktivne serije z
@@ -542,9 +542,9 @@
        ================================================================ -->
   <div class="modal-overlay" id="fullday-series-modal">
     <div class="modal" style="max-width:500px;">
-      <h3>Celodnevna serija (vse ure)</h3>
+      <h3>{{ t('label_celodnevna_serija_vse_ure', 'Celodnevna serija (vse ure)') }}</h3>
       <div class="form-group">
-        <label>Prostor</label>
+        <label>{{ t('label_prostor', 'Prostor') }}</label>
         <select id="fullday-prostor"></select>
       </div>
       <div class="form-group">
@@ -552,11 +552,11 @@
         <input type="text" id="fullday-name" placeholder="npr. Naravoslovni dan — 5. a" maxlength="120">
       </div>
       <div class="form-group">
-        <label>Od datuma</label>
+        <label>{{ t('label_od_datuma', 'Od datuma') }}</label>
         <input type="date" id="fullday-date-from">
       </div>
       <div class="form-group">
-        <label>Do datuma</label>
+        <label>{{ t('label_do_datuma', 'Do datuma') }}</label>
         <input type="date" id="fullday-date-to">
       </div>
       <!-- POLJE ZA ŠTEVILO TABLIC (celodnevna serija) — enako kot pri
@@ -599,8 +599,8 @@
         <input type="text" id="fullday-hours" placeholder="0,1,2">
       </div>
       <div class="form-actions">
-        <button class="btn btn-cancel" onclick="closeModal('fullday-series-modal')">Prekliči</button>
-        <button class="btn btn-primary" onclick="submitFullDaySeries()">Ustvari serijo</button>
+        <button class="btn btn-cancel" onclick="closeModal('fullday-series-modal')">{{ t('btn_preklici', 'Prekliči') }}</button>
+        <button class="btn btn-primary" onclick="submitFullDaySeries()">{{ t('btn_ustvari_serijo', 'Ustvari serijo') }}</button>
       </div>
       <hr style="margin:1rem 0;border:none;border-top:1px solid #eee;">
       <!-- SEZNAM OBSTOJEČIH CELODNEVNIH SERIJ -->
@@ -617,22 +617,22 @@
        ================================================================ -->
   <div class="modal-overlay" id="oc-modal">
     <div class="modal">
-      <h3>Novo ocenjevanje</h3>
+      <h3>{{ t('btn_novo_ocenjevanje', 'Novo ocenjevanje') }}</h3>
       <div class="form-group">
-        <label>Razred</label>
+        <label>{{ t('label_razred', 'Razred') }}</label>
         <select id="oc-form-razred"></select>
       </div>
       <div class="form-group">
-        <label>Datum</label>
+        <label>{{ t('label_datum', 'Datum') }}</label>
         <input type="date" id="oc-form-date">
       </div>
       <div class="form-checkbox">
         <input type="checkbox" id="oc-form-ponavljanje">
-        <label for="oc-form-ponavljanje">Ponavljanje</label>
+        <label for="oc-form-ponavljanje">{{ t('label_ponavljanje', 'Ponavljanje') }}</label>
       </div>
       <div class="form-actions">
-        <button class="btn btn-cancel" onclick="closeModal('oc-modal')">Prekliči</button>
-        <button class="btn btn-primary" onclick="submitOcenjevanje()">Shrani</button>
+        <button class="btn btn-cancel" onclick="closeModal('oc-modal')">{{ t('btn_preklici', 'Prekliči') }}</button>
+        <button class="btn btn-primary" onclick="submitOcenjevanje()">{{ t('btn_shrani', 'Shrani') }}</button>
       </div>
     </div>
   </div>
@@ -645,24 +645,24 @@
        ================================================================ -->
   <div class="modal-overlay" id="block-modal">
     <div class="modal" style="max-width:660px;">
-      <h3>🚫 Dnevi dejavnosti</h3>
+      <h3>{{ t('btn_dnevi_dejavnosti', '🚫 Dnevi dejavnosti') }}</h3>
       <div class="form-group">
         <label>Razredi (držite Ctrl za več)</label>
         <select id="block-razredi" multiple style="height:180px;width:100%;"></select>
       </div>
       <div style="display:flex;gap:10px;">
         <div class="form-group" style="flex:1;">
-          <label>Od datuma</label>
+          <label>{{ t('label_od_datuma', 'Od datuma') }}</label>
           <input type="date" id="block-date-from">
         </div>
         <div class="form-group" style="flex:1;">
-          <label>Do datuma</label>
+          <label>{{ t('label_do_datuma', 'Do datuma') }}</label>
           <input type="date" id="block-date-to">
         </div>
       </div>
       <div class="form-actions">
-        <button class="btn btn-cancel" onclick="closeModal('block-modal')">Zapri</button>
-        <button class="btn btn-primary" onclick="addBlockedDates()">Dodaj dneve dejavnosti</button>
+        <button class="btn btn-cancel" onclick="closeModal('block-modal')">{{ t('btn_zapri', 'Zapri') }}</button>
+        <button class="btn btn-primary" onclick="addBlockedDates()">{{ t('btn_dodaj_dneve_dejavnosti', 'Dodaj dneve dejavnosti') }}</button>
       </div>
       <div id="block-msg" style="margin-top:10px;font-size:0.9rem;"></div>
       <div id="block-list" style="margin-top:15px;max-height:300px;overflow-y:auto;padding-right:16px;"></div>
@@ -681,7 +681,7 @@
       <h3>📋 Dejavnosti — <span id="dejavnost-modal-date"></span></h3>
       <div id="dejavnost-modal-body" style="font-size:0.9rem;max-height:420px;overflow-y:auto;"></div>
       <div class="form-actions">
-        <button class="btn btn-primary" onclick="closeModal('dejavnost-modal')">Zapri</button>
+        <button class="btn btn-primary" onclick="closeModal('dejavnost-modal')">{{ t('btn_zapri', 'Zapri') }}</button>
       </div>
     </div>
   </div>
@@ -693,23 +693,23 @@
        ================================================================ -->
   <div class="modal-overlay" id="export-rez-modal">
     <div class="modal" style="max-width:450px;">
-      <h3>📥 Izvoz rezervacij</h3>
+      <h3>{{ t('izvoz_rezervacij', '📥 Izvoz rezervacij') }}</h3>
       <p style="font-size:0.85rem;color:#666;margin-bottom:1rem;">Izberi obdobje in prostor za izvoz v CSV.</p>
       <div class="form-group">
-        <label>Od datuma</label>
+        <label>{{ t('label_od_datuma', 'Od datuma') }}</label>
         <input type="date" id="export-rez-from">
       </div>
       <div class="form-group">
-        <label>Do datuma</label>
+        <label>{{ t('label_do_datuma', 'Do datuma') }}</label>
         <input type="date" id="export-rez-to">
       </div>
       <div class="form-group">
-        <label>Prostor</label>
+        <label>{{ t('label_prostor', 'Prostor') }}</label>
         <select id="export-rez-prostor"></select>
       </div>
       <div class="form-actions">
-        <button class="btn btn-cancel" onclick="closeModal('export-rez-modal')">Prekliči</button>
-        <button class="btn btn-primary" onclick="exportRezervacije()">📥 Prenesi CSV</button>
+        <button class="btn btn-cancel" onclick="closeModal('export-rez-modal')">{{ t('btn_preklici', 'Prekliči') }}</button>
+        <button class="btn btn-primary" onclick="exportRezervacije()">{{ t('btn_prenesi_csv', '📥 Prenesi CSV') }}</button>
       </div>
       <div id="export-rez-msg" style="margin-top:10px;font-size:0.9rem;"></div>
     </div>
@@ -722,23 +722,23 @@
        ================================================================ -->
   <div class="modal-overlay" id="export-oc-modal">
     <div class="modal" style="max-width:450px;">
-      <h3>📥 Izvoz ocenjevanj</h3>
+      <h3>{{ t('izvoz_ocenjevanj', '📥 Izvoz ocenjevanj') }}</h3>
       <p style="font-size:0.85rem;color:#666;margin-bottom:1rem;">Izberi obdobje in razred za izvoz v CSV.</p>
       <div class="form-group">
-        <label>Od datuma</label>
+        <label>{{ t('label_od_datuma', 'Od datuma') }}</label>
         <input type="date" id="export-oc-from">
       </div>
       <div class="form-group">
-        <label>Do datuma</label>
+        <label>{{ t('label_do_datuma', 'Do datuma') }}</label>
         <input type="date" id="export-oc-to">
       </div>
       <div class="form-group">
-        <label>Razred</label>
+        <label>{{ t('label_razred', 'Razred') }}</label>
         <select id="export-oc-razred"></select>
       </div>
       <div class="form-actions">
-        <button class="btn btn-cancel" onclick="closeModal('export-oc-modal')">Prekliči</button>
-        <button class="btn btn-primary" onclick="exportOcenjevanja()">📥 Prenesi CSV</button>
+        <button class="btn btn-cancel" onclick="closeModal('export-oc-modal')">{{ t('btn_preklici', 'Prekliči') }}</button>
+        <button class="btn btn-primary" onclick="exportOcenjevanja()">{{ t('btn_prenesi_csv', '📥 Prenesi CSV') }}</button>
       </div>
       <div id="export-oc-msg" style="margin-top:10px;font-size:0.9rem;"></div>
     </div>
@@ -752,7 +752,7 @@
        ================================================================ -->
   <div class="modal-overlay" id="pw-modal">
     <div class="modal" style="max-width:400px;">
-      <h3>Sprememba gesla</h3>
+      <h3>{{ t('naslov_sprememba_gesla', 'Sprememba gesla') }}</h3>
       <div class="form-group">
         <label>Trenutno geslo</label>
         <input type="password" id="pw-old" placeholder="Vnesite trenutno geslo">
@@ -767,8 +767,8 @@
         <input type="password" id="pw-new2" placeholder="Ponovite novo geslo">
       </div>
       <div class="form-actions">
-        <button class="btn btn-cancel" onclick="closeModal('pw-modal')">Prekliči</button>
-        <button class="btn btn-primary" onclick="submitChangePassword()">Spremeni geslo</button>
+        <button class="btn btn-cancel" onclick="closeModal('pw-modal')">{{ t('btn_preklici', 'Prekliči') }}</button>
+        <button class="btn btn-primary" onclick="submitChangePassword()">{{ t('link_spremeni_geslo', 'Spremeni geslo') }}</button>
       </div>
       <div id="pw-msg" style="margin-top:10px;font-size:0.9rem;"></div>
     </div>
@@ -1364,8 +1364,8 @@
           `background:${color};margin-right:6px;vertical-align:middle;"></span>`;
         body.innerHTML = `<table style="width:100%;border-collapse:collapse;">
             <thead><tr>
-              <th style="text-align:left;padding:6px 8px;border-bottom:2px solid #eee;width:90px;">Razred</th>
-              <th style="text-align:left;padding:6px 8px;border-bottom:2px solid #eee;">Dejavnost</th>
+              <th style="text-align:left;padding:6px 8px;border-bottom:2px solid #eee;width:90px;">{{ t('label_razred', 'Razred') }}</th>
+              <th style="text-align:left;padding:6px 8px;border-bottom:2px solid #eee;">{{ t('dejavnost', 'Dejavnost') }}</th>
             </tr></thead>
             <tbody>
             ${entries.map(e => {
@@ -1381,9 +1381,9 @@
             </tbody>
           </table>
           <p style="margin:10px 0 0;font-size:0.72rem;color:#555;line-height:1.7;">
-            ${dot(FULL_COLOR)} <b>Celoten dan</b> — dejavnost traja ves dan (blokira ocenjevanja, rezervira ure 1–5)
+            ${dot(FULL_COLOR)} <b>{{ t('label_celoten_dan', 'Celoten dan') }}</b> — dejavnost traja ves dan (blokira ocenjevanja, rezervira ure 1–5)
             &nbsp;&nbsp;|&nbsp;&nbsp;
-            ${dot(PART_COLOR)} <b>Ne traja cel dan</b> — krajša dejavnost, ocenjevanja niso blokirana
+            ${dot(PART_COLOR)} <b>{{ t('label_ni_celoten_dan', 'Ne traja cel dan') }}</b> — krajša dejavnost, ocenjevanja niso blokirana
           </p>
           <p style="margin-top:8px;font-size:0.8rem;color:#777;">
             Vir: stran <a href="{{ nav_ocenjevanje }}/dejavnosti" target="_blank">Vnos dejavnosti</a>.
@@ -1715,13 +1715,13 @@
       for (let i = 0; i < 5; i++) days.push(addDays(weekStart, i));
       const weekEnd = addDays(weekStart, 4);
       let html = `<div class="week-nav">
-        <button class="btn btn-sm btn-outline" onclick="shiftWeek(-7)">‹ Prejšnji teden</button>
+        <button class="btn btn-sm btn-outline" onclick="shiftWeek(-7)">{{ t('cal_prejsnji_teden', '‹ Prejšnji teden') }}</button>
         <h3>${formatDateSI(weekStart)} – ${formatDateSI(weekEnd)}</h3>
-        <button class="btn btn-sm btn-outline" onclick="shiftWeek(7)">Naslednji teden ›</button>
+        <button class="btn btn-sm btn-outline" onclick="shiftWeek(7)">{{ t('cal_naslednji_teden', 'Naslednji teden ›') }}</button>
       </div>`;
       const dayNames = ['Ponedeljek', 'Torek', 'Sreda', 'Četrtek', 'Petek'];
       const hours = Object.entries(schedule);
-      html += `<table><thead><tr><th>Ura</th>`;
+      html += `<table><thead><tr><th>{{ t('label_ura', 'Ura') }}</th>`;
       days.forEach((d,i) => { html += `<th>${dayNames[i]}<br><small>${formatDateSI(d)}</small></th>`; });
       html += `</thead><tbody>`;
       for (const [hourIdx, hourLabel] of hours) {
@@ -1886,8 +1886,8 @@
       const nextMonth = mon === 12 ? `${year+1}-01` : `${year}-${String(mon+1).padStart(2,'0')}`;
       const dayNames = ['Pon','Tor','Sre','Čet','Pet','Sob','Ned'];
       const today = new Date();
-      let html = `<div class="calendar-nav"><button class="btn btn-sm btn-outline" onclick="changeMonth('${prevMonth}')">‹ Prejšnji mesec</button>
-        <h3>${monthName(mon-1)} ${year}</h3><button class="btn btn-sm btn-outline" onclick="changeMonth('${nextMonth}')">Naslednji mesec ›</button></div>`;
+      let html = `<div class="calendar-nav"><button class="btn btn-sm btn-outline" onclick="changeMonth('${prevMonth}')">{{ t('cal_prejsnji_mesec', '‹ Prejšnji mesec') }}</button>
+        <h3>${monthName(mon-1)} ${year}</h3><button class="btn btn-sm btn-outline" onclick="changeMonth('${nextMonth}')">{{ t('cal_naslednji_mesec', 'Naslednji mesec ›') }}</button></div>`;
       html += `<div class="calendar-grid">`;
       dayNames.forEach(n => html += `<div class="calendar-header">${n}</div>`);
       for (let i=0; i<startCol; i++) html += `<div class="calendar-day other-month"></div>`;
@@ -1963,10 +1963,10 @@
       const remaining = lastCol === 0 ? 0 : 7 - lastCol;
       for (let i=0; i<remaining; i++) html += `<div class="calendar-day other-month"></div>`;
       html += `</div><div style="display:flex;gap:15px;justify-content:center;margin-top:10px;font-size:0.75rem;">
-        <span><span style="display:inline-block;width:12px;height:12px;background:#cce5ff;border-radius:2px;"></span> Običajno ocenjevanje</span>
-        <span><span style="display:inline-block;width:12px;height:12px;background:#ffcccc;border-radius:2px;"></span> Ponavljanje</span>
+        <span><span style="display:inline-block;width:12px;height:12px;background:#cce5ff;border-radius:2px;"></span> {{ t('legenda_obicajno', 'Običajno ocenjevanje') }}</span>
+        <span><span style="display:inline-block;width:12px;height:12px;background:#ffcccc;border-radius:2px;"></span> {{ t('label_ponavljanje', 'Ponavljanje') }}</span>
         <span><span style="display:inline-block;width:12px;height:12px;background:#dcfce7;border-radius:2px;"></span> IP/NIP/ID</span>
-        <span><span style="display:inline-block;width:12px;height:12px;background:#7c3aed;border-radius:2px;"></span> Dan dejavnosti</span>
+        <span><span style="display:inline-block;width:12px;height:12px;background:#7c3aed;border-radius:2px;"></span> {{ t('legenda_dan_dejavnosti', 'Dan dejavnosti') }}</span>
       </div>`;
       document.getElementById('oc-calendar-container').innerHTML = html;
     }

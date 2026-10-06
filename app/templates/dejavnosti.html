@@ -45,7 +45,7 @@
   <div class="nav">
     <a href="{{ nav_rezervacije }}">← Aplikacija</a>
   </div>
-  <h2>📋 Dejavnosti</h2>
+  <h2>{{ t('btn_dejavnosti', '📋 Dejavnosti') }}</h2>
   <p class="hint">Učitelji lahko pregledujejo; vodstvo/admin ureja. Ob shranjevanju z izbranim datumom,
     "celoten dan" in prostori se samodejno ustvarijo blokirani datumi, rezervacije (ure 1–5) in prekličejo
     ocenjevanja + email učiteljem.</p>
@@ -145,7 +145,7 @@ async function loadExisting(grade){
     if(series.length === 0){
       html += `<p class="muted">Ni serijskih rezervacij.</p>`;
     }else{
-      html += `<table><thead><tr><th>Ime</th><th>Prostor</th><th>Obdobje</th><th>Terminov</th></tr></thead><tbody>`;
+      html += `<table><thead><tr><th>Ime</th><th>{{ t('label_prostor', 'Prostor') }}</th><th>Obdobje</th><th>Terminov</th></tr></thead><tbody>`;
       series.forEach(s => {
         html += `<tr><td>${esc(s.name || 'Dogodek')}</td><td>${prostLabel(s.prostor)}</td>` +
                 `<td>${s.min_date} → ${s.max_date}</td><td>${s.count}</td></tr>`;
@@ -201,11 +201,11 @@ function renderSectionTable(grade, section, rows, isManual){
   // Računalnica | Tablice | Ladja | Gospodinjska učilnica | Akcije
   const rooms = ['racunalnica', 'tablice', 'ladja', 'gospodinjska-ucilnica'];
   let html = `<table><thead><tr>
-    <th>Dejavnost</th>
+    <th>{{ t('dejavnost', 'Dejavnost') }}</th>
     <th>Okvirni čas izvedbe</th>
-    <th>Vodja</th>
+    <th>{{ t('label_vodja', 'Vodja') }}</th>
     <th>Pribl. cena (€)</th>
-    <th>Opomba</th>
+    <th>{{ t('label_opomba', 'Opomba') }}</th>
     <th title="Celoten dan (blokira dan dejavnosti + rezervira ure 1–5)">Cel. dan</th>
     <th title="Računalnica">Rač.</th>
     <th title="Tablice">Tab.</th>
@@ -337,7 +337,7 @@ function openEditor(r){
         </label>
       </div>
       <div class="toolbar">
-        <label><input type="checkbox" id="e-full" ${r.full_day?'checked':''}> Celoten dan</label>
+        <label><input type="checkbox" id="e-full" ${r.full_day?'checked':''}> {{ t('label_celoten_dan', 'Celoten dan') }}</label>
         <label><input type="checkbox" id="e-recurring" ${r.recurring?'checked':''}> Tedensko ponavljanje</label>
         <label><input type="checkbox" id="e-undet" ${r.date_undetermined?'checked':''} onchange="toggleUndet(this)"> Datum ni še določen</label>
       </div>
@@ -364,7 +364,7 @@ function openEditor(r){
         <label>Opomba: <input type="text" id="e-opomba" value="${escAttr(r.opomba)}" style="width:100%;"></label>
       </div>
       <div style="text-align:right;margin-top:16px;">
-        <button class="btn btn-danger" onclick="document.body.removeChild(this.closest('#editor'))" style="margin-right:6px;">Prekliči</button>
+        <button class="btn btn-danger" onclick="document.body.removeChild(this.closest('#editor'))" style="margin-right:6px;">{{ t('btn_preklici', 'Prekliči') }}</button>
         <button class="btn btn-success" onclick="saveRow(${r.id || 'null'})">💾 Shrani</button>
       </div>
     </div>`;

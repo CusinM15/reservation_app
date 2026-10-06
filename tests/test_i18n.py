@@ -24,14 +24,13 @@ def test_normalize_lang():
 
 
 def test_seed_creates_all_rows(client):
+    """Ob zagonu aplikacije se tabela ui_strings napolni; seed je idempotenten."""
     db = SessionLocal()
     try:
-        added, _ = seed(db)
-        assert added == len(STRINGS)
+        # TestClient ob zagonu požene on_startup → tabela je že napolnjena.
         assert db.query(UIString).count() == len(STRINGS)
-        # drugi zagon ne doda nič novega
-        added2, _ = seed(db)
-        assert added2 == 0
+        added, _ = seed(db)
+        assert added == 0
     finally:
         db.close()
 

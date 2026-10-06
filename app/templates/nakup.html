@@ -31,7 +31,7 @@
 <body>
 <div class="wrap">
   <div class="card">
-    <h1>Naročnina za šolsko aplikacijo</h1>
+    <h1>{{ t('nakup_naslov', 'Naročnina za šolsko aplikacijo') }}</h1>
     <p class="muted">
       <span class="brand">Šolski app</span> — rezervacije prostorov, dnevi dejavnosti
       in ocenjevanja za vašo šolo.
@@ -45,7 +45,7 @@
     {% else %}
 
       {% if cfg.free %}
-        <p class="price">Brezplačno (0 €)</p>
+        <p class="price">{{ t('narocnina_brezplacno', 'Brezplačno (0 €)') }}</p>
         <p class="muted">Aplikacija je <strong>brezplačna</strong>. Naročnino je treba vseeno
            obnoviti za vsako šolsko leto — brez veljavne naročnine aplikacija za šolo ne dela.</p>
         {% if cfg.donation_url %}
@@ -65,21 +65,21 @@
            Če začnete sredi leta, je cena <strong>sorazmerna</strong> preostanku do 1. 9.
            (DDV ni obračunan, če niste zavezanec).</p>
 
-        <h2>Izračun cene</h2>
+        <h2>{{ t('nakup_izracun_cene', 'Izračun cene') }}</h2>
         <p class="muted">Naročnina <strong>vedno velja do 1. 9.</strong> — izberite datum začetka,
            cena se sorazmerno zniža (bližje kot je 1. 9., nižja je cena).</p>
         <form method="GET" action="/nakup" style="margin:10px 0;display:flex;gap:10px;align-items:center;flex-wrap:wrap;">
           <label>Začetek naročnine:</label>
           <input type="date" name="start" value="{{ start.isoformat() }}"
                  style="padding:8px 10px;border:1px solid #ddd;border-radius:6px;">
-          <button class="btn btn-secondary" type="submit">Izračunaj</button>
+          <button class="btn btn-secondary" type="submit">{{ t('btn_izracunaj', 'Izračunaj') }}</button>
         </form>
         <p class="price" style="margin:2px 0;">{{ prorated }} €</p>
         <p class="muted">Za obdobje <strong>{{ start.strftime('%d. %m. %Y') }} – {{ period_end.strftime('%d. %m. %Y') }}</strong>
            (polna cena {{ cfg.price_label }} za celo leto).</p>
       {% endif %}
 
-      <h2>Kaj dobite</h2>
+      <h2>{{ t('nakup_kaj_dobite', 'Kaj dobite') }}</h2>
       <ul>
         <li>rezervacije prostorov in opreme za vse učitelje,</li>
         <li>dnevi dejavnosti (termini po razredih, urnik, prostori),</li>
@@ -88,7 +88,7 @@
         <li>nočna varnostna kopija podatkov šole.</li>
       </ul>
 
-      <h2>Kako kupite</h2>
+      <h2>{{ t('nakup_kako_kupite', 'Kako kupite') }}</h2>
       <ol>
         {% if cfg.free %}
         <li>Plačila ni (cena je 0 €). Naročnino vseeno obnovimo za vsako obdobje.</li>
@@ -97,7 +97,7 @@
             napišite ime šole, npr. <em>OŠ Primer – naročnina</em>.</li>
         {% endif %}
         <li>Prijavite se kot <strong>administrator šole</strong> in v
-            <em>Nastavitve šole → Naročnina šole</em> kliknite <em>Sporoči plačilo</em>
+            <em>Nastavitve šole → Naročnina šole</em> kliknite <em>{{ t('btn_sporoci_placilo', 'Sporoči plačilo') }}</em>
             ter vpišite kodo transakcije iz PayPal potrdila.</li>
         <li>Naročnino potrdimo in velja izbrano obdobje od potrditve.</li>
       </ol>
@@ -105,7 +105,7 @@
       {% if cfg.paypal_url and not cfg.free %}
         <p style="margin-top:20px;">
           <a class="btn" href="{{ cfg.paypal_url }}" target="_blank" rel="noopener">
-            Plačaj prek PayPala
+            {{ t('btn_placaj_paypal', 'Plačaj prek PayPala') }}
           </a>
         </p>
       {% elif not cfg.free %}
@@ -123,7 +123,7 @@
       </div>
 
       {% if not cfg.free %}
-      <h2>Samodejno plačilo</h2>
+      <h2>{{ t('narocnina_samodejno', 'Samodejno plačilo') }}</h2>
       <p class="muted">
         Naročnina se lahko obnavlja sama ob vsakem obdobju na isti dan — v <em>Nastavitve šole →
         Naročnina šole</em> vklopite »Samodejno obnavljanje«.

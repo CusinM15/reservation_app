@@ -34,11 +34,11 @@
 <div class="wrap">
 
   <div class="card">
-    <h1>Nova šola — ustvarite šolski račun</h1>
+    <h1>{{ t('reg_naslov', 'Nova šola — ustvarite šolski račun') }}</h1>
     <p class="muted"><span class="brand">Šolski app</span> — rezervacije prostorov, dnevi dejavnosti
       in ocenjevanja za vašo šolo.</p>
 
-    <h2>Kaj aplikacija dela</h2>
+    <h2>{{ t('reg_kaj_dela', 'Kaj aplikacija dela') }}</h2>
     <ul>
       <li><strong>rezervacije prostorov in opreme</strong> — učitelji rezervirajo tablice, računalnice,
           posebne prostore; aplikacija sama pazi na zasedenost in omejitve,</li>
@@ -49,12 +49,12 @@
       <li><strong>nočna varnostna kopija</strong> podatkov šole in dnevnik vseh sprememb.</li>
     </ul>
 
-    <h2>Zakaj jo potrebujemo</h2>
+    <h2>{{ t('reg_zakaj', 'Zakaj jo potrebujemo') }}</h2>
     <p>Namesto tabel v Excelu, listov papirja in dogovarjanja po e-pošti je vse na enem mestu in v
       realnem času. Učitelj vidi, kdaj je prostor prost; vodstvo vidi, kdaj so ocenjevanja in dejavnosti;
       administrator šole lahko preveri, kaj se dogaja, in podatke tudi izvozi.</p>
 
-    <h2>Kako poteka</h2>
+    <h2>{{ t('reg_kako_poteka', 'Kako poteka') }}</h2>
     <ol class="steps">
       <li>Ustvarite račun šole (spodaj) — traja minuto.</li>
       <li>Nastaviš e-mail admina, <strong>NAJBOLJ POMEMBNO</strong>: je da nastavite e-pošto iz katere bo app pošiljal e-pošto - nastavite <strong>SMTP uporabniško ime</strong>, <strong>SMTP geslo</strong> in <strong>Naslov pošiljatelja (From)</strong>! Če za pošiljanje ne boste uporabljali <strong>Arnes</strong> e-pošte, ustrezno nastavite tudi <strong>SMTP strežnik</strong> in <strong>SMTP vrata</strong>.</li>
@@ -65,7 +65,7 @@
   </div>
 
   <div class="card">
-    <h2>Vpišite ime šole</h2>
+    <h2>{{ t('reg_vpisite_ime', 'Vpišite ime šole') }}</h2>
     <p class="muted" style="margin-top:0;">
       Ostalo se uredi takoj potem (admin ostane prijavljen, gesla ne ve nihče, tako da je <strong>NUJNO</strong> da se nastavi podatke za e-pošto za pošiljanje in adminov e-naslov.
     </p>
@@ -82,7 +82,7 @@
         {% if cfg.free %}je 0 € (brez plačila, a obnoviti jo je treba za vsako obdobje){% else %}znaša {{ cfg.price_label }}{% endif %}.
       </div>
 
-      <p><button class="btn" type="submit">Ustvari šolo</button></p>
+      <p><button class="btn" type="submit">{{ t('btn_ustvari_solo', 'Ustvari šolo') }}</button></p>
     </form>
 
     <p class="muted">

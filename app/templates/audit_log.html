@@ -43,7 +43,7 @@
 </head>
 <body>
     <a href="/rezervacije" class="back">← Nazaj na aplikacijo</a>
-    <h1>📋 Audit log — dnevnik sprememb</h1>
+    <h1>{{ t('audit_naslov', '📋 Audit log — dnevnik sprememb') }}</h1>
 
     <div class="controls">
         <div class="filter-chips" id="filterChips">
@@ -163,9 +163,9 @@
             const total = data.total;
             const pag = document.getElementById('pagination');
             pag.innerHTML = `
-                <button onclick="goPage(-1)" ${currentOffset <= 0 ? 'disabled' : ''}>← Nazaj</button>
+                <button onclick="goPage(-1)" ${currentOffset <= 0 ? 'disabled' : ''}>{{ t('btn_nazaj_puscica', '← Nazaj') }}</button>
                 <span>${Math.floor(currentOffset / LIMIT) + 1} / ${Math.max(1, Math.ceil(total / LIMIT))}</span>
-                <button onclick="goPage(1)" ${currentOffset + LIMIT >= total ? 'disabled' : ''}>Naprej →</button>
+                <button onclick="goPage(1)" ${currentOffset + LIMIT >= total ? 'disabled' : ''}>{{ t('btn_naprej', 'Naprej →') }}</button>
             `;
         }
 
