@@ -70,7 +70,7 @@ Aplikacija je **večšolska**: vsaka šola vidi samo svoje podatke.
 
 - **Nič se ne izbriše samodejno.** Nobenih podatkov aplikacija ne briše po svoje (npr. starih
   rezervacij, ocenjevanj ali uporabnikov) — vse ostane, dokler jih nekdo ne izbriše.
-- **Vse izbriše šolski admin.** Samo šolski admin (ali glavni admin) lahko izbriše podatke
+- **Vse izbriše šolski admin.** Samo šolski admin lahko izbriše podatke
   svoje šole:
   - **uporabnika** (ob brisanju se izbrišejo tudi njegove rezervacije in ocenjevanja),
   - **rezervacijo**, **ocenjevanje**, **dan dejavnosti**, **blokiran datum**.
