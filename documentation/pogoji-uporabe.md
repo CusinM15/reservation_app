@@ -36,8 +36,7 @@ Aplikacija je **večšolska**: vsaka šola vidi samo svoje podatke.
 ## 3. Naročnina
 
 - **Vedno velja do 1. 9.** (začetek šolskega leta). Naročnina se sklene za obdobje do
-  **1. 9.** — če se začne sredi leta, velja do bližnjega 1. 9., sicer do 1. 9. naslednje leto.
-- **Prekinitev (odpoved) naročnine ne obstaja.** Naročnine ni mogoče odpovedati sredi obdobja;
+  **1. 9.** — če se začne sredi leta, velja do  1. 9.;
   velja do 1. 9., do katere velja, in se nato obnovi ali pa preprosto poteče.
 - **Obnova je ročna.** Šolski admin (ali glavni admin) jo obnovi **od 15. 8. dalje**; po obnovi
   velja do **1. 9. naslednje leto**. Aplikacija sama ne obnavlja ničesar.
