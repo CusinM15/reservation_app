@@ -52,6 +52,13 @@ def migrate_text(text: str, smap: dict[str, str]) -> tuple[str, int]:
             return f">{m.group(1)}{{{{ t('{key}', '{sl}') }}}}{m.group(2)}<"
 
         text = pattern.sub(_sub, text)
+
+        # Atributna besedila (placeholder, title), npr. placeholder="npr. 1. a".
+        for attr in ("placeholder", "title"):
+            apat = re.compile(attr + '="' + re.escape(sl) + '"')
+            repl = attr + '="{{ t(\'' + key + '\', \'' + sl + '\') }}"'
+            text, n2 = apat.subn(repl, text)
+            count += n2
     return text, count
 
 
