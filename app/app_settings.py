@@ -37,7 +37,7 @@ PLAN_MONTHS = {"leto": 12}
 PLAN_LABELS = {"leto": "leto"}
 PLAN_PER_LABELS = {"leto": "na leto"}
 PLAN_PRICE_KEYS = {"leto": KEY_PRICE}
-PLAN_PRICE_DEFAULTS = {"leto": 50}
+PLAN_PRICE_DEFAULTS = {"leto": 150}
 
 DEFAULT_PRICE_EUR = PLAN_PRICE_DEFAULTS["leto"]
 DEFAULT_PAYPAL_URL = ""
