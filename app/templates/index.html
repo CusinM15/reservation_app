@@ -294,7 +294,7 @@
          odpirati novega okna za vsak dokument. -->
     <div class="navodila-preview" id="navodilaPreview" onmouseenter="keepPreview()" onmouseleave="scheduleHidePreview()">
       <div class="navodila-preview-header">
-        <span id="navodilaPreviewTitle">Navodila</span>
+        <span id="navodilaPreviewTitle">{{ t('set_navodila', 'Navodila') }}</span>
         <span class="navodila-preview-close" onclick="hidePreview()">✕</span>
       </div>
       <div class="navodila-preview-body" id="navodilaPreviewBody">Nalagam ...</div>
@@ -754,17 +754,17 @@
     <div class="modal" style="max-width:400px;">
       <h3>{{ t('naslov_sprememba_gesla', 'Sprememba gesla') }}</h3>
       <div class="form-group">
-        <label>Trenutno geslo</label>
-        <input type="password" id="pw-old" placeholder="Vnesite trenutno geslo">
+        <label>{{ t('set_trenutno_geslo', 'Trenutno geslo') }}</label>
+        <input type="password" id="pw-old" placeholder="{{ t('set_ph_trenutno_geslo', 'Vnesite trenutno geslo') }}">
       </div>
       <div class="form-group">
-        <label>Novo geslo</label>
-        <input type="password" id="pw-new1" placeholder="Vnesite novo geslo">
+        <label>{{ t('set_novo_geslo', 'Novo geslo') }}</label>
+        <input type="password" id="pw-new1" placeholder="{{ t('set_ph_novo_geslo', 'Vnesite novo geslo') }}">
         <small style="display:block;font-size:0.75rem;color:#666;margin-top:-5px;">Vsaj 5 znakov, mala/velika črka, številka</small>
       </div>
       <div class="form-group">
-        <label>Novo geslo (ponovno)</label>
-        <input type="password" id="pw-new2" placeholder="Ponovite novo geslo">
+        <label>{{ t('set_novo_geslo_ponovno', 'Novo geslo (ponovno)') }}</label>
+        <input type="password" id="pw-new2" placeholder="{{ t('set_ph_ponovi_geslo', 'Ponovite novo geslo') }}">
       </div>
       <div class="form-actions">
         <button class="btn btn-cancel" onclick="closeModal('pw-modal')">{{ t('btn_preklici', 'Prekliči') }}</button>

@@ -109,3 +109,21 @@ def test_school_language_switches_whole_ui(client, make_user):
     assert "Close" in r.text         # Zapri → Close
     # Isti (prej slovenski) napis gumba ni več prisoten kot gumb.
     assert ">Prekliči<" not in r.text
+
+
+def test_settings_page_translated(client, make_user):
+    """Ko je jezik šole angleščina, so tudi Nastavitve šole v angleščini."""
+    db = SessionLocal()
+    try:
+        set_school_setting(db, default_school_id(), "UI_LANGUAGE", "en")
+        db.commit()
+    finally:
+        db.close()
+
+    admin = make_user(role="admin")
+    login(client, admin.username)
+    r = client.get("/settings")
+    assert r.status_code == 200
+    for napis in ("School settings", "Basic", "Interface language", "Classes", "Rooms", "Schedule",
+                  "Save settings", "School backup"):
+        assert napis in r.text, f"manjka angleški napis: {napis}"

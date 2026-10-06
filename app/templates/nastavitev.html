@@ -46,7 +46,7 @@
     <a href="/auth/login">← Nazaj na prijavo</a>
     {% else %}
     <a href="/rezervacije">Aplikacija</a>
-    <a href="/settings">Nastavitve šole</a>
+    <a href="/settings">{{ t('set_naslov', 'Nastavitve šole') }}</a>
     <a href="/auth/logout">{{ t('btn_odjava', 'Odjava') }}</a>
     {% endif %}
   </div>
@@ -143,7 +143,7 @@
           zato sta <strong>uporabniško ime in e-pošta enaka</strong>. Obstoječa uporabniška imena se
           preskočijo.</li>
       {% if prodaja and prodaja.enabled %}
-      <li><strong>Uredite naročnino</strong> — admin mora pod <strong>Nastavitve šole</strong> - <strong>{{ t('btn_podaljsaj_narocnino', 'Podaljšaj naročnino') }}</strong></li>
+      <li><strong>Uredite naročnino</strong> — admin mora pod <strong>{{ t('set_naslov', 'Nastavitve šole') }}</strong> - <strong>{{ t('btn_podaljsaj_narocnino', 'Podaljšaj naročnino') }}</strong></li>
       {% endif %}
           Naročnina je vedno do naslednjega 1. 9. (do konca šolskega leta),  podaljšajo lahko šele po 15. 8.). Trenutno je naročnina 0 €, toda ker za to da app teče skrbum, se nebi branil kakšne donacije.
       <li><em>Neobvezno:</em> prilagodite omejitve ocenjevanj, urnik in čas neaktivnosti.</li>

@@ -146,4 +146,91 @@ STRINGS: list[tuple[str, str, str, str]] = [
     ("msg_napaka", "sporočila", "Napaka.", "Error."),
     ("msg_ni_podatkov", "sporočila", "Ni podatkov.", "No data."),
     ("msg_nimam_dostopa", "sporočila", "Za to dejanje nimate pravic.", "You do not have permission for this action."),
+
+    # ── Nastavitve šole (celotna stran) ───────────────────────────────
+    ("set_naslov", "nastavitve šole", "Nastavitve šole", "School settings"),
+    ("set_osnovno", "nastavitve šole", "Osnovno", "Basic"),
+    ("set_pravila_ocenjevanja", "nastavitve šole", "Pravila ocenjevanja", "Assessment rules"),
+    ("set_eposta", "nastavitve šole", "E-pošta (SMTP)", "Email (SMTP)"),
+    ("set_navodila", "nastavitve šole", "Navodila", "Instructions"),
+    ("set_backup", "nastavitve šole", "Varnostna kopija šole", "School backup"),
+    ("set_jezik", "nastavitve šole", "Jezik vmesnika", "Interface language"),
+    ("set_razredi", "nastavitve šole", "Razredi", "Classes"),
+    ("set_stevila", "nastavitve šole", "Števila", "Numbers"),
+    ("set_prostori", "nastavitve šole", "Prostori", "Rooms"),
+    ("set_urnik", "nastavitve šole", "Urnik", "Schedule"),
+    ("set_trenutno_geslo", "nastavitve šole", "Trenutno geslo", "Current password"),
+    ("set_novo_geslo", "nastavitve šole", "Novo geslo", "New password"),
+    ("set_novo_geslo_ponovno", "nastavitve šole", "Novo geslo (ponovno)", "New password (again)"),
+    ("set_dodaj_razred", "nastavitve šole", "＋ Dodaj razred", "＋ Add class"),
+    ("set_dodaj_stevilo", "nastavitve šole", "＋ Dodaj število", "＋ Add number"),
+    ("set_dodaj_prostor", "nastavitve šole", "＋ Dodaj prostor", "＋ Add room"),
+    ("set_dodaj_uro", "nastavitve šole", "＋ Dodaj uro", "＋ Add period"),
+    ("set_naredi_backup", "nastavitve šole", "📧 Naredi backup", "📧 Make backup"),
+    ("set_btn_uporabniki", "nastavitve šole", "👥 Uporabniki", "👥 Users"),
+    ("set_btn_nastavitve", "nastavitve šole", "⚙️ Nastavitve (razredi, prostori)", "⚙️ Settings (classes, rooms)"),
+    ("set_btn_rezervacije", "nastavitve šole", "📅 Rezervacije", "📅 Reservations"),
+    ("set_btn_ocenjevanje", "nastavitve šole", "📝 Ocenjevanje", "📝 Assessment"),
+    ("set_btn_celotna_sola", "nastavitve šole", "♻️ Celotna šola (vse)", "♻️ Whole school (all)"),
+    ("set_opt_slovenščina", "nastavitve šole", "slovenščina", "Slovenian"),
+    ("set_opt_angleščina", "nastavitve šole", "angleščina", "English"),
+    ("set_opt_izberi", "nastavitve šole", "— izberi —", "— select —"),
+    ("set_th_izbrisano", "nastavitve šole", "Izbrisano", "Deleted"),
+    ("set_th_uvozeno", "nastavitve šole", "Uvoženo", "Imported"),
+    # namigi (hint) — besedila okoli <code>/<strong> so ločeni ključi
+    ("set_hint_jezik_1", "nastavitve šole", "Jezik, v katerem aplikacija prikaže napise gumbov in pogovornih oken (besedila se berejo iz tabele",
+     "The language in which the app shows button and dialog labels (texts are read from the table"),
+
+    ("set_hint_razredi_1", "nastavitve šole", "V vsako vrstico vpišite en razred, npr.", "Enter one class per line, e.g."),
+    ("set_hint_razredi_2", "nastavitve šole", ". Vrstico odstranite z ✕. Razredi se uporabljajo pri rezervacijah in ocenjevanjih.",
+     ". Remove a line with ✕. Classes are used in reservations and assessments."),
+    ("set_hint_stevila_1", "nastavitve šole", "Vsaka vrstica je imenovana številska spremenljivka (ime + vrednost), npr.",
+     "Each line is a named numeric variable (name + value), e.g."),
+    ("set_hint_stevila_2", "nastavitve šole", "Na ta imena se vežejo prostori (spodaj) — kapaciteta prostora na uro je vrednost te spremenljivke.",
+     "These names are used by rooms (below) — a room's capacity per period is the value of that variable."),
+    ("set_hint_prostori_1", "nastavitve šole", "Kljukica", "The check mark"),
+    ("set_hint_prostori_2", "nastavitve šole", "pomeni: v tem prostoru lahko hkrati rezervira več učiteljev, vsak navede količino, skupna vsota na uro pa je omejena z izbrano številsko spremenljivko. Brez kljukice je prostor ekskluziven — ena rezervacija na uro.",
+     "means: in this room several teachers can reserve at the same time, each states a quantity, and the total per period is limited by the selected numeric variable. Without the check mark the room is exclusive — one reservation per period."),
+    ("set_hint_prostori_3", "nastavitve šole", "s kljukico in spremenljivko", "with the check mark and variable"),
+
+    ("set_hint_prostori_5", "nastavitve šole", "brez.", "without."),
+    ("set_hint_urnik_1", "nastavitve šole", "V vsako vrstico vpišite razpon ure, npr.", "Enter one period range per line, e.g."),
+    ("set_hint_urnik_2", "nastavitve šole", ". Vrstico odstranite z ✕. Ure se uporabljajo v urniku in pri rezervacijah.",
+     ". Remove a line with ✕. Periods are used in the schedule and in reservations."),
+    # namigi za polja gesla
+    ("set_ph_trenutno_geslo", "nastavitve šole", "Vnesite trenutno geslo", "Enter current password"),
+    ("set_ph_novo_geslo", "nastavitve šole", "Vnesite novo geslo", "Enter new password"),
+    ("set_ph_ponovi_geslo", "nastavitve šole", "Ponovite novo geslo", "Repeat new password"),
+    ("set_ph_razred", "nastavitve šole", "npr. 1. a", "e.g. 1. a"),
+    ("set_ph_stevilo", "nastavitve šole", "npr. Število tablic", "e.g. Number of tablets"),
+    ("set_ph_vrednost", "nastavitve šole", "npr. 28", "e.g. 28"),
+    ("set_ph_prostor", "nastavitve šole", "npr. tablice", "e.g. tablets"),
+    ("set_ph_ura", "nastavitve šole", "npr. 07:30-08:15", "e.g. 07:30-08:15"),
+    ("set_title", "nastavitve šole", "Nastavitve šole - Šolski App", "School settings - School App"),
+    ("set_link_soles", "nastavitve šole", "Šole", "Schools"),
+    ("set_link_navodila", "nastavitve šole", "Navodila za nastavitev šole →", "School setup instructions →"),
+    ("set_geslo_pravilo", "nastavitve šole", "Vsaj 5 znakov, mala/velika črka, številka", "At least 5 characters, upper/lower case, a digit"),
+    ("set_lbl_stevilo", "nastavitve šole", "število", "number"),
+    ("set_backup_hint_a", "nastavitve šole",
+     "Sestavi <code>.sql</code> varnostno kopijo podatkov <strong>te šole</strong> "
+     "(izključno te šole — vrstic drugih šol ne vsebuje) in jo pošlje po e-pošti na",
+     "Creates a <code>.sql</code> backup of <strong>this school's</strong> data "
+     "(only this school — it contains no rows of other schools) and emails it to"),
+    ("set_restore_hint", "nastavitve šole",
+     "Naložite varnostno kopijo (<code>.sql</code>, izpis <code>pg_dump</code>) in izberite, "
+     "kaj naj se obnovi. Podatki izbrane skupine <strong>za to šolo</strong> se zamenjajo "
+     "s podatki iz kopije; podatki drugih šol ostanejo nedotaknjeni.",
+     "Load a backup (<code>.sql</code>, <code>pg_dump</code> output) and choose what to restore. "
+     "The selected group's data <strong>for this school</strong> is replaced with the data from the "
+     "backup; other schools' data stays untouched."),
+    ("set_restore_explain", "nastavitve šole",
+     "Dejavnosti = dnevi dejavnosti + zasedeni datumi. »Nastavitve« vrne razrede, prostore, "
+     "urnik in števila; »Uporabniki« vrne račune šole (z gesli). »Celotna šola (vse)« "
+     "ponovno postavi vso šolo iz kopije. Vsaka obnova se zabeleži v dnevnik dogodkov.",
+     "Activities = activity days + blocked dates. \"Settings\" restores classes, rooms, schedule "
+     "and numbers; \"Users\" restores the school's accounts (with passwords). \"Whole school (all)\" "
+     "rebuilds the entire school from the backup. Every restore is recorded in the event log."),
+    ("set_obnova_zakljucena", "nastavitve šole", "Obnova zaključena:", "Restore finished:"),
+    ("set_vkljuceno", "nastavitve šole", "Vključeno —", "Enabled —"),
+    ("set_hint_stevila_ali", "nastavitve šole", "ali", "or"),
 ]

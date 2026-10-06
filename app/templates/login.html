@@ -178,11 +178,11 @@
                      v JS spremenljivke. -->
                 <input type="hidden" name="token" value="{{ reset_token }}">
                 <input type="hidden" name="email" value="{{ reset_email }}">
-                <input type="password" name="new_password" id="reset_pw1" placeholder="Novo geslo" required>
+                <input type="password" name="new_password" id="reset_pw1" placeholder="{{ t('set_novo_geslo', 'Novo geslo') }}" required>
                 <!-- Potrditveno polje: ob vnosu skrije morebitno prejšnje
                      sporočilo o neujemanju (oninput handler) — uporabnik
                      dobi takojšnjo povratno informacijo. -->
-                <input type="password" name="confirm_password" id="reset_pw2" placeholder="Ponovite novo geslo" required
+                <input type="password" name="confirm_password" id="reset_pw2" placeholder="{{ t('set_ph_ponovi_geslo', 'Ponovite novo geslo') }}" required
                        oninput="document.getElementById('reset_pw_match').style.display='none'"
                        style="margin-top:6px;">
                 <div id="reset_pw_match" style="color:red;font-size:0.85rem;display:none;">Gesli se ne ujemata.</div>

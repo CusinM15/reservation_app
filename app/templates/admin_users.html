@@ -30,7 +30,7 @@
             <a href="/rezervacije">Domov</a>
             <a href="/auth/admin/users">Uporabniki</a>
             {% if is_main_admin %}<a href="/schools">Šole</a>{% endif %}
-            <a href="/settings">Nastavitve šole</a>
+            <a href="/settings">{{ t('set_naslov', 'Nastavitve šole') }}</a>
             <a href="/history">Dnevnik dogodkov</a>
             <a href="/auth/logout">{{ t('btn_odjava', 'Odjava') }}</a>
         </div>
@@ -169,7 +169,7 @@
                             </div>
                             <div>
                                 <label style="font-size:12px;">Novo geslo (pusti prazno za nespremenjeno)</label>
-                                <input type="password" name="new_password" placeholder="Novo geslo">
+                                <input type="password" name="new_password" placeholder="{{ t('set_novo_geslo', 'Novo geslo') }}">
                             </div>
                             <button type="submit" class="btn">{{ t('btn_shrani', 'Shrani') }}</button>
                             <button type="button" class="btn btn-danger" onclick="toggleEdit({{ user.id }})">{{ t('btn_zapri', 'Zapri') }}</button>

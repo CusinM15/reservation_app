@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Nastavitve šole - Šolski App</title>
+    <title>{{ t('set_title', 'Nastavitve šole - Šolski App') }}</title>
     <style>
         body { font-family: Arial, sans-serif; margin: 20px; background: #f5f5f5; }
         .container { max-width: 1100px; margin: auto; background: white; padding: 24px; border-radius: 10px; }
@@ -69,13 +69,13 @@
 <body>
     <div class="container">
         <div class="nav">
-            {% if is_main_admin %}<a href="/schools">Šole</a>{% endif %}
+            {% if is_main_admin %}<a href="/schools">{{ t('set_link_soles', 'Šole') }}</a>{% endif %}
             <a href="/rezervacije">Aplikacija</a>
             <a href="#" onclick="openModal('pw-modal'); return false;">{{ t('link_spremeni_geslo', 'Spremeni geslo') }}</a>
             <a href="/auth/logout">{{ t('btn_odjava', 'Odjava') }}</a>
         </div>
 
-        <h2>Nastavitve šole: {{ school.name }}</h2>
+        <h2>{{ t('set_naslov', 'Nastavitve šole') }}: {{ school.name }}</h2>
         <p class="hint">
             Oznaka: <strong>{{ school.slug }}</strong> &nbsp;|&nbsp;
             Poti šole (klik odpre aplikacijo v tej šoli):
@@ -87,16 +87,16 @@
         <form id="settings-form">
             <input type="hidden" name="school_id" value="{{ school.id }}">
 
-            <h3>Osnovno</h3>
+            <h3>{{ t('set_osnovno', 'Osnovno') }}</h3>
 
             <!-- JEZIK VMESNIKA: izbira jezika (SL/EN) za napise gumbov in oken.
                  Napisi se berejo iz tabele ui_strings (glej app/i18n.py). -->
             <div class="field">
-                <label>Jezik vmesnika</label>
+                <label>{{ t('set_jezik', 'Jezik vmesnika') }}</label>
                 <span class="key">UI_LANGUAGE</span>
                 <select name="UI_LANGUAGE" style="padding:8px 10px;border:1px solid #ddd;border-radius:5px;">
-                    <option value="sl" {% if (values.get('UI_LANGUAGE') or 'sl') != 'en' %}selected{% endif %}>slovenščina</option>
-                    <option value="en" {% if values.get('UI_LANGUAGE') == 'en' %}selected{% endif %}>angleščina</option>
+                    <option value="sl" {% if (values.get('UI_LANGUAGE') or 'sl') != 'en' %}selected{% endif %}>{{ t('set_opt_slovenščina', 'slovenščina') }}</option>
+                    <option value="en" {% if values.get('UI_LANGUAGE') == 'en' %}selected{% endif %}>{{ t('set_opt_angleščina', 'angleščina') }}</option>
                 </select>
                 <div class="hint" style="margin-top:6px;">
                     Jezik, v katerem aplikacija prikaže napise gumbov in pogovornih oken
@@ -108,13 +108,12 @@
                  da je urejanje pregledno in brez vejic. Ob shranjevanju se
                  vrstice sestavijo nazaj v vejica-ločen seznam (ključ RAZREDI). -->
             <div class="field">
-                <label>Razredi</label>
+                <label>{{ t('set_razredi', 'Razredi') }}</label>
                 <span class="key">RAZREDI</span>
                 <div id="razredi-rows"></div>
-                <button type="button" class="btn" style="margin-top:8px;" onclick="addRazredRow(); return false;">＋ Dodaj razred</button>
+                <button type="button" class="btn" style="margin-top:8px;" onclick="addRazredRow(); return false;">{{ t('set_dodaj_razred', '＋ Dodaj razred') }}</button>
                 <div class="hint" style="margin-top:6px;">
-                    V vsako vrstico vpišite en razred, npr. <code>1. a</code>. Vrstico odstranite z ✕.
-                    Razredi se uporabljajo pri rezervacijah in ocenjevanjih.
+                    {{ t('set_hint_razredi_1', 'V vsako vrstico vpišite en razred, npr.') }} <code>1. a</code>{{ t('set_hint_razredi_2', '. Vrstico odstranite z ✕. Razredi se uporabljajo pri rezervacijah in ocenjevanjih.') }}
                 </div>
             </div>
 
@@ -138,14 +137,14 @@
                  vrstice sestavijo v JSON objekt (ključ STEVILA). Na ta imena se
                  sklicujejo prostori (kljukica »število« + spustni seznam). -->
             <div class="field">
-                <label>Števila</label>
+                <label>{{ t('set_stevila', 'Števila') }}</label>
                 <span class="key">STEVILA</span>
                 <div id="stevila-rows"></div>
-                <button type="button" class="btn" style="margin-top:8px;" onclick="addSteviloRow(); return false;">＋ Dodaj število</button>
+                <button type="button" class="btn" style="margin-top:8px;" onclick="addSteviloRow(); return false;">{{ t('set_dodaj_stevilo', '＋ Dodaj število') }}</button>
                 <div class="hint" style="margin-top:6px;">
-                    Vsaka vrstica je imenovana številska spremenljivka (ime + vrednost), npr.
-                    <code>Število tablic</code> = <code>28</code> ali <code>Število računalnikov</code> = <code>30</code>.
-                    Na ta imena se vežejo prostori (spodaj) — kapaciteta prostora na uro je vrednost te spremenljivke.
+                    {{ t('set_hint_stevila_1', 'Vsaka vrstica je imenovana številska spremenljivka (ime + vrednost), npr.') }}
+                    <code>Število tablic</code> = <code>28</code> {{ t('set_hint_stevila_ali', 'ali') }} <code>Število računalnikov</code> = <code>30</code>.
+                    {{ t('set_hint_stevila_2', 'Na ta imena se vežejo prostori (spodaj) — kapaciteta prostora na uro je vrednost te spremenljivke.') }}
                 </div>
             </div>
 
@@ -153,16 +152,14 @@
                  Ob kljukici se odpre spustni seznam z vsemi številskimi
                  spremenljivkami (STEVILA) — prostor se veže na izbrano. -->
             <div class="field">
-                <label>Prostori</label>
+                <label>{{ t('set_prostori', 'Prostori') }}</label>
                 <span class="key">PROSTORI + PROSTORI_STEVILO</span>
                 <div id="prostori-rows"></div>
-                <button type="button" class="btn" style="margin-top:8px;" onclick="addProstorRow(); return false;">＋ Dodaj prostor</button>
+                <button type="button" class="btn" style="margin-top:8px;" onclick="addProstorRow(); return false;">{{ t('set_dodaj_prostor', '＋ Dodaj prostor') }}</button>
                 <div class="hint" style="margin-top:6px;">
-                    Kljukica <strong>»število«</strong> pomeni: v tem prostoru lahko hkrati rezervira več
-                    učiteljev, vsak navede količino, skupna vsota na uro pa je omejena z izbrano
-                    številsko spremenljivko. Brez kljukice je prostor ekskluziven — ena rezervacija na uro.
-                    Primer: <code>tablice</code> s kljukico in spremenljivko <code>Število tablic</code>,
-                    <code>racunalnica</code> brez.
+                    {{ t('set_hint_prostori_1', 'Kljukica') }} <strong>»število«</strong> {{ t('set_hint_prostori_2', 'pomeni: v tem prostoru lahko hkrati rezervira več učiteljev, vsak navede količino, skupna vsota na uro pa je omejena z izbrano številsko spremenljivko. Brez kljukice je prostor ekskluziven — ena rezervacija na uro.') }}
+                    Primer: <code>tablice</code> {{ t('set_hint_prostori_3', 's kljukico in spremenljivko') }} <code>Število tablic</code>,
+                    <code>racunalnica</code> {{ t('set_hint_prostori_5', 'brez.') }}
                 </div>
             </div>
 
@@ -170,17 +167,16 @@
                  preprosto in pregledno. Ob shranjevanju se vrstice sestavijo
                  nazaj v JSON (ključ SCHEDULE). -->
             <div class="field">
-                <label>Urnik</label>
+                <label>{{ t('set_urnik', 'Urnik') }}</label>
                 <span class="key">SCHEDULE</span>
                 <div id="schedule-rows"></div>
-                <button type="button" class="btn" style="margin-top:8px;" onclick="addScheduleRow(); return false;">＋ Dodaj uro</button>
+                <button type="button" class="btn" style="margin-top:8px;" onclick="addScheduleRow(); return false;">{{ t('set_dodaj_uro', '＋ Dodaj uro') }}</button>
                 <div class="hint" style="margin-top:6px;">
-                    V vsako vrstico vpišite razpon ure, npr. <code>07:30-08:15</code>.
-                    Vrstico odstranite z ✕. Ure se uporabljajo v urniku in pri rezervacijah.
+                    {{ t('set_hint_urnik_1', 'V vsako vrstico vpišite razpon ure, npr.') }} <code>07:30-08:15</code>{{ t('set_hint_urnik_2', '. Vrstico odstranite z ✕. Ure se uporabljajo v urniku in pri rezervacijah.') }}
                 </div>
             </div>
 
-            <h3>Pravila ocenjevanja</h3>
+            <h3>{{ t('set_pravila_ocenjevanja', 'Pravila ocenjevanja') }}</h3>
             <p class="hint">
                 Privzeto: največ 2 običajni ocenjevanji na teden, največ 1 na dan,
                 izjema do 3 na teden, če je vmes ponavljanje, in prepoved 3 zaporednih dni.
@@ -193,7 +189,7 @@
             </div>
             {% endif %}{% endfor %}
 
-            <h3>E-pošta (SMTP)</h3>
+            <h3>{{ t('set_eposta', 'E-pošta (SMTP)') }}</h3>
             {% for f in fields %}{% if f.key.startswith('MAIL_') or f.key in ('BACKUP_EMAIL','ADMIN_EMAIL') %}
             <div class="field">
                 <label>{{ f.label }}</label>
@@ -215,8 +211,8 @@
             </div>
         </form>
 
-        <h3>Navodila</h3>
-        <a class="btn" href="/nastavitev">Navodila za nastavitev šole →</a>
+        <h3>{{ t('set_navodila', 'Navodila') }}</h3>
+        <a class="btn" href="/nastavitev">{{ t('set_link_navodila', 'Navodila za nastavitev šole →') }}</a>
         {% if prodaja and prodaja.enabled %}
         <!-- NAROČNINA: v tej namestitvi se naročnine prodajajo, zato šolski
              admin tu vidi stanje in gumb za nakup oziroma podaljšanje. -->
@@ -247,37 +243,32 @@
         </div>
         {% endif %}
 
-        <h3>Varnostna kopija šole</h3>
+        <h3>{{ t('set_backup', 'Varnostna kopija šole') }}</h3>
         <div class="restore-box">
             <p class="hint" style="margin-top:0;">
-                Sestavi <code>.sql</code> varnostno kopijo podatkov <strong>te šole</strong>
-                (izključno te šole — vrstic drugih šol ne vsebuje) in jo pošlje po e-pošti na
+                {{ t('set_backup_hint_a', 'Sestavi <code>.sql</code> varnostno kopijo podatkov <strong>te šole</strong> (izključno te šole — vrstic drugih šol ne vsebuje) in jo pošlje po e-pošti na') | safe }}
                 <strong>{{ backup_email or '(naslov ni nastavljen — vpišite BACKUP_EMAIL)' }}</strong>.
             </p>
-            <button type="button" class="btn btn-success" onclick="makeBackup()">📧 Naredi backup</button>
+            <button type="button" class="btn btn-success" onclick="makeBackup()">{{ t('set_naredi_backup', '📧 Naredi backup') }}</button>
             <div id="backup-msg"></div>
         </div>
 
         <h3>{{ t('backup_obnovi', 'Obnova iz varnostne kopije') }}</h3>
         <div class="restore-box">
             <p class="hint" style="margin-top:0;">
-                Naložite varnostno kopijo (<code>.sql</code>, izpis <code>pg_dump</code>) in izberite,
-                kaj naj se obnovi. Podatki izbrane skupine <strong>za to šolo</strong> se zamenjajo
-                s podatki iz kopije; podatki drugih šol ostanejo nedotaknjeni.
+                {{ t('set_restore_hint', 'Naložite varnostno kopijo (<code>.sql</code>, izpis <code>pg_dump</code>) in izberite, kaj naj se obnovi. Podatki izbrane skupine <strong>za to šolo</strong> se zamenjajo s podatki iz kopije; podatki drugih šol ostanejo nedotaknjeni.') | safe }}
             </p>
             <div>
-                <button type="button" class="btn btn-warn" onclick="startRestore('uporabniki')">👥 Uporabniki</button>
-                <button type="button" class="btn btn-warn" onclick="startRestore('nastavitve')">⚙️ Nastavitve (razredi, prostori)</button>
+                <button type="button" class="btn btn-warn" onclick="startRestore('uporabniki')">{{ t('set_btn_uporabniki', '👥 Uporabniki') }}</button>
+                <button type="button" class="btn btn-warn" onclick="startRestore('nastavitve')">{{ t('set_btn_nastavitve', '⚙️ Nastavitve (razredi, prostori)') }}</button>
                 <button type="button" class="btn btn-warn" onclick="startRestore('dejavnosti')">{{ t('btn_dejavnosti', '📋 Dejavnosti') }}</button>
-                <button type="button" class="btn btn-warn" onclick="startRestore('rezervacije')">📅 Rezervacije</button>
-                <button type="button" class="btn btn-warn" onclick="startRestore('ocenjevanje')">📝 Ocenjevanje</button>
-                <button type="button" class="btn btn-warn" onclick="startRestore('vse')">♻️ Celotna šola (vse)</button>
+                <button type="button" class="btn btn-warn" onclick="startRestore('rezervacije')">{{ t('set_btn_rezervacije', '📅 Rezervacije') }}</button>
+                <button type="button" class="btn btn-warn" onclick="startRestore('ocenjevanje')">{{ t('set_btn_ocenjevanje', '📝 Ocenjevanje') }}</button>
+                <button type="button" class="btn btn-warn" onclick="startRestore('vse')">{{ t('set_btn_celotna_sola', '♻️ Celotna šola (vse)') }}</button>
             </div>
             <input type="file" id="restore-file" accept=".sql,text/plain" style="display:none">
             <p class="hint" style="margin-bottom:0;">
-                Dejavnosti = dnevi dejavnosti + zasedeni datumi. »Nastavitve« vrne razrede, prostore,
-                urnik in števila; »Uporabniki« vrne račune šole (z gesli). »Celotna šola (vse)«
-                ponovno postavi vso šolo iz kopije. Vsaka obnova se zabeleži v dnevnik dogodkov.
+                {{ t('set_restore_explain', 'Dejavnosti = dnevi dejavnosti + zasedeni datumi. »Nastavitve« vrne razrede, prostore, urnik in števila; »Uporabniki« vrne račune šole (z gesli). »Celotna šola (vse)« ponovno postavi vso šolo iz kopije. Vsaka obnova se zabeleži v dnevnik dogodkov.') | safe }}
             </p>
             <div id="restore-msg"></div>
         </div>
@@ -287,17 +278,17 @@
         <div class="modal">
             <h3>{{ t('naslov_sprememba_gesla', 'Sprememba gesla') }}</h3>
             <div class="form-group">
-                <label>Trenutno geslo</label>
-                <input type="password" id="pw-old" placeholder="Vnesite trenutno geslo">
+                <label>{{ t('set_trenutno_geslo', 'Trenutno geslo') }}</label>
+                <input type="password" id="pw-old" placeholder="{{ t('set_ph_trenutno_geslo', 'Vnesite trenutno geslo') }}">
             </div>
             <div class="form-group">
-                <label>Novo geslo</label>
-                <input type="password" id="pw-new1" placeholder="Vnesite novo geslo">
-                <small style="display:block;font-size:0.75rem;color:#666;">Vsaj 5 znakov, mala/velika črka, številka</small>
+                <label>{{ t('set_novo_geslo', 'Novo geslo') }}</label>
+                <input type="password" id="pw-new1" placeholder="{{ t('set_ph_novo_geslo', 'Vnesite novo geslo') }}">
+                <small style="display:block;font-size:0.75rem;color:#666;">{{ t('set_geslo_pravilo', 'Vsaj 5 znakov, mala/velika črka, številka') }}</small>
             </div>
             <div class="form-group">
-                <label>Novo geslo (ponovno)</label>
-                <input type="password" id="pw-new2" placeholder="Ponovite novo geslo">
+                <label>{{ t('set_novo_geslo_ponovno', 'Novo geslo (ponovno)') }}</label>
+                <input type="password" id="pw-new2" placeholder="{{ t('set_ph_ponovi_geslo', 'Ponovite novo geslo') }}">
             </div>
             <div class="form-actions">
                 <button class="btn btn-cancel" onclick="closeModal('pw-modal')">{{ t('btn_preklici', 'Prekliči') }}</button>
@@ -331,7 +322,7 @@
 
     function razredRowHtml(name) {
         return `<div class="razred-row" style="display:flex;gap:10px;align-items:center;margin-bottom:6px;">
-            <input type="text" class="razred-name" value="${escAttr(name)}" placeholder="npr. 1. a" style="max-width:220px;">
+            <input type="text" class="razred-name" value="${escAttr(name)}" placeholder="{{ t('set_ph_razred', 'npr. 1. a') }}" style="max-width:220px;">
             <button type="button" class="btn btn-cancel" style="padding:6px 10px;"
                     onclick="this.closest('.razred-row').remove(); return false;"
                     title="Odstrani razred">✕</button>
@@ -366,8 +357,8 @@
     function steviloRowHtml(name, value) {
         return `<div class="stevilo-row" data-original="${escAttr(name)}"
              style="display:flex;gap:8px;align-items:center;margin-bottom:6px;flex-wrap:wrap;">
-            <input type="text" class="stevilo-name" value="${escAttr(name)}" placeholder="npr. Število tablic" style="max-width:280px;">
-            <input type="number" class="stevilo-value" value="${value == null ? '' : escAttr(value)}" min="0" placeholder="npr. 28" style="max-width:120px;">
+            <input type="text" class="stevilo-name" value="${escAttr(name)}" placeholder="{{ t('set_ph_stevilo', 'npr. Število tablic') }}" style="max-width:280px;">
+            <input type="number" class="stevilo-value" value="${value == null ? '' : escAttr(value)}" min="0" placeholder="{{ t('set_ph_vrednost', 'npr. 28') }}" style="max-width:120px;">
             <button type="button" class="btn btn-cancel" style="padding:6px 10px;"
                     onclick="this.closest('.stevilo-row').remove(); refreshSteviloOptions(); return false;"
                     title="Odstrani spremenljivko">✕</button>
@@ -413,7 +404,7 @@
         const names = currentSteviloNames();
         document.querySelectorAll('#prostori-rows .prostor-stevilo-name').forEach(function (sel) {
             const prev = sel.dataset.bound || sel.value || '';
-            let html = '<option value="">— izberi —</option>';
+            let html = '<option value="">{{ t('set_opt_izberi', '— izberi —') }}</option>';
             names.forEach(function (n) {
                 html += `<option value="${escAttr(n)}"${n === prev ? ' selected' : ''}>${escAttr(n)}</option>`;
             });
@@ -437,10 +428,10 @@
     function prostorRowHtml(name, stevilo) {
         const checked = stevilo ? ' checked' : '';
         return `<div class="prostor-row" style="display:flex;gap:10px;align-items:center;margin-bottom:6px;flex-wrap:wrap;">
-            <input type="text" class="prostor-name" value="${escAttr(name)}" placeholder="npr. tablice" style="max-width:220px;">
+            <input type="text" class="prostor-name" value="${escAttr(name)}" placeholder="{{ t('set_ph_prostor', 'npr. tablice') }}" style="max-width:220px;">
             <label style="display:flex;align-items:center;gap:6px;font-size:13px;font-weight:400;margin:0;">
               <input type="checkbox" class="prostor-stevilo"${checked} onchange="toggleProstorStevilo(this)">
-              število
+              {{ t('set_lbl_stevilo', 'število') }}
             </label>
             <select class="prostor-stevilo-name" data-bound="${escAttr(stevilo)}"${stevilo ? '' : ' style="display:none;"'}></select>
             <button type="button" class="btn btn-cancel" style="padding:6px 10px;"
@@ -498,7 +489,7 @@
         return `<div class="sched-row" style="display:flex;gap:8px;align-items:center;margin-bottom:6px;">
             <span style="font-weight:600;min-width:70px;">Ura ${index}</span>
             <input type="text" class="sched-value" data-index="${index}" value="${safe}"
-                   placeholder="npr. 07:30-08:15" style="max-width:220px;">
+                   placeholder="{{ t('set_ph_ura', 'npr. 07:30-08:15') }}" style="max-width:220px;">
             <button type="button" class="btn btn-cancel" style="padding:6px 10px;"
                     onclick="this.closest('.sched-row').remove(); return false;"
                     title="Odstrani to uro">✕</button>
@@ -561,7 +552,7 @@
             box.className = data.sent ? 'ok' : 'err';
             box.innerHTML = (data.sent ? '✅ ' : '⚠️ ') + (data.message || '') +
                 '<br><span style="font-size:0.85rem;">📄 ' + data.filename + ' (' + kb + ' KB)</span>' +
-                '<br><span style="font-size:0.85rem;color:#555;">Vključeno — ' + rows + '</span>';
+                '<br><span style="font-size:0.85rem;color:#555;">{{ t('set_vkljuceno', 'Vključeno —') }} ' + rows + '</span>';
         } catch (e) {
             box.className = 'err';
             box.textContent = 'Napaka pri povezavi s strežnikom.';
@@ -693,8 +684,8 @@
                 box.textContent = 'Napaka: ' + (data.detail || res.status);
                 return;
             }
-            let html = '<div class="ok"><strong>Obnova zaključena: ' + (data.label || '') + '</strong>';
-            html += '<table class="restore"><thead><tr><th>Tabela</th><th>Izbrisano</th><th>Uvoženo</th></tr></thead><tbody>';
+            let html = '<div class="ok"><strong>{{ t('set_obnova_zakljucena', 'Obnova zaključena:') }} ' + (data.label || '') + '</strong>';
+            html += '<table class="restore"><thead><tr><th>Tabela</th><th>{{ t('set_th_izbrisano', 'Izbrisano') }}</th><th>{{ t('set_th_uvozeno', 'Uvoženo') }}</th></tr></thead><tbody>';
             Object.keys(data.tables || {}).forEach(t => {
                 const r = data.tables[t];
                 html += '<tr><td>' + t + '</td><td>' + r.deleted + '</td><td>' + r.inserted + '</td></tr>';
