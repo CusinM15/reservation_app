@@ -128,10 +128,12 @@
             <div style="text-align:center;margin-top:15px;">
                 <a href="/auth/forgot-password" style="color:#007bff;text-decoration:none;font-size:0.85rem;">{{ t('link_pozabljeno_geslo', 'Pozabljeno geslo?') }}</a>
                 {% if selling and selling.enabled %}
-                <span style="color:#ccc;margin:0 6px;">·</span>
-                <a href="/registracija" style="color:#007bff;text-decoration:none;font-size:0.85rem;">{{ t('link_nova_sola', 'Nova šola') }}</a>
-                <span style="color:#ccc;margin:0 6px;">·</span>
-                <a href="/registracija?lang=en" style="color:#007bff;text-decoration:none;font-size:0.85rem;">🌍 New school (English)</a>
+                <div style="margin-top:8px;">
+                    <a href="/registracija" style="color:#007bff;text-decoration:none;font-size:0.85rem;">🏫 {{ t('link_nova_sola', 'Nova šola') }}</a>
+                </div>
+                <div style="margin-top:3px;">
+                    <a href="/registracija?lang=en" style="color:#007bff;text-decoration:none;font-size:0.85rem;">🏫 New school</a>
+                </div>
                 {% endif %}
             </div>
         </div>
@@ -225,9 +227,9 @@
          javna. -->
     <div style="text-align:center;margin-top:20px;padding-top:15px;border-top:1px solid #ddd;max-width:400px;margin-left:auto;margin-right:auto;">
         <a href="/nastavitev?demo=1" style="color:#007bff;text-decoration:none;font-size:0.85rem;display:block;margin-bottom:4px;">⚙️ Navodila za nastavitev šole</a>
-        <a href="/docs/download/navodila-admin-en" style="color:#007bff;text-decoration:none;font-size:0.85rem;display:block;margin-bottom:4px;">🌍 School setup instructions (English)</a>
+        <a href="/docs/download/navodila-admin-en" style="color:#007bff;text-decoration:none;font-size:0.85rem;display:block;margin-bottom:4px;">🛠️ School setup instructions</a>
         <a href="/docs/download/navodila-ucitelji" style="color:#007bff;text-decoration:none;font-size:0.85rem;display:block;margin-bottom:4px;">📖 Navodila za učitelje</a>
-        <a href="/docs/download/navodila-ucitelji-en" style="color:#007bff;text-decoration:none;font-size:0.85rem;display:block;">🌍 Teacher Instructions (English)</a>
+        <a href="/docs/download/navodila-ucitelji-en" style="color:#007bff;text-decoration:none;font-size:0.85rem;display:block;">👩‍🏫 Teacher Instructions</a>
     </div>
 </body>
 </html>

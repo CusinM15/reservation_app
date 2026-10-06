@@ -46,11 +46,11 @@ ALLOWED = {
 
 DOC_LABELS = {
     "navodila-ucitelji": "Navodila za učitelje",
-    "navodila-ucitelji-en": "Teacher Instructions (English)",
+    "navodila-ucitelji-en": "Teacher Instructions",
     "navodila-vodstvo": "Navodila za vodstvo",
-    "navodila-vodstvo-en": "Management Guide (English)",
+    "navodila-vodstvo-en": "Management Guide",
     "navodila-admin": "Navodila za administratorja",
-    "navodila-admin-en": "Administrator Guide (English)",
+    "navodila-admin-en": "Administrator Guide",
 }
 
 
