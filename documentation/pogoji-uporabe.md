@@ -38,9 +38,9 @@ Aplikacija je **večšolska**: vsaka šola vidi samo svoje podatke.
 - **Vedno velja do 1. 9.** (začetek šolskega leta). Naročnina se sklene za obdobje do
   **1. 9.** — če se začne sredi leta, velja do  1. 9.;
   velja do 1. 9., do katere velja, in se nato obnovi ali pa preprosto poteče.
-- **Obnova je ročna.** Šolski admin (ali glavni admin) jo obnovi **od 15. 8. dalje**; po obnovi
+- **Obnova je ročna.** Šolski admin jo obnovi **od 15. 8. dalje**; po obnovi
   velja do **1. 9. naslednje leto**. Aplikacija sama ne obnavlja ničesar.
-- **Cena.** Trenutno je aplikacija **brezplačna (0 €)**. Če se bo kdaj zaračunavala, velja:
+- **Cena.** Trenutno aplikacija stane **50 €**. Če se bo kdaj zaračunavala, velja:
   - cena je **letna** in se nanaša na polno leto (1. 9. → 1. 9.);
   - če šola začne **sredi leta**, plača **sorazmerni del** do 1. 9. — npr. **če je do 1. 9.
     še 5 mesecev, plača 5/12 letne cene**;
