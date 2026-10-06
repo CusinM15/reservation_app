@@ -236,12 +236,10 @@ def on_startup():
     db = SessionLocal()
     try:
         bootstrap_tenancy(db)
-        # Napisi vmesnika (SL/EN): če je tabela ui_strings prazna, jo napolnimo
-        # (gumbi, pogovorna okna). Kasneje se dopolni z scripts/seed_ui_strings.py.
-        from app.models import UIString
+        # Napisi vmesnika (SL/EN): seed je idempotenten (ujema po ključu), zato
+        # ob vsakem zagonu doda morebitne nove napise in posodobi obstoječe.
         from scripts.seed_ui_strings import seed as seed_ui_strings
-        if db.query(UIString).count() == 0:
-            seed_ui_strings(db)
+        seed_ui_strings(db)
     finally:
         db.close()
 
