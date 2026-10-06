@@ -89,6 +89,21 @@
 
             <h3>Osnovno</h3>
 
+            <!-- JEZIK VMESNIKA: izbira jezika (SL/EN) za napise gumbov in oken.
+                 Napisi se berejo iz tabele ui_strings (glej app/i18n.py). -->
+            <div class="field">
+                <label>Jezik vmesnika</label>
+                <span class="key">UI_LANGUAGE</span>
+                <select name="UI_LANGUAGE" style="padding:8px 10px;border:1px solid #ddd;border-radius:5px;">
+                    <option value="sl" {% if (values.get('UI_LANGUAGE') or 'sl') != 'en' %}selected{% endif %}>slovenščina</option>
+                    <option value="en" {% if values.get('UI_LANGUAGE') == 'en' %}selected{% endif %}>angleščina</option>
+                </select>
+                <div class="hint" style="margin-top:6px;">
+                    Jezik, v katerem aplikacija prikaže napise gumbov in pogovornih oken
+                    (besedila se berejo iz tabele <code>ui_strings</code>).
+                </div>
+            </div>
+
             <!-- RAZREDI: vsak razred v SVOJI vrstici (kot prostori in urnik),
                  da je urejanje pregledno in brez vejic. Ob shranjevanju se
                  vrstice sestavijo nazaj v vejica-ločen seznam (ključ RAZREDI). -->

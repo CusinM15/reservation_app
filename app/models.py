@@ -293,3 +293,19 @@ class Payment(Base):
     reported_by_id = Column(Integer, ForeignKey("users.id"), nullable=True)
     confirmed_at = Column(DateTime, nullable=True)
     confirmed_by = Column(String, nullable=True, default="")     # uporabniško ime potrjevalca
+
+
+# ── Napisi vmesnika (večjezičnost SL/EN) ──────────────────────────────
+# Zakaj tabela? Vsi napisi na gumbih in v pogovornih oknih naj bodo na enem
+# mestu, v obeh jezikih, tako da jih lahko admin šole preklaplja (nastavitev
+# UI_LANGUAGE). Aplikacija napis prebere iz te tabele po stabilnem ključu
+# (npr. »btn_shrani«) in ga prikaže v izbranem jeziku; če prevoda ni, pade na
+# slovenščino (ali na privzeto besedilo v predlogi).
+class UIString(Base):
+    __tablename__ = "ui_strings"
+
+    id = Column(Integer, primary_key=True, index=True)
+    key = Column(String, nullable=False, unique=True, index=True)  # stabilen ključ (npr. btn_shrani)
+    context = Column(String, nullable=True, default="")            # kje se uporablja (opis/opomba)
+    sl = Column(Text, nullable=True, default="")                   # slovenski napis
+    en = Column(Text, nullable=True, default="")                   # angleški napis

@@ -19,6 +19,8 @@
 from fastapi import APIRouter, Depends, HTTPException, Query, Request, Form, Response
 from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.templating import Jinja2Templates
+
+from app.templating import make_templates
 from sqlalchemy.orm import Session
 
 from app.database import get_db
@@ -56,7 +58,7 @@ from app.school_backup import backup_filename, build_school_sql, send_backup_ema
 from app.config import settings
 
 router = APIRouter(tags=["schools"])
-templates = Jinja2Templates(directory="app/templates")
+templates = make_templates()
 
 # Vloge, ki smejo urejati nastavitve svoje šole
 _SETTINGS_AUDIT_ACTION = "update_school_settings"
@@ -488,6 +490,8 @@ async def update_school_settings(school_id: int, request: Request, db: Session =
             values[key] = _json.dumps(parsed, ensure_ascii=False)
         elif isinstance(raw, (dict, list)):
             values[key] = _json.dumps(raw, ensure_ascii=False)
+        if field["type"] == "lang" and str(values[key]).strip().lower() not in ("sl", "en"):
+            raise HTTPException(status_code=400, detail=f"'{key}' mora biti 'sl' ali 'en'")
 
     # Seznam ali slovar se shrani kot JSON — za VSAKO nastavitev, tudi tisto,
     # ki ni v obrazcu (npr. PROSTORI_QTY je seznam prostorov »kot Tablice«).

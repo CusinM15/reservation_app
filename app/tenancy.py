@@ -59,6 +59,9 @@ SCHOOL_SETTING_KEYS = [
     "BACKUP_EMAIL",
     "STANJE_MAIL",
     "ADMIN_EMAIL",
+    # Jezik vmesnika (napisi gumbov/oken) — "sl" ali "en". Izbira šole; vpliva
+    # na vse napise, ki jih aplikacija bere iz tabele ui_strings (glej app/i18n.py).
+    "UI_LANGUAGE",
     "TABLICE_MAX",
     "SCHEDULE",
     # Imenovane številske spremenljivke šole (JSON: ime → celo število), npr.
@@ -104,6 +107,7 @@ SCHOOL_SETTING_FIELDS = [
     # Števila: imenovane številske spremenljivke (npr. »Število tablic«).
     {"key": "STEVILA", "label": "Števila (JSON: ime → vrednost)", "type": "json"},
     {"key": "PROSTORI_STEVILO", "label": "Prostori — vezava na število (JSON)", "type": "json"},
+    {"key": "UI_LANGUAGE", "label": "Jezik vmesnika (slovenščina / angleščina)", "type": "lang"},
     {"key": "INACTIVITY_TIMEOUT_MINUTES", "label": "Timeout neaktivnosti — učitelji (min)", "type": "int"},
     {"key": "INACTIVITY_TIMEOUT_ADMIN_MINUTES", "label": "Timeout neaktivnosti — admin/vodstvo (min)", "type": "int"},
     {"key": "MAIL_SERVER", "label": "SMTP strežnik", "type": "text"},

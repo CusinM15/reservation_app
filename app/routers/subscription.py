@@ -15,6 +15,8 @@ from datetime import date, datetime
 from fastapi import APIRouter, Depends, Form, HTTPException, Request
 from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.templating import Jinja2Templates
+
+from app.templating import make_templates
 from sqlalchemy.orm import Session
 
 from app.app_settings import (
@@ -52,7 +54,7 @@ from app.tenancy import (
 )
 
 router = APIRouter(tags=["narocnina"])
-templates = Jinja2Templates(directory="app/templates")
+templates = make_templates()
 
 
 def _require_main_admin(db: Session, request: Request):

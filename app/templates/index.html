@@ -295,10 +295,6 @@
     <div class="navodila-preview" id="navodilaPreview" onmouseenter="keepPreview()" onmouseleave="scheduleHidePreview()">
       <div class="navodila-preview-header">
         <span id="navodilaPreviewTitle">Navodila</span>
-        <div class="navodila-lang-toggle" id="navodilaLangToggle">
-          <span class="lang-btn lang-btn-active" data-lang="sl" onclick="switchPreviewLang('sl')">🇸🇮</span>
-          <span class="lang-btn" data-lang="en" onclick="switchPreviewLang('en')">🇬🇧</span>
-        </div>
         <span class="navodila-preview-close" onclick="hidePreview()">✕</span>
       </div>
       <div class="navodila-preview-body" id="navodilaPreviewBody">Nalagam ...</div>
@@ -851,7 +847,9 @@
     // angleščina. Ob kliku na gumb se zažene prenos PDF.
     let previewTimer = null;
     let currentPreviewDoc = null;
-    let currentPreviewLang = 'sl';
+    // Navodila se prikažejo v jeziku šole (nastavitev UI_LANGUAGE). Preklopa
+    // v tem oknu NI — oba jezika sta na voljo le na prijavni strani.
+    let currentPreviewLang = "{{ ui_lang() }}";
 
     // Pomožna funkcija za pridobitev imena dokumenta glede na jezik.
     // V angleščini doda pripono '-en' k imenu datoteke.

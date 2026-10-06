@@ -17,6 +17,8 @@
 from fastapi import APIRouter, Request, Depends, HTTPException, Form, Response
 from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.templating import Jinja2Templates
+
+from app.templating import make_templates
 from sqlalchemy.orm import Session
 from passlib.context import CryptContext
 import os, secrets
@@ -48,7 +50,7 @@ from app.tenancy import (
 )
 
 router = APIRouter(prefix="/auth", tags=["auth"])
-templates = Jinja2Templates(directory="app/templates")
+templates = make_templates()
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 

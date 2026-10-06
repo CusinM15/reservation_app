@@ -29,6 +29,7 @@ from app.tenancy import (
     SCHOOL_ADMIN_ROLE,
     bootstrap_tenancy,
     config_for_request,
+    get_school_config,
     is_main_admin,
     parse_alias_path,
     lookup_alias_school_id,
@@ -36,6 +37,8 @@ from app.tenancy import (
     resolve_school_context,
     role_value,
 )
+from app.i18n import set_request_language
+from app.templating import make_templates
 
 # Sporočilo, ki ga uporabnik vidi, ko šola nima veljavne naročnine.
 NAROCNINA_POTEKLA = (
@@ -71,7 +74,7 @@ def subscription_blocks_access(request: Request) -> bool:
 # Ustvarimo FastAPI instanco z naslovom "Šolski App". Predpone /api/*
 # uporabljajo routerji; korenske poti (/ , /health, /history) so definirane tukaj.
 app = FastAPI(title="Šolski App", version="0.1.0")
-templates = Jinja2Templates(directory="app/templates")
+templates = make_templates()
 
 
 # ── Middleware: šolski URL-aliasi ──────────────────────────────────────
@@ -192,6 +195,23 @@ class AuthMiddleware(BaseHTTPMiddleware):
                         status_code=403,
                     )
                 return RedirectResponse(url=f"/narocnina?error={NAROCNINA_POTEKLA}", status_code=303)
+
+        # ── Jezik vmesnika (SL/EN) ─────────────────────────────────────
+        # Napisi (gumbi, pogovorna okna) se berejo iz tabele ui_strings v
+        # jeziku, ki ga je izbrala šola (nastavitev UI_LANGUAGE). Za javne
+        # strani brez šole (npr. prijava) velja privzeta slovenščina.
+        try:
+            _db = SessionLocal()
+            try:
+                _ctx, _school = resolve_school_context(request, _db)
+                _lang = "sl"
+                if _ctx:
+                    _lang = get_school_config(_db, _ctx).get_str("UI_LANGUAGE", "sl")
+                set_request_language(_db, _lang)
+            finally:
+                _db.close()
+        except Exception:
+            set_request_language(None, "sl")
 
         return await call_next(request)
 
