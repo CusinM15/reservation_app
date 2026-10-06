@@ -35,59 +35,53 @@
 
   <div class="card">
     <h1>{{ t('reg_naslov', 'Nova šola — ustvarite šolski račun') }}</h1>
-    <p class="muted"><span class="brand">Šolski app</span> — rezervacije prostorov, dnevi dejavnosti
-      in ocenjevanja za vašo šolo.</p>
+    <p class="muted">{{ t('reg_intro', '<span class="brand">Šolski app</span> — rezervacije prostorov, dnevi dejavnosti in ocenjevanja za vašo šolo.') | safe }}</p>
 
     <h2>{{ t('reg_kaj_dela', 'Kaj aplikacija dela') }}</h2>
     <ul>
-      <li><strong>rezervacije prostorov in opreme</strong> — učitelji rezervirajo tablice, računalnice,
-          posebne prostore; aplikacija sama pazi na zasedenost in omejitve,</li>
-      <li><strong>dnevi dejavnosti</strong> — termini po razredih, prostori, cene, urnik,</li>
-      <li><strong>ocenjevanja</strong> — napovedani datumi z omejitvami (na teden, na dan, zaporedni dnevi),
-          ponavljanja in izvoz za vodstvo,</li>
-      <li><strong>ločeni računi</strong> — učitelj, vodstvo in administrator šole vidijo vsak svoje,</li>
-      <li><strong>nočna varnostna kopija</strong> podatkov šole in dnevnik vseh sprememb.</li>
+      <li>{{ t('reg_item_rez', '<strong>rezervacije prostorov in opreme</strong> — učitelji rezervirajo tablice, računalnice, posebne prostore; aplikacija sama pazi na zasedenost in omejitve,') | safe }}</li>
+      <li>{{ t('reg_item_dej', '<strong>dnevi dejavnosti</strong> — termini po razredih, prostori, cene, urnik,') | safe }}</li>
+      <li>{{ t('reg_item_oc', '<strong>ocenjevanja</strong> — napovedani datumi z omejitvami (na teden, na dan, zaporedni dnevi), ponavljanja in izvoz za vodstvo,') | safe }}</li>
+      <li>{{ t('reg_item_rac', '<strong>ločeni računi</strong> — učitelj, vodstvo in administrator šole vidijo vsak svoje,') | safe }}</li>
+      <li>{{ t('reg_item_bk', '<strong>nočna varnostna kopija</strong> podatkov šole in dnevnik vseh sprememb.') | safe }}</li>
     </ul>
 
     <h2>{{ t('reg_zakaj', 'Zakaj jo potrebujemo') }}</h2>
-    <p>Namesto tabel v Excelu, listov papirja in dogovarjanja po e-pošti je vse na enem mestu in v
-      realnem času. Učitelj vidi, kdaj je prostor prost; vodstvo vidi, kdaj so ocenjevanja in dejavnosti;
-      administrator šole lahko preveri, kaj se dogaja, in podatke tudi izvozi.</p>
+    <p>{{ t('reg_zakaj_text', 'Namesto tabel v Excelu, listov papirja in dogovarjanja po e-pošti je vse na enem mestu in v realnem času. Učitelj vidi, kdaj je prostor prost; vodstvo vidi, kdaj so ocenjevanja in dejavnosti; administrator šole lahko preveri, kaj se dogaja, in podatke tudi izvozi.') }}</p>
 
     <h2>{{ t('reg_kako_poteka', 'Kako poteka') }}</h2>
     <ol class="steps">
-      <li>Ustvarite račun šole (spodaj) — traja minuto.</li>
-      <li>Nastaviš e-mail admina, <strong>NAJBOLJ POMEMBNO</strong>: je da nastavite e-pošto iz katere bo app pošiljal e-pošto - nastavite <strong>SMTP uporabniško ime</strong>, <strong>SMTP geslo</strong> in <strong>Naslov pošiljatelja (From)</strong>! Če za pošiljanje ne boste uporabljali <strong>Arnes</strong> e-pošte, ustrezno nastavite tudi <strong>SMTP strežnik</strong> in <strong>SMTP vrata</strong>.</li>
-      <li>Uredite naročnino: cena je <strong>{% if cfg.free %}0 € (brez plačila){% else %}{{ cfg.price_label }}{% endif %}</strong>.</li>
-      <li>Ko naročnino potrdimo, se lahko prijavijo tudi vaši učitelji in vodstvo.
-          Do takrat se lahko prijavi le administrator šole (da uredi naročnino).</li>
+      <li>{{ t('reg_step1', 'Ustvarite račun šole (spodaj) — traja minuto.') }}</li>
+      <li>{{ t('reg_step2', 'Nastaviš e-mail admina, <strong>NAJBOLJ POMEMBNO</strong>: je da nastavite e-pošto iz katere bo app pošiljal e-pošto - nastavite <strong>SMTP uporabniško ime</strong>, <strong>SMTP geslo</strong> in <strong>Naslov pošiljatelja (From)</strong>! Če za pošiljanje ne boste uporabljali <strong>Arnes</strong> e-pošte, ustrezno nastavite tudi <strong>SMTP strežnik</strong> in <strong>SMTP vrata</strong>.') | safe }}</li>
+      <li>{{ t('reg_step3', 'Uredite naročnino: cena je') }} <strong>{% if cfg.free %}{{ t('reg_step3_free', '0 € (brez plačila)') }}{% else %}{{ cfg.price_label }}{% endif %}</strong>.</li>
+      <li>{{ t('reg_step4', 'Ko naročnino potrdimo, se lahko prijavijo tudi vaši učitelji in vodstvo. Do takrat se lahko prijavi le administrator šole (da uredi naročnino).') }}</li>
     </ol>
   </div>
 
   <div class="card">
     <h2>{{ t('reg_vpisite_ime', 'Vpišite ime šole') }}</h2>
     <p class="muted" style="margin-top:0;">
-      Ostalo se uredi takoj potem (admin ostane prijavljen, gesla ne ve nihče, tako da je <strong>NUJNO</strong> da se nastavi podatke za e-pošto za pošiljanje in adminov e-naslov.
+      {{ t('reg_ostalo', 'Ostalo se uredi takoj potem (admin ostane prijavljen, gesla ne ve nihče, tako da je <strong>NUJNO</strong> da se nastavi podatke za e-pošto za pošiljanje in adminov e-naslov.') | safe }}
     </p>
     {% if error %}<div class="bad">{{ error }}</div>{% endif %}
 
     <form method="POST" action="/registracija">
-      <label>Polno ime šole *</label>
+      <label>{{ t('reg_polno_ime', 'Polno ime šole *') }}</label>
       <input type="text" name="name" value="{{ name or '' }}" required autofocus
-             placeholder="npr. Osnovna šola Toneta Čufarja Jesenice">
+             placeholder="{{ t('reg_name_ph', 'npr. Osnovna šola Toneta Čufarja Jesenice') }}">
 
       <div class="info">
-        Z oddajo se ustvari šola in njen administratorski račun. E-pošto šole in druge podatke uredite pozneje v
-        <em>{{ t('set_naslov', 'Nastavitve šole') }}</em>. Naročnina
-        {% if cfg.free %}je 0 € (brez plačila, a obnoviti jo je treba za vsako obdobje){% else %}znaša {{ cfg.price_label }}{% endif %}.
+        {{ t('reg_info', 'Z oddajo se ustvari šola in njen administratorski račun. E-pošto šole in druge podatke uredite pozneje v') }}
+        <em>{{ t('set_naslov', 'Nastavitve šole') }}</em>{{ t('reg_info2', '. Naročnina') }}
+        {% if cfg.free %}{{ t('reg_info_free', 'je 0 € (brez plačila, a obnoviti jo je treba za vsako obdobje)') }}{% else %}{{ t('reg_info_price', 'znaša') }} {{ cfg.price_label }}{% endif %}.
       </div>
 
       <p><button class="btn" type="submit">{{ t('btn_ustvari_solo', 'Ustvari šolo') }}</button></p>
     </form>
 
     <p class="muted">
-      Že imate račun? <a href="/auth/login">Prijavite se</a>.
-      {% if not cfg.free %}Več o ponudbi: <a href="/nakup">cena in načini plačila</a>.{% endif %}
+      {{ t('reg_ze_imate', 'Že imate račun?') }} <a href="/auth/login">{{ t('reg_prijavite_se', 'Prijavite se') }}</a>.
+      {% if not cfg.free %}{{ t('reg_vec_o_ponudbi', 'Več o ponudbi:') }} <a href="/nakup">{{ t('reg_cena_in_nacini', 'cena in načini plačila') }}</a>.{% endif %}
     </p>
   </div>
 </div>

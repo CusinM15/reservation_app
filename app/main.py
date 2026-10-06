@@ -207,6 +207,11 @@ class AuthMiddleware(BaseHTTPMiddleware):
                 _lang = "sl"
                 if _ctx:
                     _lang = get_school_config(_db, _ctx).get_str("UI_LANGUAGE", "sl")
+                # Javne strani (prijava, registracija, navodila) lahko jezik
+                # izberejo z ?lang=sl|en — npr. /nastavitev?demo=1&lang=en.
+                _q = (request.query_params.get("lang") or "").strip().lower()[:2]
+                if _q in ("sl", "en"):
+                    _lang = _q
                 set_request_language(_db, _lang)
             finally:
                 _db.close()

@@ -4,6 +4,7 @@
 import pytest
 
 from app.database import SessionLocal
+from app.app_settings import save_selling_config
 from app.i18n import (
     invalidate_cache,
     load_strings,
@@ -127,3 +128,32 @@ def test_settings_page_translated(client, make_user):
     for napis in ("School settings", "Basic", "Interface language", "Classes", "Rooms", "Schedule",
                   "Save settings", "School backup"):
         assert napis in r.text, f"manjka angleški napis: {napis}"
+
+
+def test_public_lang_param_translates_registration(client):
+    """?lang=en prevede javno stran (registracija) tudi brez šole/seje."""
+    db = SessionLocal()
+    try:
+        save_selling_config(db, enabled=True, price=50, paypal="https://x", note="y")
+        db.commit()
+    finally:
+        db.close()
+    r = client.get("/registracija?lang=en")
+    assert r.status_code == 200
+    assert "Full school name" in r.text
+    r2 = client.get("/registracija")
+    assert "Polno ime šole" in r2.text
+
+
+def test_login_links_to_english_setup_and_registration(client):
+    """Prijavna stran ponuja angleška navodila za nastavitev in preklop na EN pri Novi šoli."""
+    db = SessionLocal()
+    try:
+        save_selling_config(db, enabled=True, price=50, paypal="https://x", note="y")
+        db.commit()
+    finally:
+        db.close()
+    r = client.get("/auth/login")
+    assert r.status_code == 200
+    assert "navodila-admin-en" in r.text          # English setup instructions (admin guide)
+    assert "registracija?lang=en" in r.text       # New school in English

@@ -21,6 +21,7 @@ from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.templating import Jinja2Templates
 
 from app.templating import make_templates
+from app.i18n import t
 from sqlalchemy.orm import Session
 
 from app.database import get_db
@@ -633,80 +634,76 @@ def _demo_setup_items() -> list[dict]:
     """
     return [
         {
-            "naslov": "E-pošta šolskega admina",
-            "opis": "Naslov, na katerega prejmete obvestila in povezavo za obnovitev gesla.",
+            "naslov": t('onb_admin_email', 'E-pošta šolskega admina'),
+            "opis": t('onb_admin_email_d', 'Naslov, na katerega prejmete obvestila in povezavo za obnovitev gesla.'),
             "ok": True,
             "trenutno": "ravnatelj@guest.arnes.si",
             "kje": "/settings",
-            "kje_napis": "Nastavitve šole",
+            "kje_napis": t('onb_kje_nastavitve', 'Nastavitve šole'),
         },
         {
-            "naslov": "SMTP uporabniško ime",
-            "opis": "Uporabniško ime za prijavo v poštni strežnik (npr. Arnes).",
+            "naslov": t('onb_smtp_user', 'SMTP uporabniško ime'),
+            "opis": t('onb_smtp_user_d', 'Uporabniško ime za prijavo v poštni strežnik (npr. Arnes).'),
             "ok": True,
             "trenutno": "ravnatelj",
             "kje": "/settings",
-            "kje_napis": "Nastavitve šole",
+            "kje_napis": t('onb_kje_nastavitve', 'Nastavitve šole'),
         },
         {
-            "naslov": "SMTP geslo",
-            "opis": "Geslo za pošiljanje pošte.",
+            "naslov": t('onb_smtp_pass', 'SMTP geslo'),
+            "opis": t('onb_smtp_pass_d', 'Geslo za pošiljanje pošte.'),
             "ok": True,
             "trenutno": "Geslo123",
             "kje": "/settings",
-            "kje_napis": "Nastavitve šole",
+            "kje_napis": t('onb_kje_nastavitve', 'Nastavitve šole'),
         },
         {
-            "naslov": "Naslov pošiljatelja (From)",
-            "opis": ("Naslov, s katerim aplikacija pošilja pošto (obvestila, obnovitev gesla, "
-                     "varnostne kopije). Nova šola dobi testni naslov — zamenjajte ga s svojim, "
-                     "sicer pošta ne bo dostavljena."),
+            "naslov": t('onb_from', 'Naslov pošiljatelja (From)'),
+            "opis": t('onb_from_d', "Naslov, s katerim aplikacija pošilja pošto (obvestila, obnovitev gesla, varnostne kopije). Nova šola dobi testni naslov — zamenjajte ga s svojim, sicer pošta ne bo dostavljena."),
             "ok": False,
             "trenutno": "test@example.invalid",
             "kje": "/settings",
-            "kje_napis": "Nastavitve šole",
+            "kje_napis": t('onb_kje_nastavitve', 'Nastavitve šole'),
         },
         {
-            "naslov": "E-pošta za varnostne kopije",
-            "opis": "Kam naj gre nočna varnostna kopija podatkov šole.",
+            "naslov": t('onb_backup', 'E-pošta za varnostne kopije'),
+            "opis": t('onb_backup_d', 'Kam naj gre nočna varnostna kopija podatkov šole.'),
             "ok": True,
             "trenutno": "arhiv@guest.arnes.si",
             "kje": "/settings",
-            "kje_napis": "Nastavitve šole",
+            "kje_napis": t('onb_kje_nastavitve', 'Nastavitve šole'),
         },
         {
-            "naslov": "SMTP strežnik (pošiljanje pošte)",
-            "opis": ("Strežni za pošiljanje pošte. Privzeto so vpisani "
-                     "podatki ponudnika — za svojo šolo vpišite svojega (npr. Arnes)."),
+            "naslov": t('onb_server', 'SMTP strežnik (pošiljanje pošte)'),
+            "opis": t('onb_server_d', 'Strežnik za pošiljanje pošte. Privzeto so vpisani podatki ponudnika — za svojo šolo vpišite svojega (npr. Arnes).'),
             "ok": True,
             "trenutno": "mail.arnes.si",
             "kje": "/settings",
-            "kje_napis": "Nastavitve šole",
+            "kje_napis": t('onb_kje_nastavitve', 'Nastavitve šole'),
         },
         {
-            "naslov": "Razredi",
-            "opis": "Seznam oddelkov, vejica-ločeno (npr. 1. a, 2. a, 9. č).",
+            "naslov": t('onb_razredi', 'Razredi'),
+            "opis": t('onb_razredi_d', 'Seznam oddelkov, vejica-ločeno (npr. 1. a, 2. a, 9. č).'),
             "ok": True,
             "trenutno": "1. a, 1. b, 2. a, 2. b, 3. a",
             "kje": "/settings",
-            "kje_napis": "Nastavitve šole",
+            "kje_napis": t('onb_kje_nastavitve', 'Nastavitve šole'),
         },
         {
-            "naslov": "Prostori in oprema",
-            "opis": "Prostori, ki jih je mogoče rezervirati, in njihove kapacitete.",
+            "naslov": t('onb_prostori', 'Prostori in oprema'),
+            "opis": t('onb_prostori_d', 'Prostori, ki jih je mogoče rezervirati, in njihove kapacitete.'),
             "ok": True,
             "trenutno": "telovadnica, računalnica, knjižnica, tablice",
             "kje": "/settings",
-            "kje_napis": "Nastavitve šole",
+            "kje_napis": t('onb_kje_nastavitve', 'Nastavitve šole'),
         },
         {
-            "naslov": "Uporabniki (učitelji in vodstvo)",
-            "opis": ("Ustvarite račune za učitelje in vodstvo — vsak dobi svoje uporabniško ime "
-                     "in geslo."),
+            "naslov": t('onb_uporabniki', 'Uporabniki (učitelji in vodstvo)'),
+            "opis": t('onb_uporabniki_d', 'Ustvarite račune za učitelje in vodstvo — vsak dobi svoje uporabniško ime in geslo.'),
             "ok": True,
-            "trenutno": "28 aktivnih uporabnikov, od tega 25 učiteljev",
+            "trenutno": t('onb_users_demo', '28 aktivnih uporabnikov, od tega 25 učiteljev'),
             "kje": "/auth/admin/users",
-            "kje_napis": "Uporabniki",
+            "kje_napis": t('onb_kje_uporabniki', 'Uporabniki'),
         },
     ]
 
@@ -772,81 +769,77 @@ def setup_guide_page(
 
     items = [
         {
-            "naslov": "E-pošta šolskega admina",
-            "opis": "Naslov, na katerega prejmete obvestila in povezavo za obnovitev gesla.",
+            "naslov": t('onb_admin_email', 'E-pošta šolskega admina'),
+            "opis": t('onb_admin_email_d', 'Naslov, na katerega prejmete obvestila in povezavo za obnovitev gesla.'),
             "ok": _nastavljeno(cfg.ADMIN_EMAIL),
             "trenutno": cfg.ADMIN_EMAIL,
             "kje": "/settings",
-            "kje_napis": "Nastavitve šole",
+            "kje_napis": t('onb_kje_nastavitve', 'Nastavitve šole'),
         },
         {
-            "naslov": "SMTP uporabniško ime",
-            "opis": "Uporabniško ime za prijavo v poštni strežnik (npr. Arnes).",
+            "naslov": t('onb_smtp_user', 'SMTP uporabniško ime'),
+            "opis": t('onb_smtp_user_d', 'Uporabniško ime za prijavo v poštni strežnik (npr. Arnes).'),
             "ok": bool((cfg.get_str("MAIL_USERNAME", "") or "").strip()),
             "trenutno": cfg.get_str("MAIL_USERNAME", "") or "",
             "kje": "/settings",
-            "kje_napis": "Nastavitve šole",
+            "kje_napis": t('onb_kje_nastavitve', 'Nastavitve šole'),
         },
         {
-            "naslov": "SMTP geslo",
-            "opis": "Geslo za pošiljanje pošte.",
+            "naslov": t('onb_smtp_pass', 'SMTP geslo'),
+            "opis": t('onb_smtp_pass_d', 'Geslo za pošiljanje pošte.'),
             "ok": bool((cfg.get_str("MAIL_PASSWORD", "") or "").strip()),
             "trenutno": cfg.get_str("MAIL_PASSWORD", "") or "",
             "kje": "/settings",
-            "kje_napis": "Nastavitve šole",
+            "kje_napis": t('onb_kje_nastavitve', 'Nastavitve šole'),
         },
         {
-            "naslov": "Naslov pošiljatelja (From)",
-            "opis": ("Naslov, s katerim aplikacija pošilja pošto (obvestila, obnovitev gesla, "
-                     "varnostne kopije). Nova šola dobi testni naslov — zamenjajte ga s svojim, "
-                     "sicer pošta ne bo dostavljena."),
+            "naslov": t('onb_from', 'Naslov pošiljatelja (From)'),
+            "opis": t('onb_from_d', "Naslov, s katerim aplikacija pošilja pošto (obvestila, obnovitev gesla, varnostne kopije). Nova šola dobi testni naslov — zamenjajte ga s svojim, sicer pošta ne bo dostavljena."),
             "ok": _nastavljeno(cfg.MAIL_FROM),
             "trenutno": cfg.MAIL_FROM,
             "kje": "/settings",
-            "kje_napis": "Nastavitve šole",
+            "kje_napis": t('onb_kje_nastavitve', 'Nastavitve šole'),
         },
         {
-            "naslov": "E-pošta za varnostne kopije",
-            "opis": "Kam naj gre nočna varnostna kopija podatkov šole.",
+            "naslov": t('onb_backup', 'E-pošta za varnostne kopije'),
+            "opis": t('onb_backup_d', 'Kam naj gre nočna varnostna kopija podatkov šole.'),
             "ok": _nastavljeno(cfg.BACKUP_EMAIL),
             "trenutno": cfg.BACKUP_EMAIL,
             "kje": "/settings",
-            "kje_napis": "Nastavitve šole",
+            "kje_napis": t('onb_kje_nastavitve', 'Nastavitve šole'),
         },
         {
-            "naslov": "SMTP strežnik (pošiljanje pošte)",
-            "opis": ("Strežnik za pošiljanje pošte. Privzeto so vpisani "
-                     "podatki ponudnika — za svojo šolo vpišite svojega (npr. Arnes)."),
+            "naslov": t('onb_server', 'SMTP strežnik (pošiljanje pošte)'),
+            "opis": t('onb_server_d', 'Strežnik za pošiljanje pošte. Privzeto so vpisani podatki ponudnika — za svojo šolo vpišite svojega (npr. Arnes).'),
             "ok": bool((cfg.MAIL_SERVER or "").strip()) and bool((cfg.MAIL_USERNAME or "").strip())
                   and bool(cfg.get_str("MAIL_PASSWORD", "")),
             "trenutno": cfg.MAIL_SERVER or "",
             "kje": "/settings",
-            "kje_napis": "Nastavitve šole",
+            "kje_napis": t('onb_kje_nastavitve', 'Nastavitve šole'),
         },
         {
-            "naslov": "Razredi",
-            "opis": "Seznam oddelkov, vejica-ločeno (npr. 1. a, 2. a, 9. č).",
+            "naslov": t('onb_razredi', 'Razredi'),
+            "opis": t('onb_razredi_d', 'Seznam oddelkov, vejica-ločeno (npr. 1. a, 2. a, 9. č).'),
             "ok": bool(cfg.RAZREDI),
             "trenutno": ", ".join(cfg.RAZREDI) if cfg.RAZREDI else "",
             "kje": "/settings",
-            "kje_napis": "Nastavitve šole",
+            "kje_napis": t('onb_kje_nastavitve', 'Nastavitve šole'),
         },
         {
-            "naslov": "Prostori in oprema",
-            "opis": "Prostori, ki jih je mogoče rezervirati, in njihove kapacitete.",
+            "naslov": t('onb_prostori', 'Prostori in oprema'),
+            "opis": t('onb_prostori_d', 'Prostori, ki jih je mogoče rezervirati, in njihove kapacitete.'),
             "ok": bool(cfg.PROSTORI),
             "trenutno": ", ".join(cfg.PROSTORI) if cfg.PROSTORI else "",
             "kje": "/settings",
-            "kje_napis": "Nastavitve šole",
+            "kje_napis": t('onb_kje_nastavitve', 'Nastavitve šole'),
         },
         {
-            "naslov": "Uporabniki (učitelji in vodstvo)",
-            "opis": ("Ustvarite račune za učitelje in vodstvo — vsak dobi svoje uporabniško ime "
-                     "in geslo."),
+            "naslov": t('onb_uporabniki', 'Uporabniki (učitelji in vodstvo)'),
+            "opis": t('onb_uporabniki_d', 'Ustvarite račune za učitelje in vodstvo — vsak dobi svoje uporabniško ime in geslo.'),
             "ok": ucitelji > 0,
-            "trenutno": f"{uporabniki} aktivnih uporabnikov, od tega {ucitelji} učiteljev",
+            "trenutno": f"{uporabniki} {t('onb_aktivnih', 'aktivnih uporabnikov, od tega')} {ucitelji} {t('onb_uciteljev', 'učiteljev')}",
             "kje": "/auth/admin/users",
-            "kje_napis": "Uporabniki",
+            "kje_napis": t('onb_kje_uporabniki', 'Uporabniki'),
         },
     ]
 
@@ -855,16 +848,16 @@ def setup_guide_page(
     # nastavitev naj bodo o nastavitvah šole, ne o plačevanju.
     if selling_enabled(db):
         items.append({
-            "naslov": "Naročnina",
-            "opis": "Uporaba je veljavna, ko je naročnina potrjena (tudi pri ceni 0 € jo je treba redno obnoviti).",
+            "naslov": t('onb_narocnina', 'Naročnina'),
+            "opis": t('onb_narocnina_d2', 'Uporaba je veljavna, ko je naročnina potrjena (tudi pri ceni 0 € jo je treba redno obnoviti).'),
             "ok": bool(stanje.get("active")),
             "trenutno": (
-                f"veljavna do {stanje['until'].strftime('%d. %m. %Y')}"
+                f"{t('onb_veljavna_do', 'veljavna do')} {stanje['until'].strftime('%d. %m. %Y')}"
                 if stanje.get("until") and stanje.get("active")
-                else "ni veljavna"
+                else t('set_ni_veljavna', 'ni veljavna')
             ),
             "kje": "/narocnina",
-            "kje_napis": "Naročnina",
+            "kje_napis": t('onb_narocnina', 'Naročnina'),
         })
 
     return templates.TemplateResponse(
