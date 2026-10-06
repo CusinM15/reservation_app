@@ -3,7 +3,7 @@
 
 # 📜 Pogoji uporabe (Terms of Service)
 
-> **Različica:** 1.0 · **Datum:** 5. 10. 2026
+> **Različica:** 1.1 · **Datum:** 6. 10. 2026
 >
 > Ti pogoji veljajo za uporabo šolske aplikacije za rezervacije, dneve dejavnosti in
 > ocenjevanja (v nadaljevanju »aplikacija«). Z uporabo aplikacije se šola in njeni
@@ -63,6 +63,35 @@ Aplikacija je **večšolska**: vsaka šola vidi samo svoje podatke.
   Zato ob običajni uporabi **ni težav z GDPR** — aplikacija ne zbira in ne hrani občutljivih
   osebnih podatkov.
 - Vsaka šola vidi **samo svoje podatke**; podatki različnih šol so med seboj ločeni.
+
+### 4.1 Vloge po GDPR
+
+- **Šola je upravljavec osebnih podatkov.** Šola določi, katere podatke vnaša, za kakšen
+  namen in koliko časa jih hrani, ter je odgovorna za **zakonitost** obdelave (ustrezno
+  pravno podlago, seznanitev zaposlenih).
+- **Ponudnik je obdelovalec.** Aplikacijo (in strežnik) ponudnik upravlja **izključno po
+  navodilih šole** in podatkov **ne uporablja za svoje namene** (npr. ne prodaja, ne
+  oglašuje, ne združuje s podatki drugih šol).
+- Ponudnik vodi **evidence obdelav** in podatke obdeluje le toliko, kolikor je potrebno za
+  delovanje storitve. Podatki se hranijo v **EU**.
+
+### 4.2 Varnostni ukrepi in obveščanje o incidentu
+
+- Ponudnik izvaja ustrezne **tehnične in organizacijske ukrepe** za zaščito podatkov (ločeni
+  računi in vloge, gesla shranjena zgolj zgoščeno, ločenost podatkov med šolami, šifriran
+  prenos, redne varnostne kopije).
+- Če ponudnik zazna **vdor oziroma kršitev osebnih podatkov**, šolo o tem obvesti **brez
+  nepotrebnega odlašanja, najpozneje v 72 urah** od zaznave, in ji pomaga pri izpolnitvi
+  obveznosti prijave nadzornemu organu (Informacijski pooblaščenec).
+- Ob prenehanju naročninske pogodbe se po dogovoru s šolo podatki **izbrišejo** oziroma
+  **vrnejo** šoli (izvoz).
+
+### 4.3 Pogodba o obdelavi osebnih podatkov (DPA)
+
+- Ponudnik šoli na zahtevo predloži **pogodbo o obdelavi osebnih podatkov**, ki podrobneje
+  uredi zgoraj našteto (predmet in trajanje obdelave, vrste podatkov, obveznosti in pomoč
+  šoli, obveščanje o vdoru, ukrepe ob prenehanju). Šola jo podpiše (elektronsko zadošča).
+- Za pridobitev DPA se šola obrne na ponudnika.
 
 ---
 
