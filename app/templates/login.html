@@ -126,7 +126,7 @@
             </script>
 
             <div style="text-align:center;margin-top:15px;">
-                <a href="/auth/forgot-password" style="color:#007bff;text-decoration:none;font-size:0.85rem;">{{ t('link_pozabljeno_geslo', 'Pozabljeno geslo?') }}</a>
+                <a href="/auth/forgot-password" style="color:#007bff;text-decoration:none;font-size:0.85rem;">Pozabljeno geslo (Forgotten password)?</a>
                 {% if selling and selling.enabled %}
                 <div style="margin-top:8px;">
                     <a href="/registracija" style="color:#007bff;text-decoration:none;font-size:0.85rem;">🏫 {{ t('link_nova_sola', 'Nova šola') }}</a>
@@ -146,7 +146,7 @@
              show_forgot=True).
              ============================================================ -->
         <div id="section-forgot" class="section {% if show_forgot %}active{% endif %}">
-            <h2>Pozabljeno geslo</h2>
+            <h2>Pozabljeno geslo (Forgotten password)</h2>
             {% if error and show_forgot %}
             <div class="error">{{ error }}</div>
             {% endif %}
