@@ -134,8 +134,10 @@ EXTEND_FROM_DAY = 15    # 15. 8.
 
 def self_extend_open(today: date | None = None) -> bool:
     """Ali je samopostrežno podaljšanje dovoljeno (od 15. 8. dalje)?"""
-    d = today or date.today()
-    return (d.month, d.day) >= (EXTEND_FROM_MONTH, EXTEND_FROM_DAY)
+    # ZAČASNO onemogočeno — uporabnik bo nastavil jutri (2026-10-08).
+    return False
+    # d = today or date.today()
+    # return (d.month, d.day) >= (EXTEND_FROM_MONTH, EXTEND_FROM_DAY)
 
 
 def school_year_target(today: date | None = None) -> date:
