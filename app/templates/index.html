@@ -1689,9 +1689,9 @@
       try {
         const res = await fetch(`/api/rezervacije?date_from=${formatDate(startDate)}&date_to=${endStr}&prostor=${prostor}`, {credentials: 'include'});
         const reservations = res.ok ? await res.json() : [];
-        const container = document.querySelector(`#prostor-view-${prostor} .rez-table-inner`);
+        const container = document.querySelector(`[id="prostor-view-${prostor}"] .rez-table-inner`);
         container.innerHTML = renderWeeklyTable(prostor, startDate, reservations);
-      } catch(e) { const c=document.querySelector(`#prostor-view-${prostor} .rez-table-inner`); if(c) c.innerHTML=`<p style="text-align:center;color:#999;padding:2rem;">Nalaganje ...</p>`; }
+      } catch(e) { const c=document.querySelector(`[id="prostor-view-${prostor}"] .rez-table-inner`); if(c) c.innerHTML=`<p style="text-align:center;color:#999;padding:2rem;">Nalaganje ...</p>`; }
     }
     // Izriše tedenski urnik za en prostor v obliki HTML tabele.
     // Ustvari zemljevid (map) rezervacij po ključu 'datum|ura' za
