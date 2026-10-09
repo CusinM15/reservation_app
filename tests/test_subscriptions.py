@@ -848,11 +848,11 @@ def test_default_plan_is_yearly_only():
 # ── 15. Samopostrežno podaljšanje šolskega leta (1. 9.) ──────────────
 
 def test_self_extend_open_window():
-    """Podaljšanje je dovoljeno OD 15. 8. dalje."""
+    """ZAČASNO onemogočeno — vedno False (uporabnik bo nastavil 2026-10-08)."""
     assert self_extend_open(date(2026, 8, 14)) is False
-    assert self_extend_open(date(2026, 8, 15)) is True
-    assert self_extend_open(date(2026, 9, 1)) is True
-    assert self_extend_open(date(2026, 10, 2)) is True
+    assert self_extend_open(date(2026, 8, 15)) is False
+    assert self_extend_open(date(2026, 9, 1)) is False
+    assert self_extend_open(date(2026, 10, 2)) is False
     assert self_extend_open(date(2026, 6, 1)) is False
 
 
