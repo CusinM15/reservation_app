@@ -23,6 +23,7 @@ from app.security import get_current_user_id
 from app.security import inactivity_timeout_ms
 from app.tenancy import (
     MAIN_ADMIN_ROLE,
+    config_for_request,
     data_school_id,
     get_request_user,
     is_main_admin,
@@ -127,7 +128,7 @@ def audit_log_page(
         ]
     return templates.TemplateResponse("audit_log.html", {
             "request": request,
-            "inactivity_timeout_ms": inactivity_timeout_ms(user),
+            "inactivity_timeout_ms": inactivity_timeout_ms(user, config_for_request(request, db)),
             "is_main_admin": is_main_admin(user),
             "schools": schools,
         })

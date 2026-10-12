@@ -621,7 +621,7 @@ def admin_users_page(request: Request, db: Session = Depends(get_db)):
     users = _scoped_users(db, school_id).order_by(User.first_name).all()
     return templates.TemplateResponse("admin_users.html", {
             "request": request,
-            "inactivity_timeout_ms": inactivity_timeout_ms(current_user),
+            "inactivity_timeout_ms": inactivity_timeout_ms(current_user, config_for_request(request, db)),
             "users": users,
             "is_main_admin": is_main_admin(current_user),
             "school_id": school_id,

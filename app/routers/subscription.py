@@ -47,6 +47,7 @@ from app.subscriptions import (
 from app.security import inactivity_timeout_ms
 from app.tenancy import (
     apply_test_email_settings,
+    config_for_request,
     create_school,
     default_school_admin_username,
     get_request_user,
@@ -100,10 +101,18 @@ def nakup_page(
     """
     cfg = selling_config(db)
     izbrani_start = _parse_iso_date(start) or date.today()
+    # Samodejna odjava: če je obiskovalec prijavljen (npr. admin odpre /nakup),
+    # velja timeout šole; anonimni obiskovalec (0) nima seje za odjavo.
+    _nakup_user = get_request_user(request, db)
+    _nakup_timeout = (
+        inactivity_timeout_ms(_nakup_user, config_for_request(request, db))
+        if _nakup_user else 0
+    )
     return templates.TemplateResponse(
         "nakup.html",
         {
             "request": request,
+            "inactivity_timeout_ms": _nakup_timeout,
             "cfg": cfg,
             "start": izbrani_start,
             "period_end": subscription_period_end(izbrani_start),
@@ -355,9 +364,9 @@ def narocnina_page(
 
     return templates.TemplateResponse(
             "narocnina.html",
-            {
-                "request": request,
-                "inactivity_timeout_ms": inactivity_timeout_ms(user),
+                {
+                    "request": request,
+                    "inactivity_timeout_ms": inactivity_timeout_ms(user, config_for_request(request, db)),
                 "school": school,
             "state": subscription_state(db, school.id),
             "cfg": selling_config(db),

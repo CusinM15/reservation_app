@@ -393,12 +393,13 @@ def dejavnosti_page(request: Request):
     # Poti zavihkov: kdor je vstopil prek poti šole, na njej tudi ostane.
     ctx_school_id, _school = resolve_school_context(request, db)
     nav = nav_paths(db, request, ctx_school_id)
+    config = config_for_request(request, db)
     db.close()
     # Učitelji vseeno vidijo stran — gumbi za dodajanje/urejanje/brisanje
     # so jim skriti s pomočjo  USER_ROLE  v dejavnosti.html.
     return templates.TemplateResponse("dejavnosti.html", {
         "request": request,
-        "inactivity_timeout_ms": inactivity_timeout_ms(user),
+        "inactivity_timeout_ms": inactivity_timeout_ms(user, config),
         "user_role": role,
         "nav_rezervacije": nav.get("rezervacije", "/rezervacije"),
         "nav_ocenjevanje": nav.get("ocenjevanje", "/ocenjevanje"),
@@ -436,10 +437,11 @@ def history_page(request: Request):
                  for s in db.query(School).order_by(School.name).all()]
                 if main_admin else []
             )
+            config = config_for_request(request, db)
             db.close()
             return templates.TemplateResponse("audit_log.html", {
                 "request": request,
-                "inactivity_timeout_ms": inactivity_timeout_ms(user),
+                "inactivity_timeout_ms": inactivity_timeout_ms(user, config),
                 "users": users,
                 "is_main_admin": main_admin,
                 "schools": schools,

@@ -44,6 +44,7 @@ from app.tenancy import (
     generate_aliases,
     get_request_user,
     invalidate_alias_cache,
+    config_for_request,
     is_main_admin,
     is_school_admin,
     remove_school_alias,
@@ -561,7 +562,7 @@ def schools_page(request: Request, db: Session = Depends(get_db)):
     ]
     return templates.TemplateResponse("schools.html", {
             "request": request,
-            "inactivity_timeout_ms": inactivity_timeout_ms(user),
+            "inactivity_timeout_ms": inactivity_timeout_ms(user, config_for_request(request, db)),
             "schools": schools_data,
             "default_slug": slugify(schools_data[0]["name"]) if schools_data else "",
             "current_username": user.username,
@@ -867,7 +868,7 @@ def setup_guide_page(
             "nastavitev.html",
             {
                 "request": request,
-                "inactivity_timeout_ms": inactivity_timeout_ms(user),
+                "inactivity_timeout_ms": inactivity_timeout_ms(user, cfg),
                 "school": school,
             "items": items,
             "stevilo_ok": sum(1 for i in items if i["ok"]),
@@ -937,7 +938,7 @@ def school_settings_page(
 
     return templates.TemplateResponse("school_settings.html", {
             "request": request,
-            "inactivity_timeout_ms": inactivity_timeout_ms(user),
+            "inactivity_timeout_ms": inactivity_timeout_ms(user, cfg),
             "school": {"id": school.id, "slug": school.slug, "name": school.name,
                    "aliases": [a.alias for a in school.aliases]},
         "fields": SCHOOL_SETTING_FIELDS,
