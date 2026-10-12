@@ -33,6 +33,7 @@ from app.models import User, RoleEnum
 from app.config import settings, validate_password_strength
 from app.routers.blocked_dates import _send_email
 from app.security import sign_user_id, get_current_user_id
+from app.security import inactivity_timeout_ms
 from app.tenancy import (
     MAIN_ADMIN_ROLE,
     SCHOOL_ADMIN_ROLE,
@@ -619,11 +620,12 @@ def admin_users_page(request: Request, db: Session = Depends(get_db)):
 
     users = _scoped_users(db, school_id).order_by(User.first_name).all()
     return templates.TemplateResponse("admin_users.html", {
-        "request": request,
-        "users": users,
-        "is_main_admin": is_main_admin(current_user),
-        "school_id": school_id,
-    })
+            "request": request,
+            "inactivity_timeout_ms": inactivity_timeout_ms(current_user),
+            "users": users,
+            "is_main_admin": is_main_admin(current_user),
+            "school_id": school_id,
+        })
 
 
 @router.post("/admin/users")

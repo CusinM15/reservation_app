@@ -21,6 +21,22 @@ _serializer = URLSafeTimedSerializer(settings.SECRET_KEY, salt="sola-auth")
 SESSION_MAX_AGE = 60 * 60 * 24 * 30  # 30 dni v sekundah
 
 
+def inactivity_timeout_ms(user, config=None) -> int:
+    """Timeout za samodejno odjavo (ms) — admin/vodstvo strožji.
+    
+    config: SchoolConfig (iz baze šole) ali None (fallback na .env)."""
+    from app.tenancy import role_value, MAIN_ADMIN_ROLE
+    from app.models import RoleEnum
+    is_privileged = user and role_value(user) in (RoleEnum.admin.value, RoleEnum.vodstvo.value, MAIN_ADMIN_ROLE)
+    if config is not None:
+        if is_privileged:
+            return config.INACTIVITY_TIMEOUT_ADMIN_MINUTES * 60 * 1000
+        return config.INACTIVITY_TIMEOUT_MINUTES * 60 * 1000
+    if is_privileged:
+        return settings.INACTIVITY_TIMEOUT_ADMIN_MINUTES * 60 * 1000
+    return settings.INACTIVITY_TIMEOUT_MINUTES * 60 * 1000
+
+
 def sign_user_id(user_id: int) -> str:
     """Podpiši user_id v varen cookie string."""
     return _serializer.dumps(str(user_id))

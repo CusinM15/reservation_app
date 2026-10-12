@@ -183,5 +183,11 @@
         // Load on page load
         loadLog();
     </script>
+{% if inactivity_timeout_ms %}
+<script>
+(function(){const t={{ inactivity_timeout_ms }};let i=null;function r(){i&&clearTimeout(i);i=setTimeout(function(){window.location.href='/auth/logout'},t)}['click','mousemove','keydown','scroll','touchstart'].forEach(function(e){document.addEventListener(e,r)});r()})();
+</script>
+{% endif %}
+
 </body>
 </html>

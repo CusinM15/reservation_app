@@ -44,6 +44,7 @@ from app.subscriptions import (
     set_auto_renew,
     subscription_state,
 )
+from app.security import inactivity_timeout_ms
 from app.tenancy import (
     apply_test_email_settings,
     create_school,
@@ -353,10 +354,11 @@ def narocnina_page(
         ]
 
     return templates.TemplateResponse(
-        "narocnina.html",
-        {
-            "request": request,
-            "school": school,
+            "narocnina.html",
+            {
+                "request": request,
+                "inactivity_timeout_ms": inactivity_timeout_ms(user),
+                "school": school,
             "state": subscription_state(db, school.id),
             "cfg": selling_config(db),
             "payments": payments,

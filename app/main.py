@@ -37,6 +37,7 @@ from app.tenancy import (
     resolve_school_context,
     role_value,
 )
+from app.security import inactivity_timeout_ms
 from app.i18n import set_request_language
 from app.templating import make_templates
 
@@ -298,12 +299,7 @@ def _render_index(request: Request, active_tab: str):
     finally:
         db.close()
 
-    # Admin/vodstvo (in glavni admin) imajo strožji timeout.
-    is_privileged = user and role_value(user) in (RoleEnum.admin.value, RoleEnum.vodstvo.value, MAIN_ADMIN_ROLE)
-    if is_privileged:
-        timeout_ms = config.INACTIVITY_TIMEOUT_ADMIN_MINUTES * 60 * 1000
-    else:
-        timeout_ms = config.INACTIVITY_TIMEOUT_MINUTES * 60 * 1000
+    timeout_ms = inactivity_timeout_ms(user, config)
 
     # Označba šole: pokaže se VEDNO, ko je zahtevek prišel prek poti šole
     # (alias), da je uporabniku jasno, kateri šoli pripadajo podatki na zaslonu.
@@ -402,6 +398,7 @@ def dejavnosti_page(request: Request):
     # so jim skriti s pomočjo  USER_ROLE  v dejavnosti.html.
     return templates.TemplateResponse("dejavnosti.html", {
         "request": request,
+        "inactivity_timeout_ms": inactivity_timeout_ms(user),
         "user_role": role,
         "nav_rezervacije": nav.get("rezervacije", "/rezervacije"),
         "nav_ocenjevanje": nav.get("ocenjevanje", "/ocenjevanje"),
@@ -442,6 +439,7 @@ def history_page(request: Request):
             db.close()
             return templates.TemplateResponse("audit_log.html", {
                 "request": request,
+                "inactivity_timeout_ms": inactivity_timeout_ms(user),
                 "users": users,
                 "is_main_admin": main_admin,
                 "schools": schools,

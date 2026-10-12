@@ -20,6 +20,7 @@ from app.database import get_db
 from app.models import AuditLog, School, User, RoleEnum
 from app.config import settings
 from app.security import get_current_user_id
+from app.security import inactivity_timeout_ms
 from app.tenancy import (
     MAIN_ADMIN_ROLE,
     data_school_id,
@@ -125,7 +126,8 @@ def audit_log_page(
             for s in db.query(School).order_by(School.name).all()
         ]
     return templates.TemplateResponse("audit_log.html", {
-        "request": request,
-        "is_main_admin": is_main_admin(user),
-        "schools": schools,
-    })
+            "request": request,
+            "inactivity_timeout_ms": inactivity_timeout_ms(user),
+            "is_main_admin": is_main_admin(user),
+            "schools": schools,
+        })

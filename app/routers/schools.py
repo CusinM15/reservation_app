@@ -30,6 +30,7 @@ from app.subscriptions import subscription_state
 from app.models import School, SchoolAlias, User, Reservation, Assessment, ActivityDay, RoleEnum
 from app.audit import log_audit
 from app.security import get_current_user_id, sign_user_id
+from app.security import inactivity_timeout_ms
 from app.tenancy import (
     ASSESSMENT_RULE_DEFAULTS,
     MAIN_ADMIN_ROLE,
@@ -559,11 +560,12 @@ def schools_page(request: Request, db: Session = Depends(get_db)):
         for s in rows
     ]
     return templates.TemplateResponse("schools.html", {
-        "request": request,
-        "schools": schools_data,
-        "default_slug": slugify(schools_data[0]["name"]) if schools_data else "",
-        "current_username": user.username,
-    })
+            "request": request,
+            "inactivity_timeout_ms": inactivity_timeout_ms(user),
+            "schools": schools_data,
+            "default_slug": slugify(schools_data[0]["name"]) if schools_data else "",
+            "current_username": user.username,
+        })
 
 
 @router.get("/schools/open/{school_id}")
@@ -730,10 +732,11 @@ def setup_guide_page(
         if demo:
             items = _demo_setup_items()
             return templates.TemplateResponse(
-                "nastavitev.html",
-                {
-                    "request": request,
-                    "demo": True,
+                            "nastavitev.html",
+                            {
+                                "request": request,
+                                "inactivity_timeout_ms": 0,
+                                "demo": True,
                     "school": {"name": "OŠ Primer", "slug": "primer"},
                     "items": items,
                     "stevilo_ok": sum(1 for i in items if i["ok"]),
@@ -861,10 +864,11 @@ def setup_guide_page(
         })
 
     return templates.TemplateResponse(
-        "nastavitev.html",
-        {
-            "request": request,
-            "school": school,
+            "nastavitev.html",
+            {
+                "request": request,
+                "inactivity_timeout_ms": inactivity_timeout_ms(user),
+                "school": school,
             "items": items,
             "stevilo_ok": sum(1 for i in items if i["ok"]),
             "stevilo_vseh": len(items),
@@ -932,8 +936,9 @@ def school_settings_page(
     ]
 
     return templates.TemplateResponse("school_settings.html", {
-        "request": request,
-        "school": {"id": school.id, "slug": school.slug, "name": school.name,
+            "request": request,
+            "inactivity_timeout_ms": inactivity_timeout_ms(user),
+            "school": {"id": school.id, "slug": school.slug, "name": school.name,
                    "aliases": [a.alias for a in school.aliases]},
         "fields": SCHOOL_SETTING_FIELDS,
         "values": values,
