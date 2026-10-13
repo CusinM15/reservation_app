@@ -14,7 +14,7 @@ Ta dokument odgovori na tri vprašanja:
 
 1. **Kateri** Hetzner strežnik izbrati (in zakaj).
 2. **Kako** prestaviti aplikacijo (ostc-app / sola-app) iz domačega k3s clustra v Hetzner.
-3. **Koliko** to stane in **kdaj** vzeti 2 oz. 3 strežnike, da bo prava HA.
+3. **Koliko** to stane (mesečno **in letno**) in **kdaj** vzeti 1 ali 3 strežnike (2 strežnika **nista** HA).
 
 Za splošno primerjavo vseh možnosti (Railway, Coolify, managed k8s …) glej `migracija_oblak.md`.
 Ta dokument se ukvarja samo s Hetznerjem, ker je najcenejši "svoj strežnik" v EU.
@@ -37,16 +37,16 @@ Hetzner ima tri družine **Cloud** strežnikov:
 
 ### Cenik CPX (deljen AMD, 20 TB prometa vključenega)
 
-| Plan | vCPU | RAM | Disk (NVMe) | Cena/mesec (brez DDV) |
-|------|------|-----|-------------|------------------------|
-| CPX02 | 1 | 1 GB | 20 GB | €5.99 |
-| CPX12 | 1 | 2 GB | 40 GB | €11.49 |
-| **CPX22** | **2** | **4 GB** | **80 GB** | **€19.49** |
-| CPX32 | 4 | 8 GB | 160 GB | €35.49 |
-| CPX42 | 8 | 16 GB | 320 GB | €69.49 |
+| Plan | vCPU | RAM | Disk (NVMe) | Cena/mesec (brez DDV) | Cena/leto (brez DDV) |
+|------|------|-----|-------------|------------------------|-----------------------|
+| CPX02 | 1 | 1 GB | 20 GB | €5.99 | €71.88 |
+| CPX12 | 1 | 2 GB | 40 GB | €11.49 | €137.88 |
+| **CPX22** | **2** | **4 GB** | **80 GB** | **€19.49** | **€233.88** |
+| CPX32 | 4 | 8 GB | 160 GB | €35.49 | €425.88 |
+| CPX42 | 8 | 16 GB | 320 GB | €69.49 | €833.88 |
 
-Za referenco, namenski CPU (CCX13 = 2 vCPU, 8 GB, 80 GB) = **€42.99/mesec** — toliko dražje samo
-za namenski CPU, kar za nas ni potrebno.
+Za referenco, namenski CPU (CCX13 = 2 vCPU, 8 GB, 80 GB) = **€42.99/mesec** oz. **€515.88/leto** —
+toliko dražje samo za namenski CPU, kar za nas ni potrebno.
 
 ### 🎯 Priporočilo
 
@@ -75,7 +75,7 @@ podatke.
 ### Korak 1 — Zakup strežnikov
 - V konzoli: **Add Server** → lokacija NBG1 → **CPX22** → image **Ubuntu 24.04** → dodaj SSH ključ
   → ustvari.
-- Ponovi za vsak node (nodi 2 in 3). Vsi v **isti lokaciji** in isto **private network**.
+- Za HA ponovi za vsak node (**skupaj 3**). Vsi v **isti lokaciji** in isto **private network**.
 - Vklopi **Backups** (Hetzner sam dela posnetke, +20 % cene strežnika).
 
 ### Korak 2 — Firewall
@@ -154,42 +154,84 @@ Preveri (isti poizvedbi kot v `HA.md`): število rezervacij, `SELECT MIN/MAX FRO
 ## 3. Cene (Hetzner cenik, 2026, EUR brez DDV, 20 TB prometa vključenega)
 
 > Kot zavezanec za DDV (s.p.) si DDV odbijaš → relevantna je cena **brez DDV**.
-> Cene so okvirne; vedno preveri v Hetzner konzoli pred zakupom.
+> Cene so okvirne; vedno preveri v Hetzner konzoli pred zakupom. **Letni znesek = mesečni × 12.**
 
-| Postavka | Cena/mesec |
-|----------|-----------|
-| CPX22 (2 vCPU, 4 GB, 80 GB) | €19.49 |
-| CPX12 (1 vCPU, 2 GB, 40 GB) | €11.49 |
-| Load Balancer LB11 (5 storitev, 25 tarč) | €7.49 |
-| Dodaten IPv4 | €0.50 |
-| IPv6 | €0 |
-| Hetzner Backup | +20 % cene strežnika |
-| Dodaten promet (nad 20 TB) | €1.00 / TB |
-| Storage Box BX11 (1 TB, za backup baze) | ~€3.80 |
+| Postavka | Cena/mesec | Cena/leto |
+|----------|-----------|-----------|
+| CPX22 (2 vCPU, 4 GB, 80 GB) | €19.49 | €233.88 |
+| CPX12 (1 vCPU, 2 GB, 40 GB) | €11.49 | €137.88 |
+| Load Balancer LB11 (5 storitev, 25 tarč) | €7.49 | €89.88 |
+| Dodaten IPv4 | €0.50 | €6.00 |
+| IPv6 | €0 | €0 |
+| Hetzner Backup | +20 % cene strežnika | +20 % cene strežnika |
+| Dodaten promet (nad 20 TB) | €1.00 / TB | €12.00 / TB |
+| Storage Box BX11 (1 TB, za backup baze) | ~€3.80 | ~€45.60 |
+| Domena | ~€1.00 | ~€12.00 |
 
-### Scenariji (skupni mesečni strošek)
+### Scenariji (skupni strošek)
 
-| Scenarij | Sestava | Ocena/mesec |
-|----------|---------|-------------|
-| **A — 1 strežnik (ni HA)** | 1× CPX22 + IPv4 + backup | ~€24 |
-| **B — 2 strežnika (skoraj-HA)** | 2× CPX22 + LB11 + 2× IPv4 + backup | ~€52 |
-| **C — 3 strežniki (prava HA)** | 3× CPX22 + LB11 + 3× IPv4 + backup | ~€83 |
-| **C-poceni** | 3× CPX12 + LB11 + backup | ~€56 |
+| Scenarij | Sestava | Ocena/mesec | **Ocena/leto** |
+|----------|---------|-------------|-----------------|
+| **A — 1 strežnik (ni HA)** | 1× CPX22 + IPv4 + backup | ~€24 | **~€287** |
+| **C — 3 strežniki (prava HA)** | 3× CPX22 + LB11 + 3× IPv4 + backup | ~€79 | **~€950** |
+| **C-poceni (3-node)** | 3× CPX12 + LB11 + backup | ~€50 | **~€604** |
 
-(Na vse skupaj lahko dodaš še Storage Box ~€3.80 za backup baze.)
+(Če dodaš še Storage Box za backup baze: +€3.80/mesec = +€45.60/leto.)
+
+> ℹ️ **Zakaj ni scenarija z 2 strežnikoma?** Ker **2 strežnika nista HA** — glej razdelek 4.
+> 2 vozlišči v etcd pomenita kvorum 2; ko en odpove, izgubiš kvorum za pisanje. Zato izbiramo
+> **1 (test/poceni, ni HA)** ali **3 (prava HA)** — 2 je najslabše razmerje varnost/cena.
+
+### 💶 Letni stroški in primerjava z zdajšnjo postavitvijo
+
+- **Ena šola porabi zelo malo:** ~**0,2 GB RAM**, ~**0,2 vCPU**, **< 1 GB diska**
+  (`deploy/oracle/README.md`) — torej strošek **ne raste** linearno s številom šol.
+- **Ena šola porabi približno toliko, kot se trenutno porablja na 2 HP prenosnikih** — trenutna
+  celotna postavitev (k3s na 2 prenosnikih) teče za oceno **~€15–25/mesec** (elektrika +
+  amortizacija strojne opreme) = **~€180–300/leto** (`migracija_oblak.md`).
+- **Primerjava letno:**
+  | Postavitev | Letni strošek | HA? |
+  |------------|---------------|-----|
+  | Zdaj (2 HP prenosnika doma) | ~€180–300 | ⚠️ odvisno od doma |
+  | Hetzner 1 strežnik + backup | ~€287 | ❌ ne |
+  | Hetzner 3 strežniki (HA) | ~€950 | ✅ ja |
+  | + Storage Box (backup baze) | +€45.60 | – |
+  | + domena | +€12 | – |
+
+### 💰 Zaslužek glede na število šol
+
+Predpostavka: **naročnina 150 €/šola/leto** (privzeto v `app_settings.py`). Fiksni letni strošek
+za HA postavitev ≈ **€1.000/leto** (3× CPX22 + LB + Storage Box + domena). Prihodek je samo od
+naročnin.
+
+| Šol | Prihodek/leto (150/šola) | Letni strošek (HA) | **Zaslužek (bruto)** |
+|-----|--------------------------|--------------------|-----------------------|
+| 1 | €150 | ~€1.000 | **−€850** |
+| 3 | €450 | ~€1.000 | **−€550** |
+| 5 | €750 | ~€1.000 | **−€250** |
+| **7** | **€1.050** | **~€1.000** | **≈ €0 (prag)** |
+| 10 | €1.500 | ~€1.000 | **+€500** |
+| 20 | €3.000 | ~€1.000 | **+€2.000** |
+| 50 | €7.500 | ~€1.000 | **+€6.500** |
+
+**Prag dobička (HA):** ~**7 šol**. **Prag dobička (1 strežnik, ~€345/leto):** ~**3 šole**.
+
+> ⚠️ **Zaslužek ≠ čisti dobiček.** Zneski **ne vključujejo**: razvoja, podpore, davkov/DDV in
+> tvojega dela. Prihodek pokrije **le infrastrukturo**; razvoj in podpora sta ločena postavka.
+> Zneski so ocene (brez DDV) in jih je treba preveriti pred odločitvijo o ceni.
 
 ---
 
-## 4. HA — kdaj 2, kdaj 3 strežniki?
+## 4. HA — kdaj 1, kdaj 3 strežniki?
 
-Kratek odgovor: **za pravo HA vzemi 3.** Pojasnilo spodaj.
+Kratek odgovor: **za pravo HA vzemi 3. 2 strežnika nista HA.**
 
 ### Koliko vozlišč preživi izpad?
 
 | Št. vozlišč (etcd) | Kvorum | Preživi izpad | HA? |
 |--------------------|--------|---------------|-----|
 | 1 | 1 | 0 vozlišč | ❌ SPOF |
-| 2 | 2 | **0** (izgubiš kvorum za pisanje!) | ⚠️ ni prava HA |
+| 2 | 2 | **0** (izgubiš kvorum za pisanje!) | ⚠️ **ni HA** |
 | **3** | **2** | **1 vozlišče** | ✅ **ja** |
 
 > 💡 **ELI5:** etcd je kot klub, kjer za vsako odločitev glasuje **večina**. Pri dveh članih
@@ -200,12 +242,8 @@ Kratek odgovor: **za pravo HA vzemi 3.** Pojasnilo spodaj.
 
 - **1 strežnik** = kvari se, ko se kvari. Primerno samo za test/dev ali za app, kjer je par ur
   izpada sprejemljivo.
-- **2 strežnika** = **ni prave HA** za k3s. Pogosto napačen občutek varnosti: če crkne **app**
-  node, drugi prevzame; če pa omrežje razdeli cluster na dvoje, ali če gresta v konflikt za
-  tvorbo kvoruma, nastanejo težave. 2 strežnika sta smiselna le kot:
-  - ločitev **app strežnik + baza strežnik** (a oba sta še vedno SPOF), ali
-  - **produkcija + ločen staging/test**, ali
-  - če za bazo uporabiš **zunanjo managed PostgreSQL** (in vozlišči ostaneta samo za app).
+- **2 strežnika = NI HA.** Kvorum 2 pomeni, da ob izpadu enega vozlišča ostaneš brez kvoruma za
+  pisanje — torej nimaš HA, imaš pa dvakratni strošek. **Ne uporabljaj 2 kot končno rešitev.**
 - **3 strežniki** = **najmanj za pravo HA**:
   - etcd kvorum 2/3 → cluster preživi izpad **enega** noda,
   - app teče v 2–3 replikah, ena na vsakem nodu,
@@ -214,19 +252,17 @@ Kratek odgovor: **za pravo HA vzemi 3.** Pojasnilo spodaj.
 
 ### Kdaj zakupiti kaj (priporočilo)
 
-1. **Začni s 3× CPX22 takoj** — ker je "2 nodes" slabše kot "1 ali 3" z vidika kvoruma.
+1. **Začni s 3× CPX22 takoj** — ker je 3 edino pravo število za HA (1 ali 3; nikoli 2).
 2. Če je proračun res omejen in toleriraš ~izpad ob izpadu enega noda: začni z **1× CPX22**
-   (enostavno, poceni), nato **nadgradi na 3**, ko app postane kritičen (npr. med šolskim letom,
-   ko se uporablja vsak dan).
-3. Nikoli se ne ustavljaj pri **2** kot končni rešitvi za HA — to je najslabše razmerje
-   varnost/cena.
+   (enostavno, poceni, **ni HA**), nato **nadgradi na 3**, ko app postane kritičen (npr. med
+   šolskim letom, ko se uporablja vsak dan).
 
 ### Kaj pa baza ločeno?
 
 Če želiš manj skrbi z bazo, lahko PostgreSQL nadomestiš z **zunanjo managed bazo**
-(Neon / Supabase / Railway Postgres, ~€0–20/mesec). Takrat imaš 2–3 vozlišča samo za app, baza pa
-je skrb ponudnika. Prednost: manj vzdrževanja. Slabost: podatki so spet v tujem cloudu in dodaten
-mesečni strošek.
+(Neon / Supabase / Railway Postgres, ~€0–20/mesec oz. ~€0–240/leto). Takrat imaš 3 vozlišča samo
+za app, baza pa je skrb ponudnika. Prednost: manj vzdrževanja. Slabost: podatki so spet v tujem
+cloudu in dodaten mesečni strošek.
 
 ---
 
@@ -236,8 +272,9 @@ mesečni strošek.
 |-----------|---------|
 | Kateri strežnik? | **CPX22** (2 vCPU, 4 GB, 80 GB), lokacija NGB1, Ubuntu 24.04 |
 | Kako prestavim app? | Nov k3s (3-node, `--cluster-init`) + Hetzner CCM/CSI → isti manifesti → `pg_dump`/`pg_restore` → preklop DNS (koraki zgoraj) |
-| Koliko stane? | HA postavitev (3× CPX22 + LB) ~**€83/mesec**; poceni 3-node ~€56; en strežnik ~€24 |
-| Kdaj 2, kdaj 3? | **2 ni HA** (etcd kvorum). Vzemi **3** za pravo HA; 1 za test; nikoli 2 kot končno |
+| Koliko stane (leto)? | HA (3× CPX22 + LB) ~**€950/leto**; poceni 3-node ~€604/leto; 1 strežnik (ni HA) ~€287/leto |
+| Kdaj 1, kdaj 3? | **2 ni HA** (etcd kvorum). Za pravo HA vzemi **3**; 1 le za test/poceni |
+| Kdaj dobiček? | Prag ~**7 šol** (HA) oz. ~**3 šole** (1 strežnik), pri 150 €/šola/leto |
 
 ---
 
