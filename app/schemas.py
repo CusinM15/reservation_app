@@ -19,12 +19,14 @@ from typing import Optional
 class ReservationCreate(BaseModel):
     """Vhodni podatki za ustvarjanje nove rezervacije.
     
-    hour je omejen na 0–7 (šolske ure).
+    hour je omejen na 0–7 (šolske ure), lahko pa tudi več, če ima šola v urniku
+    dodano popoldansko uro (npr. ključ 8). Zgornjo mejo dokončno preveri router
+    (_validate_hour) glede na urnik šole; Pydantic pusti do 23.
     qty je obvezno samo za 'tablice' (preverja se v routerju).
     razred je neobvezen — rezervacija je lahko brez razreda (npr. za sestanek).
     """
     date: date
-    hour: int = Field(..., ge=0, le=7)
+    hour: int = Field(..., ge=0, le=23)
     prostor: str
     razred: Optional[str] = None
     teacher_id: int
@@ -64,7 +66,7 @@ class WeeklySeriesCreate(BaseModel):
     weekday = 0 (ponedeljek), hour = 0, date_from = 1.9., date_to = 30.6.
     """
     prostor: str
-    hour: int = Field(..., ge=0, le=7)
+    hour: int = Field(..., ge=0, le=23, description="Ura; zgornjo mejo določa urnik šole (router).")
     weekday: int = Field(..., ge=0, le=6, description="0=ponedeljek ... 6=nedelja (Python weekday())")
     date_from: date
     date_to: date

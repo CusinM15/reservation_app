@@ -6,6 +6,8 @@
 from datetime import date, timedelta
 import json
 
+from app.database import SessionLocal
+from app.models import SchoolSetting
 from tests.conftest import login
 
 FUTURE = (date.today() + timedelta(days=7)).isoformat()
@@ -99,7 +101,32 @@ def test_past_date_rejected(client, make_user):
 def test_invalid_hour_rejected(client, make_user):
     u = make_user()
     login(client, u.username)
-    _create(client, {"date": FUTURE, "hour": 8, "prostor": "ladja", "razred": "5.a"}, expected=422)
+    # Privzeti urnik šole ima ure 0–7, zato je ura 8 neveljavna. Zdaj jo zavrne
+    # router (_validate_hour) s 400 — prej jo je Pydantic s 422, a meja je zdaj
+    # dinamična (šola lahko v urniku doda popoldansko uro).
+    r = _create(client, {"date": FUTURE, "hour": 8, "prostor": "ladja", "razred": "5.a"}, expected=400)
+    assert "med 0 in" in r.json()["detail"]
+
+
+def test_afternoon_hour_allowed_when_in_schedule(client, make_user):
+    """Če ima šola v urniku dodano popoldansko uro (ključ 8), je rezervacija zanjo OK."""
+    u = make_user()
+    login(client, u.username)
+    sched = ('{"0":"7.00 - 7.45","1":"7.50 - 8.35","2":"8.40 - 9.25","3":"9.30 - 10.15",'
+             '"4":"10.25 - 11.10","5":"11.15 - 12.00","6":"12.05 - 12.50","7":"12.55 - 13.40",'
+             '"8":"POPOLDAN"}')
+    db = SessionLocal()
+    try:
+        row = db.query(SchoolSetting).filter_by(school_id=u.school_id, key="SCHEDULE").first()
+        if row:
+            row.value = sched
+        else:
+            db.add(SchoolSetting(school_id=u.school_id, key="SCHEDULE", value=sched))
+        db.commit()
+    finally:
+        db.close()
+    r = _create(client, {"date": FUTURE, "hour": 8, "prostor": "ladja", "razred": "5.a"})
+    assert r.json()["hour"] == 8
 
 
 def test_invalid_prostor_rejected(client, make_user):

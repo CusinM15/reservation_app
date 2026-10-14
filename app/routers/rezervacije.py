@@ -71,10 +71,31 @@ def _validate_razred(razred: str, config: SchoolConfig):
         raise HTTPException(status_code=400, detail=f"Neveljaven razred: {razred}")
 
 
-def _validate_hour(hour: int):
-    """Preveri, ali je ura v veljavnem obsegu (0-7)."""
-    if hour < 0 or hour > 7:
-        raise HTTPException(status_code=400, detail="Ura mora biti med 0 in 7")
+def _schedule_max_hour(config: SchoolConfig | None) -> int:
+    """Najvišja dovoljena ura = največji ključ v urniku šole, a vsaj 7.
+
+    Zakaj dinamično? Šola lahko v urniku doda POPOLDANSKO uro (npr. ključ 8),
+    zato sta trdi meji 0–7 napačni. Vzamemo max številskih ključev urnika;
+    če urnik ni na voljo ali nima ključev, ostane 7 (obstoječe vedenje).
+    """
+    max_hour = 7
+    try:
+        keys = (config.SCHEDULE or {}).keys() if config is not None else []
+    except Exception:
+        keys = []
+    for k in keys:
+        try:
+            max_hour = max(max_hour, int(str(k).strip()))
+        except (TypeError, ValueError):
+            continue
+    return max_hour
+
+
+def _validate_hour(hour: int, config: SchoolConfig | None = None):
+    """Preveri, ali je ura v veljavnem obsegu (0 do najvišje ure v urniku šole)."""
+    upper = _schedule_max_hour(config)
+    if hour < 0 or hour > upper:
+        raise HTTPException(status_code=400, detail=f"Ura mora biti med 0 in {upper}")
 
 
 def _check_tablice_capacity(db: Session, school_id: int | None, config: SchoolConfig,
@@ -195,7 +216,7 @@ def create_rezervacija(data: ReservationCreate, request: Request, db: Session = 
     _validate_prostor(data.prostor, config)
     if data.razred:
         _validate_razred(data.razred, config)
-    _validate_hour(data.hour)
+    _validate_hour(data.hour, config)
 
     # Datum ne sme biti v preteklosti — UI to prepreči, API pa mora
     # enako preveriti (drugače lahko kdo ustvari rezervacijo za nazaj).
@@ -488,7 +509,7 @@ def _commit_series(
     """
     _validate_prostor(prostor, config)
     for _, h in planned:
-        _validate_hour(h)
+        _validate_hour(h, config)
     if config.ima_kolicino(prostor) and qty is None:
         raise HTTPException(
             status_code=400,
@@ -626,9 +647,10 @@ def create_full_day_series(
     if data.date_from < date.today():
         raise HTTPException(status_code=400, detail="date_from ne sme biti v preteklosti.")
 
-    hours = data.hours if data.hours else list(range(0, 8))
+    _max_hour = _schedule_max_hour(config)
+    hours = data.hours if data.hours else list(range(0, _max_hour + 1))
     for h in hours:
-        if h < 0 or h > 7:
+        if h < 0 or h > _max_hour:
             raise HTTPException(status_code=400, detail=f"Neveljavna ura: {h}")
 
     planned: list[tuple[DateType, int]] = []

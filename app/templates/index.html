@@ -1052,10 +1052,21 @@
     // da popoldanske ure (6, 7) NISO skrite, tudi če v urniku šole še
     // niso vpisane. Prej se je seznam gradil samo iz ključev urnika, zato
     // popoldanskih ur ni bilo mogoče izbrati, če urnik ni imel vrstice 6/7.
+    // Najvišja ura, ki jo pozna urnik (a vsaj 7). Šola lahko doda popoldansko
+    // uro (npr. ključ 8 = »POPOLDAN«), zato meja ni trdo 7.
+    function maxScheduleHour() {
+      const sc = (schedule && typeof schedule === 'object') ? schedule : {};
+      let m = 7;
+      Object.keys(sc).forEach(function (k) {
+        const n = parseInt(k, 10);
+        if (!isNaN(n)) m = Math.max(m, n);
+      });
+      return m;
+    }
     function allHours() {
       const sc = (schedule && typeof schedule === 'object') ? schedule : {};
       const out = [];
-      for (let h = 0; h <= 7; h++) {
+      for (let h = 0; h <= maxScheduleHour(); h++) {
         const key = String(h);
         const raw = sc[key];
         const label = (raw !== undefined && raw !== null && String(raw).trim() !== '')
@@ -2131,6 +2142,9 @@
       populateOcRazredi('oc-razred', razredi, true);
       populateOcRazredi('oc-form-razred', razredi);
       populateHours('rez-form-hour');
+      // Meja za tedensko serijo naj sledi urniku (šola lahko doda popoldansko uro).
+      const wh = document.getElementById('weekly-hour');
+      if (wh) wh.max = String(maxScheduleHour());
 
       // ZAGOTOVI trenen teden (prepreči ponovitev starega 2027)
       const monday = getMonday(new Date());
