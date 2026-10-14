@@ -156,9 +156,9 @@
                 <div id="prostori-rows"></div>
                 <button type="button" class="btn" style="margin-top:8px;" onclick="addProstorRow(); return false;">{{ t('set_dodaj_prostor', '＋ Dodaj prostor') }}</button>
                 <div class="hint" style="margin-top:6px;">
-                    {{ t('set_hint_prostori_1', 'Kljukica') }} <strong>{{ t('set_lbl_stevilo_q', '»število«') }}</strong> {{ t('set_hint_prostori_2', 'pomeni: v tem prostoru lahko hkrati rezervira več učiteljev, vsak navede količino, skupna vsota na uro pa je omejena z izbrano številsko spremenljivko. Brez kljukice je prostor ekskluziven — ena rezervacija na uro.') }}
-                    <br>
                     {{ t('set_hint_prostori_popoldan', 'Kljukica') }} <strong>{{ t('set_lbl_popoldan_q', '»popoldanski urnik«') }}</strong> {{ t('set_hint_prostori_popoldan_2', 'pomeni: ta prostor uporablja Urnik – popoldan (npr. 15:00–21:00) namesto Urnika – dopoldan.') }}
+                    <br>
+                    {{ t('set_hint_prostori_1', 'Kljukica') }} <strong>{{ t('set_lbl_stevilo_q', '»število«') }}</strong> {{ t('set_hint_prostori_2', 'pomeni: v tem prostoru lahko hkrati rezervira več učiteljev, vsak navede količino, skupna vsota na uro pa je omejena z izbrano številsko spremenljivko. Brez kljukice je prostor ekskluziven — ena rezervacija na uro.') }}
                     <br>
                     Primer: <code>tablice</code> {{ t('set_hint_prostori_3', 's kljukico in spremenljivko') }} <code>Število tablic</code>,
                     <code>racunalnica</code> {{ t('set_hint_prostori_5', 'brez.') }}
@@ -444,14 +444,14 @@
         return `<div class="prostor-row" style="display:flex;gap:10px;align-items:center;margin-bottom:6px;flex-wrap:wrap;">
             <input type="text" class="prostor-name" value="${escAttr(name)}" placeholder="{{ t('set_ph_prostor', 'npr. tablice') }}" style="max-width:220px;">
             <label style="display:flex;align-items:center;gap:6px;font-size:13px;font-weight:400;margin:0;">
+              <input type="checkbox" class="prostor-popoldan"${popChecked}>
+              {{ t('set_lbl_popoldan', 'popoldanski urnik') }}
+            </label>
+            <label style="display:flex;align-items:center;gap:6px;font-size:13px;font-weight:400;margin:0;">
               <input type="checkbox" class="prostor-stevilo"${checked} onchange="toggleProstorStevilo(this)">
               {{ t('set_lbl_stevilo', 'število') }}
             </label>
             <select class="prostor-stevilo-name" data-bound="${escAttr(stevilo)}"${stevilo ? '' : ' style="display:none;"'}></select>
-            <label style="display:flex;align-items:center;gap:6px;font-size:13px;font-weight:400;margin:0;">
-              <input type="checkbox" class="prostor-popoldan"${popChecked}>
-              {{ t('set_lbl_popoldan', 'popoldanski urnik') }}
-            </label>
             <button type="button" class="btn btn-cancel" style="padding:6px 10px;"
                     onclick="this.closest('.prostor-row').remove(); return false;"
                     title="Odstrani prostor">✕</button>
