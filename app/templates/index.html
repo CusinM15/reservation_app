@@ -1047,10 +1047,26 @@
       if (devetke.length) { if (id !== 'oc-razred') html += '<option value="" disabled style="font-weight:bold;background:#eee;">— 9. razred —</option>'; devetke.forEach(r => html += `<option value="${r}">${r}</option>`); }
       sel.innerHTML = html;
     }
+    // Vse ure 0–7 (0 = predura, 1–5 = dopoldan, 6–7 = popoldan).
+    // Uporabimo oznako iz urnika, če obstaja; sicer generično »ura N«,
+    // da popoldanske ure (6, 7) NISO skrite, tudi če v urniku šole še
+    // niso vpisane. Prej se je seznam gradil samo iz ključev urnika, zato
+    // popoldanskih ur ni bilo mogoče izbrati, če urnik ni imel vrstice 6/7.
+    function allHours() {
+      const out = [];
+      for (let h = 0; h <= 7; h++) {
+        const key = String(h);
+        const raw = schedule[key];
+        const label = (raw !== undefined && raw !== null && String(raw).trim() !== '')
+          ? String(raw) : ('ura ' + h);
+        out.push([key, label]);
+      }
+      return out;
+    }
     // Napolni <select> z urami urnika (pridobljenimi s strežnika).
     function populateHours(id) {
       const sel = document.getElementById(id);
-      sel.innerHTML = Object.entries(schedule).map(([k,v]) => `<option value="${k}">${k}: ${v}</option>`).join('');
+      sel.innerHTML = allHours().map(([k,v]) => `<option value="${k}">${k}: ${v}</option>`).join('');
     }
     // Prikaže sporočilo uporabniku v #msg div-u. type je lahko
     // 'error' (rdeče) ali 'success' (zeleno). Po 5 sekundah se
@@ -1720,7 +1736,7 @@
         <button class="btn btn-sm btn-outline" onclick="shiftWeek(7)">{{ t('cal_naslednji_teden', 'Naslednji teden ›') }}</button>
       </div>`;
       const dayNames = ['Ponedeljek', 'Torek', 'Sreda', 'Četrtek', 'Petek'];
-      const hours = Object.entries(schedule);
+      const hours = allHours();
       html += `<table><thead><tr><th>{{ t('label_ura', 'Ura') }}</th>`;
       days.forEach((d,i) => { html += `<th>${dayNames[i]}<br><small>${formatDateSI(d)}</small></th>`; });
       html += `</thead><tbody>`;
