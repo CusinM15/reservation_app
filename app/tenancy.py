@@ -79,6 +79,11 @@ SCHOOL_SETTING_KEYS = [
     # Zgodovinski seznam prostorov »kot Tablice« (brez vezave na ime
     # spremenljivke). Bere se le, kadar PROSTORI_STEVILO še ni nastavljen.
     "PROSTORI_QTY",
+    # Popoldanski urnik (JSON ura → opis, npr. 15:00–21:00) in seznam
+    # prostorov, ki uporabljajo TA urnik (vejica-ločeno). Če je prostor v
+    # PROSTORI_POPOLDAN, se v UI prikažejo popoldanski termini.
+    "POPOLDAN_SCHEDULE",
+    "PROSTORI_POPOLDAN",
     "INACTIVITY_TIMEOUT_MINUTES",
     "INACTIVITY_TIMEOUT_ADMIN_MINUTES",
     "RESET_TOKEN_EXPIRATION_MINUTES",
@@ -335,6 +340,8 @@ def env_default_settings() -> dict:
         "ADMIN_EMAIL": settings.ADMIN_EMAIL,
         "TABLICE_MAX": str(settings.TABLICE_MAX),
         "SCHEDULE": json.dumps(settings.SCHEDULE, ensure_ascii=False),
+        "POPOLDAN_SCHEDULE": json.dumps(settings.POPOLDAN_SCHEDULE, ensure_ascii=False),
+        "PROSTORI_POPOLDAN": "",
         "RAZREDI": ",".join(settings.RAZREDI),
         "PROSTORI": ",".join(settings.PROSTORI),
         "INACTIVITY_TIMEOUT_MINUTES": str(settings.INACTIVITY_TIMEOUT_MINUTES),
@@ -531,6 +538,51 @@ class SchoolConfig:
     @property
     def SCHEDULE(self) -> dict:
         return self.get_dict("SCHEDULE", settings.SCHEDULE)
+
+    @property
+    def POPOLDAN_SCHEDULE(self) -> dict:
+        """Popoldanski urnik (ura → opis), privzeto termini 15:00–21:00."""
+        return self.get_dict("POPOLDAN_SCHEDULE", settings.POPOLDAN_SCHEDULE)
+
+    @property
+    def PROSTORI_POPOLDAN(self) -> list[str]:
+        """Prostori, ki uporabljajo POPOLDANSKI urnik (ne šolskega dopoldanskega)."""
+        return self.get_list("PROSTORI_POPOLDAN", [])
+
+    def je_popoldan(self, prostor: str | None) -> bool:
+        """Ali prostor uporablja popoldanski urnik."""
+        return bool(prostor) and str(prostor) in self.PROSTORI_POPOLDAN
+
+    def schedule_for(self, prostor: str | None) -> dict:
+        """Urnik (ura → opis) za dani prostor.
+
+        Če je prostor označen kot popoldanski (PROSTORI_POPOLDAN) in ima šola
+        popoldanski urnik, vrne tega; sicer vrne šolski (dopoldanski) urnik.
+        """
+        if prostor and self.je_popoldan(prostor):
+            sched = self.POPOLDAN_SCHEDULE
+            if sched:
+                return sched
+        return self.SCHEDULE
+
+    def max_hour(self, prostor: str | None = None) -> int:
+        """Najvišja dovoljena ura za prostor.
+
+        Popoldanski prostori: največji ključ POPOLDAN_SCHEDULE (npr. 5 = 20:00–21:00).
+        Ostali: največji ključ šolskega urnika, a vsaj 7 (ohrani obstoječe vedenje).
+        """
+        if self.je_popoldan(prostor) and self.POPOLDAN_SCHEDULE:
+            sched = self.POPOLDAN_SCHEDULE
+            top = 0
+        else:
+            sched = self.SCHEDULE
+            top = 7
+        for key in (sched or {}).keys():
+            try:
+                top = max(top, int(str(key).strip()))
+            except (TypeError, ValueError):
+                continue
+        return top
 
     # ── Kapaciteta in timeouti ───────────────────────────────────────
     @property

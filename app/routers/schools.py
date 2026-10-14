@@ -496,6 +496,16 @@ async def update_school_settings(school_id: int, request: Request, db: Session =
         if field["type"] == "lang" and str(values[key]).strip().lower() not in ("sl", "en"):
             raise HTTPException(status_code=400, detail=f"'{key}' mora biti 'sl' ali 'en'")
 
+    # POPOLDAN_SCHEDULE (ni v obrazcu polj, a ga pošlje UI): če je podan, mora
+    # biti veljaven JSON objekt (ura → opis).
+    if "POPOLDAN_SCHEDULE" in values and not isinstance(values["POPOLDAN_SCHEDULE"], dict):
+        try:
+            parsed_pop = _json.loads(values["POPOLDAN_SCHEDULE"] or "{}")
+        except (TypeError, ValueError):
+            raise HTTPException(status_code=400, detail="'POPOLDAN_SCHEDULE' mora biti veljaven JSON")
+        if not isinstance(parsed_pop, dict):
+            raise HTTPException(status_code=400, detail="'POPOLDAN_SCHEDULE' mora biti JSON objekt")
+
     # Seznam ali slovar se shrani kot JSON — za VSAKO nastavitev, tudi tisto,
     # ki ni v obrazcu (npr. PROSTORI_QTY je seznam prostorov »kot Tablice«).
     # Brez tega bi Python seznam shranili kot "['tablice']", kar ni berljivo.
@@ -931,10 +941,22 @@ def school_settings_page(
     # PROSTORI: vsak prostor v svoji vrstici + vezava na številsko spremenljivko
     # (kljukica »število« + spustni seznam imen iz STEVILA).
     prostori_stevilo = cfg.PROSTORI_STEVILO
+    popoldan_set = set(cfg.PROSTORI_POPOLDAN)
     prostori_rows = [
-        {"name": p, "stevilo": prostori_stevilo.get(p, "")}
+        {"name": p, "stevilo": prostori_stevilo.get(p, ""), "popoldan": p in popoldan_set}
         for p in cfg.PROSTORI
     ]
+
+    # POPOLDAN_SCHEDULE: enako kot URNIK, a za prostorske (popoldanske) termine
+    # (privzeto 15:00–21:00). Vrstice za uredejanje v UI.
+    popoldan_rows = []
+    try:
+        parsed_pop = _json.loads(values.get("POPOLDAN_SCHEDULE") or "{}")
+    except (TypeError, ValueError):
+        parsed_pop = {}
+    if isinstance(parsed_pop, dict):
+        for key in sorted(parsed_pop.keys(), key=_sort_key):
+            popoldan_rows.append({"index": str(key), "value": str(parsed_pop[key])})
 
     return templates.TemplateResponse("school_settings.html", {
             "request": request,
@@ -944,6 +966,7 @@ def school_settings_page(
         "fields": SCHOOL_SETTING_FIELDS,
         "values": values,
         "schedule_rows": schedule_rows,
+        "popoldan_rows": popoldan_rows,
         "prostori_rows": prostori_rows,
         "razredi_rows": razredi_rows,
         "stevila_rows": stevila_rows,

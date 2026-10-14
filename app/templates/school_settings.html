@@ -175,6 +175,18 @@
                 </div>
             </div>
 
+            <!-- POPOLDANSKI URNIK (POPOLDAN_SCHEDULE): termini za prostore,
+                 ki imajo spodaj kljukico »popoldan« (privzeto 15:00–21:00). -->
+            <div class="field">
+                <label>{{ t('set_popoldan_urnik', 'Popoldanski urnik') }}</label>
+                <span class="key">POPOLDAN_SCHEDULE</span>
+                <div id="popoldan-rows"></div>
+                <button type="button" class="btn" style="margin-top:8px;" onclick="addPopoldanRow(); return false;">{{ t('set_dodaj_uro', '＋ Dodaj uro') }}</button>
+                <div class="hint" style="margin-top:6px;">
+                    {{ t('set_hint_popoldan_1', 'Termini za prostore, označene z »popoldan« (privzeto 15:00–21:00). Npr.') }} <code>15:00-16:00</code>{{ t('set_hint_popoldan_2', '. Vrstico odstranite z ✕.') }}
+                </div>
+            </div>
+
             <h3>{{ t('set_pravila_ocenjevanja', 'Pravila ocenjevanja') }}</h3>
             <p class="hint">
                 {{ t('set_ocenjevanje_privzeto', 'Privzeto: največ 2 običajni ocenjevanji na teden, največ 1 na dan, izjema do 3 na teden, če je vmes ponavljanje, in prepoved 3 zaporednih dni.') }}
@@ -423,8 +435,9 @@
     // in PROSTORI_STEVILO (prostor → ime številske spremenljivke).
     const PROSTORI_ROWS = {{ prostori_rows|tojson }};
 
-    function prostorRowHtml(name, stevilo) {
+    function prostorRowHtml(name, stevilo, popoldan) {
         const checked = stevilo ? ' checked' : '';
+        const popChecked = popoldan ? ' checked' : '';
         return `<div class="prostor-row" style="display:flex;gap:10px;align-items:center;margin-bottom:6px;flex-wrap:wrap;">
             <input type="text" class="prostor-name" value="${escAttr(name)}" placeholder="{{ t('set_ph_prostor', 'npr. tablice') }}" style="max-width:220px;">
             <label style="display:flex;align-items:center;gap:6px;font-size:13px;font-weight:400;margin:0;">
@@ -432,6 +445,10 @@
               {{ t('set_lbl_stevilo', 'število') }}
             </label>
             <select class="prostor-stevilo-name" data-bound="${escAttr(stevilo)}"${stevilo ? '' : ' style="display:none;"'}></select>
+            <label style="display:flex;align-items:center;gap:6px;font-size:13px;font-weight:400;margin:0;">
+              <input type="checkbox" class="prostor-popoldan"${popChecked}>
+              {{ t('set_lbl_popoldan', 'popoldan') }}
+            </label>
             <button type="button" class="btn btn-cancel" style="padding:6px 10px;"
                     onclick="this.closest('.prostor-row').remove(); return false;"
                     title="Odstrani prostor">✕</button>
@@ -440,12 +457,12 @@
 
     function renderProstoriRows(rows) {
         document.getElementById('prostori-rows').innerHTML =
-            (rows || []).map(function (r) { return prostorRowHtml(r.name, r.stevilo); }).join('');
+            (rows || []).map(function (r) { return prostorRowHtml(r.name, r.stevilo, r.popoldan); }).join('');
         refreshSteviloOptions();
     }
 
     function addProstorRow() {
-        document.getElementById('prostori-rows').insertAdjacentHTML('beforeend', prostorRowHtml('', false));
+        document.getElementById('prostori-rows').insertAdjacentHTML('beforeend', prostorRowHtml('', false, false));
     }
 
     // Kljukica »število«: pokaži/skrij spustni seznam številskih spremenljivk.
@@ -456,11 +473,12 @@
         if (cb.checked) refreshSteviloOptions();
     }
 
-    // Vrne {prostori: "tablice,ladja", stevilo: {"tablice": "Število tablic"}, qty: ["tablice"]}
+    // Vrne {prostori: "tablice,ladja", stevilo: {"tablice": "Število tablic"}, qty: ["tablice"], popoldan: ["ladja"]}
     function collectProstori() {
         const names = [];
         const stevilo = {};
         const qty = [];
+        const popoldan = [];
         document.querySelectorAll('#prostori-rows .prostor-row').forEach(function (row) {
             const name = (row.querySelector('.prostor-name').value || '').trim();
             if (!name) return;
@@ -471,8 +489,10 @@
                 qty.push(name);
                 stevilo[name] = sel ? (sel.value || '') : '';
             }
+            const pop = row.querySelector('.prostor-popoldan');
+            if (pop && pop.checked && popoldan.indexOf(name) === -1) popoldan.push(name);
         });
-        return { prostori: names.join(','), stevilo: stevilo, qty: qty };
+        return { prostori: names.join(','), stevilo: stevilo, qty: qty, popoldan: popoldan };
     }
 
     renderProstoriRows(PROSTORI_ROWS);
@@ -522,6 +542,42 @@
     }
 
     renderScheduleRows(SCHEDULE_ROWS);
+
+    // ── Popoldanski urnik: enake vrstice kot URNIK, a svoj ključ ─────
+    const POPOLDAN_ROWS = {{ popoldan_rows|tojson }};
+    function popoldanRowHtml(index, value) {
+        const safe = (value || '').replace(/"/g, '&quot;');
+        return `<div class="popoldan-row" style="display:flex;gap:8px;align-items:center;margin-bottom:6px;">
+            <span style="font-weight:600;min-width:70px;">Ura ${index}</span>
+            <input type="text" class="popoldan-value" data-index="${index}" value="${safe}"
+                   placeholder="{{ t('set_ph_popoldan', 'npr. 15:00-16:00') }}" style="max-width:220px;">
+            <button type="button" class="btn btn-cancel" style="padding:6px 10px;"
+                    onclick="this.closest('.popoldan-row').remove(); return false;"
+                    title="Odstrani uro">✕</button>
+        </div>`;
+    }
+    function renderPopoldanRows(rows) {
+        document.getElementById('popoldan-rows').innerHTML =
+            (rows || []).map(r => popoldanRowHtml(r.index, r.value)).join('');
+    }
+    function addPopoldanRow() {
+        const used = Array.from(document.querySelectorAll('#popoldan-rows .popoldan-value'))
+            .map(i => parseInt(i.dataset.index, 10)).filter(n => !isNaN(n));
+        const next = used.length ? Math.max.apply(null, used) + 1 : 0;
+        document.getElementById('popoldan-rows').insertAdjacentHTML('beforeend', popoldanRowHtml(next, ''));
+    }
+    function collectPopoldanSchedule() {
+        const out = {};
+        document.querySelectorAll('#popoldan-rows .popoldan-row').forEach(function (row) {
+            const input = row.querySelector('.popoldan-value');
+            if (!input) return;
+            const idx = (input.dataset.index || '').trim();
+            const val = (input.value || '').trim();
+            if (idx !== '' && val !== '') out[idx] = val;
+        });
+        return out;
+    }
+    renderPopoldanRows(POPOLDAN_ROWS);
 
     function openModal(id) { document.getElementById(id).classList.add('active'); }
     function closeModal(id) { document.getElementById(id).classList.remove('active'); }
@@ -624,6 +680,11 @@
             return;
         }
         values['SCHEDULE'] = JSON.stringify(sched);
+
+        // Prostori, označeni z »popoldan« — uporabljajo POPOLDAN_SCHEDULE.
+        values['PROSTORI_POPOLDAN'] = pr.popoldan.join(',');
+        // Popoldanski urnik (sme biti prazen, če šola ne uporablja popoldanskih terminov).
+        values['POPOLDAN_SCHEDULE'] = JSON.stringify(collectPopoldanSchedule());
 
         const res = await fetch('/api/schools/' + SCHOOL_ID + '/settings', {
             method: 'PUT',

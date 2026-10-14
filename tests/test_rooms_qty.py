@@ -65,8 +65,9 @@ def test_settings_checkbox_follows_saved_setting(client, make_user):
     assert '"name": "racunalnica"' in html
     assert '"name": "ladja"' in html
     # prostori s kljukico imajo vezavo na spremenljivko, prostor brez pa ne
+    # (Jinja |tojson ključe izpiše po abecedi: name, popoldan, stevilo)
     assert '"stevilo": "\\u0160tevilo tablic"' in html, "prostor s kljukico nima vezave"
-    assert '"name": "racunalnica", "stevilo": ""' in html, "prostor brez kljukice ne sme imeti vezave"
+    assert '"name": "racunalnica", "popoldan": false, "stevilo": ""' in html, "prostor brez kljukice ne sme imeti vezave"
 
 
 def test_rooms_and_qty_round_trip(client, make_user):

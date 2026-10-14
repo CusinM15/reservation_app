@@ -65,6 +65,20 @@ class Settings:
     # Uporablja se za prikaz v UI in za izvoze CSV.
     SCHEDULE = json.loads(os.getenv("SCHEDULE", "{}"))
 
+    # ── Popoldanski urnik (POPOLDAN_SCHEDULE) ───────────────────────
+    # JSON objekt ura → opis, privzeto urni termini 15:00–21:00. Uporabi se
+    # za prostore, ki so v nastavitvi PROSTORI_POPOLDAN označeni kot popoldanski.
+    # Ključi so enaki kot pri SCHEDULE (0, 1, 2 …), zato je shranjevanje in
+    # prikaz rezervacij enako — spremenijo se le oznake ur.
+    POPOLDAN_SCHEDULE = json.loads(os.getenv("POPOLDAN_SCHEDULE", json.dumps({
+        "0": "15:00-16:00",
+        "1": "16:00-17:00",
+        "2": "17:00-18:00",
+        "3": "18:00-19:00",
+        "4": "19:00-20:00",
+        "5": "20:00-21:00",
+    }, ensure_ascii=False)))
+
     # ── Seznami razredov in prostorov ───────────────────────────────
     # Shranjeni kot vejica-ločen niz v okoljski spremenljivki.
     # Npr.: RAZREDI="1.a,1.b,2.a,2.b,3.a,..."

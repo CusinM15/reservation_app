@@ -798,6 +798,8 @@
     // Te spremenljivke se napolnijo ob zagonu (DOMContentLoaded)
     // in so dostopne vsem funkcijam v tem bloku.
     let schedule = {};       // Urnik (ure → oznake)
+    let popoldanSchedule = {};   // Popoldanski urnik (ure → oznake, npr. 15:00–21:00)
+    let popoldanProstori = [];   // Prostori, ki uporabljajo popoldanski urnik
     let razredi = [];        // Seznam razredov
     // Posebna skupina: ocenjevanja zanj se prikažejo ZRAVEN razredov od 6. do 9.
     // razreda (v zeleni znački), ker te učence poučuje drug program — a njihova
@@ -1047,26 +1049,37 @@
       if (devetke.length) { if (id !== 'oc-razred') html += '<option value="" disabled style="font-weight:bold;background:#eee;">— 9. razred —</option>'; devetke.forEach(r => html += `<option value="${r}">${r}</option>`); }
       sel.innerHTML = html;
     }
-    // Vse ure 0–7 (0 = predura, 1–5 = dopoldan, 6–7 = popoldan).
-    // Uporabimo oznako iz urnika, če obstaja; sicer generično »ura N«,
-    // da popoldanske ure (6, 7) NISO skrite, tudi če v urniku šole še
-    // niso vpisane. Prej se je seznam gradil samo iz ključev urnika, zato
-    // popoldanskih ur ni bilo mogoče izbrati, če urnik ni imel vrstice 6/7.
-    // Najvišja ura, ki jo pozna urnik (a vsaj 7). Šola lahko doda popoldansko
-    // uro (npr. ključ 8 = »POPOLDAN«), zato meja ni trdo 7.
-    function maxScheduleHour() {
-      const sc = (schedule && typeof schedule === 'object') ? schedule : {};
-      let m = 7;
-      Object.keys(sc).forEach(function (k) {
-        const n = parseInt(k, 10);
-        if (!isNaN(n)) m = Math.max(m, n);
-      });
-      return m;
+    // ── Ure glede na prostor ──────────────────────────────────────────
+    // Prostor je lahko označen kot POPOLDANSKI (PROSTORI_POPOLDAN): takrat se
+    // prikaže popoldanski urnik (npr. 15:00–21:00). Ostali uporabljajo šolski
+    // urnik — a vedno vsaj ure 0–7, da npr. popoldanska ura (ključ 8 = POPOLDAN)
+    // ni skrita.
+    function jePopoldan(prostor) {
+      return !!prostor && popoldanProstori.indexOf(prostor) !== -1;
     }
-    function allHours() {
-      const sc = (schedule && typeof schedule === 'object') ? schedule : {};
+    // Urnik (ura → oznaka) za dani prostor.
+    function scheduleFor(prostor) {
+      if (jePopoldan(prostor) && popoldanSchedule && Object.keys(popoldanSchedule).length) {
+        return popoldanSchedule;
+      }
+      return (schedule && typeof schedule === 'object') ? schedule : {};
+    }
+    // Ure za prostor kot seznam [ključ, oznaka].
+    //  - popoldanski prostor: natanko ure iz popoldanskega urnika (npr. 0..5)
+    //  - ostali: vsaj 0..7 + vse dodatne ure iz šolskega urnika (npr. 8)
+    function allHours(prostor) {
+      const sc = scheduleFor(prostor) || {};
+      const keys = Object.keys(sc).map(function (k) { return parseInt(k, 10); })
+        .filter(function (n) { return !isNaN(n); });
+      let maxH;
+      if (jePopoldan(prostor) && keys.length) {
+        maxH = Math.max.apply(null, keys);
+      } else {
+        maxH = 7;
+        keys.forEach(function (n) { maxH = Math.max(maxH, n); });
+      }
       const out = [];
-      for (let h = 0; h <= maxScheduleHour(); h++) {
+      for (let h = 0; h <= maxH; h++) {
         const key = String(h);
         const raw = sc[key];
         const label = (raw !== undefined && raw !== null && String(raw).trim() !== '')
@@ -1075,10 +1088,18 @@
       }
       return out;
     }
-    // Napolni <select> z urami urnika (pridobljenimi s strežnika).
-    function populateHours(id) {
+    // Napolni <select> z urami urnika — glede na izbrani prostor.
+    function populateHours(id, prostor) {
       const sel = document.getElementById(id);
-      sel.innerHTML = allHours().map(([k,v]) => `<option value="${k}">${k}: ${v}</option>`).join('');
+      if (!sel) return;
+      const prev = sel.value;
+      sel.innerHTML = allHours(prostor).map(([k,v]) => `<option value="${k}">${k}: ${v}</option>`).join('');
+      if (prev && sel.querySelector('option[value="' + prev + '"]')) sel.value = prev;
+    }
+    // Najvišja ura za prostor (za max pri ročnem vnosu ure v seriji).
+    function maxHourFor(prostor) {
+      const hrs = allHours(prostor);
+      return hrs.length ? parseInt(hrs[hrs.length - 1][0], 10) : 7;
     }
     // Prikaže sporočilo uporabniku v #msg div-u. type je lahko
     // 'error' (rdeče) ali 'success' (zeleno). Po 5 sekundah se
@@ -1748,7 +1769,7 @@
         <button class="btn btn-sm btn-outline" onclick="shiftWeek(7)">{{ t('cal_naslednji_teden', 'Naslednji teden ›') }}</button>
       </div>`;
       const dayNames = ['Ponedeljek', 'Torek', 'Sreda', 'Četrtek', 'Petek'];
-      const hours = allHours();
+      const hours = allHours(prostor);
       html += `<table><thead><tr><th>{{ t('label_ura', 'Ura') }}</th>`;
       days.forEach((d,i) => { html += `<th>${dayNames[i]}<br><small>${formatDateSI(d)}</small></th>`; });
       html += `</thead><tbody>`;
@@ -2083,11 +2104,19 @@
     // 7. Zažene začetno nalaganje: rezervacije, zasedeni datumi,
     //    ocenjevanja.
     document.addEventListener('DOMContentLoaded', async () => {
-      const [schedRes, razRes, proRes, qtyProRes, meRes] = await Promise.all([
-        fetch('/api/schedule'), fetch('/api/razredi'), fetch('/api/prostori'),
+      const [schedRes, popRes, razRes, proRes, qtyProRes, meRes] = await Promise.all([
+        fetch('/api/schedule'), fetch('/api/popoldan'), fetch('/api/razredi'), fetch('/api/prostori'),
         fetch('/api/prostori-qty'), fetch('/auth/me')
       ]);
       schedule = await schedRes.json();
+      // Popoldanski urnik + prostori, ki ga uporabljajo (za prikaz 15:00–21:00).
+      try {
+        const pop = await popRes.json();
+        if (pop && typeof pop === 'object') {
+          popoldanSchedule = (pop.schedule && typeof pop.schedule === 'object') ? pop.schedule : {};
+          popoldanProstori = Array.isArray(pop.prostori) ? pop.prostori : [];
+        }
+      } catch (e) { popoldanSchedule = {}; popoldanProstori = []; }
       razredi = await razRes.json();
       prostori = await proRes.json();
       // Kateri prostori so »kot Tablice« + kapaciteta na uro — iz nastavitev šole.
@@ -2141,10 +2170,10 @@
       populateSelect('fullday-prostor', prostori);
       populateOcRazredi('oc-razred', razredi, true);
       populateOcRazredi('oc-form-razred', razredi);
-      populateHours('rez-form-hour');
-      // Meja za tedensko serijo naj sledi urniku (šola lahko doda popoldansko uro).
+      populateHours('rez-form-hour', document.getElementById('rez-form-prostor').value);
+      // Meja za ročni vnos ure v seriji naj sledi urniku izbranega prostora.
       const wh = document.getElementById('weekly-hour');
-      if (wh) wh.max = String(maxScheduleHour());
+      if (wh) wh.max = String(maxHourFor(document.getElementById('weekly-prostor').value));
 
       // ZAGOTOVI trenen teden (prepreči ponovitev starega 2027)
       const monday = getMonday(new Date());
@@ -2176,6 +2205,8 @@
           inp.max = String(qtyLimit(e.target.value));
           if ((parseInt(inp.value, 10) || 1) > qtyLimit(e.target.value)) inp.value = '1';
         }
+        // Ure se razlikujejo po prostoru (popoldanski prostor → 15:00–21:00).
+        populateHours('rez-form-hour', e.target.value);
       });
       document.getElementById('rez-form-prostor').dispatchEvent(new Event('change'));
 
@@ -2184,6 +2215,8 @@
       weeklyProstor.addEventListener('change', () => {
         document.getElementById('weekly-qty-group').style.display = QTY_ROOMS.has(weeklyProstor.value) ? 'block' : 'none';
         fillQtyOptions(document.getElementById('weekly-qty'), weeklyProstor.value);
+        const whEl = document.getElementById('weekly-hour');
+        if (whEl) whEl.max = String(maxHourFor(weeklyProstor.value));
       });
       fulldayProstor.addEventListener('change', () => {
         document.getElementById('fullday-qty-group').style.display = QTY_ROOMS.has(fulldayProstor.value) ? 'block' : 'none';

@@ -369,6 +369,16 @@ def get_prostori_qty(request: Request, db: Session = Depends(get_db)):
 def get_schedule(request: Request, db: Session = Depends(get_db)):
     return config_for_request(request, db).SCHEDULE
 
+@app.get("/api/popoldan")
+def get_popoldan(request: Request, db: Session = Depends(get_db)):
+    """Popoldanski urnik + prostori, ki ga uporabljajo.
+
+    Frontend iz tega ve, kateri prostori naj prikažejo popoldanske termine
+    (npr. 15:00–21:00) namesto šolskega (dopoldanskega) urnika.
+    """
+    cfg = config_for_request(request, db)
+    return {"schedule": cfg.POPOLDAN_SCHEDULE, "prostori": cfg.PROSTORI_POPOLDAN}
+
 # ── Zgodovina (audit log za admina) ──────────────────────────────────
 # Prikaže HTML stran z audit logom, vendar samo če je prijavljeni
 # uporabnik admin. Če ni, vrne 403 Forbidden.

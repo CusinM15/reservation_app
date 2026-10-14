@@ -71,29 +71,25 @@ def _validate_razred(razred: str, config: SchoolConfig):
         raise HTTPException(status_code=400, detail=f"Neveljaven razred: {razred}")
 
 
-def _schedule_max_hour(config: SchoolConfig | None) -> int:
-    """Najvišja dovoljena ura = največji ključ v urniku šole, a vsaj 7.
+def _schedule_max_hour(config: SchoolConfig | None, prostor: str | None = None) -> int:
+    """Najvišja dovoljena ura za prostor (urnik šole ALI popoldanski urnik).
 
-    Zakaj dinamično? Šola lahko v urniku doda POPOLDANSKO uro (npr. ključ 8),
-    zato sta trdi meji 0–7 napačni. Vzamemo max številskih ključev urnika;
-    če urnik ni na voljo ali nima ključev, ostane 7 (obstoječe vedenje).
+    Zakaj dinamično? Urnik šole lahko vsebuje dodatne ure (npr. ključ 8 =
+    »POPOLDAN«), popoldanski prostori pa uporabljajo POPOLDAN_SCHEDULE
+    (15:00–21:00). Trda meja 0–7 bi zato rezala veljavne ure.
     """
-    max_hour = 7
-    try:
-        keys = (config.SCHEDULE or {}).keys() if config is not None else []
-    except Exception:
-        keys = []
-    for k in keys:
+    if config is not None:
         try:
-            max_hour = max(max_hour, int(str(k).strip()))
-        except (TypeError, ValueError):
-            continue
-    return max_hour
+            return config.max_hour(prostor)
+        except Exception:
+            pass
+    # Rezerva (brez configa): vsaj 7.
+    return 7
 
 
-def _validate_hour(hour: int, config: SchoolConfig | None = None):
-    """Preveri, ali je ura v veljavnem obsegu (0 do najvišje ure v urniku šole)."""
-    upper = _schedule_max_hour(config)
+def _validate_hour(hour: int, config: SchoolConfig | None = None, prostor: str | None = None):
+    """Preveri, ali je ura v veljavnem obsegu (0 do najvišje ure urnika za prostor)."""
+    upper = _schedule_max_hour(config, prostor)
     if hour < 0 or hour > upper:
         raise HTTPException(status_code=400, detail=f"Ura mora biti med 0 in {upper}")
 
@@ -216,7 +212,7 @@ def create_rezervacija(data: ReservationCreate, request: Request, db: Session = 
     _validate_prostor(data.prostor, config)
     if data.razred:
         _validate_razred(data.razred, config)
-    _validate_hour(data.hour, config)
+    _validate_hour(data.hour, config, data.prostor)
 
     # Datum ne sme biti v preteklosti — UI to prepreči, API pa mora
     # enako preveriti (drugače lahko kdo ustvari rezervacijo za nazaj).
@@ -419,7 +415,7 @@ def _resolve_conflicts_and_notify(
                 teacher = res.teacher
                 date_str = d.strftime("%d.%m.%Y")
                 hour_key = str(h)
-                hour_label = config.SCHEDULE.get(hour_key, f"ura {h}")
+                hour_label = config.schedule_for(prostor).get(hour_key, f"ura {h}")
                 log_audit(
                     db, user_id=creator_id, username=creator_name, action="delete",
                     details=f"Avtomatsko izbrisana rezervacija (serija id={res.id}): tablice, {d}, {h}. ura",
@@ -448,7 +444,7 @@ def _resolve_conflicts_and_notify(
                 teacher = existing.teacher
                 date_str = d.strftime("%d.%m.%Y")
                 hour_key = str(h)
-                hour_label = config.SCHEDULE.get(hour_key, f"ura {h}")
+                hour_label = config.schedule_for(prostor).get(hour_key, f"ura {h}")
                 prostor_label = {"tablice": "tablice", "racunalnica": "računalnico", "ladja": "ladjo"}.get(prostor, prostor)
                 db.delete(existing)
                 log_audit(
@@ -509,7 +505,7 @@ def _commit_series(
     """
     _validate_prostor(prostor, config)
     for _, h in planned:
-        _validate_hour(h, config)
+        _validate_hour(h, config, prostor)
     if config.ima_kolicino(prostor) and qty is None:
         raise HTTPException(
             status_code=400,
@@ -647,7 +643,7 @@ def create_full_day_series(
     if data.date_from < date.today():
         raise HTTPException(status_code=400, detail="date_from ne sme biti v preteklosti.")
 
-    _max_hour = _schedule_max_hour(config)
+    _max_hour = _schedule_max_hour(config, data.prostor)
     hours = data.hours if data.hours else list(range(0, _max_hour + 1))
     for h in hours:
         if h < 0 or h > _max_hour:
@@ -885,7 +881,7 @@ def export_rezervacije_csv(
             if r.teacher:
                 full = f"{r.teacher.first_name} {r.teacher.last_name}".strip()
                 teacher_name = full if full else r.teacher.username
-        hour_label = config.SCHEDULE.get(str(r.hour), str(r.hour))
+        hour_label = config.schedule_for(r.prostor).get(str(r.hour), str(r.hour))
         writer.writerow([r.date, hour_label, r.prostor, teacher_name, r.razred or "", r.qty or "", r.id])
 
     from fastapi.responses import StreamingResponse
