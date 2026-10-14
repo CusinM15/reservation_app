@@ -157,6 +157,9 @@
                 <button type="button" class="btn" style="margin-top:8px;" onclick="addProstorRow(); return false;">{{ t('set_dodaj_prostor', '＋ Dodaj prostor') }}</button>
                 <div class="hint" style="margin-top:6px;">
                     {{ t('set_hint_prostori_1', 'Kljukica') }} <strong>{{ t('set_lbl_stevilo_q', '»število«') }}</strong> {{ t('set_hint_prostori_2', 'pomeni: v tem prostoru lahko hkrati rezervira več učiteljev, vsak navede količino, skupna vsota na uro pa je omejena z izbrano številsko spremenljivko. Brez kljukice je prostor ekskluziven — ena rezervacija na uro.') }}
+                    <br>
+                    {{ t('set_hint_prostori_popoldan', 'Kljukica') }} <strong>{{ t('set_lbl_popoldan_q', '»popoldanski urnik«') }}</strong> {{ t('set_hint_prostori_popoldan_2', 'pomeni: ta prostor uporablja Urnik – popoldan (npr. 15:00–21:00) namesto Urnika – dopoldan.') }}
+                    <br>
                     Primer: <code>tablice</code> {{ t('set_hint_prostori_3', 's kljukico in spremenljivko') }} <code>Število tablic</code>,
                     <code>racunalnica</code> {{ t('set_hint_prostori_5', 'brez.') }}
                 </div>
@@ -166,24 +169,24 @@
                  preprosto in pregledno. Ob shranjevanju se vrstice sestavijo
                  nazaj v JSON (ključ SCHEDULE). -->
             <div class="field">
-                <label>{{ t('set_urnik', 'Urnik') }}</label>
+                <label>{{ t('set_urnik', 'Urnik – dopoldan') }}</label>
                 <span class="key">SCHEDULE</span>
                 <div id="schedule-rows"></div>
                 <button type="button" class="btn" style="margin-top:8px;" onclick="addScheduleRow(); return false;">{{ t('set_dodaj_uro', '＋ Dodaj uro') }}</button>
                 <div class="hint" style="margin-top:6px;">
-                    {{ t('set_hint_urnik_1', 'V vsako vrstico vpišite razpon ure, npr.') }} <code>07:30-08:15</code>{{ t('set_hint_urnik_2', '. Vrstico odstranite z ✕. Ure se uporabljajo v urniku in pri rezervacijah.') }}
+                    {{ t('set_hint_urnik_1', 'V vsako vrstico vpišite razpon ure, npr.') }} <code>07:30-08:15</code>{{ t('set_hint_urnik_2', '. Vrstico odstranite z ✕. Ure se uporabljajo v urniku in pri rezervacijah (za prostore brez kljukice »popoldanski urnik«).') }}
                 </div>
             </div>
 
             <!-- POPOLDANSKI URNIK (POPOLDAN_SCHEDULE): termini za prostore,
-                 ki imajo spodaj kljukico »popoldan« (privzeto 15:00–21:00). -->
+                 ki imajo spodaj kljukico »popoldanski urnik« (privzeto 15:00–21:00). -->
             <div class="field">
-                <label>{{ t('set_popoldan_urnik', 'Popoldanski urnik') }}</label>
+                <label>{{ t('set_popoldan_urnik', 'Urnik – popoldan') }}</label>
                 <span class="key">POPOLDAN_SCHEDULE</span>
                 <div id="popoldan-rows"></div>
                 <button type="button" class="btn" style="margin-top:8px;" onclick="addPopoldanRow(); return false;">{{ t('set_dodaj_uro', '＋ Dodaj uro') }}</button>
                 <div class="hint" style="margin-top:6px;">
-                    {{ t('set_hint_popoldan_1', 'Termini za prostore, označene z »popoldan« (privzeto 15:00–21:00). Npr.') }} <code>15:00-16:00</code>{{ t('set_hint_popoldan_2', '. Vrstico odstranite z ✕.') }}
+                    {{ t('set_hint_popoldan_1', 'Termini za prostore s kljukico »popoldanski urnik« (privzeto po 1 uro od 15:00 do 21:00). Npr.') }} <code>15:00-16:00</code>{{ t('set_hint_popoldan_2', '. Vrstico odstranite z ✕.') }}
                 </div>
             </div>
 
@@ -447,7 +450,7 @@
             <select class="prostor-stevilo-name" data-bound="${escAttr(stevilo)}"${stevilo ? '' : ' style="display:none;"'}></select>
             <label style="display:flex;align-items:center;gap:6px;font-size:13px;font-weight:400;margin:0;">
               <input type="checkbox" class="prostor-popoldan"${popChecked}>
-              {{ t('set_lbl_popoldan', 'popoldan') }}
+              {{ t('set_lbl_popoldan', 'popoldanski urnik') }}
             </label>
             <button type="button" class="btn btn-cancel" style="padding:6px 10px;"
                     onclick="this.closest('.prostor-row').remove(); return false;"

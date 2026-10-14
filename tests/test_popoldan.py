@@ -71,3 +71,15 @@ def test_popoldan_schedule_saved_via_settings(client, make_user):
     vals = r.json()["values"]
     assert "ladja" in vals.get("PROSTORI_POPOLDAN", "")
     assert "15:00-16:00" in vals.get("POPOLDAN_SCHEDULE", "")
+
+
+def test_settings_page_has_afternoon_schedule_ui(client, make_user):
+    """Stran /settings ima razdelek »Urnik – popoldan« in kljukico po prostoru."""
+    admin = make_user(role="admin")
+    login(client, admin.username)
+    html = client.get("/settings").text
+    assert "Urnik – popoldan" in html
+    assert "Urnik – dopoldan" in html
+    assert 'id="popoldan-rows"' in html
+    assert "prostor-popoldan" in html
+
