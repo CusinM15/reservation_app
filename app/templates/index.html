@@ -1053,10 +1053,11 @@
     // niso vpisane. Prej se je seznam gradil samo iz ključev urnika, zato
     // popoldanskih ur ni bilo mogoče izbrati, če urnik ni imel vrstice 6/7.
     function allHours() {
+      const sc = (schedule && typeof schedule === 'object') ? schedule : {};
       const out = [];
       for (let h = 0; h <= 7; h++) {
         const key = String(h);
-        const raw = schedule[key];
+        const raw = sc[key];
         const label = (raw !== undefined && raw !== null && String(raw).trim() !== '')
           ? String(raw) : ('ura ' + h);
         out.push([key, label]);
