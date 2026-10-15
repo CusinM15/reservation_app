@@ -70,15 +70,15 @@
     <div class="container">
         <div class="nav">
             {% if is_main_admin %}<a href="/schools">{{ t('set_link_soles', 'Šole') }}</a>{% endif %}
-            <a href="/rezervacije">Aplikacija</a>
+            <a href="/rezervacije">{{ t('set_link_aplikacija', 'Aplikacija') }}</a>
             <a href="#" onclick="openModal('pw-modal'); return false;">{{ t('link_spremeni_geslo', 'Spremeni geslo') }}</a>
             <a href="/auth/logout">{{ t('btn_odjava', 'Odjava') }}</a>
         </div>
 
         <h2>{{ t('set_naslov', 'Nastavitve šole') }}: {{ school.name }}</h2>
         <p class="hint">
-            Oznaka: <strong>{{ school.slug }}</strong> &nbsp;|&nbsp;
-            Poti šole (klik odpre aplikacijo v tej šoli):
+            {{ t('set_oznaka', 'Oznaka:') }} <strong>{{ school.slug }}</strong> &nbsp;|&nbsp;
+            {{ t('set_poti_sole', 'Poti šole (klik odpre aplikacijo v tej šoli):') }}
             {% for a in school.aliases %}<a href="/{{ a }}"><code>/{{ a }}</code></a> {% endfor %}
         </p>
 
@@ -118,7 +118,7 @@
 
             {% for f in fields %}{% if f.key in ('INACTIVITY_TIMEOUT_MINUTES','INACTIVITY_TIMEOUT_ADMIN_MINUTES') %}
             <div class="field">
-                <label>{{ f.label }}</label>
+                <label>{{ t('setf_' ~ f.key, f.label) }}</label>
                 <span class="key">{{ f.key }}</span>
                 {% if f.type == 'csv' or f.type == 'json' %}
                 <textarea name="{{ f.key }}" rows="3">{{ values.get(f.key, '') }}</textarea>
@@ -196,7 +196,7 @@
             </p>
             {% for f in fields %}{% if f.key.startswith('ASSESSMENT_') %}
             <div class="field">
-                <label>{{ f.label }}</label>
+                <label>{{ t('setf_' ~ f.key, f.label) }}</label>
                 <span class="key">{{ f.key }}</span>
                 <input type="text" name="{{ f.key }}" value="{{ values.get(f.key, '') }}">
             </div>
@@ -205,13 +205,13 @@
             <h3>{{ t('set_eposta', 'E-pošta (SMTP)') }}</h3>
             {% for f in fields %}{% if f.key.startswith('MAIL_') or f.key in ('BACKUP_EMAIL','ADMIN_EMAIL') %}
             <div class="field">
-                <label>{{ f.label }}</label>
+                <label>{{ t('setf_' ~ f.key, f.label) }}</label>
                 <span class="key">{{ f.key }}</span>
                 {% if f.type == 'password' %}
                 {# Gesla NIKOLI ne izpisujemo v HTML (tudi ne predizpolnjeno).
                    Prazno polje ob shranjevanju pomeni »ohrani obstoječe geslo«. #}
                 <input type="password" name="{{ f.key }}" value=""
-                       placeholder="{% if values.get(f.key) %}••••••  (nastavljeno — pusti prazno za nespremenjeno){% else %}Geslo{% endif %}"
+                       placeholder="{% if values.get(f.key) %}{{ t('set_ph_geslo_nastavljeno', '••••••  (nastavljeno — pusti prazno za nespremenjeno)') }}{% else %}{{ t('set_ph_geslo', 'Geslo') }}{% endif %}"
                        autocomplete="new-password">
                 {% else %}
                 <input type="text" name="{{ f.key }}" value="{{ values.get(f.key, '') }}">
@@ -338,7 +338,7 @@
             <input type="text" class="razred-name" value="${escAttr(name)}" placeholder="{{ t('set_ph_razred', 'npr. 1. a') }}" style="max-width:220px;">
             <button type="button" class="btn btn-cancel" style="padding:6px 10px;"
                     onclick="this.closest('.razred-row').remove(); return false;"
-                    title="Odstrani razred">✕</button>
+                    title="{{ t('title_odstrani_razred', 'Odstrani razred') }}">✕</button>
         </div>`;
     }
 
@@ -374,7 +374,7 @@
             <input type="number" class="stevilo-value" value="${value == null ? '' : escAttr(value)}" min="0" placeholder="{{ t('set_ph_vrednost', 'npr. 28') }}" style="max-width:120px;">
             <button type="button" class="btn btn-cancel" style="padding:6px 10px;"
                     onclick="this.closest('.stevilo-row').remove(); refreshSteviloOptions(); return false;"
-                    title="Odstrani spremenljivko">✕</button>
+                    title="{{ t('title_odstrani_spremenljivko', 'Odstrani spremenljivko') }}">✕</button>
         </div>`;
     }
 
@@ -454,7 +454,7 @@
             <select class="prostor-stevilo-name" data-bound="${escAttr(stevilo)}"${stevilo ? '' : ' style="display:none;"'}></select>
             <button type="button" class="btn btn-cancel" style="padding:6px 10px;"
                     onclick="this.closest('.prostor-row').remove(); return false;"
-                    title="Odstrani prostor">✕</button>
+                    title="{{ t('title_odstrani_prostor', 'Odstrani prostor') }}">✕</button>
         </div>`;
     }
 
@@ -513,7 +513,7 @@
                    placeholder="{{ t('set_ph_ura', 'npr. 07:30-08:15') }}" style="max-width:220px;">
             <button type="button" class="btn btn-cancel" style="padding:6px 10px;"
                     onclick="this.closest('.sched-row').remove(); return false;"
-                    title="Odstrani to uro">✕</button>
+                    title="{{ t('title_odstrani_to_uro', 'Odstrani to uro') }}">✕</button>
         </div>`;
     }
 
@@ -556,7 +556,7 @@
                    placeholder="{{ t('set_ph_popoldan', 'npr. 15:00-16:00') }}" style="max-width:220px;">
             <button type="button" class="btn btn-cancel" style="padding:6px 10px;"
                     onclick="this.closest('.popoldan-row').remove(); return false;"
-                    title="Odstrani uro">✕</button>
+                    title="{{ t('title_odstrani_uro', 'Odstrani uro') }}">✕</button>
         </div>`;
     }
     function renderPopoldanRows(rows) {
@@ -754,8 +754,8 @@
             });
             html += '</tbody></table>';
             if ((data.missing || []).length) {
-                html += '<p style="margin:8px 0 0;">V kopiji ni bilo podatkov za: <strong>' +
-                        data.missing.join(', ') + '</strong> (te tabele so ostale nespremenjene).</p>';
+                html += '<p style="margin:8px 0 0;">{{ t('set_restore_missing', 'V kopiji ni bilo podatkov za: ') }}<strong>' +
+                        data.missing.join(', ') + '</strong>{{ t('set_restore_missing2', ' (te tabele so ostale nespremenjene).') }}</p>';
             }
             if (data.skipped_other_schools) {
                 html += '<p style="margin:8px 0 0;">{{ t('js_preskocenih', 'Preskočenih vrstic drugih šol: ') }}' +

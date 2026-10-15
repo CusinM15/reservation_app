@@ -126,7 +126,11 @@ def test_settings_page_translated(client, make_user):
     r = client.get("/settings")
     assert r.status_code == 200
     for napis in ("School settings", "Basic", "Interface language", "Classes", "Rooms", "Schedule",
-                  "Save settings", "School backup"):
+                  "Save settings", "School backup",
+                  # oznake polj (prej trdo SL v SCHOOL_SETTING_FIELDS)
+                  "Inactivity timeout — teachers (min)", "SMTP server", "SMTP password",
+                  "School admin email", "Assessments: max per week", "Assessments: max consecutive days",
+                  "Schedule – afternoon", "School paths (click opens the app for that school):"):
         assert napis in r.text, f"manjka angleški napis: {napis}"
 
 
