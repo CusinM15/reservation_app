@@ -101,7 +101,7 @@ app behaves for your school. Click **Save settings** after every change.
 ### Classes = groups from grade 1 to 9
 
 In the **Classes** field enter all of the school's classes (groups) — **from
-grade 1 to grade 9**. One class per row, e.g. `1. a`, `1. b`, `2. a`, … `9. č`.
+grade 1 to grade 9**. One class per row, e.g. `1.a`, `1.b`, `2.a`, … `9.č`.
 They are used in reservations, assessments and **activity days**, so they must be
 entered exactly the way the school uses them.
 

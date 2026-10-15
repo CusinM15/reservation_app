@@ -100,7 +100,7 @@ Na strani **⚙️ Nastavitve šole** uredite vse, kar določa delovanje za vaš
 ### Razredi = skupine od 1. do 9. razreda
 
 V polju **Razredi** vpišete vse oddelke (skupine) šole — **od 1. do 9. razreda**.
-Vsak razred v svojo vrstico, npr. `1. a`, `1. b`, `2. a`, … `9. č`. Uporabljajo se
+Vsak razred v svojo vrstico, npr. `1.a`, `1.b`, `2.a`, … `9.č`. Uporabljajo se
 pri rezervacijah, ocenjevanjih in **dnevih dejavnosti**, zato morajo biti vpisani
 točno tako, kot jih šola uporablja.
 

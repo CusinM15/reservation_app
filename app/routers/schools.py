@@ -696,9 +696,9 @@ def _demo_setup_items() -> list[dict]:
         },
         {
             "naslov": t('onb_razredi', 'Razredi'),
-            "opis": t('onb_razredi_d', 'Seznam oddelkov, vejica-ločeno (npr. 1. a, 2. a, 9. č).'),
+            "opis": t('onb_razredi_d', 'Seznam oddelkov, vejica-ločeno (npr. 1.a, 2.a, 9.č).'),
             "ok": True,
-            "trenutno": "1. a, 1. b, 2. a, 2. b, 3. a",
+            "trenutno": "1.a, 1.b, 2.a, 2.b, 3.a",
             "kje": "/settings",
             "kje_napis": t('onb_kje_nastavitve', 'Nastavitve šole'),
         },
@@ -833,7 +833,7 @@ def setup_guide_page(
         },
         {
             "naslov": t('onb_razredi', 'Razredi'),
-            "opis": t('onb_razredi_d', 'Seznam oddelkov, vejica-ločeno (npr. 1. a, 2. a, 9. č).'),
+            "opis": t('onb_razredi_d', 'Seznam oddelkov, vejica-ločeno (npr. 1.a, 2.a, 9.č).'),
             "ok": bool(cfg.RAZREDI),
             "trenutno": ", ".join(cfg.RAZREDI) if cfg.RAZREDI else "",
             "kje": "/settings",
