@@ -276,3 +276,24 @@ def test_dejavnosti_page_translated_to_english(client, make_user):
     # stari slovenski napisi naj ne nastopajo več kot sekcije/naslovi
     assert "PREGLED DEJAVNOSTI" not in html
     assert ">Akcije<" not in html
+
+
+def test_settings_hides_variable_keys_for_school_admin(client, make_user):
+    """Kode spremenljivk (UI_LANGUAGE, RAZREDI, …) so skrite šolskemu adminu."""
+    admin = make_user(role="admin")
+    login(client, admin.username)
+    html = client.get("/settings").text
+    assert '<span class="key">UI_LANGUAGE</span>' not in html
+    assert '<span class="key">RAZREDI</span>' not in html
+    assert '<span class="key">INACTIVITY_TIMEOUT_MINUTES</span>' not in html
+    assert '<span class="key">PROSTORI + PROSTORI_STEVILO</span>' not in html
+
+
+def test_settings_shows_variable_keys_for_main_admin(client, make_user):
+    """Glavni admin še vedno vidi kode spremenljivk."""
+    from app.config import settings
+    make_user()  # poskrbi, da je šola/uporabnik (bootstrap) na voljo
+    login(client, settings.MAIN_ADMIN_USERNAME, settings.MAIN_ADMIN_PASSWORD)
+    html = client.get("/settings").text
+    assert '<span class="key">UI_LANGUAGE</span>' in html
+    assert '<span class="key">RAZREDI</span>' in html

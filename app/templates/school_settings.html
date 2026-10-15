@@ -93,7 +93,7 @@
                  Napisi se berejo iz tabele ui_strings (glej app/i18n.py). -->
             <div class="field">
                 <label>{{ t('set_jezik', 'Jezik vmesnika') }}</label>
-                <span class="key">UI_LANGUAGE</span>
+                {% if is_main_admin %}<span class="key">UI_LANGUAGE</span>{% endif %}
                 <select name="UI_LANGUAGE" style="padding:8px 10px;border:1px solid #ddd;border-radius:5px;">
                     <option value="sl" {% if (values.get('UI_LANGUAGE') or 'sl') != 'en' %}selected{% endif %}>{{ t('set_opt_slovenščina', 'slovenščina') }}</option>
                     <option value="en" {% if values.get('UI_LANGUAGE') == 'en' %}selected{% endif %}>{{ t('set_opt_angleščina', 'angleščina') }}</option>
@@ -108,7 +108,7 @@
                  vrstice sestavijo nazaj v vejica-ločen seznam (ključ RAZREDI). -->
             <div class="field">
                 <label>{{ t('set_razredi', 'Razredi') }}</label>
-                <span class="key">RAZREDI</span>
+                {% if is_main_admin %}<span class="key">RAZREDI</span>{% endif %}
                 <div id="razredi-rows"></div>
                 <button type="button" class="btn" style="margin-top:8px;" onclick="addRazredRow(); return false;">{{ t('set_dodaj_razred', '＋ Dodaj razred') }}</button>
                 <div class="hint" style="margin-top:6px;">
@@ -119,7 +119,7 @@
             {% for f in fields %}{% if f.key in ('INACTIVITY_TIMEOUT_MINUTES','INACTIVITY_TIMEOUT_ADMIN_MINUTES') %}
             <div class="field">
                 <label>{{ t('setf_' ~ f.key, f.label) }}</label>
-                <span class="key">{{ f.key }}</span>
+                {% if is_main_admin %}<span class="key">{{ f.key }}</span>{% endif %}
                 {% if f.type == 'csv' or f.type == 'json' %}
                 <textarea name="{{ f.key }}" rows="3">{{ values.get(f.key, '') }}</textarea>
                 {% elif f.type == 'password' %}
@@ -137,7 +137,7 @@
                  sklicujejo prostori (kljukica »število« + spustni seznam). -->
             <div class="field">
                 <label>{{ t('set_stevila', 'Števila') }}</label>
-                <span class="key">STEVILA</span>
+                {% if is_main_admin %}<span class="key">STEVILA</span>{% endif %}
                 <div id="stevila-rows"></div>
                 <button type="button" class="btn" style="margin-top:8px;" onclick="addSteviloRow(); return false;">{{ t('set_dodaj_stevilo', '＋ Dodaj število') }}</button>
                 <div class="hint" style="margin-top:6px;">
@@ -152,7 +152,7 @@
                  spremenljivkami (STEVILA) — prostor se veže na izbrano. -->
             <div class="field">
                 <label>{{ t('set_prostori', 'Prostori') }}</label>
-                <span class="key">PROSTORI + PROSTORI_STEVILO</span>
+                {% if is_main_admin %}<span class="key">PROSTORI + PROSTORI_STEVILO</span>{% endif %}
                 <div id="prostori-rows"></div>
                 <button type="button" class="btn" style="margin-top:8px;" onclick="addProstorRow(); return false;">{{ t('set_dodaj_prostor', '＋ Dodaj prostor') }}</button>
                 <div class="hint" style="margin-top:6px;">
@@ -170,7 +170,7 @@
                  nazaj v JSON (ključ SCHEDULE). -->
             <div class="field">
                 <label>{{ t('set_urnik', 'Urnik – dopoldan') }}</label>
-                <span class="key">SCHEDULE</span>
+                {% if is_main_admin %}<span class="key">SCHEDULE</span>{% endif %}
                 <div id="schedule-rows"></div>
                 <button type="button" class="btn" style="margin-top:8px;" onclick="addScheduleRow(); return false;">{{ t('set_dodaj_uro', '＋ Dodaj uro') }}</button>
                 <div class="hint" style="margin-top:6px;">
@@ -182,7 +182,7 @@
                  ki imajo spodaj kljukico »popoldanski urnik« (privzeto 15:00–21:00). -->
             <div class="field">
                 <label>{{ t('set_popoldan_urnik', 'Urnik – popoldan') }}</label>
-                <span class="key">POPOLDAN_SCHEDULE</span>
+                {% if is_main_admin %}<span class="key">POPOLDAN_SCHEDULE</span>{% endif %}
                 <div id="popoldan-rows"></div>
                 <button type="button" class="btn" style="margin-top:8px;" onclick="addPopoldanRow(); return false;">{{ t('set_dodaj_uro', '＋ Dodaj uro') }}</button>
                 <div class="hint" style="margin-top:6px;">
@@ -197,7 +197,7 @@
             {% for f in fields %}{% if f.key.startswith('ASSESSMENT_') %}
             <div class="field">
                 <label>{{ t('setf_' ~ f.key, f.label) }}</label>
-                <span class="key">{{ f.key }}</span>
+                {% if is_main_admin %}<span class="key">{{ f.key }}</span>{% endif %}
                 <input type="text" name="{{ f.key }}" value="{{ values.get(f.key, '') }}">
             </div>
             {% endif %}{% endfor %}
@@ -206,7 +206,7 @@
             {% for f in fields %}{% if f.key.startswith('MAIL_') or f.key in ('BACKUP_EMAIL','ADMIN_EMAIL') %}
             <div class="field">
                 <label>{{ t('setf_' ~ f.key, f.label) }}</label>
-                <span class="key">{{ f.key }}</span>
+                {% if is_main_admin %}<span class="key">{{ f.key }}</span>{% endif %}
                 {% if f.type == 'password' %}
                 {# Gesla NIKOLI ne izpisujemo v HTML (tudi ne predizpolnjeno).
                    Prazno polje ob shranjevanju pomeni »ohrani obstoječe geslo«. #}
