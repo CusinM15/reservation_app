@@ -292,7 +292,7 @@ def test_main_admin_write_goes_to_selected_school(client, make_user):
     client.cookies.set("school_ctx", str(sid_b))
 
     r = client.post("/api/rezervacije", json={
-        "date": "2026-12-02", "hour": 1, "prostor": "tablice", "qty": 2, "teacher_id": 1,
+        "date": "2026-12-02", "hour": 1, "prostor": "Tablice", "qty": 2, "teacher_id": 1,
     })
     assert r.status_code in (200, 201), r.text
 

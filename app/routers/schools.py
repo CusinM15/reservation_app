@@ -21,7 +21,7 @@ from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.templating import Jinja2Templates
 
 from app.templating import make_templates
-from app.i18n import t
+from app.i18n import t, current_lang
 from sqlalchemy.orm import Session
 
 from app.database import get_db
@@ -176,17 +176,23 @@ def create_new_school(
     request: Request,
     name: str = Form(...),
     slug: str = Form(""),
+    lang: str = Form(""),
     db: Session = Depends(get_db),
 ):
     """Ustvari novo šolo (samo glavni admin).
 
     Aliasi se generirajo iz sluga (npr. "xyz" → /rezervacije_xyz in
-    /ocenjevanje_xyz), nastavitve pa se napolnijo iz privzetih vrednosti
-    (.env), da nova šola takoj deluje in jih šolski admin nato uredi.
+    /ocenjevanje_xyz), nastavitve pa se napolnijo iz privzetih vrednosti v
+    JEZIKU strani, na kateri je bila šola ustvarjena (»Nova šola« → sl,
+    »New school« → en): prostori Računalnica + Tablice (25), v angleščini
+    Computer room + Tablets (25). Jezik lahko poleg obrazca določi ?lang=.
     """
     admin = _require_main_admin(request, db)
+    _lang = (lang or request.query_params.get("lang") or "").strip().lower()[:2]
+    if _lang not in ("sl", "en"):
+        _lang = current_lang() or "sl"
     try:
-        school = create_school(db, name=name, slug=slug or None)
+        school = create_school(db, name=name, slug=slug or None, ui_language=_lang)
     except ValueError as exc:
         raise HTTPException(status_code=400, detail=str(exc))
 
@@ -576,6 +582,7 @@ def schools_page(request: Request, db: Session = Depends(get_db)):
             "schools": schools_data,
             "default_slug": slugify(schools_data[0]["name"]) if schools_data else "",
             "current_username": user.username,
+            "lang": current_lang() or "sl",
         })
 
 

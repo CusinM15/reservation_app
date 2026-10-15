@@ -195,7 +195,7 @@ def test_settings_renders_schedule_as_one_row_per_hour(client, make_user):
     assert '"index": "1", "value": "08:20-09:05"' in html
     assert '"index": "2", "value": "09:15-10:00"' in html
     assert "function addScheduleRow" in html and "function collectSchedule" in html
-    assert "<label>Urnik</label>" in html
+    assert "<label>Urnik – dopoldan</label>" in html
 
 
 def test_schedule_saved_from_ui_round_trips_as_json(client, make_user):

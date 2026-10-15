@@ -95,7 +95,7 @@ def test_main_admin_sees_data_of_all_schools(client, make_user):
     teacher_b = make_user(school_id=school_b.id)
     login(client, teacher_b.username)
     client.post("/api/rezervacije", json={
-        "date": MONDAY, "hour": 1, "prostor": "tablice", "qty": 5, "teacher_id": 999,
+        "date": MONDAY, "hour": 1, "prostor": "Tablice", "qty": 5, "teacher_id": 999,
     })
     client.post("/auth/logout")
 
@@ -163,7 +163,7 @@ def test_school_a_does_not_see_school_b_reservations(client, make_user):
     teacher_b = make_user(school_id=school_b.id)
     login(client, teacher_b.username)
     r = client.post("/api/rezervacije", json={
-        "date": MONDAY, "hour": 2, "prostor": "tablice", "qty": 4, "teacher_id": 999,
+        "date": MONDAY, "hour": 2, "prostor": "Tablice", "qty": 4, "teacher_id": 999,
     })
     assert r.status_code == 201, r.text
     b_reservation_id = r.json()["id"]
@@ -361,3 +361,48 @@ def test_default_assessment_rules_match_current_school_behaviour(client, make_us
         "razred": RAZRED, "date": friday, "ponavljanje": True, "teacher_id": 999,
     })
     assert r.status_code == 201, r.text
+
+
+# ── 6. Privzete nastavitve NOVE šole (jezikovno občutljive) ────────────
+
+def test_new_school_default_rooms_follow_language(client):
+    """Nova šola dobi majhen nabor prostorov v JEZIKU ustvarjanja:
+    Računalnica + Tablice (SL) oz. Computer room + Tablets (EN), tablice = 25."""
+    from uuid import uuid4
+    from app.tenancy import create_school, get_school_config
+
+    sfx = uuid4().hex[:6]
+    db = SessionLocal()
+    try:
+        s_en = create_school(db, name="Nova EN", slug=f"novaen{sfx}", ui_language="en")
+        s_sl = create_school(db, name="Nova SL", slug=f"novasl{sfx}", ui_language="sl")
+        en_id, sl_id = s_en.id, s_sl.id
+    finally:
+        db.close()
+
+    db = SessionLocal()
+    try:
+        cfg_en = get_school_config(db, en_id)
+        cfg_sl = get_school_config(db, sl_id)
+        assert cfg_en.get_str("UI_LANGUAGE", "sl") == "en"
+        assert cfg_sl.get_str("UI_LANGUAGE", "sl") == "sl"
+        assert cfg_en.PROSTORI == ["Computer room", "Tablets"], cfg_en.PROSTORI
+        assert cfg_sl.PROSTORI == ["Računalnica", "Tablice"], cfg_sl.PROSTORI
+        assert cfg_en.STEVILA.get("Number of tablets") == 25
+        assert cfg_sl.STEVILA.get("Število tablic") == 25
+        assert cfg_en.PROSTORI_STEVILO.get("Tablets") == "Number of tablets"
+        assert cfg_sl.PROSTORI_STEVILO.get("Tablice") == "Število tablic"
+    finally:
+        db.close()
+
+
+def test_existing_default_school_rooms_unchanged(client):
+    """Privzeta (obstoječa) šola obdrži svoje prostore iz .env — novi privzetki
+    veljajo le za NOVE šole (trenutnih šol se ne preimenuje)."""
+    from app.tenancy import get_school_config
+    db = SessionLocal()
+    try:
+        cfg = get_school_config(db, default_school_id())
+        assert "tablice" in cfg.PROSTORI
+    finally:
+        db.close()

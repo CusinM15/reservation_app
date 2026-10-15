@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Šole - Šolski App</title>
+    <title>{{ t('sch_nav_soles', 'Šole') }} — Šolski App</title>
     <style>
         body { font-family: Arial, sans-serif; margin: 20px; background: #f5f5f5; }
         .container { max-width: 1150px; margin: auto; background: white; padding: 24px; border-radius: 10px; }
@@ -38,50 +38,50 @@
 <body>
     <div class="container">
         <div class="nav">
-            <a href="/schools">Šole</a>
-            <a href="/history">Dnevnik dogodkov</a>
+            <a href="/schools">{{ t('sch_nav_soles', 'Šole') }}</a>
+            <a href="/history">{{ t('sch_nav_dnevnik', 'Dnevnik dogodkov') }}</a>
             <a href="#" onclick="openModal('pw-modal'); return false;">{{ t('link_spremeni_geslo', 'Spremeni geslo') }}</a>
             <a href="/auth/logout">{{ t('btn_odjava', 'Odjava') }}</a>
         </div>
 
-        <h2>Šole (glavni admin)</h2>
+        <h2>{{ t('sch_naslov', 'Šole (glavni admin)') }}</h2>
         <p class="hint">
-            Vsaka šola ima svoje podatke, svoje uporabnike in svoje nastavitve.
-            <strong>Odpri</strong> nastavi izbrano šolo za kanonične poti, poti šole
-            (npr. <span class="badge">/rezervacije_ostc</span>) pa jo izberejo neposredno —
-            klik odpre aplikacijo s podatki te šole.
+            {{ t('sch_intro_1', 'Vsaka šola ima svoje podatke, svoje uporabnike in svoje nastavitve.') }}
+            <strong>{{ t('sch_odpri', 'Odpri') }}</strong> {{ t('sch_intro_2', 'nastavi izbrano šolo za kanonične poti, poti šole (npr.') }}
+            <span class="badge">/rezervacije_ostc</span>{{ t('sch_intro_3', ') pa jo izberejo neposredno — klik odpre aplikacijo s podatki te šole.') }}
         </p>
 
         <div id="msg"></div>
 
-        <h3>Dodaj novo šolo</h3>
+        <h3>{{ t('sch_dodaj', 'Dodaj novo šolo') }}</h3>
         <form method="POST" action="/api/schools" id="new-school-form">
-            <input type="text" name="name" placeholder="Polno ime šole (npr. OŠ Toneta Čufarja Jesenice)" required style="width:420px;">
-            <input type="text" name="slug" placeholder="oznaka (npr. ostcj)" style="width:160px;">
+            <input type="hidden" name="lang" value="{{ lang }}">
+            <input type="text" name="name" placeholder="{{ t('sch_ph_ime', 'Polno ime šole (npr. OŠ Toneta Čufarja Jesenice)') }}" required style="width:420px;">
+            <input type="text" name="slug" placeholder="{{ t('sch_ph_oznaka', 'oznaka (npr. ostcj)') }}" style="width:160px;">
             <button type="submit" class="btn btn-success">{{ t('btn_ustvari_solo', 'Ustvari šolo') }}</button>
         </form>
         <p class="hint">
-            Oznaka se uporabi za poti šole: <span class="badge">/rezervacije_&lt;oznaka&gt;</span>
-            in <span class="badge">/ocenjevanje_&lt;oznaka&gt;</span>. Če je ne vpišete, se naredi iz imena.
+            {{ t('sch_hint_oznaka_1', 'Oznaka se uporabi za poti šole:') }} <span class="badge">/rezervacije_&lt;oznaka&gt;</span>
+            {{ t('sch_hint_oznaka_2', 'in') }} <span class="badge">/ocenjevanje_&lt;oznaka&gt;</span>{{ t('sch_hint_oznaka_3', '. Če je ne vpišete, se naredi iz imena.') }}
         </p>
 
-        <h3>Seznam šol</h3>
+        <h3>{{ t('sch_seznam', 'Seznam šol') }}</h3>
         <table>
             <thead>
                 <tr>
-                    <th>#</th><th>Ime</th><th>Oznaka</th><th>Poti šole</th><th>Podatki</th><th>Dejanja</th>
+                    <th>#</th><th>{{ t('sch_th_ime', 'Ime') }}</th><th>{{ t('sch_th_oznaka', 'Oznaka') }}</th><th>{{ t('sch_th_poti', 'Poti šole') }}</th><th>{{ t('sch_th_podatki', 'Podatki') }}</th><th>{{ t('sch_th_dejanja', 'Dejanja') }}</th>
                 </tr>
             </thead>
             <tbody>
             {% for s in schools %}
                 <tr>
                     <td>{{ s.id }}</td>
-                    <td><strong>{{ s.name }}</strong>{% if not s.is_active %} <em>(neaktivna)</em>{% endif %}</td>
+                    <td><strong>{{ s.name }}</strong>{% if not s.is_active %} <em>{{ t('sch_neaktivna', '(neaktivna)') }}</em>{% endif %}</td>
                     <td><span class="badge">{{ s.slug }}</span></td>
                     <td id="aliases-{{ s.id }}">
                         {% for a in s.aliases %}
                         <div class="alias-item">
-                            <a class="badge" href="/{{ a }}" title="Odpri aplikacijo v tej šoli">/{{ a }}</a><a class="alias-del" href="#" title="Odstrani to pot" onclick="removeAlias({{ s.id }}, '{{ a }}'); return false;">✕</a>
+                            <a class="badge" href="/{{ a }}" title="{{ t('sch_title_odpri_app', 'Odpri aplikacijo v tej šoli') }}">/{{ a }}</a><a class="alias-del" href="#" title="{{ t('sch_title_odstrani_pot', 'Odstrani to pot') }}" onclick="removeAlias({{ s.id }}, '{{ a }}'); return false;">✕</a>
                         </div>
                         {% endfor %}
                     </td>
@@ -92,26 +92,26 @@
                         <span>🎒 {{ s.counts.activities }}</span>
                     </td>
                     <td>
-                        <a class="btn btn-success" href="/schools/open/{{ s.id }}">Odpri</a>
-                        <a class="btn" href="/auth/admin/users" onclick="openInThisSchool({{ s.id }}); return false;">Uporabniki</a>
-                        <a class="btn" href="/settings?school_id={{ s.id }}">Nastavitve</a>
-                        <a class="btn btn-danger" href="#" title="Izbriše šolo in vse njene podatke"
-                           onclick="deleteSchool({{ s.id }}, '{{ s.name|e }}'); return false;">🗑 Izbriši</a>
+                        <a class="btn btn-success" href="/schools/open/{{ s.id }}">{{ t('sch_odpri', 'Odpri') }}</a>
+                        <a class="btn" href="/auth/admin/users" onclick="openInThisSchool({{ s.id }}); return false;">{{ t('sch_uporabniki', 'Uporabniki') }}</a>
+                        <a class="btn" href="/settings?school_id={{ s.id }}">{{ t('sch_nastavitve', 'Nastavitve') }}</a>
+                        <a class="btn btn-danger" href="#" title="{{ t('sch_title_izbrisi', 'Izbriše šolo in vse njene podatke') }}"
+                           onclick="deleteSchool({{ s.id }}, '{{ s.name|e }}'); return false;">{{ t('sch_izbrisi', '🗑 Izbriši') }}</a>
                     </td>
                 </tr>
             {% else %}
-                <tr><td colspan="6">Ni šol.</td></tr>
+                <tr><td colspan="6">{{ t('sch_ni_sol', 'Ni šol.') }}</td></tr>
             {% endfor %}
             </tbody>
         </table>
         <p class="hint">
-            Odvečno pot lahko odstranite s ✕ (npr. starejši alias, ki ga šola ne uporablja več).
+            {{ t('sch_hint_poti', 'Odvečno pot lahko odstranite s ✕ (npr. starejši alias, ki ga šola ne uporablja več).') }}
         </p>
     </div>
 
     <div class="modal-overlay" id="pw-modal">
         <div class="modal">
-            <h3>Sprememba gesla ({{ current_username }})</h3>
+            <h3>{{ t('sch_sprememba_gesla', 'Sprememba gesla') }} ({{ current_username }})</h3>
             <div class="form-group">
                 <label>{{ t('set_trenutno_geslo', 'Trenutno geslo') }}</label>
                 <input type="password" id="pw-old" placeholder="{{ t('set_ph_trenutno_geslo', 'Vnesite trenutno geslo') }}">
@@ -119,7 +119,7 @@
             <div class="form-group">
                 <label>{{ t('set_novo_geslo', 'Novo geslo') }}</label>
                 <input type="password" id="pw-new1" placeholder="{{ t('set_ph_novo_geslo', 'Vnesite novo geslo') }}">
-                <small style="display:block;font-size:0.75rem;color:#666;">Vsaj 5 znakov, mala/velika črka, številka</small>
+                <small style="display:block;font-size:0.75rem;color:#666;">{{ t('set_geslo_pravilo', 'Vsaj 5 znakov, mala/velika črka, številka') }}</small>
             </div>
             <div class="form-group">
                 <label>{{ t('set_novo_geslo_ponovno', 'Novo geslo (ponovno)') }}</label>
@@ -155,17 +155,17 @@
         const data = await res.json().catch(() => ({}));
         if (res.ok) {
             box.className = 'ok';
-            box.textContent = 'Šola ustvarjena: ' + data.name + ' (' + (data.aliases || []).join(', ') + ')';
+            box.textContent = '{{ t('js_sola_ustvarjena', 'Šola ustvarjena: ') }}' + data.name + ' (' + (data.aliases || []).join(', ') + ')';
             setTimeout(() => window.location.reload(), 1200);
         } else {
             box.className = 'err';
-            box.textContent = 'Napaka: ' + (data.detail || res.status);
+            box.textContent = '{{ t('js_napaka_prefix', 'Napaka: ') }}' + (data.detail || res.status);
         }
     });
 
     // Odstranitev posamezne poti šole (npr. odvečen/star alias).
     async function removeAlias(schoolId, alias) {
-        if (!confirm('Odstranim pot /' + alias + ' ?\n\nAplikacija bo dosegljiva le prek ostalih poti te šole.')) return;
+        if (!confirm('{{ t('js_odstranim_pot', 'Odstranim pot /') }}' + alias + '{{ t('js_odstranim_pot2', ' ? Aplikacija bo dosegljiva le prek ostalih poti te šole.') }}')) return;
         const box = document.getElementById('msg');
         const res = await fetch('/api/schools/' + schoolId + '/aliases/' + encodeURIComponent(alias), {
             method: 'DELETE', credentials: 'include'
@@ -173,7 +173,7 @@
         const data = await res.json().catch(() => ({}));
         if (res.ok) {
             box.className = 'ok';
-            box.textContent = data.message || 'Pot odstranjena.';
+            box.textContent = data.message || '{{ t('js_pot_odstranjena', 'Pot odstranjena.') }}';
             const cell = document.getElementById('aliases-' + schoolId);
             if (cell) {
                 cell.innerHTML = (data.aliases || []).map(a =>
@@ -183,7 +183,7 @@
             }
         } else {
             box.className = 'err';
-            box.textContent = 'Napaka: ' + (data.detail || res.status);
+            box.textContent = '{{ t('js_napaka_prefix', 'Napaka: ') }}' + (data.detail || res.status);
         }
     }
 
@@ -192,20 +192,19 @@
     // (uporabnike, rezervacije, ocenjevanja, dneve dejavnosti, nastavitve,
     // poti šole) in je nepreklicno. Privzete šole strežnik ne pusti izbrisati.
     async function deleteSchool(id, name) {
-        if (!confirm('Izbrišem šolo »' + name + '«?\n\nIzbrisani bodo VSI njeni podatki: ' +
-                     'uporabniki, rezervacije, ocenjevanja, dnevi dejavnosti, nastavitve in poti šole.')) return;
-        if (!confirm('Potrdite še enkrat: brisanje šole »' + name + '« je NEPREKLICNO.')) return;
+        if (!confirm('{{ t('js_izbrisem_solo', 'Izbrišem šolo »') }}' + name + '{{ t('js_izbrisem_solo2', '«? Izbrisani bodo VSI njeni podatki: uporabniki, rezervacije, ocenjevanja, dnevi dejavnosti, nastavitve in poti šole.') }}')) return;
+        if (!confirm('{{ t('js_potrdi_enkrat', 'Potrdite še enkrat: brisanje šole »') }}' + name + '{{ t('js_nepreklicno', '« je NEPREKLICNO.') }}')) return;
 
         const box = document.getElementById('msg');
         const res = await fetch('/api/schools/' + id, { method: 'DELETE', credentials: 'include' });
         const data = await res.json().catch(() => ({}));
         if (res.ok) {
             box.className = 'ok';
-            box.textContent = data.message || 'Šola izbrisana.';
+            box.textContent = data.message || '{{ t('js_sola_izbrisana', 'Šola izbrisana.') }}';
             setTimeout(() => window.location.reload(), 1500);
         } else {
             box.className = 'err';
-            box.textContent = 'Napaka: ' + (data.detail || res.status);
+            box.textContent = '{{ t('js_napaka_prefix', 'Napaka: ') }}' + (data.detail || res.status);
         }
     }
 
@@ -215,8 +214,8 @@
         const newPw1 = document.getElementById('pw-new1').value;
         const newPw2 = document.getElementById('pw-new2').value;
         const msgEl = document.getElementById('pw-msg');
-        if (!oldPw || !newPw1 || !newPw2) { msgEl.style.color = 'red'; msgEl.textContent = 'Izpolnite vsa polja.'; return; }
-        if (newPw1 !== newPw2) { msgEl.style.color = 'red'; msgEl.textContent = 'Novi gesli se ne ujemata.'; return; }
+        if (!oldPw || !newPw1 || !newPw2) { msgEl.style.color = 'red'; msgEl.textContent = '{{ t('js_izpolnite_polja', 'Izpolnite vsa polja.') }}'; return; }
+        if (newPw1 !== newPw2) { msgEl.style.color = 'red'; msgEl.textContent = '{{ t('js_gesli_ne_ujemata', 'Novi gesli se ne ujemata.') }}'; return; }
         try {
             const formData = new FormData();
             formData.append('old_password', oldPw);
@@ -224,13 +223,13 @@
             const res = await fetch('/auth/change-password', { method: 'POST', body: formData, credentials: 'include' });
             const json = await res.json().catch(() => ({}));
             if (res.ok) {
-                msgEl.style.color = 'green'; msgEl.textContent = 'Geslo uspešno spremenjeno!';
+                msgEl.style.color = 'green'; msgEl.textContent = '{{ t('js_geslo_spremenjeno', 'Geslo uspešno spremenjeno!') }}';
                 setTimeout(() => closeModal('pw-modal'), 1500);
             } else {
-                msgEl.style.color = 'red'; msgEl.textContent = json.detail || 'Napaka pri spreminjanju gesla.';
+                msgEl.style.color = 'red'; msgEl.textContent = json.detail || '{{ t('js_napaka_geslo', 'Napaka pri spreminjanju gesla.') }}';
             }
         } catch (e) {
-            msgEl.style.color = 'red'; msgEl.textContent = 'Napaka pri povezavi s strežnikom.';
+            msgEl.style.color = 'red'; msgEl.textContent = '{{ t('js_napaka_povezava', 'Napaka pri povezavi s strežnikom.') }}';
         }
     }
     </script>

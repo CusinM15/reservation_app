@@ -104,6 +104,39 @@ SCHOOL_SETTING_KEYS = [
 # Uporabi se pri prehodu s starega skalarnega TABLICE_MAX.
 DEFAULT_NUMBERS_NAME = "Število tablic"
 
+# ── Privzete nastavitve za NOVO šolo (jezikovno občutljive) ─────────────
+# Nova šola dobi majhen, univerzalen nabor prostorov (admin ostalo doda v
+# Nastavitvah šole) in imena v jeziku vmesnika, izbranem ob ustvarjanju.
+# Pomembno: če se jezik šole POZNEJE spremeni, se imena prostorov NE
+# spremenijo — spremenijo se le napisi gumbov/oken (tabela ui_strings).
+DEFAULT_NEW_SCHOOL_ROOMS = {
+    "sl": ["Računalnica", "Tablice"],
+    "en": ["Computer room", "Tablets"],
+}
+DEFAULT_NEW_SCHOOL_QTY_ROOM = {"sl": "Tablice", "en": "Tablets"}
+DEFAULT_NEW_SCHOOL_NUMBER_NAME = {"sl": "Število tablic", "en": "Number of tablets"}
+DEFAULT_TABLICE_COUNT = 25
+
+
+def default_new_school_settings(ui_language: str) -> dict:
+    """Privzete nastavitve za NOVO šolo, prilagojene jeziku vmesnika.
+
+    Razlika od ``env_default_settings()``: prostori so majhen, univerzalen
+    nabor (Računalnica, Tablice / Computer room, Tablets), število tablic je
+    privzeto 25, imena prostorov in številske spremenljivke pa so v jeziku
+    šole. Ostalo (razredi, urnik, timeouti, pravila ocenjevanja) ostane iz
+    .env, kot doslej. Trenutne (obstoječe) šole se s tem NE spremenijo.
+    """
+    lang = ui_language if ui_language in ("sl", "en") else "sl"
+    values = env_default_settings()
+    num_name = DEFAULT_NEW_SCHOOL_NUMBER_NAME[lang]
+    qty_room = DEFAULT_NEW_SCHOOL_QTY_ROOM[lang]
+    values["PROSTORI"] = ",".join(DEFAULT_NEW_SCHOOL_ROOMS[lang])
+    values["PROSTORI_STEVILO"] = json.dumps({qty_room: num_name}, ensure_ascii=False)
+    values["STEVILA"] = json.dumps({num_name: DEFAULT_TABLICE_COUNT}, ensure_ascii=False)
+    values["TABLICE_MAX"] = str(DEFAULT_TABLICE_COUNT)
+    return values
+
 # Opis polj za UI (oznaka + tip vnosa). Vrstni red = vrstni red v obrazcu.
 SCHOOL_SETTING_FIELDS = [
     {"key": "RAZREDI", "label": "Razredi (vejica-ločeno)", "type": "csv"},
@@ -701,15 +734,19 @@ def set_school_setting(db: Session, school_id: int, key: str, value: str | None)
         row.value = text
 
 
-def seed_school_settings(db: Session, school_id: int) -> int:
-    """Napolni nastavitve šole iz .env — samo manjkajoče ključe.
+def seed_school_settings(db: Session, school_id: int, defaults: dict | None = None) -> int:
+    """Napolni nastavitve šole iz privzetih vrednosti — samo manjkajoče ključe.
 
     Zakaj samo manjkajoče? Da ob vsakem zagonu ne povozimo vrednosti, ki
     jih je Šolski admin že uredil v UI.
+
+    ``defaults`` privzeto iz .env (obstoječe/privzete šole); ob ustvarjanju
+    NOVE šole klicatelj poda jezikovno občutljive privzetke
+    (``default_new_school_settings``).
     """
     from app.models import SchoolSetting
     existing = {r.key for r in db.query(SchoolSetting).filter(SchoolSetting.school_id == school_id).all()}
-    defaults = env_default_settings()
+    defaults = env_default_settings() if defaults is None else defaults
     added = 0
     for key, value in defaults.items():
         if key not in existing:
@@ -772,7 +809,7 @@ def create_school(
             raise ValueError(f"Alias '{alias}' je že zaseden.")
         db.add(SchoolAlias(school_id=school.id, alias=alias, kind=kind))
 
-    seed_school_settings(db, school.id)
+    seed_school_settings(db, school.id, default_new_school_settings(ui_language))
     # Jezik vmesnika nove šole = jezik registracijske povezave
     # (»Nova šola« → sl, »New school« → en).
     if ui_language in ("sl", "en"):

@@ -112,7 +112,7 @@
                 <div id="razredi-rows"></div>
                 <button type="button" class="btn" style="margin-top:8px;" onclick="addRazredRow(); return false;">{{ t('set_dodaj_razred', '＋ Dodaj razred') }}</button>
                 <div class="hint" style="margin-top:6px;">
-                    {{ t('set_hint_razredi_1', 'V vsako vrstico vpišite en razred, npr.') }} <code>1.a</code>{{ t('set_hint_razredi_2', '. Vrstico odstranite z ✕. Razredi se uporabljajo pri ocenjevanjih.') }}
+                    {{ t('set_hint_razredi_1', 'V vsako vrstico vpišite en razred, npr.') }} <code>1.a</code>{{ t('set_hint_razredi_2', '. Vrstico odstranite z ✕. Razredi se uporabljajo pri ocenjevanjih in dnevih dejavnosti (pri rezervacijah prostorov se ne uporabljajo).') }}
                 </div>
             </div>
 
@@ -142,7 +142,7 @@
                 <button type="button" class="btn" style="margin-top:8px;" onclick="addSteviloRow(); return false;">{{ t('set_dodaj_stevilo', '＋ Dodaj število') }}</button>
                 <div class="hint" style="margin-top:6px;">
                     {{ t('set_hint_stevila_1', 'Vsaka vrstica je imenovana številska spremenljivka (ime + vrednost), npr.') }}
-                    <code>Število tablic</code> = <code>28</code> {{ t('set_hint_stevila_ali', 'ali') }} <code>Število računalnikov</code> = <code>30</code>.
+                    <code>Število tablic</code> = <code>25</code> {{ t('set_hint_stevila_ali', 'ali') }} <code>Število računalnikov</code> = <code>30</code>.
                     {{ t('set_hint_stevila_2', 'Na ta imena se vežejo prostori (spodaj) — kapaciteta prostora na uro je vrednost te spremenljivke.') }}
                 </div>
             </div>
@@ -160,8 +160,7 @@
                     <br>
                     {{ t('set_hint_prostori_1', 'Kljukica') }} <strong>{{ t('set_lbl_stevilo_q', '»število«') }}</strong> {{ t('set_hint_prostori_2', 'pomeni: v tem prostoru lahko hkrati rezervira več učiteljev, vsak navede količino, skupna vsota na uro pa je omejena z izbrano številsko spremenljivko. Brez kljukice je prostor ekskluziven — ena rezervacija na uro.') }}
                     <br>
-                    Primer: <code>tablice</code> {{ t('set_hint_prostori_3', 's kljukico in spremenljivko') }} <code>Število tablic</code>,
-                    <code>racunalnica</code> {{ t('set_hint_prostori_5', 'brez.') }}
+                    {{ t('set_hint_prostori_primer', 'Primer: <code>tablice</code> s kljukico in spremenljivko <code>Število tablic</code>, <code>racunalnica</code> brez.') | safe }}
                 </div>
             </div>
 
@@ -600,7 +599,7 @@
             const data = await res.json().catch(() => ({}));
             if (!res.ok) {
                 box.className = 'err';
-                box.textContent = 'Napaka: ' + (data.detail || res.status);
+                box.textContent = '{{ t('js_napaka_prefix', 'Napaka: ') }}' + (data.detail || res.status);
                 return;
             }
             const rows = Object.keys(data.tables || {})
@@ -678,7 +677,7 @@
         const sched = collectSchedule();
         if (Object.keys(sched).length === 0) {
             box.className = 'err';
-            box.textContent = 'Urnik ne sme biti prazen (vsaj ena ura).';
+            box.textContent = '{{ t('js_set_urnik_prazen', 'Urnik ne sme biti prazen (vsaj ena ura).') }}';
             box.scrollIntoView({ behavior: 'smooth', block: 'center' });
             return;
         }
@@ -698,10 +697,10 @@
         const data = await res.json().catch(() => ({}));
         if (res.ok) {
             box.className = 'ok';
-            box.textContent = 'Nastavitve shranjene.';
+            box.textContent = '{{ t('js_set_nastavitve_shranjene', 'Nastavitve shranjene.') }}';
         } else {
             box.className = 'err';
-            box.textContent = 'Napaka: ' + (data.detail || res.status);
+            box.textContent = '{{ t('js_napaka_prefix', 'Napaka: ') }}' + (data.detail || res.status);
         }
         box.scrollIntoView({ behavior: 'smooth', block: 'center' });
     });
@@ -731,7 +730,7 @@
         if (!confirmed) { restoreDomain = null; return; }
 
         box.className = '';
-        box.textContent = 'Obnavljam iz ' + file.name + ' ...';
+        box.textContent = '{{ t('js_set_obnavljam', 'Obnavljam iz ') }}' + file.name + ' ...';
 
         const fd = new FormData();
         fd.append('domain', restoreDomain);
@@ -743,11 +742,11 @@
             const data = await res.json().catch(() => ({}));
             if (!res.ok) {
                 box.className = 'err';
-                box.textContent = 'Napaka: ' + (data.detail || res.status);
+                box.textContent = '{{ t('js_napaka_prefix', 'Napaka: ') }}' + (data.detail || res.status);
                 return;
             }
             let html = '<div class="ok"><strong>{{ t('set_obnova_zakljucena', 'Obnova zaključena:') }} ' + (data.label || '') + '</strong>';
-            html += '<table class="restore"><thead><tr><th>Tabela</th><th>{{ t('set_th_izbrisano', 'Izbrisano') }}</th><th>{{ t('set_th_uvozeno', 'Uvoženo') }}</th></tr></thead><tbody>';
+            html += '<table class="restore"><thead><tr><th>{{ t('set_th_tabela', 'Tabela') }}</th><th>{{ t('set_th_izbrisano', 'Izbrisano') }}</th><th>{{ t('set_th_uvozeno', 'Uvoženo') }}</th></tr></thead><tbody>';
             Object.keys(data.tables || {}).forEach(t => {
                 const r = data.tables[t];
                 html += '<tr><td>' + t + '</td><td>' + r.deleted + '</td><td>' + r.inserted + '</td></tr>';
@@ -778,8 +777,8 @@
         const newPw1 = document.getElementById('pw-new1').value;
         const newPw2 = document.getElementById('pw-new2').value;
         const msgEl = document.getElementById('pw-msg');
-        if (!oldPw || !newPw1 || !newPw2) { msgEl.style.color = 'red'; msgEl.textContent = 'Izpolnite vsa polja.'; return; }
-        if (newPw1 !== newPw2) { msgEl.style.color = 'red'; msgEl.textContent = 'Novi gesli se ne ujemata.'; return; }
+        if (!oldPw || !newPw1 || !newPw2) { msgEl.style.color = 'red'; msgEl.textContent = '{{ t('js_izpolnite_polja', 'Izpolnite vsa polja.') }}'; return; }
+        if (newPw1 !== newPw2) { msgEl.style.color = 'red'; msgEl.textContent = '{{ t('js_gesli_ne_ujemata', 'Novi gesli se ne ujemata.') }}'; return; }
         try {
             const formData = new FormData();
             formData.append('old_password', oldPw);
@@ -790,7 +789,7 @@
                 msgEl.style.color = 'green'; msgEl.textContent = '{{ t('js_geslo_spremenjeno', 'Geslo uspešno spremenjeno!') }}';
                 setTimeout(() => closeModal('pw-modal'), 1500);
             } else {
-                msgEl.style.color = 'red'; msgEl.textContent = json.detail || 'Napaka pri spreminjanju gesla.';
+                msgEl.style.color = 'red'; msgEl.textContent = json.detail || '{{ t('js_napaka_geslo', 'Napaka pri spreminjanju gesla.') }}';
             }
         } catch (e) {
             msgEl.style.color = 'red'; msgEl.textContent = '{{ t('js_napaka_povezava', 'Napaka pri povezavi s strežnikom.') }}';
