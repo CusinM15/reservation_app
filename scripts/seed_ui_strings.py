@@ -29,6 +29,17 @@ from scripts.ui_strings_data import STRINGS    # noqa: E402
 
 def seed(db, *, dry_run: bool = False, keep_manual: bool = False) -> tuple[int, int]:
     """Dodaj/posodobi napise; vrni (dodano, posodobljeno)."""
+    # Varnost: podvojeni ključi v STRINGS bi pri vstavljanju v bazo sprožili
+    # UniqueViolation. Zato to prestrežemo tukaj z jasnim sporočilom.
+    _seen: set[str] = set()
+    _dups: set[str] = set()
+    for _k, *_ in STRINGS:
+        if _k in _seen:
+            _dups.add(_k)
+        else:
+            _seen.add(_k)
+    if _dups:
+        raise ValueError(f"Podvojeni ključi v ui_strings_data.STRINGS: {', '.join(sorted(_dups))}")
     added = updated = 0
     for key, context, sl, en in STRINGS:
         row = db.query(UIString).filter(UIString.key == key).first()

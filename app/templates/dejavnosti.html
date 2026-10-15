@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Dejavnosti - Šolski App</title>
+<title>{{ t('dej_title', 'Dejavnosti - Šolski App') }}</title>
 <style>
   body { font-family: Arial, sans-serif; margin: 20px; background: #f5f5f5; }
   .container { max-width: 1500px; margin: auto; background: white; padding: 20px; border-radius: 10px; }
@@ -43,12 +43,10 @@
 <body>
 <div class="container">
   <div class="nav">
-    <a href="{{ nav_rezervacije }}">← Aplikacija</a>
+    <a href="{{ nav_rezervacije }}">{{ t('nav_aplikacija', '← Aplikacija') }}</a>
   </div>
   <h2>{{ t('btn_dejavnosti', '📋 Dejavnosti') }}</h2>
-  <p class="hint">Učitelji lahko pregledujejo; vodstvo/admin ureja. Ob shranjevanju z izbranim datumom,
-    "celoten dan" in prostori se samodejno ustvarijo blokirani datumi, rezervacije (ure 1–5) in prekličejo
-    ocenjevanja + email učiteljem.</p>
+  <p class="hint">{{ t('dej_hint_main', 'Učitelji lahko pregledujejo; vodstvo/admin ureja. Ob shranjevanju z izbranim datumom, »celoten dan« in prostori se samodejno ustvarijo blokirani datumi, rezervacije (ure 1–5) in prekličejo ocenjevanja + email učiteljem.') }}</p>
 
   <div id="msg" class="msg"></div>
 
@@ -60,8 +58,11 @@
 
 <script>
 const SECTIONS = ['KULTURNI', 'NARAVOSLOVNI', 'TEHNIŠKI', 'ŠPORTNI', 'DRUGO'];
-const GRADE_LABELS = {1:'1. razred',2:'2. razred',3:'3. razred',4:'4. razred',5:'5. razred',
-                      6:'6. razred',7:'7. razred',8:'8. razred',9:'9. razred',ip:'IP/POUK'};
+// Prevedene oznake sekcij (tipov dejavnosti) — koda ostane SL, prikaz se prevede.
+const SECT_LABELS = {KULTURNI:'{{ t('sect_kulturni', 'KULTURNI') }}', NARAVOSLOVNI:'{{ t('sect_naravoslovni', 'NARAVOSLOVNI') }}', TEHNIŠKI:'{{ t('sect_tehniski', 'TEHNIŠKI') }}', ŠPORTNI:'{{ t('sect_sportni', 'ŠPORTNI') }}', DRUGO:'{{ t('sect_drugo', 'DRUGO') }}'};
+function sectLabel(s){ return SECT_LABELS[s] || s; }
+const GRADE_LABELS = {1:'{{ t('dej_grade_1', '1. razred') }}',2:'{{ t('dej_grade_2', '2. razred') }}',3:'{{ t('dej_grade_3', '3. razred') }}',4:'{{ t('dej_grade_4', '4. razred') }}',5:'{{ t('dej_grade_5', '5. razred') }}',
+                      6:'{{ t('dej_grade_6', '6. razred') }}',7:'{{ t('dej_grade_7', '7. razred') }}',8:'{{ t('dej_grade_8', '8. razred') }}',9:'{{ t('dej_grade_9', '9. razred') }}',ip:'{{ t('dej_grade_ip', 'IP/POUK') }}'};
 let META = null;        // razredi, prostori, razpored ...
 const USER_ROLE = "{{ user_role }}";  // "teacher" | "vodstvo" | "admin"
 let currentGrade = '1';
@@ -84,7 +85,7 @@ async function init(){
     META = await api('/api/dejavnosti/meta');
   }catch(e){
     // meta vrne 403, če uporabnik ni vodstvo/admin — stran bi morala preprečiti, a vseeno obdelaj
-    alert('Napaka pri nalaganju konfiguracije: ' + e.message);
+    alert('{{ t('dej_napaka_konfig', 'Napaka pri nalaganju konfiguracije: ') }}' + e.message);
     return;
   }
   buildTabs();
@@ -141,11 +142,11 @@ async function loadExisting(grade){
     if(!cont) return;
     // Samo serijske rezervacije (tedenske redne ure), ki niso del dnevov
     // dejavnosti — dnevov dejavnosti ni več tukaj, so v sekcijah zgoraj.
-    let html = `<h3 style="margin-top:28px;">🗄️ Serijske rezervacije (${series.length})</h3>`;
+    let html = `<h3 style="margin-top:28px;">{{ t('dej_serijske_rez', '🗄️ Serijske rezervacije') }} (${series.length})</h3>`;
     if(series.length === 0){
-      html += `<p class="muted">Ni serijskih rezervacij.</p>`;
+      html += `<p class="muted">{{ t('dej_ni_serijskih', 'Ni serijskih rezervacij.') }}</p>`;
     }else{
-      html += `<table><thead><tr><th>Ime</th><th>{{ t('label_prostor', 'Prostor') }}</th><th>Obdobje</th><th>Terminov</th></tr></thead><tbody>`;
+      html += `<table><thead><tr><th>{{ t('th_ime', 'Ime') }}</th><th>{{ t('label_prostor', 'Prostor') }}</th><th>{{ t('th_obdobje', 'Obdobje') }}</th><th>{{ t('th_terminov', 'Terminov') }}</th></tr></thead><tbody>`;
       series.forEach(s => {
         html += `<tr><td>${esc(s.name || 'Dogodek')}</td><td>${prostLabel(s.prostor)}</td>` +
                 `<td>${s.min_date} → ${s.max_date}</td><td>${s.count}</td></tr>`;
@@ -164,29 +165,29 @@ function letterOddelki(grade){
 function renderGrade(grade){
   const cont = $('content');
   const label = GRADE_LABELS[grade] || grade;
-  let html = `<h3>PREGLED DEJAVNOSTI ${label.toUpperCase()}</h3>`;
+  let html = `<h3>{{ t('dej_pregled', 'PREGLED DEJAVNOSTI') }} ${label.toUpperCase()}</h3>`;
 
   if(isGradeNumeric(grade)){
     // 1–9 razred: sekcije (dnevi dejavnosti)
-    html += `<p class="hint">Dnevi dejavnosti. Za urejanje shrani vrstico — blokade/rezervacije se izvedejo pri datum + celoten dan + prostori.</p>`;
+    html += `<p class="hint">{{ t('dej_hint_sekcije', 'Dnevi dejavnosti. Za urejanje shrani vrstico — blokade/rezervacije se izvedejo pri datum + celoten dan + prostori.') }}</p>`;
     html += `<div class="toolbar">`;
     SECTIONS.forEach(s => {
-      if (USER_ROLE !== 'teacher') html += `<button class="btn btn-success" onclick="addRow('${s}','xlsx')">＋ ${s} DAN</button>`;
+      if (USER_ROLE !== 'teacher') html += `<button class="btn btn-success" onclick="addRow('${s}','xlsx')">＋ ${sectLabel(s)} {{ t('dej_dan_btn', 'DAN') }}</button>`;
     });
     html += `</div>`;
     SECTIONS.forEach(s => {
       const rows = (sectionsData[grade] && sectionsData[grade][s]) || [];
-      html += `<div class="section-title">${s} DNEVI (${rows.length})</div>`;
+      html += `<div class="section-title">${sectLabel(s)} {{ t('sect_dnevi', 'DNEVI') }} (${rows.length})</div>`;
       html += renderSectionTable(grade, s, rows);
     });
   }else{
     // IP/POUK: brez sekcij — ročne dejavnosti + tedenske rezervacije
     const rows = (sectionsData[grade] && sectionsData[grade]['_all']) || [];
-    html += `<p class="hint">Sem sodijo ročno dodani dogodki in tedenske rezervacije.</p>`;
-    if (USER_ROLE !== 'teacher') html += `<div class="toolbar"><button class="btn btn-success" onclick="openEditor({grade:'${grade}', section:'', title:'', subtitle:'', full_day:false, recurring:true, date_from:'', date_to:'', date_undetermined:false, date_text:'', all_classes:false, classes:'', prostori:'', cena:'', vodja:'', opomba:''})">＋ Dodaj dogodek / tedensko rezervacijo</button></div>`;
-    html += `<div class="section-title">Ročne dejavnosti (${rows.length})</div>`;
+    html += `<p class="hint">{{ t('dej_hint_rocne', 'Sem sodijo ročno dodani dogodki in tedenske rezervacije.') }}</p>`;
+    if (USER_ROLE !== 'teacher') html += `<div class="toolbar"><button class="btn btn-success" onclick="openEditor({grade:'${grade}', section:'', title:'', subtitle:'', full_day:false, recurring:true, date_from:'', date_to:'', date_undetermined:false, date_text:'', all_classes:false, classes:'', prostori:'', cena:'', vodja:'', opomba:''})">{{ t('btn_dodaj_dogodek', 'Dodaj dogodek / tedensko rezervacijo') }}</button></div>`;
+    html += `<div class="section-title">{{ t('dej_rocne_dejavnosti', 'Ročne dejavnosti') }} (${rows.length})</div>`;
     if(rows.length === 0){
-      html += `<p class="muted">Ni ročno dodanih dejavnosti.</p>`;
+      html += `<p class="muted">{{ t('dej_ni_rocno', 'Ni ročno dodanih dejavnosti.') }}</p>`;
     }else{
       html += renderSectionTable(grade, '', rows, true);
     }
@@ -202,19 +203,19 @@ function renderSectionTable(grade, section, rows, isManual){
   const rooms = ['racunalnica', 'tablice', 'ladja', 'gospodinjska-ucilnica'];
   let html = `<table><thead><tr>
     <th>{{ t('dejavnost', 'Dejavnost') }}</th>
-    <th>Okvirni čas izvedbe</th>
+    <th>{{ t('th_okvirni_cas', 'Okvirni čas izvedbe') }}</th>
     <th>{{ t('label_vodja', 'Vodja') }}</th>
-    <th>Pribl. cena (€)</th>
+    <th>{{ t('th_pribl_cena', 'Pribl. cena (€)') }}</th>
     <th>{{ t('label_opomba', 'Opomba') }}</th>
-    <th title="Celoten dan (blokira dan dejavnosti + rezervira ure 1–5)">Cel. dan</th>
-    <th title="Računalnica">Rač.</th>
-    <th title="Tablice">Tab.</th>
-    <th title="Ladja">Ladja</th>
-    <th title="Gospodinjska učilnica">Gosp.</th>
-    <th>Akcije</th>
+    <th title="{{ t('label_celoten_dan', 'Celoten dan') }}">{{ t('th_cel_dan', 'Cel. dan') }}</th>
+    <th title="Računalnica">{{ t('th_rac', 'Rač.') }}</th>
+    <th title="Tablice">{{ t('th_tab', 'Tab.') }}</th>
+    <th title="Ladja">{{ t('th_ladja', 'Ladja') }}</th>
+    <th title="Gospodinjska učilnica">{{ t('th_gosp', 'Gosp.') }}</th>
+    <th>{{ t('th_akcije', 'Akcije') }}</th>
   </tr></thead><tbody>`;
   if(!rows || rows.length === 0){
-    html += `<tr><td colspan="11" class="muted">Ni vnesenih dejavnosti za to sekcijo.</td></tr>`;
+    html += `<tr><td colspan="11" class="muted">{{ t('dej_ni_vnesenih', 'Ni vnesenih dejavnosti za to sekcijo.') }}</td></tr>`;
     html += `</tbody></table>`;
     return html;
   }
@@ -237,12 +238,12 @@ function renderSectionTable(grade, section, rows, isManual){
       <td>${esc(r.vodja || '')}</td>
       <td>${esc(r.cena || '')}</td>
       <td>${r.date_undetermined ? '<div class="muted">📍 ' + esc(r.date_text||'') + '</div>' : ''}${esc(r.opomba || '')}</td>
-      <td style="text-align:center;font-weight:700;color:${r.full_day ? '#1a7f37' : '#c9c9c9'};" title="${r.full_day ? 'Celoten dan: DA' : 'Celoten dan: ne'}">${r.full_day ? '✔' : '—'}</td>
+      <td style="text-align:center;font-weight:700;color:${r.full_day ? '#1a7f37' : '#c9c9c9'};" title="${r.full_day ? '{{ t('label_celoten_dan', 'Celoten dan') }}: DA' : '{{ t('label_celoten_dan', 'Celoten dan') }}: ne'}">${r.full_day ? '✔' : '—'}</td>
       ${roomCells}
       <td class="row-actions">
         ${USER_ROLE !== 'teacher' ? `
-        <button class="btn btn-warning btn-sm" onclick="editRow(${r.id})">✏️ Uredi</button>
-        <button class="btn btn-danger btn-sm" onclick="delRow(${r.id})">🗑 Zbriši</button>
+        <button class="btn btn-warning btn-sm" onclick="editRow(${r.id})">{{ t('btn_uredi_icon', '✏️ Uredi') }}</button>
+        <button class="btn btn-danger btn-sm" onclick="delRow(${r.id})">{{ t('btn_zbrisi_icon', '🗑 Zbriši') }}</button>
         ` : ''}
       </td>
     </tr>`;
@@ -270,7 +271,7 @@ function gradeClasses(r){
   return cl;
 }
 function fullTime(r){
-  if(r.date_undetermined) return '<span class="muted">ni določen → ' + esc(r.date_text||'') + '</span>';
+  if(r.date_undetermined) return '<span class="muted">{{ t('dej_ni_dolocen_prefix', 'ni določen →') }} ' + esc(r.date_text||'') + '</span>';
   if(r.termini && Array.isArray(r.termini) && r.termini.length > 0){
     const lines = r.termini.map(t => {
       let ds = t.date ? toSlovenianDate(t.date) : '';
@@ -298,9 +299,9 @@ function editRow(id){
   if(r) openEditor(r);
 }
 function delRow(id){
-  if(!confirm('Zbrisati to dejavnost?')) return;
+  if(!confirm('{{ t('dej_zbrisati', 'Zbrisati to dejavnost?') }}')) return;
   api('/api/dejavnosti/' + id, {method:'DELETE'}).then(()=>{
-    showMsg('Dejavnost izbrisana', 'success'); loadGrade(currentGrade);
+    showMsg('{{ t('dej_izbrisana', 'Dejavnost izbrisana') }}', 'success'); loadGrade(currentGrade);
   }).catch(e=>showMsg(e.message,'error'));
 }
 
@@ -308,7 +309,7 @@ function openEditor(r){
   // poenostavljen modal napolnjen s podatki
   const prostoriAvail = META.prostori;
   const isNum = isGradeNumeric(r.grade);
-  const sectionSel = SECTIONS.map(s=>`<option value="${s}" ${s===r.section?'selected':''}>${s}</option>`).join('');
+  const sectionSel = SECTIONS.map(s=>`<option value="${s}" ${s===r.section?'selected':''}>${sectLabel(s)}</option>`).join('');
   const prostCheck = prostoriAvail.map(p => {
     const checked = (r.prostori||'').split(',').map(x=>x.trim()).includes(p);
     return `<label><input type="checkbox" class="prost" value="${p}" ${checked?'checked':''}> ${prostLabel(p)}</label>`;
@@ -319,53 +320,53 @@ function openEditor(r){
   overlay.style.cssText = 'position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,.45);z-index:50;display:flex;align-items:center;justify-content:center;';
   overlay.innerHTML = `
     <div style="background:white;padding:22px;border-radius:10px;width:720px;max-width:95%;max-height:90vh;overflow:auto;">
-      <h3 style="margin-top:0;">${r.id ? 'Uredi dejavnost' : 'Nova dejavnost'}</h3>
-      <div class="toolbar"><label>Razred (generacija): <b>${GRADE_LABELS[r.grade]||r.grade}</b></label>
+      <h3 style="margin-top:0;">${r.id ? '{{ t('dej_uredi_dejavnost', 'Uredi dejavnost') }}' : '{{ t('dej_nova_dejavnost', 'Nova dejavnost') }}'}</h3>
+      <div class="toolbar"><label>{{ t('dej_razred_generacija', 'Razred (generacija):') }} <b>${GRADE_LABELS[r.grade]||r.grade}</b></label>
         <input type="hidden" id="e-source" value="${r.source || (isNum ? 'xlsx' : 'manual')}">
       </div>
       <div class="toolbar">
-        ${isNum ? `<label>Sekcija:
+        ${isNum ? `<label>{{ t('dej_sekcija', 'Sekcija:') }}
           <select id="e-section" style="min-width:170px;">${sectionSel}</select>
         </label>` : `<input type="hidden" id="e-section" value="">`}
-        <label>Glavni naslov:
-          <input type="text" id="e-title" value="${escAttr(r.title)}" style="width:260px;" placeholder="(privzeto: SEKCIJA X. razred)">
+        <label>{{ t('dej_glavni_naslov', 'Glavni naslov:') }}
+          <input type="text" id="e-title" value="${escAttr(r.title)}" style="width:260px;" placeholder="{{ t('dej_ph_glavni_naslov', '(privzeto: SEKCIJA X. razred)') }}">
         </label>
       </div>
       <div class="toolbar">
-        <label>Pod dejavnost:
-          <input type="text" id="e-subtitle" value="${escAttr(r.subtitle)}" style="width:400px;" placeholder="npr. Oblak 365, Powerpoint">
+        <label>{{ t('dej_pod_dejavnost', 'Pod dejavnost:') }}
+          <input type="text" id="e-subtitle" value="${escAttr(r.subtitle)}" style="width:400px;" placeholder="{{ t('dej_ph_pod', 'npr. Oblak 365, Powerpoint') }}">
         </label>
       </div>
       <div class="toolbar">
         <label><input type="checkbox" id="e-full" ${r.full_day?'checked':''}> {{ t('label_celoten_dan', 'Celoten dan') }}</label>
-        <label><input type="checkbox" id="e-recurring" ${r.recurring?'checked':''}> Tedensko ponavljanje</label>
-        <label><input type="checkbox" id="e-undet" ${r.date_undetermined?'checked':''} onchange="toggleUndet(this)"> Datum ni še določen</label>
+        <label><input type="checkbox" id="e-recurring" ${r.recurring?'checked':''}> {{ t('dej_tedensko_ponavljanje', 'Tedensko ponavljanje') }}</label>
+        <label><input type="checkbox" id="e-undet" ${r.date_undetermined?'checked':''} onchange="toggleUndet(this)"> {{ t('dej_datum_ni_dolocen', 'Datum ni še določen') }}</label>
       </div>
       <div class="toolbar" id="date-fields">
         <div style="width:100%;">
-          <b>Datumi</b> <span class="hint">(datume dodaš samo tukaj; za isti razred na več zaporednih dni označi »Več dni« in vpiši še »Do«)</span>
+          <b>{{ t('dej_datumi', 'Datumi') }}</b> <span class="hint">{{ t('dej_datumi_hint', '(datume dodaš samo tukaj; za isti razred na več zaporednih dni označi »Več dni« in vpiši še »Do«)') }}</span>
           <div id="termini-list" style="margin:6px 0;"></div>
-          <button type="button" class="btn" onclick="addTerminRow()">＋ Dodaj datum</button>
+          <button type="button" class="btn" onclick="addTerminRow()">{{ t('dej_dodaj_datum', '＋ Dodaj datum') }}</button>
         </div>
       </div>
       <div class="toolbar hide" id="date-text-field">
-        <label>Ocena termina: <input type="text" id="e-dtext" value="${escAttr(r.date_text)}" style="width:300px;" placeholder="npr. oktober–november"></label>
+        <label>{{ t('dej_ocena_termina', 'Ocena termina:') }} <input type="text" id="e-dtext" value="${escAttr(r.date_text)}" style="width:300px;" placeholder="{{ t('dej_ph_okt_nov', 'npr. oktober–november') }}"></label>
       </div>
       <div class="toolbar" style="align-items:flex-start;">
         <div>
-          <b>Prostori:</b> ${prostCheck || '<span class="muted">(ni razpoložljivih prostorov)</span>'}
+          <b>{{ t('dej_prostori', 'Prostori:') }}</b> ${prostCheck || '<span class="muted">{{ t('dej_ni_prostorov', '(ni razpoložljivih prostorov)') }}</span>'}
         </div>
       </div>
       <div class="toolbar">
-        <label>Cena (€): <input type="text" id="e-cena" value="${escAttr(r.cena)}" style="width:120px;" placeholder="npr. 3 ali 225,00 EVR"></label>
-        <label>Vodja: <input type="text" id="e-vodja" value="${escAttr(r.vodja)}" style="width:240px;"></label>
+        <label>{{ t('dej_cena', 'Cena (€):') }} <input type="text" id="e-cena" value="${escAttr(r.cena)}" style="width:120px;" placeholder="npr. 3 ali 225,00 EVR"></label>
+        <label>{{ t('dej_vodja', 'Vodja:') }} <input type="text" id="e-vodja" value="${escAttr(r.vodja)}" style="width:240px;"></label>
       </div>
       <div class="toolbar">
-        <label>Opomba: <input type="text" id="e-opomba" value="${escAttr(r.opomba)}" style="width:100%;"></label>
+        <label>{{ t('dej_opomba', 'Opomba:') }} <input type="text" id="e-opomba" value="${escAttr(r.opomba)}" style="width:100%;"></label>
       </div>
       <div style="text-align:right;margin-top:16px;">
         <button class="btn btn-danger" onclick="document.body.removeChild(this.closest('#editor'))" style="margin-right:6px;">{{ t('btn_preklici', 'Prekliči') }}</button>
-        <button class="btn btn-success" onclick="saveRow(${r.id || 'null'})">💾 Shrani</button>
+        <button class="btn btn-success" onclick="saveRow(${r.id || 'null'})">{{ t('dej_shrani', '💾 Shrani') }}</button>
       </div>
     </div>`;
   document.body.appendChild(overlay);
@@ -390,11 +391,11 @@ function terminRowHtml(term, idx){
   }).join('');
   const hasTo = !!(term.date_to && term.date_to !== term.date);
   return `<div class="t-row" data-idx="${idx}" style="border:1px solid #ddd;border-radius:4px;padding:6px;margin-bottom:4px;display:flex;gap:10px;align-items:flex-start;flex-wrap:wrap;">
-    <label>Od: <input type="date" class="t-date" value="${term.date||''}"></label>
-    <label style="white-space:nowrap;"><input type="checkbox" class="t-multi" ${hasTo?'checked':''} onchange="toggleMulti(this)"> Več dni</label>
-    <label>Do: <input type="date" class="t-date-to" value="${term.date_to||''}" ${hasTo?'':'disabled'}></label>
-    <label style="white-space:nowrap;"><input type="checkbox" class="t-all" ${allChecked?'checked':''} onchange="toggleAllClasses(this)"> Vsi razredi generacije</label>
-    <div><b>Razredi:</b> ${pick || '<span class="muted">(ni črkovnih oddelkov)</span>'}</div>
+    <label>{{ t('dej_od', 'Od:') }} <input type="date" class="t-date" value="${term.date||''}"></label>
+    <label style="white-space:nowrap;"><input type="checkbox" class="t-multi" ${hasTo?'checked':''} onchange="toggleMulti(this)"> {{ t('dej_vec_dni', 'Več dni') }}</label>
+    <label>{{ t('dej_do', 'Do:') }} <input type="date" class="t-date-to" value="${term.date_to||''}" ${hasTo?'':'disabled'}></label>
+    <label style="white-space:nowrap;"><input type="checkbox" class="t-all" ${allChecked?'checked':''} onchange="toggleAllClasses(this)"> {{ t('dej_vsi_razredi_gen', 'Vsi razredi generacije') }}</label>
+    <div><b>{{ t('dej_razredi_lbl', 'Razredi:') }}</b> ${pick || '<span class="muted">{{ t('dej_ni_oddelkov', '(ni črkovnih oddelkov)') }}</span>'}</div>
     <button type="button" class="btn btn-danger btn-sm" onclick="delTerminRow(this)">✕</button>
   </div>`;
 }
@@ -477,7 +478,7 @@ function saveRow(id){
   const url = id ? '/api/dejavnosti/' + id : '/api/dejavnosti';
   api(url, {method, headers:{'Content-Type':'application/json'}, body: JSON.stringify(payload)})
     .then(res => {
-      showMsg('Dejavnost shranjena.', 'success');
+      showMsg('{{ t('dej_shranjena', 'Dejavnost shranjena.') }}', 'success');
       document.body.removeChild(document.getElementById('editor'));
       loadGrade(currentGrade);
     }).catch(e => showMsg(e.message, 'error'));
@@ -487,7 +488,7 @@ function saveRow(id){
 function esc(s){ return (s||'').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
 function escAttr(s){ return esc(s); }
 function fmtDateRange(r){
-  if(r.date_undetermined) return '<span class="muted">ni določen</span>';
+  if(r.date_undetermined) return '<span class="muted">{{ t('dej_ni_dolocen', 'ni določen') }}</span>';
   if(!r.date_from) return '—';
   let s = toSlovenianDate(r.date_from);
   if(r.date_to && r.date_to !== r.date_from) s += ' → ' + toSlovenianDate(r.date_to);

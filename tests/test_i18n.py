@@ -234,3 +234,41 @@ def test_filter_options_translated(client, make_user):
     assert '>Vsi razredi</option>' not in r.text
     assert '8. razred (vsi)</option>' not in r.text
     assert '9. razred (vsi)</option>' not in r.text
+
+
+def test_reservation_ui_translated_to_english(client, make_user):
+    """Rezervacije: »Število:« → »Number of:«, »Prosto« → »Free«, »preostalih« →
+    »remaining«, dnevi v tednu angleško."""
+    db = SessionLocal()
+    try:
+        set_school_setting(db, default_school_id(), "UI_LANGUAGE", "en")
+        db.commit()
+    finally:
+        db.close()
+
+    admin = make_user(role="admin")
+    login(client, admin.username)
+    html = client.get("/rezervacije").text
+    for napis in ("Number of:", "Free", "remaining", "Monday", "Tuesday", "Wednesday",
+                  "Thursday", "Friday", "Free:"):
+        assert napis in html, f"manjka angleški napis: {napis}"
+
+
+def test_dejavnosti_page_translated_to_english(client, make_user):
+    """Stran Dejavnosti: tipi sekcij in glavni napisi so v angleščini."""
+    db = SessionLocal()
+    try:
+        set_school_setting(db, default_school_id(), "UI_LANGUAGE", "en")
+        db.commit()
+    finally:
+        db.close()
+
+    admin = make_user(role="admin")
+    login(client, admin.username)
+    html = client.get("/ocenjevanje/dejavnosti").text
+    for napis in ("CULTURAL", "SCIENCE", "TECHNICAL", "SPORTS", "OTHER", "DAYS",
+                  "OVERVIEW OF ACTIVITIES", "Grade 1", "Actions"):
+        assert napis in html, f"manjka angleški napis: {napis}"
+    # stari slovenski napisi naj ne nastopajo več kot sekcije/naslovi
+    assert "PREGLED DEJAVNOSTI" not in html
+    assert ">Akcije<" not in html

@@ -443,7 +443,7 @@
            "tablice". Tablice so omejene na 28 kosov, zato input
            omogoča vnos od 1 do 28. -->
       <div class="form-group" id="rez-form-qty-group" style="display:none;">
-        <label>Število:</label>
+        <label>{{ t('label_stevilo_qty', 'Število:') }}</label>
         <input type="number" id="rez-form-qty" min="1" max="28" value="1">
       </div>
       <div class="form-actions">
@@ -466,15 +466,15 @@
         <select id="weekly-prostor"></select>
       </div>
       <div class="form-group">
-        <label>Ime rezervacije (neobvezno)</label>
-        <input type="text" id="weekly-name" placeholder="npr. Naravoslovni dan — 5. a" maxlength="120">
+        <label>{{ t('label_ime_rezervacije_neobv', 'Ime rezervacije (neobvezno)') }}</label>
+        <input type="text" id="weekly-name" placeholder="{{ t('ph_naravoslovni_dan', 'npr. Naravoslovni dan — 5. a') }}" maxlength="120">
       </div>
       <div class="form-group">
-        <label>Ura (0-7)</label>
+        <label>{{ t('label_ura_0_7', 'Ura (0-7)') }}</label>
         <input type="number" id="weekly-hour" min="0" max="7" step="1" value="0">
       </div>
       <div class="form-group">
-        <label>Dan v tednu (0=Pon, 6=Ned)</label>
+        <label>{{ t('label_dan_v_tednu', 'Dan v tednu (0=Pon, 6=Ned)') }}</label>
         <input type="number" id="weekly-weekday" min="0" max="6" step="1" value="0">
       </div>
       <div class="form-group">
@@ -489,7 +489,7 @@
            prostor "tablice". Vrednosti 1-28, izbirnik namesto vnosa
            za preprečevanje napačnih vrednosti. -->
       <div class="form-group" id="weekly-qty-group" style="display:none;">
-        <label>Število tablic (samo za tablice)</label>
+        <label>{{ t('label_stevilo_tablic', 'Število tablic (samo za tablice)') }}</label>
         <select id="weekly-qty">
           <option value="1">1</option>
           <option value="2">2</option>
@@ -529,7 +529,7 @@
       <!-- SEZNAM OBSTOJEČIH SERIJ — prikaže vse aktivne serije z
            možnostjo brisanja. Uporabnik lahko vidi, katere serije so
            že nastavljene, preden doda novo. -->
-      <h4 style="margin-bottom:0.5rem;font-size:0.9rem;color:#555;">📋 Obstoječe serije</h4>
+      <h4 style="margin-bottom:0.5rem;font-size:0.9rem;color:#555;">{{ t('label_obstojece_serije', '📋 Obstoječe serije') }}</h4>
       <div id="series-list" style="max-height:200px;overflow-y:auto;font-size:0.85rem;"></div>
     </div>
   </div>
@@ -548,8 +548,8 @@
         <select id="fullday-prostor"></select>
       </div>
       <div class="form-group">
-        <label>Ime rezervacije (neobvezno)</label>
-        <input type="text" id="fullday-name" placeholder="npr. Naravoslovni dan — 5. a" maxlength="120">
+        <label>{{ t('label_ime_rezervacije_neobv', 'Ime rezervacije (neobvezno)') }}</label>
+        <input type="text" id="fullday-name" placeholder="{{ t('ph_naravoslovni_dan', 'npr. Naravoslovni dan — 5. a') }}" maxlength="120">
       </div>
       <div class="form-group">
         <label>{{ t('label_od_datuma', 'Od datuma') }}</label>
@@ -562,7 +562,7 @@
       <!-- POLJE ZA ŠTEVILO TABLIC (celodnevna serija) — enako kot pri
            tedenski, prikazano le za "tablice". -->
       <div class="form-group" id="fullday-qty-group" style="display:none;">
-        <label>Število tablic (samo za tablice)</label>
+        <label>{{ t('label_stevilo_tablic', 'Število tablic (samo za tablice)') }}</label>
         <select id="fullday-qty">
           <option value="1">1</option>
           <option value="2">2</option>
@@ -595,7 +595,7 @@
         </select>
       </div>
       <div class="form-group">
-        <label>Ure (prazno za vse, npr. 0,1,2)</label>
+        <label>{{ t('label_ure_prazno_vse', 'Ure (prazno za vse, npr. 0,1,2)') }}</label>
         <input type="text" id="fullday-hours" placeholder="0,1,2">
       </div>
       <div class="form-actions">
@@ -604,7 +604,7 @@
       </div>
       <hr style="margin:1rem 0;border:none;border-top:1px solid #eee;">
       <!-- SEZNAM OBSTOJEČIH CELODNEVNIH SERIJ -->
-      <h4 style="margin-bottom:0.5rem;font-size:0.9rem;color:#555;">📋 Obstoječe serije</h4>
+      <h4 style="margin-bottom:0.5rem;font-size:0.9rem;color:#555;">{{ t('label_obstojece_serije', '📋 Obstoječe serije') }}</h4>
       <div id="fullday-series-list" style="max-height:200px;overflow-y:auto;font-size:0.85rem;"></div>
     </div>
   </div>
@@ -647,7 +647,7 @@
     <div class="modal" style="max-width:660px;">
       <h3>{{ t('btn_dnevi_dejavnosti', '🚫 Dnevi dejavnosti') }}</h3>
       <div class="form-group">
-        <label>Razredi (držite Ctrl za več)</label>
+        <label>{{ t('label_razredi_ctrl', 'Razredi (držite Ctrl za več)') }}</label>
         <select id="block-razredi" multiple style="height:180px;width:100%;"></select>
       </div>
       <div style="display:flex;gap:10px;">
@@ -1159,9 +1159,9 @@
         formData.append('new_password', newPw1);
         const res = await fetch('/auth/change-password', { method: 'POST', body: formData });
         const json = await res.json();
-        if (res.ok) { msgEl.style.color = 'green'; msgEl.textContent = 'Geslo uspešno spremenjeno!'; setTimeout(() => closeModal('pw-modal'), 1500); }
+        if (res.ok) { msgEl.style.color = 'green'; msgEl.textContent = '{{ t('js_geslo_spremenjeno', 'Geslo uspešno spremenjeno!') }}'; setTimeout(() => closeModal('pw-modal'), 1500); }
         else { msgEl.style.color = 'red'; msgEl.textContent = json.detail || 'Napaka pri spreminjanju gesla.'; }
-      } catch(e) { msgEl.style.color = 'red'; msgEl.textContent = 'Napaka pri povezavi s strežnikom.'; }
+      } catch(e) { msgEl.style.color = 'red'; msgEl.textContent = '{{ t('js_napaka_povezava', 'Napaka pri povezavi s strežnikom.') }}'; }
     }
 
     // --- Export rezervacij ---
@@ -1203,7 +1203,7 @@
             link.click();
             URL.revokeObjectURL(link.href);
             closeModal('export-rez-modal');
-        } catch(e) { msgEl.style.color = 'red'; msgEl.textContent = 'Napaka pri povezavi s strežnikom.'; }
+        } catch(e) { msgEl.style.color = 'red'; msgEl.textContent = '{{ t('js_napaka_povezava', 'Napaka pri povezavi s strežnikom.') }}'; }
     }
 
     // --- Export ocenjevanj ---
@@ -1241,7 +1241,7 @@
             link.click();
             URL.revokeObjectURL(link.href);
             closeModal('export-oc-modal');
-        } catch(e) { msgEl.style.color = 'red'; msgEl.textContent = 'Napaka pri povezavi s strežnikom.'; }
+        } catch(e) { msgEl.style.color = 'red'; msgEl.textContent = '{{ t('js_napaka_povezava', 'Napaka pri povezavi s strežnikom.') }}'; }
     }
 
     // --- Dnevi dejavnosti ---
@@ -1401,7 +1401,7 @@
 
       const body = document.getElementById('dejavnost-modal-body');
       if (entries.length === 0) {
-        body.innerHTML = '<p style="color:#777;">Za ta dan ni zabeležene dejavnosti.</p>';
+        body.innerHTML = '<p style="color:#777;">{{ t('cal_brez_dejavnosti', 'Za ta dan ni zabeležene dejavnosti.') }}</p>';
       } else {
         // Barvi: celodnevna dejavnost = vijolična (enako kot polje v koledarju),
         // krajša dejavnost (brez »Celoten dan«) = petrolejna. Razlika je vidna
@@ -1422,9 +1422,9 @@
             <tbody>
             ${entries.map(e => {
               const color = e.full ? FULL_COLOR : PART_COLOR;
-              const tag = e.full ? chip(color, 'Celoten dan') : chip(color, 'Ne traja cel dan');
+              const tag = e.full ? chip(color, '{{ t('label_celoten_dan', 'Celoten dan') }}') : chip(color, '{{ t('label_ni_celoten_dan', 'Ne traja cel dan') }}');
               const naziv = e.naziv ? e.naziv
-                : '<span style="color:#999;">— (ročno blokirano, brez zapisa v dejavnostih)</span>';
+                : '<span style="color:#999;">{{ t('cal_rocno_blokirano', '— (ročno blokirano, brez zapisa v dejavnostih)') }}</span>';
               return `<tr>
               <td style="padding:6px 8px;border-bottom:1px solid #f1f1f1;border-left:4px solid ${color};font-weight:600;">${e.razred}</td>
               <td style="padding:6px 8px;border-bottom:1px solid #f1f1f1;">${dot(color)}${naziv} &nbsp;${tag}</td>
@@ -1502,7 +1502,7 @@
           if (json.deleted_assessments > 0) msgEl.textContent += ` (izbrisanih ${json.deleted_assessments} ocenjevanj, poslanih ${json.emails_sent} emailov)`;
           await loadAllBlockedDates(); renderBlockList(); loadAssessments();
         } else { msgEl.style.color = 'red'; msgEl.textContent = json.detail || 'Napaka.'; }
-      } catch(e) { msgEl.style.color = 'red'; msgEl.textContent = 'Napaka pri povezavi.'; }
+      } catch(e) { msgEl.style.color = 'red'; msgEl.textContent = '{{ t('js_napaka_povezava_kratka', 'Napaka pri povezavi.') }}'; }
     }
     // Izbriše posamezen dan dejavnosti (blokado) prek DELETE zahtevka.
     // Po brisanju osveži seznam blokad in koledar ocenjevanj.
@@ -1513,7 +1513,7 @@
         const res = await fetch(`/api/blocked-dates/${id}`, { method: 'DELETE', credentials: 'include' });
         if (res.ok) { await loadAllBlockedDates(); renderBlockList(); loadAssessments(); }
         else { const json = await res.json(); showMsg(json.detail || 'Napaka pri brisanju.', 'error'); }
-      } catch(e) { showMsg('Napaka pri povezavi.', 'error'); }
+      } catch(e) { showMsg('{{ t('js_napaka_povezava_kratka', 'Napaka pri povezavi.') }}', 'error'); }
     }
 
     // --- Serije ---
@@ -1567,7 +1567,7 @@
           loadAllReservations(); 
         }
         else { showMsg(json.detail?.message || json.detail || 'Napaka pri ustvarjanju serije.', 'error'); }
-      } catch(e) { showMsg('Napaka pri povezavi s strežnikom.', 'error'); }
+      } catch(e) { showMsg('{{ t('js_napaka_povezava', 'Napaka pri povezavi s strežnikom.') }}', 'error'); }
     }
 
     // --- Seznam serij ---
@@ -1581,7 +1581,7 @@
       if (!resp.ok) { document.getElementById(containerId).innerHTML = '<span style="color:#999;">Napaka pri nalaganju</span>'; return; }
       const data = await resp.json();
       const container = document.getElementById(containerId);
-      if (!data.length) { container.innerHTML = '<span style="color:#999;">Ni aktivnih serij za bodoče datume.</span>'; return; }
+      if (!data.length) { container.innerHTML = '<span style="color:#999;">{{ t('series_ni_aktivnih', 'Ni aktivnih serij za bodoče datume.') }}</span>'; return; }
       data.sort((a,b) => a.min_date.localeCompare(b.min_date));
       let html = '';
       for (const s of data) {
@@ -1609,14 +1609,14 @@
     // serij in urnik rezervacij — saj so vsi termini serije
     // izbrisani.
     async function deleteSeries(seriesId) {
-      if (!confirm('Ste prepričani, da želite izbrisati to serijo?')) return;
+      if (!confirm('{{ t('js_potrdi_brisi_serijo', 'Ste prepričani, da želite izbrisati to serijo?') }}')) return;
       try {
         const resp = await fetch(`/api/rezervacije/series/${seriesId}`, { method: 'DELETE', credentials: 'include' });
         if (!resp.ok) { const e = await resp.json(); alert(e.detail || 'Napaka pri brisanju.'); return; }
         loadSeriesList();
         loadFullDaySeriesList();
         if (typeof loadAllReservations === 'function') loadAllReservations();
-      } catch(e) { alert('Napaka pri povezavi.'); }
+      } catch(e) { alert('{{ t('js_napaka_povezava_kratka', 'Napaka pri povezavi.') }}'); }
     }
 
     // Odpre modal za celodnevno serijo. Nastavi privzete vrednosti:
@@ -1679,7 +1679,7 @@
         } else {
           showMsg(json.detail?.message || json.detail || 'Napaka pri ustvarjanju serije.', 'error');
         }
-      } catch(e) { showMsg('Napaka pri povezavi s strežnikom.', 'error'); }
+      } catch(e) { showMsg('{{ t('js_napaka_povezava', 'Napaka pri povezavi s strežnikom.') }}', 'error'); }
     }
 
     // --- Rezervacije ---
@@ -1771,7 +1771,7 @@
         <h3>${formatDateSI(weekStart)} – ${formatDateSI(weekEnd)}</h3>
         <button class="btn btn-sm btn-outline" onclick="shiftWeek(7)">{{ t('cal_naslednji_teden', 'Naslednji teden ›') }}</button>
       </div>`;
-      const dayNames = ['Ponedeljek', 'Torek', 'Sreda', 'Četrtek', 'Petek'];
+      const dayNames = ['{{ t('dan_ponedeljek', 'Ponedeljek') }}', '{{ t('dan_torek', 'Torek') }}', '{{ t('dan_sreda', 'Sreda') }}', '{{ t('dan_cetrtek', 'Četrtek') }}', '{{ t('dan_petek', 'Petek') }}'];
       const hours = allHours(prostor);
       html += `<table><thead><tr><th>{{ t('label_ura', 'Ura') }}</th>`;
       days.forEach((d,i) => { html += `<th>${dayNames[i]}<br><small>${formatDateSI(d)}</small></th>`; });
@@ -1800,11 +1800,11 @@
                 html += `<span class="del-rez" onclick="deleteReservation(${res.id})">✕</span>`;
               }
             }
-            if (QTY_ROOMS.has(prostor)) { const used = tabliceMap[key] || 0; const cap = qtyLimit(prostor); const free = cap - used; html += `<div class="slot-info" style="margin-top:4px;">Prosto: ${free}/${cap}</div>`; }
+            if (QTY_ROOMS.has(prostor)) { const used = tabliceMap[key] || 0; const cap = qtyLimit(prostor); const free = cap - used; html += `<div class="slot-info" style="margin-top:4px;">{{ t('slot_prosto_pref', 'Prosto:') }} ${free}/${cap}</div>`; }
             html += `</td>`;
           } else {
-            html += `<td><div class="slot-free">Prosto</div>`;
-            if (QTY_ROOMS.has(prostor)) { const used = tabliceMap[key] || 0; const cap = qtyLimit(prostor); html += `<div class="slot-info">${cap - used}/${cap} preostalih</div>`; }
+            html += `<td><div class="slot-free">{{ t('slot_free', 'Prosto') }}</div>`;
+            if (QTY_ROOMS.has(prostor)) { const used = tabliceMap[key] || 0; const cap = qtyLimit(prostor); html += `<div class="slot-info">${cap - used}/${cap} {{ t('slot_remaining', 'preostalih') }}</div>`; }
             html += `<div class="quick-add"><button class="btn btn-sm btn-outline" onclick="quickRez('${prostor}','${dateStr}',${hourIdx})">+</button></div></td>`;
           }
         }
@@ -1866,21 +1866,21 @@
       try {
         const res = await fetch('/api/rezervacije', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(data) });
         const json = await res.json();
-        if (res.ok) { showMsg('Rezervacija uspešno ustvarjena!', 'success'); closeModal('rez-modal'); loadAllReservations(); }
+        if (res.ok) { showMsg('{{ t('js_rez_ustvarjena', 'Rezervacija uspešno ustvarjena!') }}', 'success'); closeModal('rez-modal'); loadAllReservations(); }
         else { showMsg(json.detail || 'Napaka pri ustvarjanju rezervacije.', 'error'); }
-      } catch(e) { showMsg('Napaka pri povezavi s strežnikom.', 'error'); }
+      } catch(e) { showMsg('{{ t('js_napaka_povezava', 'Napaka pri povezavi s strežnikom.') }}', 'error'); }
     }
     // Izbriše rezervacijo z danim ID-jem. Pred brisanjem zahteva
     // potrditev (confirm). Po uspešnem brisanju osveži urnik.
     // Brisanje je dovoljeno le lastniku rezervacije, adminu ali
     // vodstvu — preverjeno na strežniku.
     async function deleteReservation(id) {
-      if (!confirm('Ste prepričani, da želite izbrisati to rezervacijo?')) return;
+      if (!confirm('{{ t('js_potrdi_brisi_rez', 'Ste prepričani, da želite izbrisati to rezervacijo?') }}')) return;
       try {
         const res = await fetch(`/api/rezervacije/${id}`, { method: 'DELETE' });
         if (res.ok) { showMsg('Rezervacija izbrisana.', 'success'); loadAllReservations(); }
         else { const json = await res.json(); showMsg(json.detail || 'Napaka pri brisanju.', 'error'); }
-      } catch(e) { showMsg('Napaka pri povezavi s strežnikom.', 'error'); }
+      } catch(e) { showMsg('{{ t('js_napaka_povezava', 'Napaka pri povezavi s strežnikom.') }}', 'error'); }
     }
 
     // --- Ocenjevanja ---
@@ -1919,7 +1919,7 @@
             || (jePosebni(a) && jeRazpon69));
         }
         renderMonthlyCalendar(naslov, month, assessments, razred === '' || filterPrefix.length > 0);
-      } catch(e) { showMsg('Napaka pri povezavi s strežnikom.', 'error'); }
+      } catch(e) { showMsg('{{ t('js_napaka_povezava', 'Napaka pri povezavi s strežnikom.') }}', 'error'); }
     }
     // Izriše mesečni koledar ocenjevanj v HTML obliki.
     // Uporablja CSS grid (7 stolpcev) za dneve v tednu.
@@ -2072,27 +2072,27 @@
       // dejavnosti, ocenjevanje ni možno — preprečimo že v brskalniku.
       // Strežnik to preveri še enkrat (API je avtoritativen).
       if (isDateBlocked(data.razred, data.date)) {
-        showMsg('Ta dan je za ta razred dan dejavnosti — ocenjevanje ni mogoče.', 'error');
+        showMsg('{{ t('js_dan_dejavnosti_oc', 'Ta dan je za ta razred dan dejavnosti — ocenjevanje ni mogoče.') }}', 'error');
         return;
       }
       try {
         const res = await fetch('/api/ocenjevanja', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(data) });
         const json = await res.json();
-        if (res.ok) { showMsg('Ocenjevanje uspešno dodano!', 'success'); closeModal('oc-modal'); loadAssessments(); }
+        if (res.ok) { showMsg('{{ t('js_oc_dodano', 'Ocenjevanje uspešno dodano!') }}', 'success'); closeModal('oc-modal'); loadAssessments(); }
         else { showMsg(json.detail || 'Napaka pri dodajanju ocenjevanja.', 'error'); }
-      } catch(e) { showMsg('Napaka pri povezavi s strežnikom.', 'error'); }
+      } catch(e) { showMsg('{{ t('js_napaka_povezava', 'Napaka pri povezavi s strežnikom.') }}', 'error'); }
     }
     // Izbriše ocenjevanje z danim ID-jem. Pred brisanjem zahteva
     // potrditev (confirm). Po uspešnem brisanju osveži koledar.
     // Brisanje je dovoljeno le lastniku ocenjevanja, adminu ali
     // vodstvu — preverjeno na strežniku.
     async function deleteAssessment(id) {
-      if (!confirm('Ste prepričani, da želite izbrisati to ocenjevanje?')) return;
+      if (!confirm('{{ t('js_potrdi_brisi_oc', 'Ste prepričani, da želite izbrisati to ocenjevanje?') }}')) return;
       try {
         const res = await fetch(`/api/ocenjevanja/${id}`, { method: 'DELETE' });
         if (res.ok) { showMsg('Ocenjevanje izbrisano.', 'success'); loadAssessments(); }
         else { const json = await res.json(); showMsg(json.detail || 'Napaka pri brisanju.', 'error'); }
-      } catch(e) { showMsg('Napaka pri povezavi s strežnikom.', 'error'); }
+      } catch(e) { showMsg('{{ t('js_napaka_povezava', 'Napaka pri povezavi s strežnikom.') }}', 'error'); }
     }
 
     // --- DOMContentLoaded init ---
@@ -2139,7 +2139,7 @@
       if (meRes.ok) currentUser = await meRes.json();
 
       if (currentUser) {
-        document.getElementById('userInfo').textContent = `${currentUser.full_name || currentUser.username} (${currentUser.role === 'admin' ? 'admin' : currentUser.role === 'vodstvo' ? 'vodstvo' : 'učitelj'})`;
+        document.getElementById('userInfo').textContent = `${currentUser.full_name || currentUser.username} (${currentUser.role === 'admin' ? '{{ t('role_admin', 'admin') }}' : currentUser.role === 'vodstvo' ? '{{ t('role_vodstvo', 'vodstvo') }}' : '{{ t('role_ucitelj', 'učitelj') }}'})`;
         if (currentUser.role === 'admin' || currentUser.role === 'main_admin') {
             document.getElementById('admin-link').style.display = 'inline';
             document.getElementById('settings-link').style.display = 'inline';
