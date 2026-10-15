@@ -314,8 +314,8 @@ STRINGS: list[tuple[str, str, str, str]] = [
      "The language in which the app shows button and dialog labels (texts are read from the table"),
 
     ("set_hint_razredi_1", "nastavitve šole", "V vsako vrstico vpišite en razred, npr.", "Enter one class per line, e.g."),
-    ("set_hint_razredi_2", "nastavitve šole", ". Vrstico odstranite z ✕. Razredi se uporabljajo pri rezervacijah in ocenjevanjih.",
-     ". Remove a line with ✕. Classes are used in reservations and assessments."),
+    ("set_hint_razredi_2", "nastavitve šole", ". Vrstico odstranite z ✕. Razredi se uporabljajo pri ocenjevanjih.",
+     ". Remove a line with ✕. Classes are used in assessments."),
     ("set_hint_stevila_1", "nastavitve šole", "Vsaka vrstica je imenovana številska spremenljivka (ime + vrednost), npr.",
      "Each line is a named numeric variable (name + value), e.g."),
     ("set_hint_stevila_2", "nastavitve šole", "Na ta imena se vežejo prostori (spodaj) — kapaciteta prostora na uro je vrednost te spremenljivke.",
