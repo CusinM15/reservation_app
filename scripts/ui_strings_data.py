@@ -39,6 +39,12 @@ STRINGS: list[tuple[str, str, str, str]] = [
     ("nav_admin_panel", "meni", "🛠️ Admin panel", "🛠️ Admin panel"),
     ("nav_audit_log", "meni", "📋 Audit log", "📋 Audit log"),
     ("nav_izbrana_sola", "meni", "Izbrana šola:", "Selected school:"),
+    ("opt_vsi_razredi", "meni", "Vsi razredi", "All classes"),
+    ("opt_vsi_prostori", "meni", "Vsi prostori", "All rooms"),
+    ("opt_razred_8_vsi", "meni", "🗂️ 8. razred (vsi)", "🗂️ 8th grade (all)"),
+    ("opt_razred_9_vsi", "meni", "🗂️ 9. razred (vsi)", "🗂️ 9th grade (all)"),
+    ("opt_glava_8", "meni", "— 8. razred —", "— 8th grade —"),
+    ("opt_glava_9", "meni", "— 9. razred —", "— 9th grade —"),
     ("naslov_rezervacije_prostorov", "rezervacije", "Rezervacije prostorov", "Room reservations"),
     ("label_zacetek_tedna", "rezervacije", "Začetek tedna", "Start of week"),
     # ── Prijava / odjava ──────────────────────────────────────────────

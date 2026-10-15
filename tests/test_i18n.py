@@ -212,3 +212,25 @@ def test_main_nav_translated_to_english(client, make_user):
     assert ">Rezervacije<" not in r.text
     assert ">Ocenjevanje in dnevi dejavnosti<" not in r.text
     assert "<h2>Rezervacije prostorov</h2>" not in r.text
+
+
+def test_filter_options_translated(client, make_user):
+    """Izbirniki filtrov: »Vsi razredi«, »8. razred (vsi)«, »9. razred (vsi)«,
+    »Vsi prostori« so v angleščini, ko je jezik šole 'en'."""
+    db = SessionLocal()
+    try:
+        set_school_setting(db, default_school_id(), "UI_LANGUAGE", "en")
+        db.commit()
+    finally:
+        db.close()
+
+    admin = make_user(role="admin")
+    login(client, admin.username)
+    r = client.get("/rezervacije")
+    assert r.status_code == 200
+    for napis in ("All classes", "All rooms", "8th grade (all)", "9th grade (all)"):
+        assert napis in r.text, f"manjka angleški napis: {napis}"
+    # Prej trdo zapisani slovenski napisi (zunaj t()) ne smejo več nastopati kot izbire.
+    assert '>Vsi razredi</option>' not in r.text
+    assert '8. razred (vsi)</option>' not in r.text
+    assert '9. razred (vsi)</option>' not in r.text

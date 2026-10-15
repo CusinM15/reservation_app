@@ -1038,15 +1038,15 @@
       const devetke = razredi.filter(r => r.startsWith('9.')).sort();
       const ostalo = razredi.filter(r => !r.startsWith('8.') && !r.startsWith('9.')).sort();
       let html = '';
-      if (addAll) html += '<option value="">Vsi razredi</option>';
+      if (addAll) html += '<option value="">{{ t('opt_vsi_razredi', 'Vsi razredi') }}</option>';
       if (id === 'oc-razred') {
-        html += '<option value="__8__">🗂️ 8. razred (vsi)</option>';
-        html += '<option value="__9__">🗂️ 9. razred (vsi)</option>';
+        html += '<option value="__8__">{{ t('opt_razred_8_vsi', '🗂️ 8. razred (vsi)') }}</option>';
+        html += '<option value="__9__">{{ t('opt_razred_9_vsi', '🗂️ 9. razred (vsi)') }}</option>';
         html += '<option value="" disabled style="font-size:1px;">—</option>';
       }
       ostalo.forEach(r => { html += `<option value="${r}">${r}</option>`; });
-      if (osmice.length) { if (id !== 'oc-razred') html += '<option value="" disabled style="font-weight:bold;background:#eee;">— 8. razred —</option>'; osmice.forEach(r => html += `<option value="${r}">${r}</option>`); }
-      if (devetke.length) { if (id !== 'oc-razred') html += '<option value="" disabled style="font-weight:bold;background:#eee;">— 9. razred —</option>'; devetke.forEach(r => html += `<option value="${r}">${r}</option>`); }
+      if (osmice.length) { if (id !== 'oc-razred') html += '<option value="" disabled style="font-weight:bold;background:#eee;">{{ t('opt_glava_8', '— 8. razred —') }}</option>'; osmice.forEach(r => html += `<option value="${r}">${r}</option>`); }
+      if (devetke.length) { if (id !== 'oc-razred') html += '<option value="" disabled style="font-weight:bold;background:#eee;">{{ t('opt_glava_9', '— 9. razred —') }}</option>'; devetke.forEach(r => html += `<option value="${r}">${r}</option>`); }
       sel.innerHTML = html;
     }
     // ── Ure glede na prostor ──────────────────────────────────────────
@@ -1175,7 +1175,7 @@
         document.getElementById('export-rez-from').value = formatDate(from);
         document.getElementById('export-rez-to').value = formatDate(new Date());
         const sel = document.getElementById('export-rez-prostor');
-        sel.innerHTML = '<option value="">Vsi prostori</option>' + prostori.map(p => `<option value="${p}">${prostorLabel(p)}</option>`).join('');
+        sel.innerHTML = '<option value="">{{ t('opt_vsi_prostori', 'Vsi prostori') }}</option>' + prostori.map(p => `<option value="${p}">${prostorLabel(p)}</option>`).join('');
         document.getElementById('export-rez-msg').textContent = '';
         openModal('export-rez-modal');
     }
@@ -1215,7 +1215,7 @@
         document.getElementById('export-oc-from').value = formatDate(from);
         document.getElementById('export-oc-to').value = formatDate(new Date());
         const sel = document.getElementById('export-oc-razred');
-        sel.innerHTML = '<option value="">Vsi razredi</option>' + razredi.map(r => `<option value="${r}">${r}</option>`).join('');
+        sel.innerHTML = '<option value="">{{ t('opt_vsi_razredi', 'Vsi razredi') }}</option>' + razredi.map(r => `<option value="${r}">${r}</option>`).join('');
         document.getElementById('export-oc-msg').textContent = '';
         openModal('export-oc-modal');
     }
@@ -1897,9 +1897,9 @@
       // tudi ocenjevanja razreda IP/NIP/ID. Za en mesec je podatkov malo.
       const url = `/api/ocenjevanja?month=${month}`;
       let filterPrefix = [];
-      let naslov = razred || 'Vsi razredi';
-      if (razred === '__8__') { filterPrefix = ['8.']; naslov = '8. razred (vsi)'; }
-      else if (razred === '__9__') { filterPrefix = ['9.']; naslov = '9. razred (vsi)'; }
+      let naslov = razred || '{{ t('opt_vsi_razredi', 'Vsi razredi') }}';
+      if (razred === '__8__') { filterPrefix = ['8.']; naslov = '{{ t('opt_razred_8_vsi', '🗂️ 8. razred (vsi)') }}'; }
+      else if (razred === '__9__') { filterPrefix = ['9.']; naslov = '{{ t('opt_razred_9_vsi', '🗂️ 9. razred (vsi)') }}'; }
       // Ali gledamo razred/skupino 6.–9.? (le tam sodi tudi IP/NIP/ID)
       const jeRazpon69 = filterPrefix.length > 0
         || RAZREDI_69.some(p => (razred || '').startsWith(p));
