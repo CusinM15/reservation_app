@@ -1089,11 +1089,14 @@
       return out;
     }
     // Napolni <select> z urami urnika — glede na izbrani prostor.
+    // Pri popoldanskem prostoru se prikaže SAMO termin (npr. »15:00-16:00«),
+    // pri dopoldanskem pa »N: termin« (kot doslej).
     function populateHours(id, prostor) {
       const sel = document.getElementById(id);
       if (!sel) return;
       const prev = sel.value;
-      sel.innerHTML = allHours(prostor).map(([k,v]) => `<option value="${k}">${k}: ${v}</option>`).join('');
+      const pop = jePopoldan(prostor);
+      sel.innerHTML = allHours(prostor).map(([k,v]) => `<option value="${k}">${pop ? v : k + ': ' + v}</option>`).join('');
       if (prev && sel.querySelector('option[value="' + prev + '"]')) sel.value = prev;
     }
     // Najvišja ura za prostor (za max pri ročnem vnosu ure v seriji).
@@ -1773,8 +1776,12 @@
       html += `<table><thead><tr><th>{{ t('label_ura', 'Ura') }}</th>`;
       days.forEach((d,i) => { html += `<th>${dayNames[i]}<br><small>${formatDateSI(d)}</small></th>`; });
       html += `</thead><tbody>`;
+      // Pri popoldanskem prostoru v stolpcu »Ura« prikažemo SAMO termin.
+      const popTbl = jePopoldan(prostor);
       for (const [hourIdx, hourLabel] of hours) {
-        html += `<tr><td><strong>${hourIdx}</strong><br><small>${hourLabel}</small></td>`;
+        html += popTbl
+          ? `<tr><td><small>${hourLabel}</small></td>`
+          : `<tr><td><strong>${hourIdx}</strong><br><small>${hourLabel}</small></td>`;
         for (const day of days) {
           const dateStr = formatDate(day);
           const key = dateStr + '|' + hourIdx;

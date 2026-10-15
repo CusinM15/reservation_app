@@ -550,8 +550,8 @@
     const POPOLDAN_ROWS = {{ popoldan_rows|tojson }};
     function popoldanRowHtml(index, value) {
         const safe = (value || '').replace(/"/g, '&quot;');
+        // Brez oznake »Ura N« — pri popoldanskem urniku se prikaže SAMO termin.
         return `<div class="popoldan-row" style="display:flex;gap:8px;align-items:center;margin-bottom:6px;">
-            <span style="font-weight:600;min-width:70px;">Ura ${index}</span>
             <input type="text" class="popoldan-value" data-index="${index}" value="${safe}"
                    placeholder="{{ t('set_ph_popoldan', 'npr. 15:00-16:00') }}" style="max-width:220px;">
             <button type="button" class="btn btn-cancel" style="padding:6px 10px;"
