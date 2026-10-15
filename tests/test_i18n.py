@@ -187,3 +187,28 @@ def test_new_school_language_follows_registration_link(client):
     client.cookies.clear()
     assert client.post("/registracija", data={"name": "Sl sola test"}).status_code == 200
     assert jezik_sole("Sl sola test") == "sl"
+
+
+def test_main_nav_translated_to_english(client, make_user):
+    """Glavni gumbi so v angleščini, ko je jezik šole 'en'.
+
+    Preverja: Rezervacije, Ocenjevanje in dnevi dejavnosti, Rezervacije
+    prostorov (naslov) in Nastavitve šole — ti so bili prej trdo zapisani (SL).
+    """
+    db = SessionLocal()
+    try:
+        set_school_setting(db, default_school_id(), "UI_LANGUAGE", "en")
+        db.commit()
+    finally:
+        db.close()
+
+    admin = make_user(role="admin")
+    login(client, admin.username)
+    r = client.get("/rezervacije")
+    assert r.status_code == 200
+    for napis in ("Reservations", "Assessment and activity days",
+                  "Room reservations", "School settings", "Start of week"):
+        assert napis in r.text, f"manjka angleški napis: {napis}"
+    assert ">Rezervacije<" not in r.text
+    assert ">Ocenjevanje in dnevi dejavnosti<" not in r.text
+    assert "<h2>Rezervacije prostorov</h2>" not in r.text

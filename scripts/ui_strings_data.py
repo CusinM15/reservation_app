@@ -31,6 +31,16 @@ STRINGS: list[tuple[str, str, str, str]] = [
     ("btn_uvozi_csv", "splošno", "📥 Uvozi CSV", "📥 Import CSV"),
     ("btn_dnevi_dejavnosti", "meni", "🚫 Dnevi dejavnosti", "🚫 Activity days"),
     ("btn_dejavnosti", "meni", "📋 Dejavnosti", "📋 Activities"),
+    # ── Glavna navigacija (navbar) ────────────────────────────────────
+    ("nav_rezervacije", "meni", "Rezervacije", "Reservations"),
+    ("nav_ocenjevanje_dejavnosti", "meni", "Ocenjevanje in dnevi dejavnosti", "Assessment and activity days"),
+    ("nav_nastavitve_sole", "meni", "⚙️ Nastavitve šole", "⚙️ School settings"),
+    ("nav_sole", "meni", "🏫 Šole", "🏫 Schools"),
+    ("nav_admin_panel", "meni", "🛠️ Admin panel", "🛠️ Admin panel"),
+    ("nav_audit_log", "meni", "📋 Audit log", "📋 Audit log"),
+    ("nav_izbrana_sola", "meni", "Izbrana šola:", "Selected school:"),
+    ("naslov_rezervacije_prostorov", "rezervacije", "Rezervacije prostorov", "Room reservations"),
+    ("label_zacetek_tedna", "rezervacije", "Začetek tedna", "Start of week"),
     # ── Prijava / odjava ──────────────────────────────────────────────
     ("btn_prijava", "prijava", "Prijava", "Log in"),
     ("btn_odjava", "meni", "Odjava", "Log out"),

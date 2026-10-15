@@ -245,21 +245,21 @@
        ================================================================ -->
   <nav>
     <span class="brand">Šolski App</span>
-    <a href="{{ nav_rezervacije }}" class="active" data-tab="rezervacije">Rezervacije</a>
-    <a href="{{ nav_ocenjevanje }}" data-tab="ocenjevanja">Ocenjevanje in dnevi dejavnosti</a>
+    <a href="{{ nav_rezervacije }}" class="active" data-tab="rezervacije">{{ t('nav_rezervacije', 'Rezervacije') }}</a>
+    <a href="{{ nav_ocenjevanje }}" data-tab="ocenjevanja">{{ t('nav_ocenjevanje_dejavnosti', 'Ocenjevanje in dnevi dejavnosti') }}</a>
     <!-- ADMIN IN AUDIT POVEZAVE — prikazane le za admin vlogo.
          Skrijemo jih privzeto (style="display:none"), JS jih pokaže
          glede na vlogo uporabnika. Tako učitelji in vodstvo ne vidijo
          admin možnosti. -->
-    <a href="/auth/admin/users" id="admin-link" style="display:none;">🛠️ Admin panel</a>
-    <a href="/history" id="audit-link" style="display:none;">📋 Audit log</a>
+    <a href="/auth/admin/users" id="admin-link" style="display:none;">{{ t('nav_admin_panel', '🛠️ Admin panel') }}</a>
+    <a href="/history" id="audit-link" style="display:none;">{{ t('nav_audit_log', '📋 Audit log') }}</a>
     <!-- VEČŠOLSKO: nastavitve šole (šolski admin) in pregled šol (glavni admin).
          Skrite privzeto; JS jih pokaže glede na vlogo (glej currentUser spodaj).
          Kontekst šole prenesemo s parametrom school_id, da nastavitve odpremo za
          ISTO šolo, ki jo uporabnik gleda (prej se je pri glavnem adminu brez
          izbrane šole zgodila napaka 400 »Izberite šolo«). -->
-    <a href="/settings{% if current_school_id %}?school_id={{ current_school_id }}{% endif %}" id="settings-link" style="display:none;">⚙️ Nastavitve šole</a>
-    <a href="/schools" id="schools-link" style="display:none;">🏫 Šole</a>
+    <a href="/settings{% if current_school_id %}?school_id={{ current_school_id }}{% endif %}" id="settings-link" style="display:none;">{{ t('nav_nastavitve_sole', '⚙️ Nastavitve šole') }}</a>
+    <a href="/schools" id="schools-link" style="display:none;">{{ t('nav_sole', '🏫 Šole') }}</a>
     <!-- VEČŠOLSKO: kateri šoli pripadajo podatki na zaslonu.
          Ob obisku prek poti šole (alias) je oznaka izpolnjena že na strežniku
          in vidna vsem uporabnikom; glavnemu adminu jo JS izpolni tudi na
@@ -271,7 +271,7 @@
          Opombe: možnosti »vse šole« NI več (uporabnik je zahteval odstranitev),
          oznaka je »Izbrana šola:« in poudarjena barva, da je takoj vidna. -->
     <label style="margin-left:10px;font-size:0.8rem;font-weight:700;color:#b45309;">
-      Izbrana šola:
+      {{ t('nav_izbrana_sola', 'Izbrana šola:') }}
       <select id="school-select" onchange="switchSchool(this.value)"
               title="Izbrana šola velja za vse, kar gledate in urejate"
               style="font-size:0.8rem;font-weight:700;padding:3px 6px;border-radius:4px;border:2px solid #b45309;background:#fef3c7;color:#7c2d12;">
@@ -356,14 +356,14 @@
          ================================================================ -->
     <div id="section-rezervacije" class="section active">
       <div class="card">
-        <h2>Rezervacije prostorov</h2>
+        <h2>{{ t('naslov_rezervacije_prostorov', 'Rezervacije prostorov') }}</h2>
         <!-- FILTRI — datumski picker za začetek tedna, osveži gumb,
              gumb za novo rezervacijo in gumbi za serije (prikazani le
              vodstvu/adminu prek JS). Omogočajo hiter dostop do vseh
              akcij brez preusmeritev. -->
         <div class="filters">
           <div>
-            <label>Začetek tedna</label>
+            <label>{{ t('label_zacetek_tedna', 'Začetek tedna') }}</label>
             <input type="date" id="rez-week-start" onchange="loadAllReservations()">
           </div>
           <button class="btn btn-primary" onclick="loadAllReservations()">{{ t('btn_osvezi', 'Osveži') }}</button>
