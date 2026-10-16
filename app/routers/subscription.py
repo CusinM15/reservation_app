@@ -633,10 +633,20 @@ def _smtp_send(config, to_email: str, subject: str, body: str) -> tuple[bool, st
         return False, f"Pošiljanje ni uspelo: {exc}"
 
 
+def _back_url(next_target: str, school_id, message: str, key: str = "info") -> str:
+    """Cilj preusmeritve po dejanju: na podano stran (npr. /schools) ali /narocnina."""
+    from urllib.parse import quote
+
+    target = next_target if (next_target or "").startswith("/") else f"/narocnina?school_id={school_id}"
+    sep = "&" if "?" in target else "?"
+    return f"{target}{sep}{key}={quote(str(message))}"
+
+
 @router.post("/narocnina/aktiviraj")
 def activate_subscription(
     request: Request,
     school_id: int | None = Form(None),
+    next: str = Form(""),
     db: Session = Depends(get_db),
 ):
     """Glavni admin AKTIVIRA naročnino šole (brez vprašanja).
@@ -651,8 +661,8 @@ def activate_subscription(
               f"school_id={school.id}, veljavnost do {until.isoformat()}",
               school_id=school.id)
     return RedirectResponse(
-        url=f"/narocnina?school_id={school.id}&info="
-            f"Naročnina aktivirana do {until.day}. {until.month}. {until.year}.",
+        url=_back_url(next, school.id,
+                      f"Naročnina aktivirana do {until.day}. {until.month}. {until.year}."),
         status_code=303,
     )
 
@@ -661,6 +671,7 @@ def activate_subscription(
 def cancel_subscription(
     request: Request,
     school_id: int | None = Form(None),
+    next: str = Form(""),
     db: Session = Depends(get_db),
 ):
     """Glavni admin PREKLIČE naročnino šole (brez vprašanja).
@@ -678,7 +689,7 @@ def cancel_subscription(
               f"{previous.isoformat() if previous else '-'}",
               school_id=school.id)
     return RedirectResponse(
-        url=f"/narocnina?school_id={school.id}&info=Naročnina preklicana.",
+        url=_back_url(next, school.id, "Naročnina preklicana."),
         status_code=303,
     )
 
@@ -689,6 +700,7 @@ def send_school_admin_email(
     subject: str = Form(""),
     body: str = Form(""),
     school_id: int | None = Form(None),
+    next: str = Form(""),
     db: Session = Depends(get_db),
 ):
     """Glavni admin pošlje e-pošto administratorju šole (npr. račun)."""
@@ -704,6 +716,6 @@ def send_school_admin_email(
               school_id=school.id)
     key = "info" if sent else "error"
     return RedirectResponse(
-        url=f"/narocnina?school_id={school.id}&{key}={message}",
+        url=_back_url(next, school.id, message, key=key),
         status_code=303,
     )

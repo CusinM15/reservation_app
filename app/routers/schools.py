@@ -26,7 +26,7 @@ from sqlalchemy.orm import Session
 
 from app.database import get_db
 from app.app_settings import selling_config, selling_enabled
-from app.subscriptions import subscription_state
+from app.subscriptions import subscription_state, is_active, get_valid_until
 from app.models import School, SchoolAlias, User, Reservation, Assessment, ActivityDay, RoleEnum
 from app.audit import log_audit
 from app.security import get_current_user_id, sign_user_id
@@ -556,7 +556,8 @@ async def update_school_settings(school_id: int, request: Request, db: Session =
 # ═══════════════════════════════════════════════════════════════════════
 
 @router.get("/schools", response_class=HTMLResponse)
-def schools_page(request: Request, db: Session = Depends(get_db)):
+def schools_page(request: Request, info: str | None = None, error: str | None = None,
+                 db: Session = Depends(get_db)):
     """Pregled šol in obrazec za novo šolo (samo glavni admin)."""
     user = get_request_user(request, db)
     if not user:
@@ -564,6 +565,7 @@ def schools_page(request: Request, db: Session = Depends(get_db)):
     if not is_main_admin(user):
         return HTMLResponse("Dostop samo za glavnega admina.", status_code=403)
 
+    selling = selling_enabled(db)
     rows = db.query(School).order_by(School.id).all()
     schools_data = [
         {
@@ -573,6 +575,9 @@ def schools_page(request: Request, db: Session = Depends(get_db)):
             "is_active": s.is_active,
             "aliases": [a.alias for a in s.aliases],
             "counts": _school_counts(db, s.id),
+            # Stanje naročnine (za prikaz v seznamu).
+            "sub_active": is_active(db, s.id),
+            "sub_until": get_valid_until(db, s.id),
         }
         for s in rows
     ]
@@ -580,9 +585,12 @@ def schools_page(request: Request, db: Session = Depends(get_db)):
             "request": request,
             "inactivity_timeout_ms": inactivity_timeout_ms(user, config_for_request(request, db)),
             "schools": schools_data,
+            "selling": selling,
             "default_slug": slugify(schools_data[0]["name"]) if schools_data else "",
             "current_username": user.username,
             "lang": current_lang() or "sl",
+            "info": info,
+            "error": error,
         })
 
 

@@ -607,4 +607,10 @@ STRINGS: list[tuple[str, str, str, str]] = [
     ("narocnina_email_zadeva", "naročnine", "Zadeva", "Subject"),
     ("narocnina_email_sporocilo", "naročnine", "Sporočilo", "Message"),
     ("narocnina_email_poslji", "naročnine", "Pošlji e-pošto", "Send email"),
+    ("sch_narocnina", "šole", "Naročnina", "Subscription"),
+    ("sch_narocnina_ok", "šole", "veljavna", "valid"),
+    ("sch_narocnina_ne", "šole", "ni veljavna", "not valid"),
+    ("sch_narocnina_izklop", "šole", "prodaja izklopljena", "selling disabled"),
+    ("sch_aktiviraj", "šole", "✔ Aktiviraj", "✔ Activate"),
+    ("sch_preklici", "šole", "✖ Prekliči", "✖ Cancel"),
 ]

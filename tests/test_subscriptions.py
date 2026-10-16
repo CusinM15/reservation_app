@@ -1096,3 +1096,31 @@ def test_main_admin_email_visible_only_to_admins(client, make_user):
     assert r.status_code == 200
     assert "Naročnino lahko obnovi le administrator šole" in r.text
     assert addr not in r.text
+
+
+def test_schools_page_shows_subscription_status_and_buttons(client):
+    """Na seznamu šol je prikazano stanje naročnine + gumba aktiviraj/prekliči."""
+    _set_selling(True)
+    _set_until(None)
+    _main_admin_login(client)
+    sid = default_school_id()
+
+    html = client.get("/schools").text
+    assert "Naročnina" in html                       # stolpec
+    assert "/narocnina/aktiviraj" in html and "/narocnina/preklici" in html
+    assert "ni veljavna" in html                     # brez veljavnosti
+
+    # aktiviraj kar s seznama (next=/schools) → vrne se na seznam, veljavna
+    r = client.post("/narocnina/aktiviraj",
+                    data={"school_id": sid, "next": "/schools"},
+                    follow_redirects=True)
+    assert r.status_code == 200
+    assert "veljavna" in r.text and "✅" in r.text
+    assert _db_until() == date(date.today().year + 1, 9, 1)
+
+    # prekliči s seznama → nazaj na seznam, ni veljavna
+    r = client.post("/narocnina/preklici",
+                    data={"school_id": sid, "next": "/schools"},
+                    follow_redirects=True)
+    assert r.status_code == 200
+    assert _db_until() is None

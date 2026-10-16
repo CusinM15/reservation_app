@@ -51,7 +51,7 @@
             <span class="badge">/rezervacije_ostc</span>{{ t('sch_intro_3', ') pa jo izberejo neposredno — klik odpre aplikacijo s podatki te šole.') }}
         </p>
 
-        <div id="msg"></div>
+        <div id="msg">{% if info %}<div class="ok">{{ info }}</div>{% endif %}{% if error %}<div class="err">{{ error }}</div>{% endif %}</div>
 
         <h3>{{ t('sch_dodaj', 'Dodaj novo šolo') }}</h3>
         <form method="POST" action="/api/schools" id="new-school-form">
@@ -69,7 +69,7 @@
         <table>
             <thead>
                 <tr>
-                    <th>#</th><th>{{ t('sch_th_ime', 'Ime') }}</th><th>{{ t('sch_th_oznaka', 'Oznaka') }}</th><th>{{ t('sch_th_poti', 'Poti šole') }}</th><th>{{ t('sch_th_podatki', 'Podatki') }}</th><th>{{ t('sch_th_dejanja', 'Dejanja') }}</th>
+                    <th>#</th><th>{{ t('sch_th_ime', 'Ime') }}</th><th>{{ t('sch_th_oznaka', 'Oznaka') }}</th><th>{{ t('sch_th_poti', 'Poti šole') }}</th><th>{{ t('sch_th_podatki', 'Podatki') }}</th><th>{{ t('sch_narocnina', 'Naročnina') }}</th><th>{{ t('sch_th_dejanja', 'Dejanja') }}</th>
                 </tr>
             </thead>
             <tbody>
@@ -92,6 +92,25 @@
                         <span>🎒 {{ s.counts.activities }}</span>
                     </td>
                     <td>
+                        {% if not selling %}
+                          <span style="color:#888;">{{ t('sch_narocnina_izklop', 'prodaja izklopljena') }}</span>
+                        {% elif s.sub_active %}
+                          <span style="background:#d1fae5;color:#065f46;padding:2px 8px;border-radius:10px;font-size:0.8rem;white-space:nowrap;">✅ {{ t('sch_narocnina_ok', 'veljavna') }}{% if s.sub_until %} {{ s.sub_until.strftime('%d. %m. %Y') }}{% endif %}</span>
+                        {% else %}
+                          <span style="background:#fee2e2;color:#991b1b;padding:2px 8px;border-radius:10px;font-size:0.8rem;white-space:nowrap;">⚠️ {{ t('sch_narocnina_ne', 'ni veljavna') }}</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        <form method="POST" action="/narocnina/aktiviraj" style="display:inline;">
+                            <input type="hidden" name="school_id" value="{{ s.id }}">
+                            <input type="hidden" name="next" value="/schools">
+                            <button class="btn btn-success" type="submit" title="{{ t('narocnina_aktiviraj', '✔ Aktiviraj naročnino') }} (1. 9.)">{{ t('sch_aktiviraj', '✔ Aktiviraj') }}</button>
+                        </form>
+                        <form method="POST" action="/narocnina/preklici" style="display:inline;">
+                            <input type="hidden" name="school_id" value="{{ s.id }}">
+                            <input type="hidden" name="next" value="/schools">
+                            <button class="btn btn-cancel" type="submit" title="{{ t('narocnina_preklici', '✖ Prekliči naročnino') }}">{{ t('sch_preklici', '✖ Prekliči') }}</button>
+                        </form>
                         <a class="btn btn-success" href="/schools/open/{{ s.id }}">{{ t('sch_odpri', 'Odpri') }}</a>
                         <a class="btn" href="/auth/admin/users" onclick="openInThisSchool({{ s.id }}); return false;">{{ t('sch_uporabniki', 'Uporabniki') }}</a>
                         <a class="btn" href="/settings?school_id={{ s.id }}">{{ t('sch_nastavitve', 'Nastavitve') }}</a>
@@ -101,7 +120,7 @@
                     </td>
                 </tr>
             {% else %}
-                <tr><td colspan="6">{{ t('sch_ni_sol', 'Ni šol.') }}</td></tr>
+                <tr><td colspan="7">{{ t('sch_ni_sol', 'Ni šol.') }}</td></tr>
             {% endfor %}
             </tbody>
         </table>
