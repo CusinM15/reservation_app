@@ -145,7 +145,7 @@ class Settings:
     ]
     MAIN_ADMIN_USERNAME = os.getenv("MAIN_ADMIN_USERNAME", "mainadmin")
     MAIN_ADMIN_PASSWORD = os.getenv("MAIN_ADMIN_PASSWORD", "Admin123")
-    MAIN_ADMIN_EMAIL = os.getenv("MAIN_ADMIN_EMAIL", "")
+    MAIN_ADMIN_EMAIL = os.getenv("MAIN_ADMIN_EMAIL", "reservation.app@proton.me")
 
     # Privzeto geslo za uporabnike, uvožene iz CSV brez gesla. Uporabnik
     # naj ga takoj zamenja (ali uporabi "pozabljeno geslo").

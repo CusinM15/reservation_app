@@ -227,6 +227,49 @@
   </div>
   {% endif %}
 
+  {% if is_admin %}
+  <div class="card">
+    <h2>{{ t('narocnina_kontakt', 'Kontakt glavnega admina') }}</h2>
+    <p class="muted">
+      Za vprašanja glede naročnine se obrnite na glavnega admina:
+      <a href="mailto:{{ main_admin_email }}">{{ main_admin_email }}</a>
+    </p>
+  </div>
+  {% endif %}
+
+  {% if is_main_admin %}
+  <div class="card">
+    <h2>{{ t('narocnina_upravljanje', 'Upravljanje naročnine (glavni admin)') }}</h2>
+    <p class="muted">Neposredno, brez dodatnega potrjevanja.</p>
+    <form method="POST" action="/narocnina/aktiviraj" style="display:inline;">
+      <input type="hidden" name="school_id" value="{{ school.id }}">
+      <button class="btn btn-ok" type="submit">{{ t('narocnina_aktiviraj', '✔ Aktiviraj naročnino') }} (1. 9. {{ extend_until.year }})</button>
+    </form>
+    <form method="POST" action="/narocnina/preklici" style="display:inline;margin-left:8px;">
+      <input type="hidden" name="school_id" value="{{ school.id }}">
+      <button class="btn btn-no" type="submit">{{ t('narocnina_preklici', '✖ Prekliči naročnino') }}</button>
+    </form>
+  </div>
+
+  <div class="card">
+    <h2>{{ t('narocnina_poslji_email', 'Pošlji e-pošto administratorju šole') }}</h2>
+    <p class="muted">Prejemnik: <strong>{{ school_admin_email or t('narocnina_ni_naslova', '— ADMIN_EMAIL šole ni nastavljen') }}</strong></p>
+    <form method="POST" action="/narocnina/poslji-email">
+      <input type="hidden" name="school_id" value="{{ school.id }}">
+      <label>{{ t('narocnina_email_zadeva', 'Zadeva') }}</label>
+      <input type="text" name="subject" value="Račun — naročnina {{ school.name }}">
+      <label>{{ t('narocnina_email_sporocilo', 'Sporočilo') }}</label>
+      <textarea name="body" rows="8">Spoštovani,
+
+v nadaljevanju je račun za naročnino šole {{ school.name }}.
+
+Lep pozdrav,
+{{ main_admin_email }}</textarea>
+      <p style="margin-top:12px;"><button class="btn" type="submit">{{ t('narocnina_email_poslji', 'Pošlji e-pošto') }}</button></p>
+    </form>
+  </div>
+  {% endif %}
+
   {% if is_main_admin %}
   <div class="card">
     <h2>{{ t('narocnina_nereesena_placila', 'Nerešena plačila (vse šole)') }}</h2>

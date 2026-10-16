@@ -595,4 +595,16 @@ STRINGS: list[tuple[str, str, str, str]] = [
     ("js_set_nastavitve_shranjene", "nastavitve šole", "Nastavitve shranjene.", "Settings saved."),
     ("js_set_urnik_prazen", "nastavitve šole", "Urnik ne sme biti prazen (vsaj ena ura).", "The schedule cannot be empty (at least one period)."),
     ("js_set_obnavljam", "nastavitve šole", "Obnavljam iz ", "Restoring from "),
+
+    # ── Naročnine — upravljanje (glavni admin) + kontakt ──────────────
+    ("sch_narocnine", "šole", "Naročnine", "Subscriptions"),
+    ("narocnina_kontakt", "naročnine", "Kontakt glavnega admina", "Main admin contact"),
+    ("narocnina_upravljanje", "naročnine", "Upravljanje naročnine (glavni admin)", "Manage subscription (main admin)"),
+    ("narocnina_aktiviraj", "naročnine", "✔ Aktiviraj naročnino", "✔ Activate subscription"),
+    ("narocnina_preklici", "naročnine", "✖ Prekliči naročnino", "✖ Cancel subscription"),
+    ("narocnina_poslji_email", "naročnine", "Pošlji e-pošto administratorju šole", "Send email to the school administrator"),
+    ("narocnina_ni_naslova", "naročnine", "— ADMIN_EMAIL šole ni nastavljen", "— the school's ADMIN_EMAIL is not set"),
+    ("narocnina_email_zadeva", "naročnine", "Zadeva", "Subject"),
+    ("narocnina_email_sporocilo", "naročnine", "Sporočilo", "Message"),
+    ("narocnina_email_poslji", "naročnine", "Pošlji e-pošto", "Send email"),
 ]

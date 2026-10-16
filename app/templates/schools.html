@@ -95,6 +95,7 @@
                         <a class="btn btn-success" href="/schools/open/{{ s.id }}">{{ t('sch_odpri', 'Odpri') }}</a>
                         <a class="btn" href="/auth/admin/users" onclick="openInThisSchool({{ s.id }}); return false;">{{ t('sch_uporabniki', 'Uporabniki') }}</a>
                         <a class="btn" href="/settings?school_id={{ s.id }}">{{ t('sch_nastavitve', 'Nastavitve') }}</a>
+                        <a class="btn" href="/narocnina?school_id={{ s.id }}">{{ t('sch_narocnine', 'Naročnine') }}</a>
                         <a class="btn btn-danger" href="#" title="{{ t('sch_title_izbrisi', 'Izbriše šolo in vse njene podatke') }}"
                            onclick="deleteSchool({{ s.id }}, '{{ s.name|e }}'); return false;">{{ t('sch_izbrisi', '🗑 Izbriši') }}</a>
                     </td>

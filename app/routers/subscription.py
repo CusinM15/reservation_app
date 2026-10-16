@@ -10,7 +10,10 @@
 # ─────────────────────────────────────────────────────────────────────────
 
 import secrets
-from datetime import date, datetime
+import smtplib
+import ssl
+from datetime import date, datetime, timedelta
+from email.mime.text import MIMEText
 
 from fastapi import APIRouter, Depends, Form, HTTPException, Request
 from fastapi.responses import HTMLResponse, RedirectResponse
@@ -28,7 +31,7 @@ from app.app_settings import (
     subscription_period_end,
 )
 from app.audit import log_audit
-from app.config import validate_password_strength
+from app.config import validate_password_strength, settings
 from app.database import get_db
 from app.models import Payment, RoleEnum, School, User
 from app.routers.auth import get_password_hash
@@ -38,10 +41,12 @@ from app.subscriptions import (
     auto_renew_enabled,
     extend_subscription,
     extend_to_school_year,
+    get_valid_until,
     next_charge_day,
     school_year_target,
     self_extend_open,
     set_auto_renew,
+    set_valid_until,
     subscription_state,
 )
 from app.security import inactivity_timeout_ms
@@ -51,6 +56,7 @@ from app.tenancy import (
     create_school,
     default_school_admin_username,
     get_request_user,
+    get_school_config,
     is_main_admin,
     school_admin_username_from_initials,
     slugify,
@@ -383,6 +389,10 @@ def narocnina_page(
             "info": info,
             "error": error,
             "danes": datetime.now(),
+            # Kontakt glavnega admina (viden samo adminom; glej predlogo).
+            "main_admin_email": settings.MAIN_ADMIN_EMAIL,
+            # E-pošta administratorja TE šole (kamor gre »Pošlji e-pošto«).
+            "school_admin_email": get_school_config(db, school.id).ADMIN_EMAIL,
         },
     )
 
@@ -591,4 +601,109 @@ def save_settings(
     )
     return RedirectResponse(
         url="/narocnina?info=Nastavitve prodaje so shranjene.", status_code=303
+    )
+
+
+# ═══════════════════════════════════════════════════════════════════════
+# Glavni admin: neposredno upravljanje naročnine posamezne šole
+# ═══════════════════════════════════════════════════════════════════════
+# Iz strani »Šole« glavni admin odpre /narocnina?school_id=<id> in tam BREZ
+# dodatnega vprašanja AKTIVIRA ali PREKLIČE naročnino ter pošlje e-pošto
+# administratorju šole (npr. račun). Vse troje je omejeno na glavnega admina.
+
+def _smtp_send(config, to_email: str, subject: str, body: str) -> tuple[bool, str]:
+    """Pošlji e-pošto prek SMTP šole; vrni (poslano, sporočilo)."""
+    if not to_email:
+        return False, "Naslov prejemnika (ADMIN_EMAIL šole) ni nastavljen."
+    password = config.MAIL_PASSWORD
+    if not password:
+        return False, "SMTP geslo šole ni nastavljeno (Nastavitve šole → E-pošta)."
+    try:
+        msg = MIMEText(body)
+        msg["Subject"] = subject
+        msg["From"] = config.MAIL_FROM
+        msg["To"] = to_email
+        context = ssl.create_default_context()
+        with smtplib.SMTP(config.MAIL_SERVER, config.MAIL_PORT) as s:
+            s.starttls(context=context)
+            s.login(config.MAIL_USERNAME, password)
+            s.send_message(msg)
+        return True, f"E-pošta poslana na {to_email}."
+    except Exception as exc:  # neuspeh sporočimo adminu (ne tiho)
+        return False, f"Pošiljanje ni uspelo: {exc}"
+
+
+@router.post("/narocnina/aktiviraj")
+def activate_subscription(
+    request: Request,
+    school_id: int | None = Form(None),
+    db: Session = Depends(get_db),
+):
+    """Glavni admin AKTIVIRA naročnino šole (brez vprašanja).
+
+    Veljavnost se nastavi na 1. 9. naslednje leto (enotno pravilo šolskega leta).
+    """
+    user = _require_main_admin(db, request)
+    school = _manageable_school(db, request, school_id)
+    until = extend_to_school_year(db, school.id)
+    db.commit()
+    log_audit(db, user.id, user.username, "activate_subscription",
+              f"school_id={school.id}, veljavnost do {until.isoformat()}",
+              school_id=school.id)
+    return RedirectResponse(
+        url=f"/narocnina?school_id={school.id}&info="
+            f"Naročnina aktivirana do {until.day}. {until.month}. {until.year}.",
+        status_code=303,
+    )
+
+
+@router.post("/narocnina/preklici")
+def cancel_subscription(
+    request: Request,
+    school_id: int | None = Form(None),
+    db: Session = Depends(get_db),
+):
+    """Glavni admin PREKLIČE naročnino šole (brez vprašanja).
+
+    Datum veljavnosti se izbriše → naročnina ni veljavna (aplikacija za šolo ni
+    dostopna; prijavita se lahko le šolski in glavni admin).
+    """
+    user = _require_main_admin(db, request)
+    school = _manageable_school(db, request, school_id)
+    previous = get_valid_until(db, school.id)
+    set_valid_until(db, school.id, None)
+    db.commit()
+    log_audit(db, user.id, user.username, "cancel_subscription",
+              f"school_id={school.id}, prej veljavna do "
+              f"{previous.isoformat() if previous else '-'}",
+              school_id=school.id)
+    return RedirectResponse(
+        url=f"/narocnina?school_id={school.id}&info=Naročnina preklicana.",
+        status_code=303,
+    )
+
+
+@router.post("/narocnina/poslji-email")
+def send_school_admin_email(
+    request: Request,
+    subject: str = Form(""),
+    body: str = Form(""),
+    school_id: int | None = Form(None),
+    db: Session = Depends(get_db),
+):
+    """Glavni admin pošlje e-pošto administratorju šole (npr. račun)."""
+    user = _require_main_admin(db, request)
+    school = _manageable_school(db, request, school_id)
+    config = get_school_config(db, school.id)
+    recipient = config.ADMIN_EMAIL
+    subject = (subject or "").strip() or f"Naročnina — {school.name}"
+    body = (body or "").strip()
+    sent, message = _smtp_send(config, recipient, subject, body)
+    log_audit(db, user.id, user.username, "email_school_admin",
+              f"school_id={school.id}, to={recipient or '-'}, sent={sent}, subject={subject}",
+              school_id=school.id)
+    key = "info" if sent else "error"
+    return RedirectResponse(
+        url=f"/narocnina?school_id={school.id}&{key}={message}",
+        status_code=303,
     )

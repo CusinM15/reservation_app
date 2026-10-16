@@ -996,3 +996,103 @@ def test_setup_guide_shows_school_smtp_credentials(client, make_user):
     assert "moje-ime" in r.text
     assert "moje-geslo" in r.text
     assert "EnTest1" not in r.text
+
+
+# ── 18. Glavni admin: aktiviraj / prekliči naročnino + e-pošta adminu ──
+
+def _main_admin_login(client):
+    client.cookies.clear()
+    login(client, app_config.MAIN_ADMIN_USERNAME, app_config.MAIN_ADMIN_PASSWORD)
+
+
+def test_main_admin_activates_then_cancels_subscription(client):
+    """Glavni admin z enim klikom aktivira (do 1. 9. nasl. leto) in prekliče."""
+    _set_selling(True)
+    _set_until(None)
+    _main_admin_login(client)
+    sid = default_school_id()
+
+    r = client.post("/narocnina/aktiviraj", data={"school_id": sid}, follow_redirects=False)
+    assert r.status_code == 303
+    assert _db_until() == date(date.today().year + 1, 9, 1)
+    assert _is_active() is True
+
+    r = client.post("/narocnina/preklici", data={"school_id": sid}, follow_redirects=False)
+    assert r.status_code == 303
+    assert _db_until() is None
+    assert _is_active() is False            # prodaja vklopljena + ni veljavnosti
+
+
+def test_school_admin_and_teacher_cannot_manage_subscription(client, make_user):
+    """Aktiviraj/prekliči sta SAMO za glavnega admina.
+
+    Naročnina mora biti VELJAVNA, da se učitelj sploh lahko prijavi (ob potekli
+    je prijava za učitelje blokirana).
+    """
+    _set_selling(True)
+    _set_until(date.today() + timedelta(days=30))
+    sid = default_school_id()
+
+    admin = make_user(role="admin")
+    _login(client, admin.username)
+    assert client.post("/narocnina/aktiviraj", data={"school_id": sid}).status_code == 403
+    assert client.post("/narocnina/preklici", data={"school_id": sid}).status_code == 403
+    assert client.post("/narocnina/poslji-email", data={"school_id": sid}).status_code == 403
+
+    client.cookies.clear()
+    teacher = make_user(role="teacher")
+    _login(client, teacher.username)
+    assert client.post("/narocnina/aktiviraj", data={"school_id": sid}).status_code == 403
+    assert client.post("/narocnina/preklici", data={"school_id": sid}).status_code == 403
+
+
+def test_send_email_reports_missing_smtp_password(client):
+    """Brez SMTP gesla šole pošiljanje sporoči napako (ne tiho)."""
+    _set_selling(True)
+    _main_admin_login(client)
+    sid = default_school_id()
+    db = SessionLocal()
+    try:
+        set_school_setting(db, sid, "MAIL_PASSWORD", "")
+        set_school_setting(db, sid, "ADMIN_EMAIL", "ravnatelj@os-primer.si")
+        db.commit()
+    finally:
+        db.close()
+
+    r = client.post("/narocnina/poslji-email",
+                    data={"school_id": sid, "subject": "Račun", "body": "test"},
+                    follow_redirects=False)
+    assert r.status_code == 303
+    assert "error=" in r.headers["location"]
+
+
+def test_main_admin_email_visible_only_to_admins(client, make_user):
+    """Kontakt glavnega admina vidijo le admini; učitelj ga NE.
+
+    Učitelj se mora najprej prijaviti, ko je naročnina še veljavna; nato
+    naročnina poteče in middleware ga usmeri na /narocnina (view_only), kjer
+    kontakta glavnega admina ne sme videti.
+    """
+    _set_selling(True)
+    _set_until(date.today() + timedelta(days=30))
+    sid = default_school_id()
+    addr = app_config.MAIN_ADMIN_EMAIL
+    assert addr                               # mora biti nastavljen
+
+    _main_admin_login(client)
+    assert addr in client.get(f"/narocnina?school_id={sid}").text
+
+    client.cookies.clear()
+    admin = make_user(role="admin")
+    _login(client, admin.username)
+    assert addr in client.get("/narocnina").text
+
+    # učitelj: prijava, ko je veljavna; nato poteče
+    client.cookies.clear()
+    teacher = make_user(role="teacher")
+    _login(client, teacher.username)
+    _set_until(date.today() - timedelta(days=1))     # poteče
+    r = client.get("/narocnina")                     # view_only
+    assert r.status_code == 200
+    assert "Naročnino lahko obnovi le administrator šole" in r.text
+    assert addr not in r.text
