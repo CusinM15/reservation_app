@@ -36,3 +36,7 @@ certs/key.pem
 certs/cert.pem
 certs/
 
+# Ansible (skrivnosti — IP-ji, tokeni)
+deploy/ansible/group_vars/all.yml
+deploy/ansible/inventory.ini
+

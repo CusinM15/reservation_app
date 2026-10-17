@@ -1,0 +1,108 @@
+---
+# Priprava novega k3s server node-a na Contabo VPS:
+# UFW + k3s join (control-plane / etcd) + cloudflared (CF Tunnel)
+- name: Priprava novega k3s server node-a (Contabo VPS)
+  hosts: k3s_servers
+  become: true
+  vars_files:
+    - group_vars/all.yml
+  tasks:
+
+    - name: Posodobi apt in namesti osnovne pakete
+      apt:
+        update_cache: true
+        name:
+          - curl
+          - ca-certificates
+          - tar
+          - ufw
+        state: present
+
+    # ---------- UFW ----------
+    - name: UFW — privzeto zavrni prihajajoči promet
+      community.general.ufw:
+        default: deny
+        direction: incoming
+
+    - name: UFW — privzeto dovoli odhajajoči promet
+      community.general.ufw:
+        default: allow
+        direction: outgoing
+
+    - name: UFW — SSH, HTTP, HTTPS (javno)
+      community.general.ufw:
+        rule: allow
+        port: "{{ item }}"
+        proto: tcp
+      loop: [22, 80, 443]
+
+    - name: UFW — k3s porte med node-i (6443, 10250, 8472/udp)
+      community.general.ufw:
+        rule: allow
+        port: "{{ item[0].port }}"
+        proto: "{{ item[0].proto }}"
+        from_ip: "{{ item[1] }}"
+      with_nested:
+        - [{port: 6443, proto: tcp}, {port: 10250, proto: tcp}, {port: 8472, proto: udp}]
+        - "{{ cluster_ips }}"
+
+    - name: UFW — omogoči
+      community.general.ufw:
+        state: enabled
+
+    # ---------- k3s ----------
+    - name: Namesti in pridruži k3s kot server (control-plane + etcd)
+      shell: >
+        curl -sfL https://get.k3s.io |
+        INSTALL_K3S_VERSION={{ k3s_version }}
+        sh -s - server
+        --server https://{{ k3s_first_node_ip }}:6443
+        --token {{ k3s_token }}
+        --write-kubeconfig-mode=644
+      args:
+        creates: /etc/rancher/k3s/k3s.yaml
+      register: k3s_install
+
+    - name: Počakaj na k3s kubeconfig
+      wait_for:
+        path: /etc/rancher/k3s/k3s.yaml
+        timeout: 180
+
+    - name: k3s servisni status
+      command: systemctl is-active k3s
+      register: k3s_active
+      changed_when: false
+
+    - name: Izpis statusa k3s
+      debug:
+        msg: "k3s na {{ inventory_hostname }}: {{ k3s_active.stdout }}"
+
+    # ---------- Cloudflare Tunnel ----------
+    - name: Prenesi cloudflared (.deb)
+      get_url:
+        url: https://github.com/cloudflare/cloudflared/releases/latest/download/cloudflared-linux-amd64.deb
+        dest: /tmp/cloudflared.deb
+        timeout: 180
+
+    - name: Namesti cloudflared
+      apt:
+        deb: /tmp/cloudflared.deb
+
+    - name: Shrani tunnel token (600)
+      copy:
+        content: |
+          CF_TOKEN={{ cf_tunnel_token }}
+        dest: /etc/cloudflared/token.env
+        mode: "0600"
+
+    - name: systemd enota za cloudflared
+      copy:
+        src: files/cloudflared.service
+        dest: /etc/systemd/system/cloudflared.service
+
+    - name: Zaženi in omogoči cloudflared
+      systemd:
+        name: cloudflared
+        daemon_reload: true
+        enabled: true
+        state: started

@@ -1,0 +1,22 @@
+apiVersion: postgresql.cnpg.io/v1
+kind: Cluster
+metadata:
+  name: sola-db
+  namespace: sola-app
+spec:
+  instances: 3
+  storage:
+    size: 1Gi
+    storageClass: local-path
+  bootstrap:
+    initdb:
+      database: sola
+      owner: sola
+  affinity:
+    enablePodAntiAffinity: true
+    podAntiAffinityType: required
+    topologyKey: kubernetes.io/hostname
+  enablePDB: true
+  failoverDelay: 30
+  minSyncReplicas: 1
+  maxSyncReplicas: 2

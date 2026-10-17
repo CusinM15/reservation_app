@@ -1,0 +1,54 @@
+---
+# HA konfiguracija clustra — poženimo KO sta oba nova node-a Ready.
+# KUBECONFIG mora kazati na prvi node (/etc/rancher/k3s/k3s.yaml).
+- name: Razširitev clustra na HA (CNPG 3 instance, app 3 replike, HPA)
+  hosts: localhost
+  connection: local
+  gather_facts: false
+  vars:
+    kubeconfig: /etc/rancher/k3s/k3s.yaml
+  tasks:
+
+    - name: Počakaj, da so vsi 3 node-i Ready
+      shell: |
+        export KUBECONFIG={{ kubeconfig }}
+        for i in $(seq 1 24); do
+          ready=$(kubectl get nodes --no-headers 2>/dev/null | grep -c ' Ready ')
+          [ "$ready" -ge 3 ] && exit 0
+          sleep 10
+        done
+        echo "Node-i niso vsi Ready:"; kubectl get nodes; exit 1
+      register: wait_nodes
+      changed_when: false
+      failed_when: wait_nodes.rc != 0
+
+    - name: CNPG — 3 instance (1/node, podAntiAffinity required) + sync replika
+      command: kubectl --kubeconfig={{ kubeconfig }} apply -f {{ playbook_dir }}/files/cnpg-ha.yaml
+
+    - name: Deployment sola-app — 3 replike, razpored 1/node
+      command: kubectl --kubeconfig={{ kubeconfig }} patch deployment sola-app -n sola-app --type strategic --patch-file {{ playbook_dir }}/files/deploy-topology-patch.yaml
+
+    - name: HPA — min 3, max 6 (1-2 na node)
+      command: kubectl --kubeconfig={{ kubeconfig }} apply -f {{ playbook_dir }}/files/sola-hpa.yaml
+
+    - name: Počakaj, da CNPG zažene 3 instance (lahko traja nekaj minut)
+      shell: |
+        export KUBECONFIG={{ kubeconfig }}
+        for i in $(seq 1 36); do
+          n=$(kubectl get pods -n sola-app -l cnpg.io/cluster=sola-db --no-headers 2>/dev/null | grep -c Running)
+          [ "$n" -ge 3 ] && exit 0
+          sleep 10
+        done
+        kubectl get pods -n sola-app; exit 1
+      register: wait_cnpg
+      changed_when: false
+      failed_when: wait_cnpg.rc != 0
+
+    - name: Povzetek stanja
+      shell: |
+        export KUBECONFIG={{ kubeconfig }}
+        kubectl get nodes -o wide
+        echo "---"
+        kubectl get pods -n sola-app -o wide
+        echo "---"
+        kubectl get hpa -n sola-app
