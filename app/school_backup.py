@@ -17,6 +17,7 @@
 from __future__ import annotations
 
 import json
+import os
 import smtplib
 import ssl
 from datetime import date, datetime
@@ -152,8 +153,17 @@ def send_backup_email(config, to_email: str, school, sql: str, filename: str) ->
     msg["Subject"] = f"Varnostna kopija šole {school.name} — {datetime.utcnow():%d. %m. %Y}"
     msg["From"] = config.MAIL_FROM
     msg["To"] = to_email
+    # Naprava, s katere je bil poslan backup: eksplicitna BACKUP_SOURCE, sicer
+    # k8s NODE_NAME (downward API v CronJob-u), nazadnje še HOSTNAME (pod).
+    device = (
+        os.getenv("BACKUP_SOURCE")
+        or os.getenv("NODE_NAME")
+        or os.getenv("HOSTNAME")
+        or "neznana naprava"
+    )
     msg.attach(MIMEText(
         f"V priponki je varnostna kopija (.sql) podatkov šole {school.name}.\n"
+        f"Poslano iz naprave: {device}\n"
         f"Datoteka vsebuje izključno podatke te šole.\n"
         f"Obnovitev: nastavitve šole → »Obnova iz varnostne kopije«.\n",
         "plain", "utf-8",

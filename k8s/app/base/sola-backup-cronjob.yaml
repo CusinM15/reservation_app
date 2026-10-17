@@ -34,4 +34,10 @@ spec:
             envFrom:
             - secretRef:
                 name: sola-secrets
+            # Ime vozlišča (naprave) za oznako v backup e-pošti.
+            env:
+            - name: NODE_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: spec.nodeName
           restartPolicy: OnFailure
