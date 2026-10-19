@@ -58,7 +58,7 @@
         <table>
           <tr><th>Obdobje</th><th>Cena</th></tr>
           {% for p in cfg.plans %}
-          <tr><td>{{ p.label }} ({{ p.months }} mes.)</td><td><strong>{{ p.price }} €</strong></td></tr>
+          <tr><td>{{ p.label }} ({{ p.months }} mes.)</td><td><strong>{{ p.price | eur }} €</strong></td></tr>
           {% endfor %}
         </table>
         <p class="muted">Polna cena velja za <strong>celo leto (1. 9. → 1. 9.)</strong>.
@@ -74,7 +74,7 @@
                  style="padding:8px 10px;border:1px solid #ddd;border-radius:6px;">
           <button class="btn btn-secondary" type="submit">{{ t('btn_izracunaj', 'Izračunaj') }}</button>
         </form>
-        <p class="price" style="margin:2px 0;">{{ prorated }} €</p>
+        <p class="price" style="margin:2px 0;">{{ prorated | eur }} €</p>
         <p class="muted">Za obdobje <strong>{{ start.strftime('%d. %m. %Y') }} – {{ period_end.strftime('%d. %m. %Y') }}</strong>
            (polna cena {{ cfg.price_label }} za celo leto).</p>
       {% endif %}

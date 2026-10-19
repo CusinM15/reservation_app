@@ -37,7 +37,7 @@ PLAN_MONTHS = {"leto": 12}
 PLAN_LABELS = {"leto": "leto"}
 PLAN_PER_LABELS = {"leto": "na leto"}
 PLAN_PRICE_KEYS = {"leto": KEY_PRICE}
-PLAN_PRICE_DEFAULTS = {"leto": 180}
+PLAN_PRICE_DEFAULTS = {"leto": 220}
 
 DEFAULT_PRICE_EUR = PLAN_PRICE_DEFAULTS["leto"]
 DEFAULT_PAYPAL_URL = ""
@@ -96,16 +96,21 @@ def selling_enabled(db: Session) -> bool:
     return value
 
 
-def _parse_price(raw, default: int) -> int:
-    """Pretvori shranjeno vrednost v nenegativno celo število; neveljavno → default."""
+def _parse_price(raw, default: int) -> float:
+    """Pretvori shranjeno vrednost v nenegativno ceno (2 decimalki); neveljavno → default."""
     try:
-        value = int(float(str(raw).replace(",", ".").strip()))
+        value = round(float(str(raw).replace(",", ".").strip()), 2)
     except (TypeError, ValueError):
-        return default
-    return value if value >= 0 else default
+        return float(default)
+    return value if value >= 0 else float(default)
 
 
-def plan_price(db: Session, plan_id: str) -> int:
+def _fmt_eur(v) -> str:
+    """219.6 → '219,60' (slovenski zapis)."""
+    return f"{float(v):.2f}".replace(".", ",")
+
+
+def plan_price(db: Session, plan_id: str) -> float:
     """Cena LETNEGA plana v €; 0 = brez plačila."""
     plan_id = plan_id if plan_id in PLAN_MONTHS else "leto"
     key = PLAN_PRICE_KEYS[plan_id]
@@ -142,7 +147,7 @@ def _plan_dict(db: Session, plan_id: str) -> dict:
     }
 
 
-def price_eur(db: Session) -> int:
+def price_eur(db: Session) -> float:
     """Cena LETNEGA plana (12 mes.) v €; 0 = brez plačila (za nazajzdružljivost).
 
     Vrednost 0 je dovoljena (poskusno obdobje, lastna šola), a NE pomeni »brez
@@ -185,7 +190,7 @@ def subscription_period_end(start: date | None = None) -> date:
     return date(d.year, SCHOOL_YEAR_END_MONTH, SCHOOL_YEAR_END_DAY)
 
 
-def prorated_price_eur(db: Session, start: date | None = None) -> int:
+def prorated_price_eur(db: Session, start: date | None = None) -> float:
     """Sorazmerna cena do 1. 9. glede na datum začetka (zaokroženo na cel €).
 
     Nikoli ne preseže polne letne cene (začetek v oknu 15. 8.–1. 9. bi sicer dal
@@ -224,7 +229,7 @@ def selling_config(db: Session) -> dict:
         "free": is_free(db),
         "plans": plan_list,
         # Povzetek cen za besedila, npr. »13 € / leto«.
-        "price_label": " ali ".join(f"{p['price']} € / {p['label']}" for p in plan_list),
+        "price_label": " ali ".join(f"{_fmt_eur(p['price'])} € / {p['label']}" for p in plan_list),
         "paypal_url": paypal_url(db),
         "paypal_sub_url": paypal_subscription_url(db),
         "note": payment_note(db),

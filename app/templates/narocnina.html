@@ -109,7 +109,7 @@
       {% for p in cfg.plans %}
       <label style="display:block;margin:4px 0;font-weight:400;">
         <input type="radio" name="plan" value="{{ p.id }}" {% if loop.last %}checked{% endif %}>
-        <strong>{{ p.label }}</strong> — {{ p.price }} € ({{ p.months }} mes.)
+        <strong>{{ p.label }}</strong> — {{ p.price | eur }} € ({{ p.months }} mes.)
       </label>
       {% endfor %}
       <div class="grid">

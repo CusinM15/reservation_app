@@ -76,6 +76,7 @@ def subscription_blocks_access(request: Request) -> bool:
 # uporabljajo routerji; korenske poti (/ , /health, /history) so definirane tukaj.
 app = FastAPI(title="Šolski App", version="0.1.0")
 templates = make_templates()
+templates.env.filters["eur"] = lambda v: f"{float(v):.2f}".replace(".", ",")
 
 
 # ── Middleware: šolski URL-aliasi ──────────────────────────────────────
