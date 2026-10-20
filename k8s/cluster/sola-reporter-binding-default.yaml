@@ -1,0 +1,19 @@
+# ─────────────────────────────────────────────────────────────────────────
+# k8s/cluster/sola-reporter-binding-default.yaml — app pod (default SA v
+# sola-app) dobi BRANJE k3s/longhorn objektov prek obstoječega
+# ClusterRole `sola-reporter-readonly` (k8s/app/base). Potrebno za gumb
+# »🩺 Pošlji zdravje« v /global-settings (polno poročilo iz poda).
+# Samo branje — nič pisanja.
+# ─────────────────────────────────────────────────────────────────────────
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: sola-reporter-readonly-default
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: sola-reporter-readonly
+subjects:
+  - kind: ServiceAccount
+    name: default
+    namespace: sola-app
