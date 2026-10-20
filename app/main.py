@@ -20,7 +20,7 @@ from starlette.middleware.base import BaseHTTPMiddleware
 from sqlalchemy.orm import Session
 
 from app.database import init_db, get_db, SessionLocal
-from app.routers import rezervacije, ocenjevanja, auth, blocked_dates, audit_log, export, docs, dejavnosti, schools, subscription
+from app.routers import rezervacije, ocenjevanja, auth, blocked_dates, audit_log, export, docs, dejavnosti, schools, subscription, global_settings
 from app.app_settings import selling_enabled
 from app.subscriptions import is_active
 from app.models import User, RoleEnum
@@ -477,6 +477,7 @@ app.include_router(docs.router)
 app.include_router(dejavnosti.router)
 app.include_router(schools.router)
 app.include_router(subscription.router)
+app.include_router(global_settings.router)
 
 # ── Statične datoteke za dokumentacijo ────────────────────────────────
 # Slike iz dokumentacije (v /documentation/slike/) serviramo kot statične

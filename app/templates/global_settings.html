@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Globalne nastavitve — Šolski App</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; background: #f5f5f5; }
+        .container { max-width: 760px; margin: auto; background: white; padding: 24px; border-radius: 10px; }
+        .nav { margin-bottom: 20px; }
+        .nav a { margin-right: 14px; }
+        h2 { margin-top: 0; }
+        label { display: block; font-weight: 600; margin: 14px 0 4px; }
+        input { padding: 8px; width: 100%; box-sizing: border-box; border: 1px solid #ccc; border-radius: 6px; }
+        input[type="password"] { font-family: monospace; }
+        .hint { color: #666; font-size: 13px; }
+        .btn { padding: 9px 16px; background: #007bff; color: white; border: none; border-radius: 6px; cursor: pointer; font-size: 14px; margin-top: 18px; }
+        .btn-success { background: #28a745; }
+        .ok { color: #155724; background: #d4edda; padding: 12px; border-radius: 5px; margin: 12px 0; }
+        .err { color: #721c24; background: #f8d7da; padding: 12px; border-radius: 5px; margin: 12px 0; }
+        .msg { display: none; }
+        h3 { margin-top: 30px; border-top: 1px solid #eee; padding-top: 16px; }
+        .field-pass { font-size: 13px; color: #666; }
+    </style>
+</head>
+<body>
+<div class="container">
+    <div class="nav">
+        <a href="/schools">Šole (glavni admin)</a>
+        <a href="/history">Dnevnik dogodkov</a>
+        <a href="/global-settings">Globalne nastavitve</a>
+        <a href="/auth/logout">Odjava</a>
+    </div>
+
+    <h2>Globalne nastavitve (main admin)</h2>
+    <p class="hint">Nastavitve veljajo za celo namestitev (vse šole) in so vidne/Urejljive samo tebi.
+       Šole imajo svoje e-poštne nastavitve v <em>Nastavitve šole → E-pošta (SMTP)</em>; tu nastaviš
+       glavni (dnevni) e-poštni račun in backup prejemnika.</p>
+
+    <div id="msg" class="msg"></div>
+
+    <h3>E-pošta (main admin SMTP)</h3>
+    <form id="mail-form">
+        <label>SMTP strežnik</label>
+        <input type="text" name="server" value="{{ mail.server }}" placeholder="smtp.protonmail.ch / mail.arnes.si">
+        <label>Vrata</label>
+        <input type="number" name="port" value="{{ mail.port }}" placeholder="587">
+        <label>Uporabniško ime (e-pošta)</label>
+        <input type="text" name="username" value="{{ mail.username }}" placeholder="reservation.app@proton.me">
+        <label>Geslo / SMTP token</label>
+        <input type="password" name="password" placeholder="· · · · · (prazno = pusti obstoječe)" autocomplete="new-password">
+        <label>Pošiljatelj (From)</label>
+        <input type="text" name="from" value="{{ mail.from }}" placeholder="reservation.app@proton.me">
+    </form>
+    <button class="btn" onclick="saveMail()">Shrani e-poštne nastavitve</button>
+
+    <h3>Varnostno kopiranje cele baze</h3>
+    <label>Backup e-pošta (prejme .sql celotne baze — vse šole)</label>
+    <input type="text" id="backup-email" value="{{ backup_email }}" placeholder="matej.cusin2@guest.arnes.si">
+    <p class="hint">Backup CELOTNE baze (vse šole) se pošlje z glavnega (main admin) e-poštnega računa zgoraj.</p>
+    <button class="btn btn-success" onclick="sendBackup()">📧 Pošlji backup cele baze</button>
+
+    <div id="result"></div>
+</div>
+
+<script>
+const showMsg = (text, ok) => {
+    const m = document.getElementById('msg');
+    m.className = ok ? 'ok' : 'err';
+    m.textContent = text;
+    m.style.display = 'block';
+};
+async function saveMail() {
+    const f = document.getElementById('mail-form');
+    const data = Object.fromEntries(new FormData(f).entries());
+    data.port = Number(data.port);
+    try {
+        const r = await fetch('/api/global-settings', {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(data)});
+        const j = await r.json();
+        if (r.ok) { showMsg('✅ E-poštne nastavitve shranjene.', true); }
+        else { showMsg('❌ ' + (j.detail || 'Napaka.'), false); }
+    } catch (e) { showMsg('❌ ' + e, false); }
+}
+async function sendBackup() {
+    const be = document.getElementById('backup-email').value.trim();
+    const rd = document.getElementById('result');
+    rd.textContent = '⏳ Pošiljam backup cele baze ...'; rd.className = 'hint';
+    try {
+        const r = await fetch('/api/global-settings/backup', {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({backup_email: be})});
+        const j = await r.json();
+        rd.textContent = j.sent ? ('✅ ' + j.message) : ('❌ ' + j.message);
+        rd.className = j.sent ? 'ok' : 'err';
+    } catch (e) { rd.textContent = '❌ ' + e; rd.className = 'err'; }
+}
+</script>
+</body>
+</html>

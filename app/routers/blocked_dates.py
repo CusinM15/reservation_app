@@ -88,11 +88,27 @@ def _check_allowed(user_id, db: Session):
 # (zato starim klicem ni treba nič spremeniti).
 def _send_email(to_email: str, subject: str, body: str, config=None):
     """Pošlji email preko SMTP šole. Best-effort — napake se ignorirajo."""
-    server = config.MAIL_SERVER if config is not None else settings.MAIL_SERVER
-    port = config.MAIL_PORT if config is not None else settings.MAIL_PORT
-    sender = config.MAIL_FROM if config is not None else settings.MAIL_FROM
-    username = config.MAIL_USERNAME if config is not None else settings.MAIL_USERNAME
-    password = config.MAIL_PASSWORD if config is not None else settings.MAIL_PASSWORD
+    if config is not None:
+        server = config.MAIL_SERVER
+        port = config.MAIL_PORT
+        sender = config.MAIL_FROM
+        username = config.MAIL_USERNAME
+        password = config.MAIL_PASSWORD
+    else:
+        # Globalna raven: nastavitve iz tabele app_settings (UI glavni admin,
+        # stran Globalne nastavitve) — fallback na vrednosti iz .env/secretov.
+        from app.database import SessionLocal
+        from app.app_settings import global_mail_config
+        _db = SessionLocal()
+        try:
+            _mail = global_mail_config(_db)
+        finally:
+            _db.close()
+        server = _mail["server"]
+        port = _mail["port"]
+        sender = _mail["from"]
+        username = _mail["username"]
+        password = _mail["password"]
     if not password or not to_email:
         return
     try:

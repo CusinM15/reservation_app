@@ -272,3 +272,69 @@ def save_selling_config(
     set_app_setting(db, KEY_PAYPAL, (paypal or "").strip())
     set_app_setting(db, KEY_PAYPAL_SUB, (paypal_sub or "").strip())
     set_app_setting(db, KEY_NOTE, (note or "").strip())
+
+
+# ═════════════════════════════════════════════════════════════════════════
+# Globalne e-poštne nastavitve (main admin — stran /global-settings)
+# ═════════════════════════════════════════════════════════════════════════
+# Veljajo za CELO namestitev (vse šole): main admin SMTP za pošiljanje in
+# BACKUP_EMAIL (kamor gre .sql celotne baze). Fallback: vrednosti iz .env /
+# Kubernetes secretov (app.config.settings.MAIL_*).
+
+KEY_MAIL_SERVER = "GLOBAL_MAIL_SERVER"
+KEY_MAIL_PORT = "GLOBAL_MAIL_PORT"
+KEY_MAIL_USERNAME = "GLOBAL_MAIL_USERNAME"
+KEY_MAIL_PASSWORD = "GLOBAL_MAIL_PASSWORD"
+KEY_MAIL_FROM = "GLOBAL_MAIL_FROM"
+KEY_BACKUP_EMAIL = "GLOBAL_BACKUP_EMAIL"
+
+
+def global_mail_config(db: Session) -> dict:
+    """SMTP globalne nastavitve (app_settings → fallback na env/settings)."""
+    from app.config import settings as config_settings
+
+    server = get_app_setting(db, KEY_MAIL_SERVER, config_settings.MAIL_SERVER)
+    raw_port = get_app_setting(db, KEY_MAIL_PORT, str(config_settings.MAIL_PORT))
+    try:
+        port = int(str(raw_port).strip() or config_settings.MAIL_PORT)
+    except (TypeError, ValueError):
+        port = config_settings.MAIL_PORT
+    return {
+        "server": server,
+        "port": port,
+        "username": get_app_setting(db, KEY_MAIL_USERNAME, config_settings.MAIL_USERNAME),
+        "password": get_app_setting(db, KEY_MAIL_PASSWORD, config_settings.MAIL_PASSWORD),
+        "from": get_app_setting(db, KEY_MAIL_FROM, config_settings.MAIL_FROM),
+    }
+
+
+def get_global_backup_email(db: Session) -> str:
+    """Kam gre .sql celotne baze (fallback: settings.BACKUP_EMAIL)."""
+    from app.config import settings as config_settings
+
+    return get_app_setting(db, KEY_BACKUP_EMAIL, config_settings.BACKUP_EMAIL)
+
+
+def save_global_mail(
+    db: Session,
+    *,
+    server: str,
+    port: int | None,
+    username: str,
+    password: str | None,
+    from_addr: str,
+    backup_email: str,
+) -> None:
+    """Shrani globalne e-poštne nastavitve. Prazno geslo = pusti obstoječe."""
+    if server:
+        set_app_setting(db, KEY_MAIL_SERVER, server.strip())
+    if port is not None:
+        set_app_setting(db, KEY_MAIL_PORT, str(port))
+    if username:
+        set_app_setting(db, KEY_MAIL_USERNAME, username.strip())
+    if password:
+        set_app_setting(db, KEY_MAIL_PASSWORD, password.strip())
+    if from_addr:
+        set_app_setting(db, KEY_MAIL_FROM, from_addr.strip())
+    if backup_email:
+        set_app_setting(db, KEY_BACKUP_EMAIL, backup_email.strip())
