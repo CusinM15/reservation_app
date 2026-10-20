@@ -439,15 +439,18 @@ def _check_consecutive_days(dates_list) -> bool:
 # Preveri celovitost podatkov (ocene, rezervacije) za naslednjih 30 dni.
 # Zaznava morebitne bug-e, ki so spustili neveljavne podatke mimo validacije.
 
-def collect_app_data_agent():
+def collect_app_data_agent(db=None):
     """Preveri celovitost podatkov (ocene, rezervacije) za danes + 30 dni.
 
     Namen: zazna morebitne bug-e, ki so spustili neveljavne podatke mimo validacije.
+    `db` (opcijsko): zunanja seja; če ni podana, odpre svojo.
     """
-    from app.database import SessionLocal
     from app.models import Assessment, BlockedDate
 
-    db = SessionLocal()
+    own_db = db is None
+    if own_db:
+        from app.database import SessionLocal
+        db = SessionLocal()
     try:
         today = date.today()
         end = today + timedelta(days=30)
@@ -534,7 +537,8 @@ def collect_app_data_agent():
             "period_end": end.isoformat(),
         }
     finally:
-        db.close()
+        if own_db:
+            db.close()
 
 
 # ── Oblikovanje poročila ─────────────────────────────────────────────
@@ -688,24 +692,34 @@ def render_report(k3s, longhorn, app_data=None, kube_error=None):
 
 # ── Glavna funkcija ──────────────────────────────────────────────────
 
-def run():
-    """Zberi podatke, sestavi poročilo in ga pošlji po emailu."""
+def collect_and_render(db=None):
+    """Zberi podatke (nodi, longhorn, app data) in vrni (subject, body).
+
+    Uporabljata jo dnevni cron (run()) in gumb »🩺 Pošlji zdravje« na
+    /global-settings — oba pošljeta enako, POLNO poročilo o stanju clustra.
+    """
     kube, _apis, kube_error = load_kube()
     if kube_error:
-        app_data = {"period_start": "N/A", "period_end": "N/A",
-                     "total_assessments": 0, "total_blocked": 0, "issues": []}
+        app_data = {
+            "period_start": "N/A", "period_end": "N/A",
+            "total_assessments": 0, "total_blocked": 0, "issues": [],
+        }
         body = render_report({}, {}, app_data=app_data, kube_error=kube_error)
-        print(body)
-        _send_email(settings.BACKUP_EMAIL, "⚠️ Daily report napaka - k3s/Longhorn", body)
-        return
+        return "⚠️ Zdravje clustra — napaka (Kubernetes API)", body
 
     core, apps, batch, custom = kube
     k3s = collect_k3s_agent(core, apps, batch)
     longhorn = collect_longhorn_agent(custom)
-    app_data = collect_app_data_agent()
+    app_data = collect_app_data_agent(db)
     body = render_report(k3s, longhorn, app_data=app_data)
+    return "🛡️ Zdravje clustra (k3s/Longhorn)", body
+
+
+def run():
+    """Zberi podatke, sestavi poročilo in ga pošlji po emailu (dnevni cron)."""
+    subject, body = collect_and_render()
     print(body)
-    _send_email(settings.BACKUP_EMAIL, "🛡️ Daily k3s/Longhorn health report", body)
+    _send_email(settings.BACKUP_EMAIL, subject, body)
 
 
 if __name__ == "__main__":
