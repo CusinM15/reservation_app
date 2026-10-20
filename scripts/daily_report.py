@@ -26,6 +26,7 @@
 # ─────────────────────────────────────────────────────────────────────────
 
 import os
+import subprocess
 import sys
 from collections import Counter, defaultdict
 from datetime import date, datetime, timedelta, timezone
@@ -157,6 +158,109 @@ def pod_restart_count(pod) -> int:
     for status in list(statuses) + list(init_statuses):
         total += int(getattr(status, "restart_count", 0) or 0)
     return total
+
+
+def _addr_value(addr) -> str:
+    """Vrni 'address' iz V1NodeAddress objekta ali dict-a."""
+    if isinstance(addr, dict):
+        return str(addr.get("address") or "")
+    return str(getattr(addr, "address", "") or "")
+
+
+def _addr_type(addr) -> str:
+    """Vrni 'type' iz V1NodeAddress objekta ali dict-a."""
+    if isinstance(addr, dict):
+        return str(addr.get("type") or "")
+    return str(getattr(addr, "type", "") or "")
+
+
+def node_ip_map(nodes) -> dict:
+    """Preslikava k3s node ime -> InternalIP (fallback ExternalIP, sicer prazen)."""
+    result = {}
+    for node in nodes:
+        name = get_dict_path(node, ["metadata", "name"], "")
+        ip = ""
+        for addr in get_dict_path(node, ["status", "addresses"], []) or []:
+            if _addr_type(addr) == "InternalIP":
+                ip = _addr_value(addr)
+                break
+        if not ip:
+            for addr in get_dict_path(node, ["status", "addresses"], []) or []:
+                if _addr_type(addr) == "ExternalIP":
+                    ip = _addr_value(addr)
+                    break
+        result[str(name)] = ip
+    return result
+
+
+def node_label(name, ip_map) -> str:
+    """'vmi3670013 (62.84.176.42)' — oziroma samo ime, če IP ni znan."""
+    ip = ip_map.get(str(name), "")
+    return f"{name} ({ip})" if ip else str(name)
+
+
+GIT_REPO_PATH = "/home/deploy/reservation_app_sell"
+
+
+def collect_git_status_agent(ip_map, k3s_nodes) -> list[str]:
+    """Za vsak node prek SSH (deploy) preveri git sinhronizacijo repoja.
+
+    V podu (brez ssh/ključev) vrne n/a — poln git pregled daje dnevni
+    zagon na node-1 (host), kjer ima deploy SSH ključe do vseh nodov.
+    """
+    import shutil
+
+    has_ssh = shutil.which("ssh") is not None
+    local_ip = ""
+    try:
+        _out = subprocess.run(["hostname", "-I"], capture_output=True, text=True, timeout=5).stdout
+        local_ip = _out.split()[0] if _out.strip() else ""
+    except Exception:
+        pass
+    lines = []
+    for node in k3s_nodes:
+        name = get_dict_path(node, ["metadata", "name"], "unknown")
+        ip = ip_map.get(str(name), "")
+        if not has_ssh:
+            lines.append(f"- {name}: n/a (v podu ni ssh)")
+            continue
+        if not ip:
+            lines.append(f"- {name}: n/a (ni IP)")
+            continue
+        cmd = (
+            f"git -C {GIT_REPO_PATH} fetch -q origin 2>/dev/null; "
+            f"git -C {GIT_REPO_PATH} status -sb | head -3; "
+            f"git -C {GIT_REPO_PATH} log -1 --format='%h %ad %s' --date=short"
+        )
+        try:
+            if ip == local_ip:
+                # ta node: repo je lokalno na disku — brez ssh
+                r = subprocess.run(["bash", "-c", cmd], capture_output=True, text=True, timeout=25)
+            else:
+                r = subprocess.run(
+                    ["ssh", "-o", "BatchMode=yes", "-o", "ConnectTimeout=6",
+                     f"deploy@{ip}", cmd],
+                    capture_output=True, text=True, timeout=25,
+                )
+        except Exception as exc:
+            lines.append(f"- {name}: n/a ({type(exc).__name__})")
+            continue
+        if r.returncode != 0:
+            lines.append(f"- {name}: n/a (ssh {r.returncode})")
+            continue
+        out = [ln for ln in r.stdout.splitlines() if ln.strip()]
+        sync = "?"
+        if out and out[0].startswith("## "):
+            rest = out[0][3:]
+            if "ahead" in rest or "behind" in rest:
+                sync = "⚠ NI sync: " + rest.split("...", 1)[-1]
+            else:
+                sync = "✓ sync z origin"
+        commit = out[-1] if len(out) > 1 else ""
+        dirty = len(out) - 2
+        dirty_txt = f" · {dirty} spreminj. datotek" if dirty > 0 else ""
+        lines.append(f"- {node_label(name, ip_map)}: {sync}{dirty_txt} · {commit}")
+    return lines
 
 
 # ── Kolektor za k3s ──────────────────────────────────────────────────
@@ -544,7 +648,7 @@ def collect_app_data_agent(db=None):
 # ── Oblikovanje poročila ─────────────────────────────────────────────
 # Sestavi lepo oblikovano besedilno poročilo iz vseh kolektorjev.
 
-def render_report(k3s, longhorn, app_data=None, kube_error=None):
+def render_report(k3s, longhorn, app_data=None, kube_error=None, git_lines=None):
     lines = []
     generated = now_ljubljana().strftime("%Y-%m-%d %H:%M %Z")
     lines.append("🛡️ Daily k3s/Longhorn health report")
@@ -564,6 +668,7 @@ def render_report(k3s, longhorn, app_data=None, kube_error=None):
     long_items = longhorn["items"]
     long_summary = longhorn["summary"]
     long_errors = longhorn["errors"]
+    ip_map = node_ip_map(nodes)
 
     # Določitev splošnega statusa
     not_ready_nodes = [n for n in nodes if condition_status(n, "Ready") != "True"]
@@ -596,7 +701,8 @@ def render_report(k3s, longhorn, app_data=None, kube_error=None):
         roles = sorted(k for k in getattr(getattr(node, "metadata", None), "labels", {}).keys() if k.startswith("node-role.kubernetes.io/"))
         roles_text = ", ".join(role.replace("node-role.kubernetes.io/", "") for role in roles) if roles else "<none>"
         ready = condition_status(node, "Ready")
-        lines.append(f"- {name}: Ready={ready}, roles={roles_text}, age={fmt_age(getattr(getattr(node, 'metadata', None), 'creation_timestamp', None))}")
+        label = node_label(name, ip_map)
+        lines.append(f"- {label}: Ready={ready}, roles={roles_text}, age={fmt_age(getattr(getattr(node, 'metadata', None), 'creation_timestamp', None))}")
     if not nodes:
         lines.append("- no nodes returned")
     lines.append("")
@@ -612,7 +718,7 @@ def render_report(k3s, longhorn, app_data=None, kube_error=None):
         avail_gb = round(available / 1024**3, 1) if available else None
         pct_text = f"{pct}%" if pct is not None else "unknown"
         lh_ready = long_summary.get("longhorn_node_ready", {}).get(name, "unknown")
-        lines.append(f"- {name}: LonghornReady={lh_ready}, used={pct_text}, available={avail_gb} GiB / {max_gb} GiB")
+        lines.append(f"- {node_label(name, ip_map)}: LonghornReady={lh_ready}, used={pct_text}, available={avail_gb} GiB / {max_gb} GiB")
     if long_summary["degraded_volumes"]:
         lines.append("Degraded/faulted volume details:")
         for volume in long_summary["degraded_volumes"]:
@@ -627,7 +733,7 @@ def render_report(k3s, longhorn, app_data=None, kube_error=None):
     lines.append("## Node health / lifetime estimate agent")
     estimates = [estimate_node_lifetime(node, k3s, longhorn) for node in nodes]
     for item in estimates:
-        lines.append(f"- {item['node']}: {item['status']} score={item['score']} — {item['estimate']}")
+        lines.append(f"- {node_label(item['node'], ip_map)}: {item['status']} score={item['score']} — {item['estimate']}")
         for reason in item["reasons"]:
             lines.append(f"  - {reason}")
     if not estimates:
@@ -635,6 +741,12 @@ def render_report(k3s, longhorn, app_data=None, kube_error=None):
     lines.append("")
     lines.append("Note: lifetime estimate is heuristic, based on readiness, pressure conditions, pod restarts, failed jobs, recent warning events and Longhorn disk usage.")
     lines.append("")
+
+    # ── Git sinhronizacija repoja na nodih ──
+    if git_lines:
+        lines.append("## Git repo (reservation_app_sell na nodih)")
+        lines.extend(git_lines)
+        lines.append("")
     lines.append("Dokumentacija:")
     lines.append("  https://github.com/CusinM15/reservation_app_sell/blob/main/documentation/navodila-vodstvo.md")
     lines.append("  https://github.com/CusinM15/reservation_app_sell/blob/main/poletna-pavza.md")
@@ -711,7 +823,9 @@ def collect_and_render(db=None):
     k3s = collect_k3s_agent(core, apps, batch)
     longhorn = collect_longhorn_agent(custom)
     app_data = collect_app_data_agent(db)
-    body = render_report(k3s, longhorn, app_data=app_data)
+    ip_map = node_ip_map(k3s["nodes"])
+    git_lines = collect_git_status_agent(ip_map, k3s["nodes"])
+    body = render_report(k3s, longhorn, app_data=app_data, git_lines=git_lines)
     return "🛡️ Zdravje clustra (k3s/Longhorn)", body
 
 
