@@ -104,6 +104,94 @@ def backup_all_schools(request: Request, db: Session = Depends(get_db)):
     return JSONResponse({"sent": sent, "message": message}, status_code=status)
 
 
+@router.post("/api/global-settings/health")
+def send_cluster_health(request: Request, db: Session = Depends(get_db)):
+    """Pošlje dnevni (health) report z glavnega e-poštnega računa na
+    BACKUP_EMAIL (glavni admin). Snapshot: baza, šole/uporabniki, podi
+    namespace; polni cluster report (nodi, longhorn) teče na node-1."""
+    user = _require_main_admin(request, db)
+    sent, message = _build_and_send_health(db)
+    status = 200 if sent else 500
+    if sent:
+        log_audit(db, user.id, user.username, "global_health", "email=" + get_global_backup_email(db))
+    return JSONResponse({"sent": sent, "message": message}, status_code=status)
+
+
+def _k8s_ns_pods():
+    """Pod namespace prek Kubernetes API (service account v podu) — brez kubectl."""
+    import os, ssl, json as _json, urllib.request
+
+    base = "/var/run/secrets/kubernetes.io/serviceaccount"
+    token_path = os.path.join(base, "token")
+    ca_path = os.path.join(base, "ca.crt")
+    if not (os.path.exists(token_path) and os.path.exists(ca_path)):
+        return "n/a (endpoint teče zunaj k8s poda)"
+    try:
+        token = open(token_path).read().strip()
+        ctx = ssl.create_default_context(cafile=ca_path)
+        req = urllib.request.Request(
+            "https://kubernetes.default.svc/api/v1/namespaces/sola-app/pods",
+            headers={"Authorization": "Bearer " + token},
+        )
+        with urllib.request.urlopen(req, context=ctx, timeout=10) as r:
+            data = _json.loads(r.read())
+        pods = data.get("items", [])
+        running = sum(1 for p in pods if p.get("status", {}).get("phase") == "Running")
+        return f"{running}/{len(pods)} Running"
+    except Exception as exc:
+        return f"n/a ({exc})"
+
+
+def _build_and_send_health(db: Session):
+    """Sestavi health snapshot in ga pošlje na BACKUP_EMAIL prek globalne SMTP."""
+    import ssl, smtplib, datetime
+    from email.mime.text import MIMEText
+    from sqlalchemy import text
+
+    mail = global_mail_config(db)
+    to = get_global_backup_email(db)
+    if not to:
+        return False, "BACKUP_EMAIL ni nastavljen (Globalne nastavitve)."
+    if not mail["password"]:
+        return False, "SMTP geslo ni nastavljeno (Globalne nastavitve → E-pošta)."
+
+    lines = []
+    lines.append("🩺 Zdravje clustra (snapshot) — " + datetime.datetime.now().strftime("%Y-%m-%d %H:%M"))
+    lines.append("")
+    try:
+        ver = db.execute(text("SELECT version()")).scalar() or ""
+        schools = db.execute(text("SELECT COUNT(*) FROM schools")).scalar() or 0
+        users = db.execute(text("SELECT COUNT(*) FROM users")).scalar() or 0
+        lines.append("## Baza (CNPG)")
+        lines.append("- PostgreSQL: " + str(ver).replace("\n", " ")[:60])
+        lines.append(f"- Šole: {schools}")
+        lines.append(f"- Uporabniki: {users}")
+    except Exception as exc:
+        lines.append("## Baza (CNPG)")
+        lines.append(f"- NAPAKA: {exc}")
+    lines.append("")
+    lines.append("## Podi (namespace sola-app)")
+    lines.append("- " + _k8s_ns_pods())
+    lines.append("")
+    lines.append("## Opomba")
+    lines.append("- Polni cluster report (nodi, longhorn, HPA): node-1 · scripts/daily_report.py (cron)")
+
+    body = "\n".join(lines)
+    msg = MIMEText(body, "plain", "utf-8")
+    msg["Subject"] = "🩺 Zdravje clustra (snapshot)"
+    msg["From"] = mail["from"]
+    msg["To"] = to
+    try:
+        ctx = ssl.create_default_context()
+        with smtplib.SMTP(mail["server"], mail["port"], timeout=60) as s:
+            s.starttls(context=ctx)
+            s.login(mail["username"], mail["password"])
+            s.send_message(msg)
+    except Exception as exc:
+        return False, f"Pošiljanje ni uspelo: {exc}"
+    return True, f"Zdravje clustra poslano na {to}."
+
+
 def _dump_and_send(db: Session):
     """pg_dump celotne baze → priloga .sql → SMTP (globalne nastavitve)."""
     import os, subprocess
