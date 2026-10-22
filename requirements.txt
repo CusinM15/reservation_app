@@ -17,3 +17,5 @@ uharfbuzz==0.56.0
 fonttools==4.63.0
 # Uvoz dni dejavnosti iz Excel predloge (UI "Vnos dejavnosti")
 openpyxl==3.1.5
+# Digitalni zaslon: nalaganje nadomeščanj iz eAsistenta (jarnega URL-ja)
+requests==2.32.3
