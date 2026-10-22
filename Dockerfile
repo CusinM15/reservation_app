@@ -49,6 +49,8 @@ COPY --from=builder /root/.local /home/appuser/.local
 COPY app/ app/
 COPY scripts/ scripts/
 COPY documentation/ documentation/
+COPY zasloni_media/ zasloni_media/
+
 
 RUN chown -R appuser:appuser /app
 USER appuser
