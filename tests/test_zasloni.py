@@ -94,10 +94,43 @@ def test_per_sola_alias_zasloni_javen():
     assert ALIAS_KINDS.get("nadomescanja") == "/zasloni"
     assert _ALIAS_RE.match("nadomescanja_ostcj") is not None
     pairs = generate_aliases(settings.DEFAULT_SCHOOL_SLUG)
-    alias = next((a for a, k in pairs if k == "nadomescanja"), None)
+    alias = next((a for a, k in pairs if k == "nadomescanja" and "_" in a), None)
     assert alias, f"manjka generirani nadomescanja_<slug>: {dict(pairs)}"
     with TestClient(app) as c:
         r = c.get(f"/{alias}", follow_redirects=False)
         assert r.status_code == 200, f"/{alias} → {r.status_code}"
         assert "text/html" in r.headers["content-type"]
         assert "fullscreen-mode" in r.text
+
+
+def test_goli_slug_zasloni_javen():
+    """Goli slug šole (npr. /ostcj) → /zasloni, javno brez prijave."""
+    from app.tenancy import generate_aliases
+    pairs = generate_aliases(settings.DEFAULT_SCHOOL_SLUG)
+    bare = next((a for a, k in pairs if k == "nadomescanja" and "_" not in a), None)
+    assert bare, f"manjka goli slug (brez predpone) v generate_aliases: {dict(pairs)}"
+    with TestClient(app) as c:
+        r = c.get(f"/{bare}", follow_redirects=False)
+        assert r.status_code == 200, f"/{bare} → {r.status_code}"
+        assert "text/html" in r.headers["content-type"]
+        assert "fullscreen-mode" in r.text
+
+
+def test_zasloni_obvestila_vrni_urejen_seznam():
+    """/zasloni/obvestila vrne seznam aktivnih obvestil po vrsti (JSON)."""
+    with TestClient(app) as c:
+        r = c.get("/zasloni/obvestila")
+        assert r.status_code == 200
+        assert "application/json" in r.headers["content-type"]
+        data = r.json()
+        assert "obvestila" in data
+        assert isinstance(data["obvestila"], list)
+        for u in data["obvestila"]:
+            assert u.startswith(("vec_obvestil/", "obvestila/"))
+
+
+def test_zasloni_obvestila_nastavitev_je_v_kljucih():
+    """ZASLON_OBVESTILA je registriran v school settings (ključ + default)."""
+    from app.tenancy import SCHOOL_SETTING_KEYS, env_default_settings
+    assert "ZASLON_OBVESTILA" in SCHOOL_SETTING_KEYS
+    assert "ZASLON_OBVESTILA" in env_default_settings()

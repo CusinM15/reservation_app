@@ -219,25 +219,47 @@
             {% endif %}{% endfor %}
 
             <h3>{{ t('set_zaslon', 'Digitalni zaslon (nadomeščanja)') }}</h3>
-            <p class="hint">{{ t('set_zaslon_hint', 'Nadomeščanja pridejo iz eAsistenta prek javnega URL-ja. Vir nastavi šolski admin v nastavitvah šole v eAsistentu, kjer tudi izbere, kaj se prikazuje (omejitev: 5 datotek/obvestil). Ta naslov vpišete spodaj.') }}</p>
-            {% for f in fields %}{% if f.key.startswith('ZASLON_') %}
-            <div class="field">
-                <label>{{ t('setf_' ~ f.key, f.label) }}</label>
-                {% if is_main_admin %}<span class="key">{{ f.key }}</span>{% endif %}
-                {% if f.type == 'bool' %}
-                <label style="display:flex;align-items:center;gap:8px;font-weight:normal;">
-                    <input type="checkbox" name="{{ f.key }}" value="true"
-                           {% if values.get(f.key, '').lower() in ('1','true','yes','on') %}checked{% endif %}>
-                    <span>{{ t('set_zaslon_prikazi', 'Prikaži nadomeščanja') }}</span>
-                </label>
-                {% elif f.type == 'int' or f.type == 'float' %}
-                <input type="number" step="{{ 'any' if f.type == 'float' else '1' }}"
-                       name="{{ f.key }}" value="{{ values.get(f.key, '') }}">
-                {% else %}
-                <input type="text" name="{{ f.key }}" value="{{ values.get(f.key, '') }}">
-                {% endif %}
-            </div>
-            {% endif %}{% endfor %}
+                        <p class="hint">{{ t('set_zaslon_hint', 'Nadomeščanja pridejo iz eAsistenta prek javnega URL-ja. Vir nastavi šolski admin v nastavitvah šole v eAsistentu, kjer tudi izbere, kaj se prikazuje (omejitev: 5 datotek/obvestil). Ta naslov vpišete spodaj.') }}</p>
+                        {% for f in fields %}{% if f.key.startswith('ZASLON_') and f.key != 'ZASLON_OBVESTILA' %}
+                        <div class="field">
+                            <label>{{ t('setf_' ~ f.key, f.label) }}</label>
+                            {% if is_main_admin %}<span class="key">{{ f.key }}</span>{% endif %}
+                            {% if f.type == 'bool' %}
+                            <label style="display:flex;align-items:center;gap:8px;font-weight:normal;">
+                                <input type="checkbox" name="{{ f.key }}" value="true"
+                                       {% if values.get(f.key, '').lower() in ('1','true','yes','on') %}checked{% endif %}>
+                                <span>{{ t('set_zaslon_prikazi', 'Prikaži nadomeščanja') }}</span>
+                            </label>
+                            {% elif f.type == 'int' or f.type == 'float' %}
+                            <input type="number" step="{{ 'any' if f.type == 'float' else '1' }}"
+                                   name="{{ f.key }}" value="{{ values.get(f.key, '') }}">
+                            {% else %}
+                            <input type="text" name="{{ f.key }}" value="{{ values.get(f.key, '') }}">
+                            {% endif %}
+                        </div>
+                        {% endif %}{% endfor %}
+
+                        <!-- OBVESTILA ZASLONA: vsako obvestilo s kljukico. Označena se
+                             prikazujejo PO VRSTI (v vrsti, kot so tu). Ob shranjevanju se
+                             označena zberejo v seznam ZASLON_OBVESTILA (JSON). -->
+                        <div class="field">
+                            <label>{{ t('set_zaslon_obvestila', 'Obvestila zaslona (označi, kar se prikazuje po vrsti)') }}</label>
+                            {% if is_main_admin %}<span class="key">ZASLON_OBVESTILA</span>{% endif %}
+                            <div id="obvestila-rows">
+                                {% for r in obv_rows %}
+                                <label style="display:flex;align-items:center;gap:8px;margin:4px 0;font-weight:normal;">
+                                    <input type="checkbox" class="obv-check" value="{{ r.file }}"
+                                           {% if r.active %}checked{% endif %}>
+                                    <span class="obv-file">{{ r.file }}</span>
+                                </label>
+                                {% else %}
+                                <p class="hint" style="margin-top:0;">{{ t('set_zaslon_brez_obvestil', 'V mapi ni obvestil (vec_obvestil/). Dodaj slike za prikaz.') }}</p>
+                                {% endfor %}
+                            </div>
+                            <div class="hint" style="margin-top:6px;">
+                                {{ t('set_zaslon_obvestila_hint', 'Označena obvestila se na zaslonu prikazujejo po vrsti, od vrha navzdol (ne naključno). Če ni označeno nobeno, se prikazujejo vsa.') }}
+                            </div>
+                        </div>
 
             <div class="sticky">
                 <button type="submit" class="btn btn-success">{{ t('btn_shrani_nastavitve', 'Shrani nastavitve') }}</button>
@@ -647,6 +669,13 @@
         // normaliziraj na true/false tudi za neoznačen checkbox.
         const cb = document.querySelector('input[name="ZASLON_POKAZI_NADOMESCANJA"]');
         if (cb) values['ZASLON_POKAZI_NADOMESCANJA'] = cb.checked ? 'true' : 'false';
+
+        // Obvestila zaslona: označena (v vrstnem redu kljukic) → ZASLON_OBVESTILA.
+        const obvSel = [];
+        document.querySelectorAll('#obvestila-rows .obv-check').forEach(function (el) {
+            if (el.checked) obvSel.push(el.value);
+        });
+        values['ZASLON_OBVESTILA'] = JSON.stringify(obvSel);
 
         // Razredi pridejo iz vrstic (ne iz enega polja) — sestavimo CSV.
         const razrediVal = collectRazredi();

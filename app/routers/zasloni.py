@@ -98,12 +98,23 @@ def _zasloni_settings(request: Request, db: Session) -> dict:
             return fallback
 
     media_dir = _default_media_dir()
+    # Aktivna obvestila (ZASLON_OBVESTILA): JSON seznam imen v VRSTNEM redu.
+    obvestila = []
+    try:
+        raw_obv = config.get_str("ZASLON_OBVESTILA", "").strip()
+        if raw_obv:
+            parsed = json.loads(raw_obv)
+            if isinstance(parsed, list):
+                obvestila = [str(x) for x in parsed]
+    except (TypeError, ValueError):
+        obvestila = []
     return {
         "url": config.get_str("ZASLON_URL", DEFAULT_ZASLON_URL),
         "pokazi_nadomescanja": b("ZASLON_POKAZI_NADOMESCANJA", True),
         "cas_obvestila": i("ZASLON_CAS_OBVESTILA", 5),
         "min_cas_tabele": i("ZASLON_MIN_CAS_TABELE", 2),
         "hitrost_drsenja": f("ZASLON_HITROST_DRSENJA", 1.2),
+        "obvestila": obvestila,
         "media_dir": media_dir,
         "vec_obvestil": media_dir / "vec_obvestil",
         "logo_path": "obvestila/logo.jpg",
@@ -280,6 +291,45 @@ def _nakljucna_slika(vec_dir: Path) -> str | None:
 
 
 # ═══════════════════════════════════════════════════════════════════════
+# 4b. Aktivna obvestila (po vrsti) — za /zasloni/obvestila
+# ═══════════════════════════════════════════════════════════════════════
+
+def _aktivna_obvestila(settings: dict) -> list[str]:
+    """Vrni relativne URL-je aktivnih obvestil PO VRSTI (ne naključno).
+
+    Šola v nastavitvah (ZASLON_OBVESTILA, JSON seznam imen) določi katera
+    obvestila so aktivna in v kakšnem vrstnem redu se prikazujejo. Če ni
+    podano (prazno), se uporabijo VSA obvestila iz vec_obvestil/ po abecedi.
+    """
+    vec_dir: Path = settings["vec_obvestil"]
+    if not vec_dir.is_dir():
+        return []
+    razpoložljiva = sorted(
+        f.name for f in vec_dir.iterdir()
+        if f.is_file() and f.suffix.lower() in {".jpg", ".jpeg", ".png", ".gif", ".webp", ".pdf"}
+    )
+    if not razpoložljiva:
+        return []
+
+    izbrana_raw = settings.get("obvestila")
+    if not izbrana_raw:
+        return [f"vec_obvestil/{n}" for n in razpoložljiva]
+
+    urlji = []
+    for n in izbrana_raw:
+        n = (n or "").strip()
+        if not n or n not in razpoložljiva:
+            continue
+        if n.endswith(".pdf"):
+            jpg = _pretvori_pdf_v_sliko(vec_dir / n)
+            if jpg and jpg.exists():
+                urlji.append(f"vec_obvestil/{jpg.name}")
+        else:
+            urlji.append(f"vec_obvestil/{n}")
+    return urlji
+
+
+# ═══════════════════════════════════════════════════════════════════════
 # 5. Endpoints
 # ═══════════════════════════════════════════════════════════════════════
 
@@ -323,12 +373,32 @@ def zasloni_status(request: Request, db: Session = Depends(get_db)):
 
 @router.get("/zasloni/random_image", response_class=JSONResponse)
 def zasloni_random_image(request: Request, db: Session = Depends(get_db)):
-    """Vrne naključno sliko (JSON {slika: ...}) za JavaScript rotacijo."""
+    """Vrne naključno sliko (JSON {slika: ...}) za JavaScript rotacijo.
+
+    Združljivost: če so obvestila (ZASLON_OBVESTILA) določena po vrsti,
+    vrne prvo aktivno; sicer naključno. Večina brskalnikov uporablja
+    /zasloni/obvestila (urejen seznam), ta endpoint pa ostaja za nazaj.
+    """
     settings = _zasloni_settings(request, db)
     slika = _nakljucna_slika(settings["vec_obvestil"])
     if not slika:
         slika = settings["logo_path"]
     return {"slika": slika}
+
+
+@router.get("/zasloni/obvestila", response_class=JSONResponse)
+def zasloni_obvestila(request: Request, db: Session = Depends(get_db)):
+    """Urejen seznam aktivnih obvestil (JSON {obvestila: [...]}).
+
+    Uporabi ga JavaScript za rotacijo PO VRSTI: vsako obvestilo se prikaže
+    v vrstnem redu, kot ga določi šola v ZASLON_OBVESTILA (v nasprotnem
+    primeru vsa iz vec_obvestil po abecedi). Brez aktivnih → privzeti logo.
+    """
+    settings = _zasloni_settings(request, db)
+    obvestila = _aktivna_obvestila(settings)
+    if not obvestila:
+        obvestila = [settings["logo_path"]]
+    return {"obvestila": obvestila}
 
 
 @router.get("/zasloni", response_class=HTMLResponse)
@@ -357,11 +427,9 @@ def zasloni_praznos(request: Request, db: Session = Depends(get_db)):
                 '<strong class="text-danger" style="text-decoration:line-through;">odpade</strong>',
             )
 
-    # Začetna slika: naključna iz vec_obvestil, sicer privzeti logo.
-    obvestilo_path = settings["logo_path"]
-    nakljucna = _nakljucna_slika(settings["vec_obvestil"])
-    if nakljucna:
-        obvestilo_path = nakljucna
+    # Začetna slika: prva aktivna po vrsti, sicer privzeti logo.
+    obvestila = _aktivna_obvestila(settings)
+    obvestilo_path = obvestila[0] if obvestila else settings["logo_path"]
 
     return templates.TemplateResponse("zasloni.html", {
         "request": request,
@@ -371,5 +439,6 @@ def zasloni_praznos(request: Request, db: Session = Depends(get_db)):
         "hitrost_drsenja": settings["hitrost_drsenja"],
         "tabela": tabela,
         "obvestilo_path": obvestilo_path,
+        "obvestila": obvestila,
         "school_name": settings["school_name"],
     })

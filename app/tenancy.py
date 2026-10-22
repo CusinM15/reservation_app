@@ -107,6 +107,9 @@ SCHOOL_SETTING_KEYS = [
     "ZASLON_CAS_OBVESTILA",
     "ZASLON_MIN_CAS_TABELE",
     "ZASLON_HITROST_DRSENJA",
+    # Aktivna obvestila zaslona: JSON seznam imen datotek v vec_obvestil/,
+    # ki se prikazujejo PO VRSTI (v navedenem vrstnem redu), ne naključno.
+    "ZASLON_OBVESTILA",
 ]
 
 
@@ -175,6 +178,7 @@ SCHOOL_SETTING_FIELDS = [
     {"key": "ZASLON_CAS_OBVESTILA", "label": "Zaslon — sekund: vidna slika/obvestilo", "type": "int"},
     {"key": "ZASLON_MIN_CAS_TABELE", "label": "Zaslon — sekund: minimalni čas tabele", "type": "int"},
     {"key": "ZASLON_HITROST_DRSENJA", "label": "Zaslon — hitrost drsenja tabele", "type": "float"},
+    {"key": "ZASLON_OBVESTILA", "label": "Zaslon — aktivna obvestila (JSON seznam)", "type": "json"},
 ]
 
 
@@ -212,7 +216,12 @@ def generate_aliases(slug: str) -> list[tuple[str, str]]:
     """Iz sluga šole generiraj privzete URL-aliasse.
 
     Vrne seznam parov (alias, kind): npr. za slug "ostcj" →
-    [("rezervacije_ostcj", "rezervacije"), ("ocenjevanje_ostcj", "ocenjevanje")].
+    [("rezervacije_ostcj", "rezervacije"), ("ocenjevanje_ostcj", "ocenjevanje"),
+     ("nadomescanja_ostcj", "nadomescanja"), ("ostcj", "nadomescanja")].
+
+    Zadnji par je GOLI slug (brez predpone) — skrajšana pot za digitalni zaslon
+    te šole (npr. /ostcj → /zasloni / nadomeščanja). Vsaka šola ima svoj goli
+    slug, zato ni konflikta.
 
     Zakaj tako? Ko kasneje ustvarimo novo šolo, dobimo ustrezne poti brez
     ročnega vpisovanja. Zgodovinski aliasi (npr. "rezervacije_ostc") se
@@ -221,7 +230,10 @@ def generate_aliases(slug: str) -> list[tuple[str, str]]:
     base = re.sub(r"[^a-z0-9]", "", (slug or "").lower())
     if not base:
         base = "sola"
-    return [(f"{kind}_{base}", kind) for kind in ALIAS_KINDS.keys()]
+    pairs = [(f"{kind}_{base}", kind) for kind in ALIAS_KINDS.keys()]
+    # Goli slug = zaslon te šole (/nadomeščanja). Prevede se na /zasloni.
+    pairs.append((base, "nadomescanja"))
+    return pairs
 
 
 def default_school_admin_username(slug: str) -> str:
@@ -329,6 +341,7 @@ def parse_alias_path(path: str) -> tuple[str | None, str | None]:
 # spreminjajo zelo redko, uporabimo kratek TTL predpomnilnik (manj
 # poizvedb v bazo), ki ga ob spremembi počistimo.
 _ALIAS_CACHE: dict[str, tuple[int | None, float]] = {}
+_ALIAS_KIND_CACHE: dict[str, str | None] = {}
 _ALIAS_CACHE_TTL = 30.0
 _ALIAS_CACHE_LOCK = threading.Lock()
 
@@ -337,6 +350,63 @@ def invalidate_alias_cache() -> None:
     """Počisti predpomnilnik aliasov (kliči ob spremembi/ustvarjanju šole)."""
     with _ALIAS_CACHE_LOCK:
         _ALIAS_CACHE.clear()
+        _ALIAS_KIND_CACHE.clear()
+
+
+def lookup_alias_kind(alias: str) -> str | None:
+    """Vrni 'kind' registriranega aliasa ali None.
+
+    Ključno za GOLI slug (npr. "ostcj"), kjer vrste ni mogoče izpeljati iz
+    imena (za razliko od "nadomescanja_ostcj"). Prebere ustrezen
+    SchoolAlias.kind; ni na voljo -> None. Predpomnjeno kot lookup_alias_school_id.
+    """
+    with _ALIAS_CACHE_LOCK:
+        if alias in _ALIAS_KIND_CACHE:
+            return _ALIAS_KIND_CACHE[alias]
+
+    from app.database import SessionLocal
+    from app.models import SchoolAlias
+
+    kind = None
+    db = SessionLocal()
+    try:
+        row = db.query(SchoolAlias).filter(SchoolAlias.alias == alias).first()
+        kind = row.kind if row else None
+    except Exception:
+        return None
+    finally:
+        db.close()
+
+    with _ALIAS_CACHE_LOCK:
+        _ALIAS_KIND_CACHE[alias] = kind
+    return kind
+
+
+def resolve_alias_path(path: str) -> tuple[str | None, str | None]:
+    """Kot parse_alias_path, a razreši tudi GOLI slug šole (npr. /ostcj → /zasloni).
+
+    Zaporedje:
+      1. Standardni <kind>_<slug> alias (parse_alias_path).
+      2. Goli slug (en sam segment brez poševnice), če je registriran kot
+         šolski alias z vrsto, ki kaže na /zasloni.
+
+    Vrne (None, None), če nič od tega ni veljavno — poti ne spreminjamo.
+    """
+    alias, canonical = parse_alias_path(path)
+    if alias and canonical:
+        return alias, canonical
+
+    if not path or not path.startswith("/"):
+        return None, None
+    trimmed = path.lstrip("/")
+    if not trimmed or "/" in trimmed:
+        return None, None
+    first = trimmed
+    kind = lookup_alias_kind(first)
+    prefix = ALIAS_KINDS.get(kind) if kind else None
+    if not prefix:
+        return None, None
+    return first, prefix
 
 
 def lookup_alias_school_id(alias: str) -> int | None:
@@ -407,6 +477,8 @@ def env_default_settings() -> dict:
         "ZASLON_CAS_OBVESTILA": "5",
         "ZASLON_MIN_CAS_TABELE": "2",
         "ZASLON_HITROST_DRSENJA": "1.2",
+        # Prazno → uporabijo se VSA obvestila iz vec_obvestil/ po vrsti.
+        "ZASLON_OBVESTILA": "",
     }
 
 

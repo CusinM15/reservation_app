@@ -986,6 +986,32 @@ def school_settings_page(
         for key in sorted(parsed_pop.keys(), key=_sort_key):
             popoldan_rows.append({"index": str(key), "value": str(parsed_pop[key])})
 
+    # OBVESTILA ZASLONA: vsako obvestilo (datoteka v vec_obvestil/) dobi
+    # kljukico. Označena se na zaslonu prikazujejo PO VRSTI, v tem vrstnem
+    # redu. Tu pripravimo vrstni red iz shranjene vrednosti ZASLON_OBVESTILA.
+    from app.routers.zasloni import _default_media_dir
+    obv_dir = _default_media_dir() / "vec_obvestil"
+    obv_files = []
+    if obv_dir.is_dir():
+        obv_files = sorted(
+            f.name for f in obv_dir.iterdir()
+            if f.is_file() and f.suffix.lower() in {".jpg", ".jpeg", ".png", ".gif", ".webp", ".pdf"}
+        )
+    try:
+        obv_active = _json.loads(values.get("ZASLON_OBVESTILA") or "[]")
+        if not isinstance(obv_active, list):
+            obv_active = []
+        obv_active = [str(x) for x in obv_active]
+    except (TypeError, ValueError):
+        obv_active = []
+    # Če niso izbrana nobena, so privzeto aktivna VSA (po abecedi) v tem redu.
+    if not obv_active:
+        obv_active = list(obv_files)
+    obv_rows = [
+        {"file": name, "active": name in obv_active}
+        for name in obv_files
+    ]
+
     return templates.TemplateResponse("school_settings.html", {
             "request": request,
             "inactivity_timeout_ms": inactivity_timeout_ms(user, cfg),
@@ -998,6 +1024,7 @@ def school_settings_page(
         "prostori_rows": prostori_rows,
         "razredi_rows": razredi_rows,
         "stevila_rows": stevila_rows,
+        "obv_rows": obv_rows,
         # Naslov, kamor gre »Naredi backup« (BACKUP_EMAIL šole, sicer ADMIN_EMAIL).
         "backup_email": (cfg.BACKUP_EMAIL or cfg.ADMIN_EMAIL or ""),
         "is_main_admin": is_main_admin(user),

@@ -106,13 +106,22 @@ async function showImage() {
     if (timerShowImage) clearTimeout(timerShowImage);
     if (scrollInterval) clearInterval(scrollInterval);
     
-    // Pridobimo novo naključno sliko
+    // Obvestila se vrtijo PO VRSTI (ne naključno): preberemo urejen seznam
+    // in pokažemo naslednjega v nizu. Ko pridemo do konca, začnemo znova.
     try {
-        const response = await fetch('/zasloni/random_image?t=' + Date.now());
-        const data = await response.json();
-        obvestiloImg.src = '/zasloni/media/' + data.slika;
+        // Seznam aktivnih obvestil dobimo enkrat (in ga ob nalaganju strani
+        // osvežimo), nato ga krožimo z indeksom.
+        if (!obvestilaSeznam || obvestilaSeznam.length === 0) {
+            const r = await fetch('/zasloni/obvestila?t=' + Date.now());
+            const d = await r.json();
+            obvestilaSeznam = (d.obvestila || []);
+        }
+        if (obvestilaSeznam.length > 0) {
+            obvestilaIndex = (obvestilaIndex + 1) % obvestilaSeznam.length;
+            obvestiloImg.src = '/zasloni/media/' + obvestilaSeznam[obvestilaIndex];
+        }
     } catch (e) {
-        console.log('Napaka pri pridobivanju slike:', e);
+        console.log('Napaka pri pridobivanju obvestil:', e);
     }
     
     tableView.style.opacity = '0';
@@ -122,6 +131,8 @@ async function showImage() {
 }
 
 let timerShowImage, timerShowTable;
+let obvestilaSeznam = [];
+let obvestilaIndex = 0;
 showTable();
 
 function osveziStranMedLogotipom() {

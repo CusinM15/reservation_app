@@ -31,7 +31,7 @@ from app.tenancy import (
     config_for_request,
     get_school_config,
     is_main_admin,
-    parse_alias_path,
+    resolve_alias_path,
     lookup_alias_school_id,
     nav_paths,
     resolve_school_context,
@@ -114,7 +114,7 @@ class SchoolAliasMiddleware:
         if scope.get("type") != "http":
             return await self.app(scope, receive, send)
 
-        alias, canonical = parse_alias_path(scope.get("path", ""))
+        alias, canonical = resolve_alias_path(scope.get("path", ""))
         school_id = None
         if alias and canonical:
             school_id = lookup_alias_school_id(alias)
@@ -174,10 +174,10 @@ class AuthMiddleware(BaseHTTPMiddleware):
         # ter statične datoteke in dokumentacija.
         public = ["/auth/login", "/auth/forgot-password", "/auth/reset-password", "/health", "/", "/history", "/api/razredi", "/api/prostori", "/api/schedule", "/nakup", "/registracija"]
         is_public = any(path == p for p in public) or path.startswith("/static") or path.startswith("/slike") or path.startswith("/docs/") or path.startswith("/zasloni") or path == "/zasloni"
-        # Per-šola alias za digitalni zaslon (npr. /nadomescanja_ostcj) je prav
-        # tako javen — prevedemo ga na kanonično /zasloni pot.
+        # Per-šola alias za digitalni zaslon (npr. /nadomescanja_ostcj ali
+        # goli /ostcj) je prav tako javen — prevedemo ga na kanonično /zasloni pot.
         if not is_public:
-            _alias_canon = parse_alias_path(path)[1]
+            _alias_canon = resolve_alias_path(path)[1]
             if _alias_canon and (_alias_canon == "/zasloni" or _alias_canon.startswith("/zasloni")):
                 is_public = True
         # Javni predogled navodil za neprijavljene: /nastavitev?demo=1 prikaže
