@@ -1007,9 +1007,14 @@ def school_settings_page(
     # Če niso izbrana nobena, so privzeto aktivna VSA (po abecedi) v tem redu.
     if not obv_active:
         obv_active = list(obv_files)
+    # Vrstni red v UI = ACTUAL vrstni red prikaza: najprej aktivna po vrstnem
+    # redu, nato neaktivna (po abecedi). Označena se na zaslonu vrtijo v tem
+    # zaporedju (ZASLON_OBVESTILA), ne naključno.
+    ordered = [n for n in obv_active if n in obv_files]
+    ordered += [n for n in obv_files if n not in obv_active]
     obv_rows = [
         {"file": name, "active": name in obv_active}
-        for name in obv_files
+        for name in ordered
     ]
 
     return templates.TemplateResponse("school_settings.html", {
