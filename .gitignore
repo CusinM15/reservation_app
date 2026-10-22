@@ -40,3 +40,6 @@ certs/
 deploy/ansible/group_vars/all.yml
 deploy/ansible/inventory.ini
 
+
+# Zaslon: obvestila/slike (uploadane, ne v git)
+zasloni_media/

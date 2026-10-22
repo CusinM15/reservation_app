@@ -98,7 +98,14 @@ SCHOOL_SETTING_KEYS = [
     # ni v SCHOOL_SETTING_FIELDS.
     "NAROCNINA_DO",
     "NAROCNINA_AVTO",
+    # Digitalni zaslon (nadomeščanja + obvestila) — nastavi šolski admin
+    "ZASLON_URL",
+    "ZASLON_POKAZI_NADOMESCANJA",
+    "ZASLON_CAS_OBVESTILA",
+    "ZASLON_MIN_CAS_TABELE",
+    "ZASLON_HITROST_DRSENJA",
 ]
+
 
 # Privzeto ime številske spremenljivke za kapaciteto prostorov »kot Tablice«.
 # Uporabi se pri prehodu s starega skalarnega TABLICE_MAX.
@@ -159,7 +166,14 @@ SCHOOL_SETTING_FIELDS = [
     {"key": "ASSESSMENT_MAX_PER_DAY", "label": "Ocenjevanja: največ na dan", "type": "int"},
     {"key": "ASSESSMENT_MAX_PER_WEEK_WITH_RETAKE", "label": "Ocenjevanja: največ na teden (z ponavljanjem)", "type": "int"},
     {"key": "ASSESSMENT_MAX_CONSECUTIVE_DAYS", "label": "Ocenjevanja: največ zaporednih dni", "type": "int"},
+    # ── Digitalni zaslon ─────────────────────────────────────────
+    {"key": "ZASLON_URL", "label": "Zaslon — eAsistent URL nadomeščanj", "type": "text"},
+    {"key": "ZASLON_POKAZI_NADOMESCANJA", "label": "Zaslon — prikaži nadomeščanja", "type": "bool"},
+    {"key": "ZASLON_CAS_OBVESTILA", "label": "Zaslon — sekund: vidna slika/obvestilo", "type": "int"},
+    {"key": "ZASLON_MIN_CAS_TABELE", "label": "Zaslon — sekund: minimalni čas tabele", "type": "int"},
+    {"key": "ZASLON_HITROST_DRSENJA", "label": "Zaslon — hitrost drsenja tabele", "type": "float"},
 ]
+
 
 # Privzete vrednosti pravil ocenjevanja — MORAJOpreslikati obstoječe
 # vedenje aplikacije (max 2 običajni/teden, max 1/dan, 3 z ponavljanjem,
@@ -384,7 +398,14 @@ def env_default_settings() -> dict:
         "ASSESSMENT_MAX_PER_DAY": str(ASSESSMENT_RULE_DEFAULTS["ASSESSMENT_MAX_PER_DAY"]),
         "ASSESSMENT_MAX_PER_WEEK_WITH_RETAKE": str(ASSESSMENT_RULE_DEFAULTS["ASSESSMENT_MAX_PER_WEEK_WITH_RETAKE"]),
         "ASSESSMENT_MAX_CONSECUTIVE_DAYS": str(ASSESSMENT_RULE_DEFAULTS["ASSESSMENT_MAX_CONSECUTIVE_DAYS"]),
+        # Digitalni zaslon
+        "ZASLON_URL": "https://urniki.easistent.com/nadomescanja/d960638bb866d19b58f4e2de616db8eb56e73cfe",
+        "ZASLON_POKAZI_NADOMESCANJA": "true",
+        "ZASLON_CAS_OBVESTILA": "5",
+        "ZASLON_MIN_CAS_TABELE": "2",
+        "ZASLON_HITROST_DRSENJA": "1.2",
     }
+
 
 
 class SchoolConfig:

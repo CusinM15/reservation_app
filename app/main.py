@@ -20,7 +20,7 @@ from starlette.middleware.base import BaseHTTPMiddleware
 from sqlalchemy.orm import Session
 
 from app.database import init_db, get_db, SessionLocal
-from app.routers import rezervacije, ocenjevanja, auth, blocked_dates, audit_log, export, docs, dejavnosti, schools, subscription, global_settings
+from app.routers import rezervacije, ocenjevanja, auth, blocked_dates, audit_log, export, docs, dejavnosti, schools, subscription, global_settings, zasloni
 from app.app_settings import selling_enabled
 from app.subscriptions import is_active
 from app.models import User, RoleEnum
@@ -173,7 +173,7 @@ class AuthMiddleware(BaseHTTPMiddleware):
         # glavna stran, zgodovina (history), API za razrede/prostore/urnik,
         # ter statične datoteke in dokumentacija.
         public = ["/auth/login", "/auth/forgot-password", "/auth/reset-password", "/health", "/", "/history", "/api/razredi", "/api/prostori", "/api/schedule", "/nakup", "/registracija"]
-        is_public = any(path == p for p in public) or path.startswith("/static") or path.startswith("/slike") or path.startswith("/docs/")
+        is_public = any(path == p for p in public) or path.startswith("/static") or path.startswith("/slike") or path.startswith("/docs/") or path.startswith("/zasloni") or path == "/zasloni"
         # Javni predogled navodil za neprijavljene: /nastavitev?demo=1 prikaže
         # psevdo (demo) podatke brez prijave (povezava je na prijavni strani).
         if path == "/nastavitev" and request.query_params.get("demo") in ("1", "true", "yes"):
@@ -478,6 +478,7 @@ app.include_router(dejavnosti.router)
 app.include_router(schools.router)
 app.include_router(subscription.router)
 app.include_router(global_settings.router)
+app.include_router(zasloni.router)
 
 # ── Statične datoteke za dokumentacijo ────────────────────────────────
 # Slike iz dokumentacije (v /documentation/slike/) serviramo kot statične
@@ -489,3 +490,12 @@ from app.security import get_current_user_id
 slike_dir = os.path.join(os.path.dirname(__file__), "..", "documentation", "slike")
 if os.path.exists(slike_dir):
     app.mount("/slike", StaticFiles(directory=slike_dir), name="slike")
+
+# Digitalni zaslon: obvestila/slike (vec_obvestil/, obvestila/). Mapa je
+# gitignorirana (zasloni_media/) — od datumov naprej se shranjuje tja.
+from app.routers.zasloni import _default_media_dir
+_zmedia = _default_media_dir()
+_zmedia.mkdir(parents=True, exist_ok=True)
+(_zmedia / "vec_obvestil").mkdir(parents=True, exist_ok=True)
+(_zmedia / "obvestila").mkdir(parents=True, exist_ok=True)
+app.mount("/zasloni/media", StaticFiles(directory=str(_zmedia)), name="zasloni_media")

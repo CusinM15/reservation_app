@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="sl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ school_name }} - {% if pokazi_nadomescanja %}Nadomeščanja{% else %}Dobrodošli{% endif %}</title>
+    <style>
+        * { margin:0; padding:0; box-sizing:border-box; }
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; height:100vh; overflow:hidden; background:#fff; }
+        .fullscreen-mode { height:100vh; display:flex; flex-direction:column; }
+        .fs-header { background:#0b3b5c; color:white; padding:0.5rem 1rem; display:flex; justify-content:space-between; align-items:center; flex-shrink:0; }
+        .fs-time { font-size:0.95rem; background:rgba(255,255,255,0.15); padding:0.3rem 1rem; border-radius:20px; }
+        .fs-content-wrapper { flex:1; position:relative; overflow:hidden; background:white; }
+        .view { position:absolute; top:0; left:0; width:100%; height:100%; transition: opacity 0.8s ease; overflow:auto; }
+        .table-view { padding:15px 20px 20px; background:white; z-index:2; }
+        .table-view table { width:100%; border-collapse:collapse; table-layout:fixed; }
+        .table-view thead tr { position: sticky; top: 0; z-index: 10; background: #1b6b8f; }
+        .table-view th, .table-view td { padding:18px 12px; border-bottom:1px solid #dee2e6; vertical-align:top; font-size:1.05rem; text-align:left; }
+        .table-view th { background:#1b6b8f; color:white; }
+        .table-view tr:nth-child(even) { background:#f8f9fc; }
+        .text-danger { color:#dc3545; font-weight:bold; text-decoration:line-through; }
+        .image-view { background:#0b3b5c; display:flex; align-items:center; justify-content:center; z-index:1; }
+        .image-view img { max-width:96%; max-height:96%; object-fit:contain; box-shadow:0 10px 30px rgba(0,0,0,0.5); }
+    </style>
+</head>
+<body>
+<div class="fullscreen-mode">
+    <div class="fs-header">
+        <h2>{{ school_name }}{% if pokazi_nadomescanja %} - Nadomeščanja{% else %} - Dobrodošli nazaj!{% endif %}</h2>
+        <div class="fs-time"><span class="fs-datum"></span> <span class="fs-cas"></span></div>
+    </div>
+    <div class="fs-content-wrapper">
+        <!-- SLIKA (vedno pripravljena) -->
+        <div class="view image-view" id="imageView" style="opacity:{{ '0' if pokazi_nadomescanja else '1' }};">
+            <img src="/zasloni/media/{{ obvestilo_path }}" alt="Obvestilo" id="obvestiloImg">
+        </div>
+        <!-- TABELA (samo če so nadomeščanja vklopljena) -->
+        {% if pokazi_nadomescanja and tabela %}
+        <div class="view table-view" id="tableView" style="opacity:1;">
+            {{ tabela | safe }}
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<script>
+{% if pokazi_nadomescanja and tabela %}
+// ROTACIJA: nadomeščanja ↔ slika
+const CAS_OBV = {{ cas_obvestila }} * 1000;
+const MIN_CAS_TABELE = {{ min_cas_tabele }} * 1000;
+const HITROST_DRSENJA = {{ hitrost_drsenja }};
+
+const tableView = document.getElementById('tableView');
+const imageView = document.getElementById('imageView');
+const obvestiloImg = document.getElementById('obvestiloImg');
+let scrollInterval = null;
+let showingTable = true;
+
+const imaVsebino = tableView.querySelector('table') !== null;
+
+function izracunajCasTabele() {
+    if (!imaVsebino) return 10000;
+    const visinaTabele = tableView.scrollHeight;
+    const visinaOkna = tableView.clientHeight;
+    if (visinaTabele <= visinaOkna) return MIN_CAS_TABELE;
+    const razdaljaZaDrsenje = visinaTabele - visinaOkna;
+    const casDrsenja = (razdaljaZaDrsenje / HITROST_DRSENJA) * 16;
+    return Math.max(MIN_CAS_TABELE, casDrsenja + 3000);
+}
+
+function startAutoScroll() {
+    if (!imaVsebino) return;
+    if (scrollInterval) clearInterval(scrollInterval);
+    let direction = 1, paused = false;
+    scrollInterval = setInterval(() => {
+        if (!showingTable || paused) return;
+        const max = tableView.scrollHeight - tableView.clientHeight;
+        if (max <= 0) return;
+        let next = tableView.scrollTop + direction * HITROST_DRSENJA;
+        if (next >= max) {
+            tableView.scrollTop = max;
+            paused = true;
+            setTimeout(() => { direction = -1; paused = false; }, 800);
+        } else if (next <= 0) {
+            tableView.scrollTop = 0;
+            paused = true;
+            setTimeout(() => { direction = 1; paused = false; }, 800);
+        } else {
+            tableView.scrollTop = next;
+        }
+    }, 16);
+}
+
+function showTable() {
+    if (timerShowImage) clearTimeout(timerShowImage);
+    if (timerShowTable) clearTimeout(timerShowTable);
+    tableView.style.opacity = '1';
+    imageView.style.opacity = '0';
+    showingTable = true;
+    tableView.scrollTop = 0;
+    startAutoScroll();
+    timerShowImage = setTimeout(showImage, izracunajCasTabele());
+}
+
+async function showImage() {
+    if (timerShowImage) clearTimeout(timerShowImage);
+    if (scrollInterval) clearInterval(scrollInterval);
+    
+    // Pridobimo novo naključno sliko
+    try {
+        const response = await fetch('/zasloni/random_image?t=' + Date.now());
+        const data = await response.json();
+        obvestiloImg.src = '/zasloni/media/' + data.slika;
+    } catch (e) {
+        console.log('Napaka pri pridobivanju slike:', e);
+    }
+    
+    tableView.style.opacity = '0';
+    imageView.style.opacity = '1';
+    showingTable = false;
+    timerShowTable = setTimeout(showTable, CAS_OBV);
+}
+
+let timerShowImage, timerShowTable;
+showTable();
+
+function osveziStranMedLogotipom() {
+    if (!showingTable) location.reload();
+    else setTimeout(osveziStranMedLogotipom, 1000);
+}
+setTimeout(osveziStranMedLogotipom, 5 * 60 * 1000);
+
+{% else %}
+// BREZ ROTACIJE – samo slika
+setTimeout(() => location.reload(), 3600 * 1000);
+{% endif %}
+
+function updateTime() {
+    const now = new Date();
+    document.querySelector('.fs-datum').textContent = now.toLocaleDateString('sl-SI');
+    document.querySelector('.fs-cas').textContent = now.toLocaleTimeString('sl-SI', {hour:'2-digit', minute:'2-digit'});
+}
+updateTime();
+setInterval(updateTime, 1000);
+</script>
+</body>
+</html>

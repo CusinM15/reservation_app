@@ -489,6 +489,19 @@ async def update_school_settings(school_id: int, request: Request, db: Session =
                 int(raw)
             except (TypeError, ValueError):
                 raise HTTPException(status_code=400, detail=f"'{key}' mora biti celo število")
+        if field["type"] == "bool":
+            v = str(raw).strip().lower()
+            if v not in ("true", "false", "1", "0", "yes", "no", "on", "off"):
+                raise HTTPException(status_code=400,
+                    detail=f"'{key}' mora biti true/false")
+            values[key] = "true" if v in ("true", "1", "yes", "on") else "false"
+        if field["type"] == "float":
+            try:
+                float(raw)
+            except (TypeError, ValueError):
+                raise HTTPException(status_code=400,
+                    detail=f"'{key}' mora biti število")
+
         if field["type"] == "json":
             parsed = raw if isinstance(raw, dict) else None
             if parsed is None:
