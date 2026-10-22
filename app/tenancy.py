@@ -110,6 +110,9 @@ SCHOOL_SETTING_KEYS = [
     # Aktivna obvestila zaslona: JSON seznam imen datotek v vec_obvestil/,
     # ki se prikazujejo PO VRSTI (v navedenem vrstnem redu), ne naključno.
     "ZASLON_OBVESTILA",
+    # Tekstovna obvestila zaslona: JSON seznam besedil (največ 5), ki jih
+    # šolski admin doda v UI. Vrtijo se skupaj s slikovnimi obvestili.
+    "ZASLON_OBVESTILA_TEKST",
 ]
 
 
@@ -179,6 +182,7 @@ SCHOOL_SETTING_FIELDS = [
     {"key": "ZASLON_MIN_CAS_TABELE", "label": "Zaslon — sekund: minimalni čas tabele", "type": "int"},
     {"key": "ZASLON_HITROST_DRSENJA", "label": "Zaslon — hitrost drsenja tabele", "type": "float"},
     {"key": "ZASLON_OBVESTILA", "label": "Zaslon — aktivna obvestila (JSON seznam)", "type": "json"},
+    {"key": "ZASLON_OBVESTILA_TEKST", "label": "Zaslon — tekstovna obvestila (JSON seznam, največ 5)", "type": "json"},
 ]
 
 
@@ -479,6 +483,7 @@ def env_default_settings() -> dict:
         "ZASLON_HITROST_DRSENJA": "1.2",
         # Prazno → uporabijo se VSA obvestila iz vec_obvestil/ po vrsti.
         "ZASLON_OBVESTILA": "",
+        "ZASLON_OBVESTILA_TEKST": "[]",
     }
 
 

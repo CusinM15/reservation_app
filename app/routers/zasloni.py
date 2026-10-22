@@ -108,6 +108,17 @@ def _zasloni_settings(request: Request, db: Session) -> dict:
                 obvestila = [str(x) for x in parsed]
     except (TypeError, ValueError):
         obvestila = []
+    # Tekstovna obvestila (ZASLON_OBVESTILA_TEKST): JSON seznam besedil, ki jih
+    # admin doda v UI (največ 5). Vrtijo se na zaslonu skupaj s slikovnimi.
+    obvestila_tekst = []
+    try:
+        raw_txt = config.get_str("ZASLON_OBVESTILA_TEKST", "").strip()
+        if raw_txt:
+            parsed_txt = json.loads(raw_txt)
+            if isinstance(parsed_txt, list):
+                obvestila_tekst = [str(x).strip() for x in parsed_txt if str(x).strip()][:5]
+    except (TypeError, ValueError):
+        obvestila_tekst = []
     return {
         "url": config.get_str("ZASLON_URL", DEFAULT_ZASLON_URL),
         "pokazi_nadomescanja": b("ZASLON_POKAZI_NADOMESCANJA", True),
@@ -115,6 +126,7 @@ def _zasloni_settings(request: Request, db: Session) -> dict:
         "min_cas_tabele": i("ZASLON_MIN_CAS_TABELE", 2),
         "hitrost_drsenja": f("ZASLON_HITROST_DRSENJA", 1.2),
         "obvestila": obvestila,
+        "obvestila_tekst": obvestila_tekst,
         "media_dir": media_dir,
         "vec_obvestil": media_dir / "vec_obvestil",
         "logo_path": "obvestila/logo.jpg",
@@ -395,10 +407,13 @@ def zasloni_obvestila(request: Request, db: Session = Depends(get_db)):
     primeru vsa iz vec_obvestil po abecedi). Brez aktivnih → privzeti logo.
     """
     settings = _zasloni_settings(request, db)
-    obvestila = _aktivna_obvestila(settings)
-    if not obvestila:
-        obvestila = [settings["logo_path"]]
-    return {"obvestila": obvestila}
+    obvestila = _aktivna_obvestila(settings)  # relativni URL-ji slik (str)
+    seznam = [{"type": "image", "src": u, "text": None} for u in obvestila]
+    obvestila_tekst = settings.get("obvestila_tekst") or []
+    seznam += [{"type": "text", "src": None, "text": t} for t in obvestila_tekst]
+    if not seznam:
+        seznam = [{"type": "image", "src": settings["logo_path"], "text": None}]
+    return {"obvestila": seznam}
 
 
 @router.get("/zasloni", response_class=HTMLResponse)

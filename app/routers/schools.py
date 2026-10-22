@@ -515,6 +515,19 @@ async def update_school_settings(school_id: int, request: Request, db: Session =
         if field["type"] == "lang" and str(values[key]).strip().lower() not in ("sl", "en"):
             raise HTTPException(status_code=400, detail=f"'{key}' mora biti 'sl' ali 'en'")
 
+    # Tekstovna obvestila zaslona: največ 5 (enako kot omejitev eAsistenta).
+    if "ZASLON_OBVESTILA_TEKST" in values:
+        try:
+            _ot_raw = _json.loads(values["ZASLON_OBVESTILA_TEKST"] if isinstance(values["ZASLON_OBVESTILA_TEKST"], str) else _json.dumps(values["ZASLON_OBVESTILA_TEKST"]))
+        except Exception:
+            raise HTTPException(status_code=400, detail="'ZASLON_OBVESTILA_TEKST' mora biti veljaven JSON")
+        if not isinstance(_ot_raw, list):
+            raise HTTPException(status_code=400, detail="'ZASLON_OBVESTILA_TEKST' mora biti JSON seznam")
+        _ot_clean = [str(x).strip() for x in _ot_raw if str(x).strip()]
+        if len(_ot_clean) > 5:
+            raise HTTPException(status_code=400, detail="Največ 5 tekstovnih obvestil na zaslon.")
+        values["ZASLON_OBVESTILA_TEKST"] = _json.dumps(_ot_clean, ensure_ascii=False)
+
     # POPOLDAN_SCHEDULE (ni v obrazcu polj, a ga pošlje UI): če je podan, mora
     # biti veljaven JSON objekt (ura → opis).
     if "POPOLDAN_SCHEDULE" in values and not isinstance(values["POPOLDAN_SCHEDULE"], dict):
@@ -1017,6 +1030,18 @@ def school_settings_page(
         for name in ordered
     ]
 
+    # TEKSTOVNA obvestila zaslona (ZASLON_OBVESTILA_TEKST): JSON seznam besedil,
+    # ki jih šolski admin doda v UI. Največ 5. Vrtijo se na zaslonu skupaj s
+    # slikovnimi obvestili. Tu jih razparsiramo za vrstni seznam v template.
+    obv_tekst = []
+    try:
+        _otp = _json.loads(values.get("ZASLON_OBVESTILA_TEKST") or "[]")
+        if isinstance(_otp, list):
+            obv_tekst = [str(x).strip() for x in _otp if str(x).strip()]
+    except (TypeError, ValueError):
+        obv_tekst = []
+    obv_tekst = obv_tekst[:5]
+
     return templates.TemplateResponse("school_settings.html", {
             "request": request,
             "inactivity_timeout_ms": inactivity_timeout_ms(user, cfg),
@@ -1030,6 +1055,7 @@ def school_settings_page(
         "razredi_rows": razredi_rows,
         "stevila_rows": stevila_rows,
         "obv_rows": obv_rows,
+        "obv_tekst": obv_tekst,
         # Naslov, kamor gre »Naredi backup« (BACKUP_EMAIL šole, sicer ADMIN_EMAIL).
         "backup_email": (cfg.BACKUP_EMAIL or cfg.ADMIN_EMAIL or ""),
         "is_main_admin": is_main_admin(user),

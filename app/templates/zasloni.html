@@ -33,6 +33,7 @@
         <!-- SLIKA (vedno pripravljena) -->
         <div class="view image-view" id="imageView" style="opacity:{{ '0' if pokazi_nadomescanja else '1' }};">
             <img src="/zasloni/media/{{ obvestilo_path }}" alt="Obvestilo" id="obvestiloImg">
+            <div id="obvestiloTxt" style="display:none;align-items:center;justify-content:center;height:100%;padding:40px 60px;color:#fff;text-align:center;font-size:3.5rem;line-height:1.25;text-shadow:0 2px 8px rgba(0,0,0,0.4);"></div>
         </div>
         <!-- TABELA (samo če so nadomeščanja vklopljena) -->
         {% if pokazi_nadomescanja and tabela %}
@@ -53,6 +54,7 @@ const HITROST_DRSENJA = {{ hitrost_drsenja }};
 const tableView = document.getElementById('tableView');
 const imageView = document.getElementById('imageView');
 const obvestiloImg = document.getElementById('obvestiloImg');
+const obvestiloTxt = document.getElementById('obvestiloTxt');
 let scrollInterval = null;
 let showingTable = true;
 
@@ -118,7 +120,16 @@ async function showImage() {
         }
         if (obvestilaSeznam.length > 0) {
             obvestilaIndex = (obvestilaIndex + 1) % obvestilaSeznam.length;
-            obvestiloImg.src = '/zasloni/media/' + obvestilaSeznam[obvestilaIndex];
+            const item = obvestilaSeznam[obvestilaIndex];
+            if (item && item.type === 'text') {
+                obvestiloTxt.textContent = item.text || '';
+                obvestiloTxt.style.display = 'flex';
+                obvestiloImg.style.display = 'none';
+            } else {
+                obvestiloImg.style.display = 'block';
+                obvestiloTxt.style.display = 'none';
+                obvestiloImg.src = '/zasloni/media/' + (item ? item.src : obvestiloImg.src);
+            }
         }
     } catch (e) {
         console.log('Napaka pri pridobivanju obvestil:', e);

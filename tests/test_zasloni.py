@@ -2,6 +2,7 @@
 # tests/test_zasloni.py — Testi digitalnega zaslona (/zasloni)
 # ─────────────────────────────────────────────────────────────────────────
 
+import json
 import os
 
 os.environ.setdefault("DATABASE_URL", "postgresql://postgres@localhost:5432/testdb")
@@ -14,6 +15,7 @@ from app.database import SessionLocal
 from app.models import School
 from app.config import settings
 from app.tenancy import default_school_admin_username
+from tests.conftest import login
 
 
 def _default_school_id() -> int | None:
@@ -126,7 +128,56 @@ def test_zasloni_obvestila_vrni_urejen_seznam():
         assert "obvestila" in data
         assert isinstance(data["obvestila"], list)
         for u in data["obvestila"]:
-            assert u.startswith(("vec_obvestil/", "obvestila/"))
+            assert isinstance(u, dict)
+            assert u["type"] in ("image", "text")
+            if u["type"] == "image":
+                assert isinstance(u.get("src"), str)
+                assert u["src"].startswith(("vec_obvestil/", "obvestila/"))
+            else:
+                assert isinstance(u.get("text"), str)
+
+
+def test_zasloni_obvestila_vrni_tekst_in_slike(client, make_user):
+    """/zasloni/obvestila vrne tudi tekstovna obvestila (iz ZASLON_OBVESTILA_TEKST),
+    zaporedena za slikovnimi, v rotacijskem vrstnem redu."""
+    from app.tenancy import SCHOOL_SETTING_KEYS, env_default_settings
+    assert "ZASLON_OBVESTILA_TEKST" in SCHOOL_SETTING_KEYS
+    assert "ZASLON_OBVESTILA_TEKST" in env_default_settings()
+
+    admin = make_user(role="admin")
+    login(client, admin.username)
+    sid = _default_school_id()
+
+    r = client.put(f"/api/schools/{sid}/settings", json={
+        "values": {"ZASLON_OBVESTILA_TEKST": json.dumps(["Prvo obvestilo", "Drugo obvestilo"], ensure_ascii=False)}
+    })
+    assert r.status_code == 200, r.text
+
+    resp = client.get("/zasloni/obvestila")
+    assert resp.status_code == 200
+    data = resp.json()
+    texts = [x["text"] for x in data["obvestila"] if x["type"] == "text"]
+    assert "Prvo obvestilo" in texts
+    assert "Drugo obvestilo" in texts
+    # Tekstovna pridejo PO slikovnih (če obstajajo slike).
+    imgs = [x for x in data["obvestila"] if x["type"] == "image"]
+    if imgs:
+        idx_first_img = data["obvestila"].index(imgs[0])
+        first_text_i = next(i for i, x in enumerate(data["obvestila"]) if x["type"] == "text")
+        assert idx_first_img < first_text_i
+
+
+def test_zasloni_obvestila_tekst_najvec_5(client, make_user):
+    """Strežnik zavrne 400, če bi šola shranila več kot 5 tekstovnih obvestil."""
+    admin = make_user(role="admin")
+    login(client, admin.username)
+    sid = _default_school_id()
+
+    r = client.put(f"/api/schools/{sid}/settings", json={
+        "values": {"ZASLON_OBVESTILA_TEKST": json.dumps(["1", "2", "3", "4", "5", "6"])}
+    })
+    assert r.status_code == 400, r.text
+    assert "5" in r.text
 
 
 def test_zasloni_obvestila_nastavitev_je_v_kljucih():

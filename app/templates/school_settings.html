@@ -261,6 +261,29 @@
                             </div>
                         </div>
 
+                        <!-- TEKSTOVNA OBVESTILA: admin jih doda v UI (max 5).
+                             Vrtijo se na zaslonu skupaj s slikovnimi obvestili. -->
+                        <div class="field">
+                            <label>{{ t('set_zaslon_tekst_naslov', 'Tekstovna obvestila (dodaj, največ 5)') }}</label>
+                            {% if is_main_admin %}<span class="key">ZASLON_OBVESTILA_TEKST</span>{% endif %}
+                            <div id="obvtekst-rows">
+                                {% for t in obv_tekst %}
+                                <div class="obvtekst-row" style="display:flex;align-items:center;gap:8px;margin:4px 0;font-weight:normal;">
+                                    <span class="obvtekst-text" style="flex:1;overflow-wrap:anywhere;">{{ t }}</span>
+                                    <button type="button" class="obvtekst-remove" style="border:none;background:transparent;cursor:pointer;color:#dc3545;font-size:16px;" title="Odstrani">✕</button>
+                                </div>
+                                {% endfor %}
+                                <p id="obvtekst-empty" class="hint" style="margin-top:0;" {{ 'hidden' if obv_tekst else '' }}>{{ t('set_zaslon_brez_tekstov', 'Ni tekstovnih obvestil.') }}</p>
+                            </div>
+                            <div style="display:flex;gap:8px;margin-top:6px;align-items:center;">
+                                <input type="text" id="obvtekst-input" placeholder="{{ t('set_zaslon_tekst_vnos', 'Vnesite besedilo obvestila...') }}" style="flex:1;padding:6px 8px;">
+                                <button type="button" id="obvtekst-add" class="btn">{{ t('btn_dodaj_obvestilo', 'Dodaj') }}</button>
+                            </div>
+                            <div class="hint" style="margin-top:6px;">
+                                {{ t('set_zaslon_tekst_hint', 'Dodana obvestila se na zaslonu vrtijo skupaj s slikami. Največ 5.') }}
+                            </div>
+                        </div>
+
             <div class="sticky">
                 <button type="submit" class="btn btn-success">{{ t('btn_shrani_nastavitve', 'Shrani nastavitve') }}</button>
             </div>
@@ -677,6 +700,14 @@
         });
         values['ZASLON_OBVESTILA'] = JSON.stringify(obvSel);
 
+        // Tekstovna obvestila: poberemo iz vrstic (razdelek Obvestila).
+        const obvTekst = [];
+        document.querySelectorAll('#obvtekst-rows .obvtekst-row').forEach(function (row) {
+            const txt = (row.querySelector('.obvtekst-text').textContent || '').trim();
+            if (txt) obvTekst.push(txt);
+        });
+        values['ZASLON_OBVESTILA_TEKST'] = JSON.stringify(obvTekst);
+
         // Razredi pridejo iz vrstic (ne iz enega polja) — sestavimo CSV.
         const razrediVal = collectRazredi();
         if (!razrediVal) {
@@ -758,6 +789,55 @@
         }
         box.scrollIntoView({ behavior: 'smooth', block: 'center' });
     });
+
+    // ── Tekstovna obvestila zaslona: dodaj / odstrani (največ 5) ───────
+    const MAX_OBVT = 5;
+    const obvtekstRows = document.getElementById('obvtekst-rows');
+    const obvtekstInput = document.getElementById('obvtekst-input');
+    const obvtekstAdd = document.getElementById('obvtekst-add');
+    function refreshObvtekst() {
+        const n = obvtekstRows.querySelectorAll('.obvtekst-row').length;
+        if (obvtekstAdd) obvtekstAdd.disabled = n >= MAX_OBVT;
+        const empty = document.getElementById('obvtekst-empty');
+        if (empty) empty.hidden = n > 0;
+    }
+    function addObvtekstRow(val) {
+        const div = document.createElement('div');
+        div.className = 'obvtekst-row';
+        div.style.cssText = 'display:flex;align-items:center;gap:8px;margin:4px 0;font-weight:normal;';
+        const span = document.createElement('span');
+        span.className = 'obvtekst-text';
+        span.style.cssText = 'flex:1;overflow-wrap:anywhere;';
+        span.textContent = val;
+        const rm = document.createElement('button');
+        rm.type = 'button';
+        rm.className = 'obvtekst-remove';
+        rm.style.cssText = 'border:none;background:transparent;cursor:pointer;color:#dc3545;font-size:16px;';
+        rm.title = '{{ t('btn_odstrani_obvestilo', 'Odstrani obvestilo') }}';
+        rm.textContent = '✕';
+        rm.addEventListener('click', function () { div.remove(); refreshObvtekst(); });
+        div.appendChild(span);
+        div.appendChild(rm);
+        obvtekstRows.appendChild(div);
+        refreshObvtekst();
+    }
+    obvtekstRows.querySelectorAll('.obvtekst-remove').forEach(function (btn) {
+        btn.addEventListener('click', function () { btn.closest('.obvtekst-row').remove(); refreshObvtekst(); });
+    });
+    if (obvtekstAdd) obvtekstAdd.addEventListener('click', function () {
+        const val = (obvtekstInput.value || '').trim();
+        if (!val) return;
+        if (obvtekstRows.querySelectorAll('.obvtekst-row').length >= MAX_OBVT) {
+            alert('{{ t('js_najvec_5_obvestil', 'Največ 5 tekstovnih obvestil na zaslon.') }}');
+            return;
+        }
+        addObvtekstRow(val);
+        obvtekstInput.value = '';
+    });
+    if (obvtekstInput) obvtekstInput.addEventListener('keydown', function (e) {
+        if (e.key === 'Enter') { e.preventDefault(); obvtekstAdd.click(); }
+    });
+    refreshObvtekst();
 
     // ── Obnova iz varnostne kopije ────────────────────────────────────
     let restoreDomain = null;
