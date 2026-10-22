@@ -42,10 +42,13 @@ SCHOOL_SCOPED_ROLES = ("admin", "vodstvo", "teacher")
 ALIAS_KINDS = {
     "rezervacije": "/rezervacije",
     "ocenjevanje": "/ocenjevanje",
+    # Digitalni zaslon (nadomeščanja): vsaka šola dobi svojo kratko pot
+    # /nadomescanja_<slug>, ki se prevede v /zasloni te šole.
+    "nadomescanja": "/zasloni",
 }
 
 # Regex prepozna alias v prvem segmentu poti: <kind>_<slug>
-_ALIAS_RE = re.compile(r"^(rezervacije|ocenjevanje)_([A-Za-z0-9][A-Za-z0-9_-]*)$")
+_ALIAS_RE = re.compile(r"^(rezervacije|ocenjevanje|nadomescanja)_([A-Za-z0-9][A-Za-z0-9_-]*)$")
 
 # ── Ključi nastavitev po šoli ──────────────────────────────────────────
 # Ista imena kot v .env, da je preslikava 1:1 in da lahko School Admin
@@ -1122,6 +1125,19 @@ def ensure_default_school(db: Session) -> "object":
                 db.add(SchoolAlias(school_id=school.id, alias=alias, kind=kind))
         db.commit()
         db.refresh(school)
+        invalidate_alias_cache()
+
+    # Backfill: za VSE obstoječe šole dopolni manjkajoče generirane aliase
+    # (npr. ko naknadno dodamo novo vrsto 'nadomescanja', obstoječe šole
+    # samodejno dobijo svojo kratko /nadomescanja_<slug> pot).
+    from app.models import School as _SchoolRow, SchoolAlias as _SAAlias
+    _aliases_changed = False
+    for _sch in db.query(_SchoolRow).all():
+        for _alias, _kind in dict(generate_aliases(_sch.slug)).items():
+            if not db.query(_SAAlias).filter(_SAAlias.alias == _alias).first():
+                db.add(_SAAlias(school_id=_sch.id, alias=_alias, kind=_kind))
+                _aliases_changed = True
+    if _aliases_changed:
         invalidate_alias_cache()
 
     seed_school_settings(db, school.id)

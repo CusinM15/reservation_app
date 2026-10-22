@@ -33,6 +33,7 @@ from app.database import get_db
 from app.tenancy import (
     _default_school_id,
     get_school_config,
+    request_school_id,
 )
 from app.i18n import t as _ui_t
 
@@ -71,10 +72,15 @@ def _default_media_dir() -> Path:
 def _zasloni_settings(request: Request, db: Session) -> dict:
     """Zbere nastavitve zaslona (če šola obstaja → njene ZASLON_* vrednosti).
 
-    Za javno pot (brez prijave) šolo določimo iz default šole; če ni šole,
-    uporabimo .env fallback (SchoolConfig(None, {}) → env_default_settings).
+    Šolo določimo iz URL-aliasa (/nadomescanja_<slug>); za javno kanonično pot
+    (brez prijave) pademo na privzeto šolo. Če ni šole, uporabimo .env fallback
+    (SchoolConfig(None, {}) → env_default_settings).
     """
-    sid = _default_school_id(db)
+    # Šolo izberemo iz URL-aliasa (vsaka šola dobi svojo /nadomescanja_<slug>
+    # pot, ki pokaže NJENE nastavitve). Če ni aliasa → privzeta šola.
+    sid = request_school_id(request)
+    if sid is None:
+        sid = _default_school_id(db)
     config = get_school_config(db, sid)
 
     def b(key: str, fallback: bool) -> bool:

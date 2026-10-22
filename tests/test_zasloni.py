@@ -86,3 +86,18 @@ def test_school_settings_put_sprejme_bool_in_float():
         assert m.get("ZASLON_POKAZI_NADOMESCANJA") == "true"
         assert m.get("ZASLON_CAS_OBVESTILA") == "7"
         assert m.get("ZASLON_HITROST_DRSENJA") == "1.5"
+
+
+def test_per_sola_alias_zasloni_javen():
+    """Vsaka šola dobi svojo kratko /nadomescanja_<slug> pot, javno brez prijave."""
+    from app.tenancy import ALIAS_KINDS, _ALIAS_RE, generate_aliases
+    assert ALIAS_KINDS.get("nadomescanja") == "/zasloni"
+    assert _ALIAS_RE.match("nadomescanja_ostcj") is not None
+    pairs = generate_aliases(settings.DEFAULT_SCHOOL_SLUG)
+    alias = next((a for a, k in pairs if k == "nadomescanja"), None)
+    assert alias, f"manjka generirani nadomescanja_<slug>: {dict(pairs)}"
+    with TestClient(app) as c:
+        r = c.get(f"/{alias}", follow_redirects=False)
+        assert r.status_code == 200, f"/{alias} → {r.status_code}"
+        assert "text/html" in r.headers["content-type"]
+        assert "fullscreen-mode" in r.text
