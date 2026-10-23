@@ -29,6 +29,7 @@ from app.tenancy import (
     SCHOOL_ADMIN_ROLE,
     bootstrap_tenancy,
     config_for_request,
+    get_request_user,
     get_school_config,
     is_main_admin,
     resolve_alias_path,
@@ -36,6 +37,7 @@ from app.tenancy import (
     nav_paths,
     resolve_school_context,
     role_value,
+    vidni_prostori,
 )
 from app.security import inactivity_timeout_ms
 from app.i18n import set_request_language
@@ -357,7 +359,10 @@ def get_razredi(request: Request, db: Session = Depends(get_db)):
 
 @app.get("/api/prostori")
 def get_prostori(request: Request, db: Session = Depends(get_db)):
-    return config_for_request(request, db).PROSTORI
+    # Prostori »samo za vodstvo« so vidni samo admin/vodstvu — navaden
+    # učitelj zanje sploh ne ve (filtrira PROSTORI_VODSTVO).
+    cfg = config_for_request(request, db)
+    return vidni_prostori(cfg, get_request_user(request, db))
 
 # Kateri prostori delujejo KOT TABLICE (več učiteljev hkrati, količina,
 # omejitev na uro) in kolikšna je ta omejitev. Ločen endpoint, ker mora
@@ -366,7 +371,8 @@ def get_prostori(request: Request, db: Session = Depends(get_db)):
 @app.get("/api/prostori-qty")
 def get_prostori_qty(request: Request, db: Session = Depends(get_db)):
     config = config_for_request(request, db)
-    rooms = config.PROSTORI_QTY
+    visible = set(vidni_prostori(config, get_request_user(request, db)))
+    rooms = [r for r in config.PROSTORI_QTY if r in visible]
     # Kapaciteta je lahko po prostoru različna (vsak prostor je vezan na svojo
     # številsko spremenljivko), zato vrnemo tudi zemljevid omejitev.
     limits = {room: config.kapaciteta(room) for room in rooms}
@@ -384,7 +390,9 @@ def get_popoldan(request: Request, db: Session = Depends(get_db)):
     (npr. 15:00–21:00) namesto šolskega (dopoldanskega) urnika.
     """
     cfg = config_for_request(request, db)
-    return {"schedule": cfg.POPOLDAN_SCHEDULE, "prostori": cfg.PROSTORI_POPOLDAN}
+    visible = set(vidni_prostori(cfg, get_request_user(request, db)))
+    return {"schedule": cfg.POPOLDAN_SCHEDULE,
+            "prostori": [p for p in cfg.PROSTORI_POPOLDAN if p in visible]}
 
 # ── Zgodovina (audit log za admina) ──────────────────────────────────
 # Prikaže HTML stran z audit logom, vendar samo če je prijavljeni

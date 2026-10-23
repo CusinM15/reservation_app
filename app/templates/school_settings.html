@@ -160,6 +160,8 @@
                     <br>
                     {{ t('set_hint_prostori_1', 'Kljukica') }} <strong>{{ t('set_lbl_stevilo_q', '»število«') }}</strong> {{ t('set_hint_prostori_2', 'pomeni: v tem prostoru lahko hkrati rezervira več učiteljev, vsak navede količino, skupna vsota na uro pa je omejena z izbrano številsko spremenljivko. Brez kljukice je prostor ekskluziven — ena rezervacija na uro.') }}
                     <br>
+                    {{ t('set_hint_prostori_vodstvo', 'Kljukica') }} <strong>{{ t('set_lbl_vodstvo_q', '»🔒 vodstvo«') }}</strong> {{ t('set_hint_prostori_vodstvo_2', 'pomeni: ta prostor vidijo in rezervirajo samo člani skupine vodstvo in admin — navaden učitelj zanj sploh ne ve.') }}
+                    <br>
                     {{ t('set_hint_prostori_primer', 'Primer: <code>tablice</code> s kljukico in spremenljivko <code>Število tablic</code>, <code>racunalnica</code> brez.') | safe }}
                 </div>
             </div>
@@ -503,11 +505,16 @@
     // in PROSTORI_STEVILO (prostor → ime številske spremenljivke).
     const PROSTORI_ROWS = {{ prostori_rows|tojson }};
 
-    function prostorRowHtml(name, stevilo, popoldan) {
+    function prostorRowHtml(name, stevilo, popoldan, vodstvo) {
         const checked = stevilo ? ' checked' : '';
         const popChecked = popoldan ? ' checked' : '';
+        const vodChecked = vodstvo ? ' checked' : '';
         return `<div class="prostor-row" style="display:flex;gap:10px;align-items:center;margin-bottom:6px;flex-wrap:wrap;">
             <input type="text" class="prostor-name" value="${escAttr(name)}" placeholder="{{ t('set_ph_prostor', 'npr. tablice') }}" style="max-width:220px;">
+            <label style="display:flex;align-items:center;gap:6px;font-size:13px;font-weight:400;margin:0;" title="{{ t('set_hint_vodstvo_short', 'Prostor vidijo in rezervirajo samo člani vodstva in admin. Učitelji zanj sploh ne vedo.') }}">
+              <input type="checkbox" class="prostor-vodstvo"${vodChecked}>
+              {{ t('set_lbl_vodstvo', '🔒 vodstvo') }}
+            </label>
             <label style="display:flex;align-items:center;gap:6px;font-size:13px;font-weight:400;margin:0;">
               <input type="checkbox" class="prostor-popoldan"${popChecked}>
               {{ t('set_lbl_popoldan', 'popoldanski urnik') }}
@@ -525,12 +532,12 @@
 
     function renderProstoriRows(rows) {
         document.getElementById('prostori-rows').innerHTML =
-            (rows || []).map(function (r) { return prostorRowHtml(r.name, r.stevilo, r.popoldan); }).join('');
+            (rows || []).map(function (r) { return prostorRowHtml(r.name, r.stevilo, r.popoldan, r.vodstvo); }).join('');
         refreshSteviloOptions();
     }
 
     function addProstorRow() {
-        document.getElementById('prostori-rows').insertAdjacentHTML('beforeend', prostorRowHtml('', false, false));
+        document.getElementById('prostori-rows').insertAdjacentHTML('beforeend', prostorRowHtml('', false, false, false));
     }
 
     // Kljukica »število«: pokaži/skrij spustni seznam številskih spremenljivk.
@@ -541,12 +548,13 @@
         if (cb.checked) refreshSteviloOptions();
     }
 
-    // Vrne {prostori: "tablice,ladja", stevilo: {"tablice": "Število tablic"}, qty: ["tablice"], popoldan: ["ladja"]}
+    // Vrne {prostori: "tablice,ladja", stevilo: {"tablice": "Število tablic"}, qty: ["tablice"], popoldan: ["ladja"], vodstvo: ["sef"]}
     function collectProstori() {
         const names = [];
         const stevilo = {};
         const qty = [];
         const popoldan = [];
+        const vodstvo = [];
         document.querySelectorAll('#prostori-rows .prostor-row').forEach(function (row) {
             const name = (row.querySelector('.prostor-name').value || '').trim();
             if (!name) return;
@@ -559,8 +567,10 @@
             }
             const pop = row.querySelector('.prostor-popoldan');
             if (pop && pop.checked && popoldan.indexOf(name) === -1) popoldan.push(name);
+            const vod = row.querySelector('.prostor-vodstvo');
+            if (vod && vod.checked && vodstvo.indexOf(name) === -1) vodstvo.push(name);
         });
-        return { prostori: names.join(','), stevilo: stevilo, qty: qty, popoldan: popoldan };
+        return { prostori: names.join(','), stevilo: stevilo, qty: qty, popoldan: popoldan, vodstvo: vodstvo };
     }
 
     renderProstoriRows(PROSTORI_ROWS);
@@ -770,6 +780,8 @@
 
         // Prostori, označeni z »popoldan« — uporabljajo POPOLDAN_SCHEDULE.
         values['PROSTORI_POPOLDAN'] = pr.popoldan.join(',');
+        // Prostori »samo za vodstvo« — vidni in rezervabilni le vodstvu/adminu.
+        values['PROSTORI_VODSTVO'] = pr.vodstvo.join(',');
         // Popoldanski urnik (sme biti prazen, če šola ne uporablja popoldanskih terminov).
         values['POPOLDAN_SCHEDULE'] = JSON.stringify(collectPopoldanSchedule());
 

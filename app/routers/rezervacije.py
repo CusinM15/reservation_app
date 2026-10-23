@@ -44,8 +44,11 @@ from app.tenancy import (
     SchoolConfig,
     config_for_request,
     data_school_id,
+    get_request_user,
     role_value,
     scope,
+    user_may_see_prostor,
+    vidni_prostori,
     write_school_id,
 )
 
@@ -63,6 +66,17 @@ def _validate_prostor(prostor: str, config: SchoolConfig):
     """Preveri, ali prostor obstaja v konfiguraciji šole."""
     if prostor not in config.PROSTORI:
         raise HTTPException(status_code=400, detail=f"Neveljaven prostor: {prostor}")
+
+
+def _require_prostor_access(user, prostor: str, config: SchoolConfig):
+    """Prostori »samo za vodstvo«: dostop imajo le admin/vodstvo (in glavni admin).
+
+    Navaden učitelj prostora ne vidi v UI (PROSTORI_VODSTVO); če ga kliče
+    neposredno prek API-ja, dobi 403 — da se omejitev ne da zaobiti.
+    """
+    if not user_may_see_prostor(user, prostor, config):
+        raise HTTPException(status_code=403,
+            detail="Do tega prostora nimate dostopa (samo vodstvo/admin).")
 
 
 def _validate_razred(razred: str, config: SchoolConfig):
@@ -164,7 +178,17 @@ def list_rezervacije(
     Poleg osnovnih podatkov vrne tudi ime učitelja (teacher_name).
     """
     school_id = data_school_id(request, db)
+    # Prostori »samo za vodstvo«: navaden učitelj ne sme videti niti
+    # rezervacij v njih (in ne more poizvedovati neposredno po njih).
+    user = get_request_user(request, db)
+    config = config_for_request(request, db)
+    if prostor and not user_may_see_prostor(user, prostor, config):
+        raise HTTPException(status_code=403,
+            detail="Do tega prostora nimate dostopa (samo vodstvo/admin).")
+    visible = vidni_prostori(config, user)
     query = scope(db.query(Reservation).options(joinedload(Reservation.teacher)), Reservation, school_id)
+    if len(visible) < len(config.PROSTORI):
+        query = query.filter(Reservation.prostor.in_(visible))
     if date:
         query = query.filter(Reservation.date == date)
     if date_from:
@@ -210,6 +234,7 @@ def create_rezervacija(data: ReservationCreate, request: Request, db: Session = 
     """
     config = config_for_request(request, db)
     _validate_prostor(data.prostor, config)
+    _require_prostor_access(get_request_user(request, db), data.prostor, config)
     if data.razred:
         _validate_razred(data.razred, config)
     _validate_hour(data.hour, config, data.prostor)
@@ -318,6 +343,9 @@ def delete_rezervacija(id: int, request: Request, db: Session = Depends(get_db))
     ).first()
     if not reservation:
         raise HTTPException(status_code=404, detail="Rezervacija ne obstaja")
+
+    # Prostori »samo za vodstvo«: tudi brisanje ni dovoljeno navadnemu učitelju.
+    _require_prostor_access(current_user, reservation.prostor, config_for_request(request, db))
     
     # Only the creator, admin or vodstvo can delete
     if reservation.teacher_id != current_user.id and role_value(current_user) not in (RoleEnum.admin.value, RoleEnum.vodstvo.value):
@@ -693,10 +721,17 @@ def list_all_series(
     from datetime import date
     today = date.today()
     school_id = data_school_id(request, db)
-    rows = scope(db.query(Reservation).options(joinedload(Reservation.teacher)).filter(
+    # Prostori »samo za vodstvo«: učitelj ne sme videti niti serij v njih.
+    user = get_request_user(request, db)
+    config = config_for_request(request, db)
+    visible = vidni_prostori(config, user)
+    query = scope(db.query(Reservation).options(joinedload(Reservation.teacher)).filter(
         Reservation.series_id.isnot(None),
         Reservation.date >= today,
-    ), Reservation, school_id).order_by(Reservation.date).all()
+    ), Reservation, school_id)
+    if len(visible) < len(config.PROSTORI):
+        query = query.filter(Reservation.prostor.in_(visible))
+    rows = query.order_by(Reservation.date).all()
 
     # Group by series_id
     groups = defaultdict(list)
@@ -734,9 +769,16 @@ def list_all_series(
 def list_series(series_id: str, request: Request, db: Session = Depends(get_db)):
     """Vrni vse rezervacije, ki pripadajo dani seriji (znotraj šole uporabnika)."""
     school_id = data_school_id(request, db)
-    rows = scope(db.query(Reservation).options(joinedload(Reservation.teacher)).filter(
+    # Prostori »samo za vodstvo«: tudi ogled ene serije filtriramo.
+    user = get_request_user(request, db)
+    config = config_for_request(request, db)
+    visible = vidni_prostori(config, user)
+    query = scope(db.query(Reservation).options(joinedload(Reservation.teacher)).filter(
         Reservation.series_id == series_id
-    ), Reservation, school_id).order_by(Reservation.date, Reservation.hour).all()
+    ), Reservation, school_id)
+    if len(visible) < len(config.PROSTORI):
+        query = query.filter(Reservation.prostor.in_(visible))
+    rows = query.order_by(Reservation.date, Reservation.hour).all()
     for r in rows:
         t = r.teacher
         if t:

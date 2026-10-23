@@ -983,8 +983,10 @@ def school_settings_page(
     # (kljukica »število« + spustni seznam imen iz STEVILA).
     prostori_stevilo = cfg.PROSTORI_STEVILO
     popoldan_set = set(cfg.PROSTORI_POPOLDAN)
+    vodstvo_set = set(cfg.PROSTORI_VODSTVO)
     prostori_rows = [
-        {"name": p, "stevilo": prostori_stevilo.get(p, ""), "popoldan": p in popoldan_set}
+        {"name": p, "stevilo": prostori_stevilo.get(p, ""), "popoldan": p in popoldan_set,
+         "vodstvo": p in vodstvo_set}
         for p in cfg.PROSTORI
     ]
 

@@ -87,6 +87,10 @@ SCHOOL_SETTING_KEYS = [
     # PROSTORI_POPOLDAN, se v UI prikažejo popoldanski termini.
     "POPOLDAN_SCHEDULE",
     "PROSTORI_POPOLDAN",
+    # Prostori, ki so VIDNI in rezervabilni samo za vodstvo/admin (glavni
+    # admin jih vidi vedno). Navadni učitelji zanje sploh ne vedo.
+    # Vejica-ločeno (kot PROSTORI_POPOLDAN).
+    "PROSTORI_VODSTVO",
     "INACTIVITY_TIMEOUT_MINUTES",
     "INACTIVITY_TIMEOUT_ADMIN_MINUTES",
     "RESET_TOKEN_EXPIRATION_MINUTES",
@@ -466,6 +470,7 @@ def env_default_settings() -> dict:
         "SCHEDULE": json.dumps(settings.SCHEDULE, ensure_ascii=False),
         "POPOLDAN_SCHEDULE": json.dumps(settings.POPOLDAN_SCHEDULE, ensure_ascii=False),
         "PROSTORI_POPOLDAN": "",
+        "PROSTORI_VODSTVO": "",
         "RAZREDI": ",".join(settings.RAZREDI),
         "PROSTORI": ",".join(settings.PROSTORI),
         "INACTIVITY_TIMEOUT_MINUTES": str(settings.INACTIVITY_TIMEOUT_MINUTES),
@@ -686,6 +691,19 @@ class SchoolConfig:
     def je_popoldan(self, prostor: str | None) -> bool:
         """Ali prostor uporablja popoldanski urnik."""
         return bool(prostor) and str(prostor) in self.PROSTORI_POPOLDAN
+
+    @property
+    def PROSTORI_VODSTVO(self) -> list[str]:
+        """Prostori, ki so vidni in rezervabilni samo za vodstvo/admin.
+
+        Navadni učitelji teh prostorov sploh ne vidijo (in jih ne morejo
+        rezervirati); glavni admin jih vidi vedno.
+        """
+        return self.get_list("PROSTORI_VODSTVO", [])
+
+    def je_vodstvo_prostor(self, prostor: str | None) -> bool:
+        """Ali je prostor omejen le na vodstvo/admin."""
+        return bool(prostor) and str(prostor) in self.PROSTORI_VODSTVO
 
     def schedule_for(self, prostor: str | None) -> dict:
         """Urnik (ura → opis) za dani prostor.
@@ -1260,6 +1278,23 @@ def is_school_admin(user) -> bool:
     if user is None:
         return False
     return role_value(user) == SCHOOL_ADMIN_ROLE
+
+
+def user_may_see_prostor(user, prostor, config) -> bool:
+    """Ali uporabnik lahko vidi (in rezervira) prostor?
+
+    Prostori iz PROSTORI_VODSTVO so vidni samo šolskemu adminu, vodstvu in
+    glavnemu adminu; navadni učitelji (in neprijavljeni) zanje sploh ne
+    vedo. Neprivilegiran uporabnik dobi False tudi za neznane prostore.
+    """
+    if config is None or not config.je_vodstvo_prostor(prostor):
+        return True
+    return role_value(user) in (SCHOOL_ADMIN_ROLE, "vodstvo", MAIN_ADMIN_ROLE)
+
+
+def vidni_prostori(config, user) -> list[str]:
+    """Prostori šole, ki so vidni danemu uporabniku (filtrira PROSTORI_VODSTVO)."""
+    return [p for p in config.PROSTORI if user_may_see_prostor(user, p, config)]
 
 
 def request_school_id(request) -> int | None:
