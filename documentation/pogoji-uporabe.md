@@ -3,11 +3,11 @@
 
 # 📜 Pogoji uporabe (Terms of Service)
 
-> **Različica:** 1.2 · **Datum:** 6. 10. 2026
+> **Različica:** 1.3 · **Datum:** 23. 10. 2026
 >
-> Ti pogoji veljajo za uporabo šolske aplikacije za rezervacije, dneve dejavnosti in
-> ocenjevanja (v nadaljevanju »aplikacija«). Z uporabo aplikacije se šola in njeni
-> uporabniki strinjajo s spodnjimi pogoji.
+> Ti pogoji veljajo za uporabo šolske aplikacije za rezervacije, dneve dejavnosti,
+> ocenjevanja in **prijave na govorilne ure** (v nadaljevanju »aplikacija«). Z
+> uporabo aplikacije se šola in njeni uporabniki strinjajo s spodnjimi pogoji.
 
 ---
 
@@ -46,6 +46,7 @@ Aplikacija šoli omogoča:
 - **rezervacije prostorov in opreme** (računalnice, tablice in drugi prostori) za vse učitelje,
 - **dneve dejavnosti** (termini po razredih, prostori, urnik),
 - **ocenjevanja** (napovedani datumi z omejitvami, ponavljanja, izvoz),
+- **prijave staršev na govorilne ure** (izbor učitelja in 15-minutnega termina; prijava je vidna samo učitelju),
 - **ločene račune** za učitelje, vodstvo in šolskega admina.
 
 Aplikacija je **večšolska**: vsaka šola vidi samo svoje podatke.
@@ -111,12 +112,33 @@ Aplikacija je **večšolska**: vsaka šola vidi samo svoje podatke.
   šoli, obveščanje o vdoru, ukrepe ob prenehanju). Šola jo podpiše (elektronsko zadošča).
 - Za pridobitev DPA se šola obrne na ponudnika.
 
+### 4.4 Prijave staršev na govorilne ure
+
+Prijave staršev na govorilne ure delujejo kot **izjema** od zgornje prepovedi
+vnašanja podatkov otrok, in sicer **izključno** pod temi pogoji:
+
+- Starš **sam vnese** ime in priimek otroka (ter po želji razred), svoje ime in
+  priimek ter svoj e-naslov — šola teh podatkov ne vnaša.
+- Namen obdelave je **izkazano le najava na govorilne ure** (predhodna najava),
+  nič drugega.
+- Podatki so **vidni samo izbranemu učitelju** (ter šolskemu adminu in vodstvu,
+  ki skrbijo za delovanje sistema). Javno niso objavljeni nikjer.
+- **Hramba je omejena:** prijave se **samodejno izbrišejo 14 dni po dnevu
+  govorilnih ur** (poglavje 5).
+- Podlaga za obdelavo: izvedba obveznosti šole po organizaciji govorilnih ur ter
+  soglasje starša, ki ga starš poda ob oddaji prijave s potrditvenim poljem.
+- Prijave staršev **ne kreirajo uporabniškega računa** — starš nima dostopa v
+  aplikacijo; učitelj vidi samo svoje prijave.
+
 ---
 
 ## 5. Brisanje podatkov
 
 - **Nič se ne izbriše samodejno.** Nobenih podatkov aplikacija ne briše po svoje (npr. starih
   rezervacij, ocenjevanj ali uporabnikov) — vse ostane, dokler jih nekdo ne izbriše.
+- **Izjema — prijave na govorilne ure:** prijave staršev se **samodejno izbrišejo
+  14 dni po dnevu govorilnih ur** (4.4). S tem se izpolni zahteva o omejeni hrambi
+  in te prijave ne obremenjujejo baze dlje, kot je potrebno.
 - **Vse izbriše šolski admin.** Samo šolski admin lahko izbriše podatke
   svoje šole:
   - **uporabnika** (ob brisanju se izbrišejo tudi njegove rezervacije in ocenjevanja),
@@ -212,6 +234,11 @@ Strinjanje s temi pogoji je treba uporabnikom **prikazati in zabeležiti**:
 4. **Obstoječi uporabniki:** aplikacija je **že v produkciji**, zato je treba **ob naslednji
    prijavi** vsakemu obstoječemu uporabniku prikazati pogoje in zahtevati potrditev —
    nikogar ne izključimo vnaprej, pač pa soglasje zberemo ob prvi prijavi po objavi teh pogojev.
+5. **Starš ob prijavi na govorilne ure:** na javni prijavni strani starš pred oddajo
+   prijave **potrdi strinjanje s pogoji** (potrditveno polje ob obrazcu). S tem potrjuje,
+   da se podatki (ime starša, e-naslov, ime otroka) uporabijo izključno za najavo na
+   govorilne ure, da jih vidi samo izbrani učitelj in da se samodejno izbrišejo 14 dni
+   po govorilnih urah.
 
 **Kaj se zabeleži ob soglasju:** kdo (uporabnik), kdaj (čas) in različica pogojev (npr. 1.0) —
 najbolje v bazi (tabela soglasij). Tako je razvidno, kdo je s katero različico soglašal.
@@ -234,9 +261,10 @@ sta vedno navedena na vrhu dokumenta.
 Z uporabo aplikacije šola in njeni uporabniki potrjujejo, da:
 - so prebrali in sprejeli te pogoje,
 - v aplikacijo vnašajo **zgolj podatke osebja** in **nobene** podatke otrok/osebnih podatkov
-  učencev,
+  učencev — **razen podatkov, ki jih ob prijavi na govorilne ure vnese starš sam** (4.4),
 - se strinjajo, da naročnina **velja do 1. 9.** in je **ni mogoče prekiniti sredi obdobja**,
-- razumejo, da **nič ne izgine samodejno** in da podatke briše **šolski admin**,
+- razumejo, da **nič ne izgine samodejno** in da podatke briše **šolski admin** (izjema:
+  prijave staršev na govorilne se samodejno izbrišejo 14 dni po govorilnih urah),
 - **šola je odgovorna** za pravilnost in zakonitost vnesenih podatkov ter za svoje uporabnike
   (dostope, gesla, pravice),
 - **šola sama** poskrbi za svoje varnostne kopije in za nastavitve e-pošte/SMTP,

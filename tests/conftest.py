@@ -63,7 +63,7 @@ def clean_db():
         db.execute(text(
             "TRUNCATE users, reservations, assessments, audit_log, blocked_dates, "
             "activity_days, school_aliases, school_settings, schools, "
-            "payments, app_settings, ui_strings, zasloni_files "
+            "payments, app_settings, ui_strings, zasloni_files, govorilne_prijave "
             "RESTART IDENTITY CASCADE"
         ))
         db.commit()

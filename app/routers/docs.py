@@ -42,6 +42,7 @@ ALLOWED = {
     "navodila-vodstvo-en": ["en/navodila-vodstvo.md"],
     "navodila-admin": ["navodila-admin.md"],
     "navodila-admin-en": ["en/navodila-admin.md"],
+    "pogoji-uporabe": ["pogoji-uporabe.md"],
 }
 
 DOC_LABELS = {
@@ -51,6 +52,7 @@ DOC_LABELS = {
     "navodila-vodstvo-en": "Management Guide",
     "navodila-admin": "Navodila za administratorja",
     "navodila-admin-en": "Administrator Guide",
+    "pogoji-uporabe": "Pogoji uporabe",
 }
 
 

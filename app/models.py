@@ -328,3 +328,28 @@ class ZaslonFile(Base):
     __table_args__ = (
         UniqueConstraint("school_id", "filename", name="uq_zasloni_files_school_file"),
     )                   # angleški napis
+class GovorilnaPrijava(Base):
+    """Prijava starša na govorilne ure (npr. OŠ Toneta Čufarja).
+
+    Javna stran /govorilne: starš izbere učitelja in 15-minutni termin.
+    Prijava vsebuje ime starša, e-naslov in ime otroka (namen: najava na
+    govorilne). Vidna je samo učitelju (in šolskemu adminu/vodstvu).
+    Hramba: prijave se samodejno izbrišejo 14 dni po dnevu govorilnih ur.
+    """
+    __tablename__ = "govorilne_prijave"
+
+    id = Column(Integer, primary_key=True, index=True)
+    school_id = Column(Integer, ForeignKey("schools.id"), nullable=False, index=True)
+    ucitelj = Column(String, nullable=False, index=True)        # polno ime učitelja
+    datum = Column(Date, nullable=False, index=True)            # dan govorilnih ur
+    ura_od = Column(String, nullable=False, default="")          # "17:30"
+    ura_do = Column(String, nullable=False, default="")          # "17:45"
+    ime_starsa = Column(String, nullable=False, default="")
+    email = Column(String, nullable=False, default="")
+    otrok = Column(String, nullable=False, default="")
+    created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
+
+    __table_args__ = (
+        UniqueConstraint("school_id", "ucitelj", "datum", "ura_od",
+                         name="uq_govorilne_prijava_termin"),
+    )

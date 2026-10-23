@@ -20,7 +20,7 @@ from starlette.middleware.base import BaseHTTPMiddleware
 from sqlalchemy.orm import Session
 
 from app.database import init_db, get_db, SessionLocal
-from app.routers import rezervacije, ocenjevanja, auth, blocked_dates, audit_log, export, docs, dejavnosti, schools, subscription, global_settings, zasloni
+from app.routers import rezervacije, ocenjevanja, auth, blocked_dates, audit_log, export, docs, dejavnosti, schools, subscription, global_settings, zasloni, govorilne
 from app.app_settings import selling_enabled
 from app.subscriptions import is_active
 from app.models import User, RoleEnum
@@ -174,7 +174,7 @@ class AuthMiddleware(BaseHTTPMiddleware):
         # glavna stran, zgodovina (history), API za razrede/prostore/urnik,
         # ter statične datoteke in dokumentacija.
         public = ["/auth/login", "/auth/forgot-password", "/auth/reset-password", "/health", "/", "/history", "/api/razredi", "/api/prostori", "/api/schedule", "/nakup", "/registracija"]
-        is_public = any(path == p for p in public) or path.startswith("/static") or path.startswith("/slike") or path.startswith("/docs/") or path.startswith("/zasloni") or path == "/zasloni"
+        is_public = any(path == p for p in public) or path.startswith("/static") or path.startswith("/slike") or path.startswith("/docs/") or path.startswith("/zasloni") or path == "/zasloni" or path == "/govorilne" or path.startswith("/govorilne/api")
         # Per-šola alias za digitalni zaslon (npr. /nadomescanja_ostcj ali
         # goli /ostcj) je prav tako javen — prevedemo ga na kanonično /zasloni pot.
         if not is_public:
@@ -491,6 +491,7 @@ app.include_router(dejavnosti.router)
 app.include_router(schools.router)
 app.include_router(subscription.router)
 app.include_router(global_settings.router)
+app.include_router(govorilne.router)
 app.include_router(zasloni.router)
 
 # ── Statične datoteke za dokumentacijo ────────────────────────────────
