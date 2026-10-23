@@ -45,8 +45,10 @@
 </div>
 
 <script>
-{% if pokazi_nadomescanja and tabela %}
-// ROTACIJA: nadomeščanja ↔ slika
+// ROTACIJA OBVESTIL — teče VEDNO (tudi če so nadomeščanja izklopljena).
+// Ko so nadomeščanja vklopljena, se izmenjujeta tabela ↔ slika/tekst; sicer
+// se vrtijo SAMO slike/tekstovna obvestila (vseeno napredujejo).
+const IMA_TABELO = {{ 'true' if pokazi_nadomescanja and tabela else 'false' }};
 const CAS_OBV = {{ cas_obvestila }} * 1000;
 const MIN_CAS_TABELE = {{ min_cas_tabele }} * 1000;
 const HITROST_DRSENJA = {{ hitrost_drsenja }};
@@ -56,9 +58,9 @@ const imageView = document.getElementById('imageView');
 const obvestiloImg = document.getElementById('obvestiloImg');
 const obvestiloTxt = document.getElementById('obvestiloTxt');
 let scrollInterval = null;
-let showingTable = true;
+let showingTable = false;
 
-const imaVsebino = tableView.querySelector('table') !== null;
+const imaVsebino = IMA_TABELO && tableView !== null && tableView.querySelector('table') !== null;
 
 function izracunajCasTabele() {
     if (!imaVsebino) return 10000;
@@ -107,12 +109,10 @@ function showTable() {
 async function showImage() {
     if (timerShowImage) clearTimeout(timerShowImage);
     if (scrollInterval) clearInterval(scrollInterval);
-    
+
     // Obvestila se vrtijo PO VRSTI (ne naključno): preberemo urejen seznam
     // in pokažemo naslednjega v nizu. Ko pridemo do konca, začnemo znova.
     try {
-        // Seznam aktivnih obvestil dobimo enkrat (in ga ob nalaganju strani
-        // osvežimo), nato ga krožimo z indeksom.
         if (!obvestilaSeznam || obvestilaSeznam.length === 0) {
             const r = await fetch('/zasloni/obvestila?t=' + Date.now());
             const d = await r.json();
@@ -134,33 +134,64 @@ async function showImage() {
     } catch (e) {
         console.log('Napaka pri pridobivanju obvestil:', e);
     }
-    
-    tableView.style.opacity = '0';
+
+    if (tableView) tableView.style.opacity = '0';
     imageView.style.opacity = '1';
     showingTable = false;
-    timerShowTable = setTimeout(showTable, CAS_OBV);
+    if (IMA_TABELO) {
+        // Po CAS_OBV se vrnemo na tabelo nadomeščanj.
+        timerShowTable = setTimeout(showTable, CAS_OBV);
+    } else {
+        // Brez tabele: čez CAS_OBV se pokaže naslednje obvestilo.
+        timerShowImage = setTimeout(showImage, CAS_OBV);
+    }
 }
 
 let timerShowImage, timerShowTable;
 let obvestilaSeznam = [];
 let obvestilaIndex = 0;
-showTable();
+if (IMA_TABELO) {
+    showTable();
+} else {
+    // Začetna slika je že v HTML-ju; po CAS_OBV rotiramo na naslednje obvestilo.
+    timerShowImage = setTimeout(showImage, CAS_OBV);
+}
 
+// Seznam obvestil občasno osvežimo v ozadju (brez osvežitve strani),
+// da se novo dodana obvestila pojavijo čim prej.
+setInterval(async () => {
+    try {
+        const r = await fetch('/zasloni/obvestila?t=' + Date.now());
+        const d = await r.json();
+        const nov = d.obvestila || [];
+        if (nov.length > 0) obvestilaSeznam = nov;
+    } catch (e) { /* obdržimo stari seznam */ }
+}, 2 * 60 * 1000);
+
+// Občasna polna osvežitev: pobere spremembe nastavitev (npr. vklop
+// nadomeščanj) in svežo tabelo. V načinu s tabelo počakamo na sliko,
+// da flash ne zmoti branja tabele; brez tabele redkeje (30 min).
+const INTERVAL_OSVEZITVE = IMA_TABELO ? 5 * 60 * 1000 : 30 * 60 * 1000;
 function osveziStranMedLogotipom() {
     if (!showingTable) location.reload();
     else setTimeout(osveziStranMedLogotipom, 1000);
 }
-setTimeout(osveziStranMedLogotipom, 5 * 60 * 1000);
+setTimeout(osveziStranMedLogotipom, INTERVAL_OSVEZITVE);
 
-{% else %}
-// BREZ ROTACIJE – samo slika
-setTimeout(() => location.reload(), 3600 * 1000);
-{% endif %}
-
+// Ura na zaslonu: časovni pas določi šolski admin (ZASLON_TIME_ZONE).
+const CASOVNI_PAS = {{ time_zone | tojson }};
 function updateTime() {
     const now = new Date();
-    document.querySelector('.fs-datum').textContent = now.toLocaleDateString('sl-SI');
-    document.querySelector('.fs-cas').textContent = now.toLocaleTimeString('sl-SI', {hour:'2-digit', minute:'2-digit'});
+    try {
+        document.querySelector('.fs-datum').textContent =
+            new Intl.DateTimeFormat('sl-SI', { timeZone: CASOVNI_PAS, day: '2-digit', month: '2-digit', year: 'numeric' }).format(now);
+        document.querySelector('.fs-cas').textContent =
+            new Intl.DateTimeFormat('sl-SI', { timeZone: CASOVNI_PAS, hour: '2-digit', minute: '2-digit' }).format(now);
+    } catch (e) {
+        // Neveljaven časovni pas → padec na lokalno uro naprave.
+        document.querySelector('.fs-datum').textContent = now.toLocaleDateString('sl-SI');
+        document.querySelector('.fs-cas').textContent = now.toLocaleTimeString('sl-SI', {hour:'2-digit', minute:'2-digit'});
+    }
 }
 updateTime();
 setInterval(updateTime, 1000);

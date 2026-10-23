@@ -57,12 +57,13 @@ def test_zasloni_random_image_json():
 def test_zasloni_nastavitve_so_v_school_settings():
     from app.tenancy import SCHOOL_SETTING_KEYS, SchoolConfig, env_default_settings
     for k in ("ZASLON_URL", "ZASLON_POKAZI_NADOMESCANJA", "ZASLON_CAS_OBVESTILA",
-              "ZASLON_MIN_CAS_TABELE", "ZASLON_HITROST_DRSENJA"):
+              "ZASLON_MIN_CAS_TABELE", "ZASLON_HITROST_DRSENJA", "ZASLON_TIME_ZONE"):
         assert k in SCHOOL_SETTING_KEYS, f"{k} manjka v SCHOOL_SETTING_KEYS"
         assert k in env_default_settings(), f"{k} manjka v env_default_settings"
     cfg = SchoolConfig(None, {})
     assert cfg.get_str("ZASLON_URL") == "https://urniki.easistent.com/nadomescanja/d960638bb866d19b58f4e2de616db8eb56e73cfe"
     assert cfg.get_int("ZASLON_CAS_OBVESTILA", 0) == 5
+    assert cfg.get_str("ZASLON_TIME_ZONE", "") == "Europe/Ljubljana"
 
 
 def test_school_settings_put_sprejme_bool_in_float():
@@ -185,3 +186,57 @@ def test_zasloni_obvestila_nastavitev_je_v_kljucih():
     from app.tenancy import SCHOOL_SETTING_KEYS, env_default_settings
     assert "ZASLON_OBVESTILA" in SCHOOL_SETTING_KEYS
     assert "ZASLON_OBVESTILA" in env_default_settings()
+
+
+def test_zasloni_time_zone_nastavitev_registrirana():
+    """ZASLON_TIME_ZONE: šolski admin določi časovni pas ure na zaslonu."""
+    from app.tenancy import SCHOOL_SETTING_FIELDS, SCHOOL_SETTING_KEYS, env_default_settings
+    assert "ZASLON_TIME_ZONE" in SCHOOL_SETTING_KEYS
+    assert "ZASLON_TIME_ZONE" in env_default_settings()
+    assert env_default_settings()["ZASLON_TIME_ZONE"] == "Europe/Ljubljana"
+    labels = {f["key"] for f in SCHOOL_SETTING_FIELDS}
+    assert "ZASLON_TIME_ZONE" in labels
+    # HTML /zasloni vključi časovni pas v JS ure.
+    with TestClient(app) as c:
+        r = c.get("/zasloni")
+        assert r.status_code == 200
+        assert "CASOVNI_PAS" in r.text
+        assert "Europe/Ljubljana" in r.text
+
+
+def test_zasloni_time_zone_validacija(client, make_user):
+    """Napačen časovni pas → 400; veljaven → shranjen."""
+    admin = make_user(role="admin")
+    login(client, admin.username)
+    sid = _default_school_id()
+    assert sid is not None
+
+    r = client.put(f"/api/schools/{sid}/settings", json={
+        "values": {"ZASLON_TIME_ZONE": "Napačen/Pas"}
+    })
+    assert r.status_code == 400, r.text
+
+    r = client.put(f"/api/schools/{sid}/settings", json={
+        "values": {"ZASLON_TIME_ZONE": "Europe/Ljubljana"}
+    })
+    assert r.status_code == 200, r.text
+
+
+def test_zasloni_rotacija_obvestil_tudi_brez_nadomescanj(client, make_user):
+    """Ob izklopljenih nadomeščanjih se obvestila ŠE VEDNO vrtijo (ne samo slika)."""
+    admin = make_user(role="admin")
+    login(client, admin.username)
+    sid = _default_school_id()
+    assert sid is not None
+
+    r = client.put(f"/api/schools/{sid}/settings", json={
+        "values": {"ZASLON_POKAZI_NADOMESCANJA": False}
+    })
+    assert r.status_code == 200, r.text
+
+    r = client.get("/zasloni")
+    assert r.status_code == 200
+    # JS rotacija je prisotna tudi brez tabele nadomeščanj.
+    assert "IMA_TABELO = false" in r.text
+    assert "showImage" in r.text
+    assert "/zasloni/obvestila" in r.text

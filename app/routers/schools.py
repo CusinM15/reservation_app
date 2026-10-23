@@ -19,6 +19,7 @@
 from fastapi import APIRouter, Depends, HTTPException, Query, Request, Form, Response
 from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.templating import Jinja2Templates
+from zoneinfo import ZoneInfo
 
 from app.templating import make_templates
 from app.i18n import t, current_lang
@@ -527,6 +528,17 @@ async def update_school_settings(school_id: int, request: Request, db: Session =
         if len(_ot_clean) > 5:
             raise HTTPException(status_code=400, detail="Največ 5 tekstovnih obvestil na zaslon.")
         values["ZASLON_OBVESTILA_TEKST"] = _json.dumps(_ot_clean, ensure_ascii=False)
+
+    # Časovni pas ure na zaslonu (ZASLON_TIME_ZONE): mora biti veljaven IANA
+    # ključ (npr. Europe/Ljubljana), da se ura na zaslonu pravilno izpiše.
+    if "ZASLON_TIME_ZONE" in values:
+        _tz = str(values["ZASLON_TIME_ZONE"]).strip()
+        if _tz:
+            try:
+                _tzinfo = ZoneInfo(_tz)
+            except Exception:
+                raise HTTPException(status_code=400, detail="'ZASLON_TIME_ZONE' mora biti veljaven časovni pas (npr. Europe/Ljubljana).")
+            values["ZASLON_TIME_ZONE"] = _tz
 
     # POPOLDAN_SCHEDULE (ni v obrazcu polj, a ga pošlje UI): če je podan, mora
     # biti veljaven JSON objekt (ura → opis).

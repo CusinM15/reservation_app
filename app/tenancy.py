@@ -111,6 +111,8 @@ SCHOOL_SETTING_KEYS = [
     "ZASLON_CAS_OBVESTILA",
     "ZASLON_MIN_CAS_TABELE",
     "ZASLON_HITROST_DRSENJA",
+    # Casovni pas ure na zaslonu (npr. Europe/Ljubljana).
+    "ZASLON_TIME_ZONE",
     # Aktivna obvestila zaslona: JSON seznam imen datotek v vec_obvestil/,
     # ki se prikazujejo PO VRSTI (v navedenem vrstnem redu), ne naključno.
     "ZASLON_OBVESTILA",
@@ -185,6 +187,7 @@ SCHOOL_SETTING_FIELDS = [
     {"key": "ZASLON_CAS_OBVESTILA", "label": "Zaslon — sekund: vidna slika/obvestilo", "type": "int"},
     {"key": "ZASLON_MIN_CAS_TABELE", "label": "Zaslon — sekund: minimalni čas tabele", "type": "int"},
     {"key": "ZASLON_HITROST_DRSENJA", "label": "Zaslon — hitrost drsenja tabele", "type": "float"},
+    {"key": "ZASLON_TIME_ZONE", "label": "Zaslon — časovni pas ure (npr. Europe/Ljubljana)", "type": "text"},
     {"key": "ZASLON_OBVESTILA", "label": "Zaslon — aktivna obvestila (JSON seznam)", "type": "json"},
     {"key": "ZASLON_OBVESTILA_TEKST", "label": "Zaslon — tekstovna obvestila (JSON seznam, največ 5)", "type": "json"},
 ]
@@ -486,6 +489,7 @@ def env_default_settings() -> dict:
         "ZASLON_CAS_OBVESTILA": "5",
         "ZASLON_MIN_CAS_TABELE": "2",
         "ZASLON_HITROST_DRSENJA": "1.2",
+        "ZASLON_TIME_ZONE": "Europe/Ljubljana",
         # Prazno → uporabijo se VSA obvestila iz vec_obvestil/ po vrsti.
         "ZASLON_OBVESTILA": "",
         "ZASLON_OBVESTILA_TEKST": "[]",
