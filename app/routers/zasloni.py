@@ -20,16 +20,18 @@ from __future__ import annotations
 import os
 import re
 import json
+import mimetypes
 import time
 import subprocess
 from pathlib import Path
 
-from fastapi import APIRouter, Request, Depends
-from fastapi.responses import HTMLResponse, JSONResponse, PlainTextResponse
+from fastapi import APIRouter, Request, Depends, HTTPException
+from fastapi.responses import HTMLResponse, JSONResponse, PlainTextResponse, FileResponse, Response
 from fastapi.templating import Jinja2Templates
 from sqlalchemy.orm import Session
 
 from app.database import get_db
+from app.models import ZaslonFile
 from app.tenancy import (
     _default_school_id,
     get_school_config,
@@ -126,6 +128,8 @@ def _zasloni_settings(request: Request, db: Session) -> dict:
         "min_cas_tabele": i("ZASLON_MIN_CAS_TABELE", 2),
         "hitrost_drsenja": f("ZASLON_HITROST_DRSENJA", 1.2),
         "time_zone": config.get_str("ZASLON_TIME_ZONE", "Europe/Ljubljana"),
+        "osvezi_at": config.get_str("ZASLON_OSVEZI_AT", ""),
+        "school_id": sid,
         "obvestila": obvestila,
         "obvestila_tekst": obvestila_tekst,
         "media_dir": media_dir,
@@ -307,20 +311,64 @@ def _nakljucna_slika(vec_dir: Path) -> str | None:
 # 4b. Aktivna obvestila (po vrsti) — za /zasloni/obvestila
 # ═══════════════════════════════════════════════════════════════════════
 
-def _aktivna_obvestila(settings: dict) -> list[str]:
+_ZASLON_DISK_EXT = {".jpg", ".jpeg", ".png", ".gif", ".webp", ".pdf"}
+
+
+def _pdf_to_jpg_bytes(pdf_bytes: bytes, scale: float = 2.0) -> bytes:
+    """Prva stran PDF-ja → JPG bajti (pypdfium2 + Pillow).
+
+    Uporabi se pri nalaganju obvestila: PDF se pretvori v sliko in v sistem
+    se shrani SAMO ta slika (zasede 1 polje obvestila).
+    """
+    import io
+    import pypdfium2 as pdfium
+    from PIL import Image
+    doc = pdfium.PdfDocument(pdf_bytes)
+    try:
+        page = doc[0]
+        pil = page.render(scale=scale).to_pil().convert("RGB")
+        buf = io.BytesIO()
+        pil.save(buf, "JPEG", quality=85)
+        return buf.getvalue()
+    finally:
+        doc.close()
+
+
+def _razpolozljiva_obvestila(db: Session, sid: int | None, media_dir: Path) -> list[str]:
+    """Imena razpoložljivih obvestil (datotek v vec_obvestil/) za šolo.
+
+    Vir so DB vrstice (ZaslonFile — naložena obvestila). Prvič, ko šola
+    še nima nobene, se diskovna obvestila (vgrajena v sliko) prenesejo v
+    DB — od takrat je DB edini vir, da izbrisana obvestila ob redeployu
+    ne oživijo.
+    """
+    if sid is None:
+        return []
+    rows = db.query(ZaslonFile.filename).filter(ZaslonFile.school_id == sid).all()
+    if rows:
+        return sorted(r[0] for r in rows)
+    names = []
+    if media_dir.is_dir():
+        for f in sorted(media_dir.iterdir()):
+            if f.is_file() and f.suffix.lower() in _ZASLON_DISK_EXT:
+                names.append(f.name)
+                try:
+                    db.add(ZaslonFile(school_id=sid, filename=f.name, data=f.read_bytes()))
+                except OSError:
+                    pass
+    db.commit()
+    return names
+
+
+def _aktivna_obvestila(settings: dict, db: Session) -> list[str]:
     """Vrni relativne URL-je aktivnih obvestil PO VRSTI (ne naključno).
 
     Šola v nastavitvah (ZASLON_OBVESTILA, JSON seznam imen) določi katera
     obvestila so aktivna in v kakšnem vrstnem redu se prikazujejo. Če ni
-    podano (prazno), se uporabijo VSA obvestila iz vec_obvestil/ po abecedi.
+    podano (prazno), se uporabijo VSA razpoložljiva obvestila po abecedi.
     """
     vec_dir: Path = settings["vec_obvestil"]
-    if not vec_dir.is_dir():
-        return []
-    razpoložljiva = sorted(
-        f.name for f in vec_dir.iterdir()
-        if f.is_file() and f.suffix.lower() in {".jpg", ".jpeg", ".png", ".gif", ".webp", ".pdf"}
-    )
+    razpoložljiva = _razpolozljiva_obvestila(db, settings.get("school_id"), vec_dir)
     if not razpoložljiva:
         return []
 
@@ -393,8 +441,11 @@ def zasloni_random_image(request: Request, db: Session = Depends(get_db)):
     /zasloni/obvestila (urejen seznam), ta endpoint pa ostaja za nazaj.
     """
     settings = _zasloni_settings(request, db)
-    slika = _nakljucna_slika(settings["vec_obvestil"])
-    if not slika:
+    razpoložljiva = _razpolozljiva_obvestila(db, settings["school_id"], settings["vec_obvestil"])
+    if razpoložljiva:
+        izbrana = razpoložljiva[int(time.time() * 1000) % len(razpoložljiva)]
+        slika = f"vec_obvestil/{izbrana}"
+    else:
         slika = settings["logo_path"]
     return {"slika": slika}
 
@@ -408,13 +459,48 @@ def zasloni_obvestila(request: Request, db: Session = Depends(get_db)):
     primeru vsa iz vec_obvestil po abecedi). Brez aktivnih → privzeti logo.
     """
     settings = _zasloni_settings(request, db)
-    obvestila = _aktivna_obvestila(settings)  # relativni URL-ji slik (str)
+    obvestila = _aktivna_obvestila(settings, db)  # relativni URL-ji slik (str)
     seznam = [{"type": "image", "src": u, "text": None} for u in obvestila]
     obvestila_tekst = settings.get("obvestila_tekst") or []
     seznam += [{"type": "text", "src": None, "text": t} for t in obvestila_tekst]
     if not seznam:
         seznam = [{"type": "image", "src": settings["logo_path"], "text": None}]
     return {"obvestila": seznam}
+
+
+@router.get("/zasloni/osvezi_at", response_class=JSONResponse)
+def zasloni_osvezi_at(request: Request, db: Session = Depends(get_db)):
+    """Vrni trenutno oznako osvežitve — zasloni jo pollajo in ob spremembi reloadajo.
+
+    Gumb »Osveži vse naprave« (šolski admin) spremeni ZASLON_OSVEZI_AT;
+    vsi zasloni primerjajo to vrednost z vgrajeno v strani in se osvežijo.
+    """
+    settings = _zasloni_settings(request, db)
+    return {"osvezi_at": settings.get("osvezi_at", "")}
+
+
+@router.get("/zasloni/media/vec_obvestil/{filename}")
+def zasloni_media_vec(filename: str, request: Request, db: Session = Depends(get_db)):
+    """Servira obvestilo: najprej iz DB (naloženo), sicer z diska (vgrajeno).
+
+    Specifična ruta stoji pred StaticFiles mountom (/zasloni/media), zato
+    prevlada za vse datoteke v vec_obvestil/.
+    """
+    if "/" in filename or filename in (".", ".."):
+        raise HTTPException(status_code=404, detail="Datoteka ne obstaja")
+    sid = request_school_id(request) or _default_school_id(db)
+    row = None
+    if sid is not None:
+        row = db.query(ZaslonFile).filter(
+            ZaslonFile.school_id == sid, ZaslonFile.filename == filename
+        ).first()
+    if row:
+        mime = mimetypes.guess_type(filename)[0] or "application/octet-stream"
+        return Response(content=bytes(row.data), media_type=mime)
+    p = _default_media_dir() / "vec_obvestil" / filename
+    if p.is_file():
+        return FileResponse(p)
+    raise HTTPException(status_code=404, detail="Datoteka ne obstaja")
 
 
 @router.get("/zasloni", response_class=HTMLResponse)
@@ -444,7 +530,7 @@ def zasloni_praznos(request: Request, db: Session = Depends(get_db)):
             )
 
     # Začetna slika: prva aktivna po vrsti, sicer privzeti logo.
-    obvestila = _aktivna_obvestila(settings)
+    obvestila = _aktivna_obvestila(settings, db)
     obvestilo_path = obvestila[0] if obvestila else settings["logo_path"]
 
     return templates.TemplateResponse("zasloni.html", {
@@ -454,6 +540,7 @@ def zasloni_praznos(request: Request, db: Session = Depends(get_db)):
         "min_cas_tabele": settings["min_cas_tabele"],
         "hitrost_drsenja": settings["hitrost_drsenja"],
         "time_zone": settings["time_zone"],
+        "osvezi_at": settings["osvezi_at"],
         "tabela": tabela,
         "obvestilo_path": obvestilo_path,
         "obvestila": obvestila,

@@ -19,3 +19,5 @@ fonttools==4.63.0
 openpyxl==3.1.5
 # Digitalni zaslon: nalaganje nadomeščanj iz eAsistenta (jarnega URL-ja)
 requests==2.32.3
+# Zaslon: PDF → JPG pri nalaganju obvestil (pypdfium2 + Pillow)
+pypdfium2==5.14.0

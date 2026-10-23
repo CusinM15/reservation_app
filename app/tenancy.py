@@ -113,6 +113,8 @@ SCHOOL_SETTING_KEYS = [
     "ZASLON_HITROST_DRSENJA",
     # Casovni pas ure na zaslonu (npr. Europe/Ljubljana).
     "ZASLON_TIME_ZONE",
+    # Osveži vse zaslone: sprememba vrednosti pošlje vsem napravam ukaz za reload.
+    "ZASLON_OSVEZI_AT",
     # Aktivna obvestila zaslona: JSON seznam imen datotek v vec_obvestil/,
     # ki se prikazujejo PO VRSTI (v navedenem vrstnem redu), ne naključno.
     "ZASLON_OBVESTILA",
@@ -490,6 +492,7 @@ def env_default_settings() -> dict:
         "ZASLON_MIN_CAS_TABELE": "2",
         "ZASLON_HITROST_DRSENJA": "1.2",
         "ZASLON_TIME_ZONE": "Europe/Ljubljana",
+        "ZASLON_OSVEZI_AT": "",
         # Prazno → uporabijo se VSA obvestila iz vec_obvestil/ po vrsti.
         "ZASLON_OBVESTILA": "",
         "ZASLON_OBVESTILA_TEKST": "[]",

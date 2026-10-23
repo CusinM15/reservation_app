@@ -249,11 +249,16 @@
                             {% if is_main_admin %}<span class="key">ZASLON_OBVESTILA</span>{% endif %}
                             <div id="obvestila-rows">
                                 {% for r in obv_rows %}
-                                <label style="display:flex;align-items:center;gap:8px;margin:4px 0;font-weight:normal;">
-                                    <input type="checkbox" class="obv-check" value="{{ r.file }}"
-                                           {% if r.active %}checked{% endif %}>
-                                    <span class="obv-file">{{ r.file }}</span>
-                                </label>
+                                <div style="display:flex;align-items:center;gap:8px;margin:4px 0;font-weight:normal;">
+                                    <label style="display:flex;align-items:center;gap:8px;font-weight:normal;flex:1;min-width:0;">
+                                        <input type="checkbox" class="obv-check" value="{{ r.file }}"
+                                               {% if r.active %}checked{% endif %}>
+                                        <span class="obv-file" style="overflow-wrap:anywhere;">{{ r.file }}</span>
+                                    </label>
+                                    <button type="button" class="obv-delete" data-file="{{ r.file }}"
+                                            style="border:none;background:transparent;cursor:pointer;color:#dc3545;font-size:16px;"
+                                            title="{{ t('btn_odstrani_obvestilo', 'Odstrani obvestilo') }}">✕</button>
+                                </div>
                                 {% else %}
                                 <p class="hint" style="margin-top:0;">{{ t('set_zaslon_brez_obvestil', 'V mapi ni obvestil (vec_obvestil/). Dodaj slike za prikaz.') }}</p>
                                 {% endfor %}
@@ -283,6 +288,29 @@
                             </div>
                             <div class="hint" style="margin-top:6px;">
                                 {{ t('set_zaslon_tekst_hint', 'Dodana obvestila se na zaslonu vrtijo skupaj s slikami. Največ 5.') }}
+                            </div>
+                        </div>
+
+                        <!-- OSVEŽI VSE NAPRAVE + NALAGANJE OBVESTIL -->
+                        <div class="field">
+                            <label>{{ t('set_zaslon_osvezi', 'Osveži vse zaslone (naprave)') }}</label>
+                            <div style="display:flex;gap:8px;align-items:center;">
+                                <button type="button" id="zasloni-osvezi-btn" class="btn">{{ t('btn_osvezi_vse', 'Osveži vse naprave') }}</button>
+                                <span id="zasloni-osvezi-status" style="font-weight:normal;"></span>
+                            </div>
+                            <div class="hint" style="margin-top:6px;">
+                                {{ t('set_zaslon_osvezi_hint', 'Vsem zaslonom (TV) pošlje ukaz za takojšnjo osvežitev — spremembe se pokažejo na vseh brez ročnega osveževanja.') }}
+                            </div>
+                        </div>
+                        <div class="field">
+                            <label>{{ t('set_zaslon_nalozi', 'Naloži obvestilo (jpg, png ali pdf)') }}</label>
+                            <div style="display:flex;gap:8px;align-items:center;">
+                                <input type="file" id="zasloni-upload-input" accept=".jpg,.jpeg,.png,.pdf" style="flex:1;">
+                                <button type="button" id="zasloni-upload-btn" class="btn">{{ t('btn_nalozi', 'Naloži') }}</button>
+                            </div>
+                            <span id="zasloni-upload-status" style="font-weight:normal;"></span>
+                            <div class="hint" style="margin-top:6px;">
+                                {{ t('set_zaslon_nalozi_hint', 'PDF se samodejno pretvori v sliko (JPG) in zasede eno polje obvestila. Naložena obvestila lahko tudi izbrišete (✕).') }}
                             </div>
                         </div>
 
@@ -941,6 +969,66 @@
             msgEl.style.color = 'red'; msgEl.textContent = '{{ t('js_napaka_povezava', 'Napaka pri povezavi s strežnikom.') }}';
         }
     }
+    </script>
+
+    // ── Zaslon: osveži vse naprave + nalaganje/brisanje obvestil ──
+    async function zasloniFetch(url, options) {
+        const res = await fetch('/api/schools/' + SCHOOL_ID + url, Object.assign({ credentials: 'include' }, options || {}));
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok) throw new Error(data.detail || ('Napaka ' + res.status));
+        return data;
+    }
+
+    // Brisanje obvestila (✕) — deluje za naložena obvestila (DB).
+    document.addEventListener('click', function (e) {
+        const delBtn = e.target.closest('.obv-delete');
+        if (!delBtn) return;
+        e.preventDefault();
+        const name = delBtn.dataset.file;
+        if (!confirm('{{ t('js_izbrisem_obvestilo', 'Izbrišem obvestilo ') }}' + name + '?')) return;
+        delBtn.disabled = true;
+        zasloniFetch('/zasloni/delete', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ filename: name }) })
+            .then(function () {
+                const row = delBtn.closest('div');
+                if (row) row.remove();
+                location.reload();
+            })
+            .catch(function (err) { alert(err.message); delBtn.disabled = false; });
+    });
+
+    // Gumb »Osveži vse naprave«.
+    const osveziBtn = document.getElementById('zasloni-osvezi-btn');
+    if (osveziBtn) osveziBtn.addEventListener('click', function () {
+        osveziBtn.disabled = true;
+        const st = document.getElementById('zasloni-osvezi-status');
+        st.textContent = '...';
+        zasloniFetch('/zasloni/osvezi', { method: 'POST' })
+            .then(function () { st.textContent = '{{ t('js_osvezeno', '✓ Vsi zasloni se osvežujejo.') }}'; osveziBtn.disabled = false; })
+            .catch(function (err) { st.textContent = err.message; osveziBtn.disabled = false; });
+    });
+
+    // Nalaganje obvestila (jpg/png/pdf → pdf postane jpg).
+    const uploadBtn = document.getElementById('zasloni-upload-btn');
+    const uploadInput = document.getElementById('zasloni-upload-input');
+    if (uploadBtn) uploadBtn.addEventListener('click', async function () {
+        const f = uploadInput.files[0];
+        if (!f) { alert('{{ t('js_izberi_datoteko', 'Izberite datoteko.') }}'); return; }
+        const fd = new FormData();
+        fd.append('file', f);
+        uploadBtn.disabled = true;
+        const st = document.getElementById('zasloni-upload-status');
+        st.textContent = '...';
+        try {
+            const data = await zasloniFetch('/zasloni/upload', { method: 'POST', body: fd });
+            st.textContent = '{{ t('js_nalozeno', '✓ Naloženo: ') }}' + data.filename;
+            uploadInput.value = '';
+            location.reload();
+        } catch (err) {
+            st.textContent = err.message;
+        } finally {
+            uploadBtn.disabled = false;
+        }
+    });
     </script>
 {% if inactivity_timeout_ms %}
 <script>

@@ -16,10 +16,12 @@
 #   - vodstvo/teacher ne vidita teh strani (403).
 # ─────────────────────────────────────────────────────────────────────────
 
-from fastapi import APIRouter, Depends, HTTPException, Query, Request, Form, Response
+from fastapi import APIRouter, Body, Depends, File, HTTPException, Query, Request, Form, Response, UploadFile
 from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.templating import Jinja2Templates
 from zoneinfo import ZoneInfo
+import os
+import time
 
 from app.templating import make_templates
 from app.i18n import t, current_lang
@@ -60,6 +62,8 @@ from app.tenancy import (
 from app.backup_restore import DOMAINS, DOMAIN_LABELS, restore_domain
 from app.school_backup import backup_filename, build_school_sql, send_backup_email
 from app.config import settings
+from app.models import ZaslonFile
+from app.routers.zasloni import _default_media_dir, _pdf_to_jpg_bytes, _razpolozljiva_obvestila
 
 router = APIRouter(tags=["schools"])
 templates = make_templates()
@@ -589,6 +593,94 @@ async def update_school_settings(school_id: int, request: Request, db: Session =
     return _settings_payload(db, school)
 
 
+# ── Zaslon: osveži vse naprave + nalaganje/brisanje obvestil ──────────
+MAX_ZASLON_UPLOAD = 8 * 1024 * 1024  # 8 MB
+_ZASLON_UPLOAD_EXT = {".jpg", ".jpeg", ".png", ".pdf"}
+
+
+def _zasloni_osvezi_bump(db: Session, school_id: int) -> None:
+    """Sprememba ZASLON_OSVEZI_AT → vsi zasloni ob naslednjem pollu reloadajo."""
+    set_school_setting(db, school_id, "ZASLON_OSVEZI_AT", str(int(time.time())))
+    db.commit()
+
+
+def _zasloni_sanitize_stem(stem: str) -> str:
+    """Varno ime datoteke iz originalnega imena (ASCII + _ . -)."""
+    out = "".join(c if (c.isalnum() or c in "._-") else "-" for c in (stem or ""))
+    return out.strip(".-") or "obvestilo"
+
+
+@router.post("/api/schools/{school_id}/zasloni/osvezi")
+def zasloni_osvezi_vse(school_id: int, request: Request, db: Session = Depends(get_db)):
+    """Gumb »Osveži vse naprave«: vsem zaslonom pošlje ukaz za takojšnjo osvežitev."""
+    school = _manageable_school(db, request, school_id)
+    _zasloni_osvezi_bump(db, school.id)
+    return {"ok": True}
+
+
+@router.post("/api/schools/{school_id}/zasloni/upload")
+async def zasloni_upload(school_id: int, request: Request, db: Session = Depends(get_db),
+                         file: UploadFile = File(...)):
+    """Naloži obvestilo (jpg/png/pdf). PDF se pretvori v JPG; shrani se samo slika."""
+    school = _manageable_school(db, request, school_id)
+    original = (file.filename or "").strip()
+    ext = os.path.splitext(original)[1].lower()
+    if ext not in _ZASLON_UPLOAD_EXT:
+        raise HTTPException(status_code=400,
+                            detail="Dovoljene končnice: .jpg, .jpeg, .png, .pdf")
+    data = await file.read()
+    if not data:
+        raise HTTPException(status_code=400, detail="Datoteka je prazna")
+    if len(data) > MAX_ZASLON_UPLOAD:
+        raise HTTPException(status_code=400, detail="Datoteka je prevelika (največ 8 MB)")
+    if ext in (".jpg", ".jpeg"):
+        if not data.startswith(b"\xff\xd8\xff"):
+            raise HTTPException(status_code=400, detail="Datoteka ni veljaven JPG")
+    elif ext == ".png":
+        if not data.startswith(b"\x89PNG\r\n\x1a\n"):
+            raise HTTPException(status_code=400, detail="Datoteka ni veljaven PNG")
+    else:  # .pdf
+        if not data.startswith(b"%PDF"):
+            raise HTTPException(status_code=400, detail="Datoteka ni veljaven PDF")
+        data = _pdf_to_jpg_bytes(data)
+        ext = ".jpg"
+
+    stem = _zasloni_sanitize_stem(os.path.splitext(original)[0])
+    media_dir = _default_media_dir() / "vec_obvestil"
+    taken = set(_razpolozljiva_obvestila(db, school.id, media_dir))
+    if media_dir.is_dir():
+        taken |= {f.name for f in media_dir.iterdir() if f.is_file()}
+    filename = f"{stem}{ext}"
+    i = 2
+    while filename in taken:
+        filename = f"{stem}_{i}{ext}"
+        i += 1
+    db.add(ZaslonFile(school_id=school.id, filename=filename, data=data))
+    db.commit()
+    _zasloni_osvezi_bump(db, school.id)
+    return {"ok": True, "filename": filename}
+
+
+@router.post("/api/schools/{school_id}/zasloni/delete")
+def zasloni_delete(school_id: int, request: Request, db: Session = Depends(get_db),
+                   body: dict = Body(...)):
+    """Odstrani obvestilo (✕ v nastavitvah šole). Deluje za DB-naložena obvestila."""
+    school = _manageable_school(db, request, school_id)
+    filename = str((body or {}).get("filename") or "").strip()
+    if not filename or "/" in filename or filename in (".", ".."):
+        raise HTTPException(status_code=400, detail="Neveljavno ime datoteke")
+    row = db.query(ZaslonFile).filter(
+        ZaslonFile.school_id == school.id, ZaslonFile.filename == filename
+    ).first()
+    if not row:
+        raise HTTPException(status_code=404,
+                            detail="Obvestilo ni bilo najdeno (morda je vgrajeno v sistem)")
+    db.delete(row)
+    db.commit()
+    _zasloni_osvezi_bump(db, school.id)
+    return {"ok": True, "filename": filename}
+
+
 # ═══════════════════════════════════════════════════════════════════════
 # HTML strani
 # ═══════════════════════════════════════════════════════════════════════
@@ -1016,14 +1108,9 @@ def school_settings_page(
     # OBVESTILA ZASLONA: vsako obvestilo (datoteka v vec_obvestil/) dobi
     # kljukico. Označena se na zaslonu prikazujejo PO VRSTI, v tem vrstnem
     # redu. Tu pripravimo vrstni red iz shranjene vrednosti ZASLON_OBVESTILA.
-    from app.routers.zasloni import _default_media_dir
     obv_dir = _default_media_dir() / "vec_obvestil"
-    obv_files = []
-    if obv_dir.is_dir():
-        obv_files = sorted(
-            f.name for f in obv_dir.iterdir()
-            if f.is_file() and f.suffix.lower() in {".jpg", ".jpeg", ".png", ".gif", ".webp", ".pdf"}
-        )
+    # Razpoložljiva obvestila: DB (naložena) ∪ disk (vgrajena v sliko).
+    obv_files = _razpolozljiva_obvestila(db, school.id, obv_dir)
     try:
         obv_active = _json.loads(values.get("ZASLON_OBVESTILA") or "[]")
         if not isinstance(obv_active, list):

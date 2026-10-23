@@ -11,7 +11,7 @@
 
 from datetime import date, datetime
 
-from sqlalchemy import Boolean, Column, Integer, String, Date, DateTime, Text, ForeignKey, Float, Enum as SAEnum, BigInteger, UniqueConstraint
+from sqlalchemy import Boolean, Column, Integer, String, Date, DateTime, Text, ForeignKey, Float, Enum as SAEnum, BigInteger, LargeBinary, UniqueConstraint
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import relationship
 import enum
@@ -308,4 +308,23 @@ class UIString(Base):
     key = Column(String, nullable=False, unique=True, index=True)  # stabilen ključ (npr. btn_shrani)
     context = Column(String, nullable=True, default="")            # kje se uporablja (opis/opomba)
     sl = Column(Text, nullable=True, default="")                   # slovenski napis
-    en = Column(Text, nullable=True, default="")                   # angleški napis
+    en = Column(Text, nullable=True, default="")
+
+
+# ── Datoteke zaslona (naložena obvestila) ──────────────────────────
+# Obvestila, ki jih šolski admin naloži v UI (jpg/png/pdf → pdf postane
+# jpg). Shranjena v DB — preživijo rollout in so vidna vsem replikam
+# (skupna baza). Diskovna (vgrajena v sliko) se ob prvi uporabi prenesejo
+# sem, da jih admin lahko tudi briše.
+class ZaslonFile(Base):
+    __tablename__ = "zasloni_files"
+
+    id = Column(Integer, primary_key=True, index=True)
+    school_id = Column(Integer, ForeignKey("schools.id"), nullable=False, index=True)
+    filename = Column(String, nullable=False)
+    data = Column(LargeBinary, nullable=False)
+    created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
+
+    __table_args__ = (
+        UniqueConstraint("school_id", "filename", name="uq_zasloni_files_school_file"),
+    )                   # angleški napis

@@ -240,3 +240,142 @@ def test_zasloni_rotacija_obvestil_tudi_brez_nadomescanj(client, make_user):
     assert "IMA_TABELO = false" in r.text
     assert "showImage" in r.text
     assert "/zasloni/obvestila" in r.text
+
+
+def test_zasloni_osvezi_at_registrirana_in_endpoint():
+    """ZASLON_OSVEZI_AT: oznaka za »osveži vse naprave« (ključ + javni endpoint)."""
+    from app.tenancy import SCHOOL_SETTING_KEYS, env_default_settings
+    assert "ZASLON_OSVEZI_AT" in SCHOOL_SETTING_KEYS
+    assert "ZASLON_OSVEZI_AT" in env_default_settings()
+    assert env_default_settings()["ZASLON_OSVEZI_AT"] == ""
+    with TestClient(app) as c:
+        r = c.get("/zasloni/osvezi_at")
+        assert r.status_code == 200
+        assert r.json() == {"osvezi_at": ""}
+        page = c.get("/zasloni")
+        assert "OSNOVNI_OSVEZI_AT" in page.text
+        assert "preveriOsvezi" in page.text
+
+
+def test_zasloni_osvezi_gumb_spremeni_marker(client, make_user):
+    """Gumb »Osveži vse naprave« spremeni ZASLON_OSVEZI_AT → zasloni reloadajo."""
+    admin = make_user(role="admin")
+    login(client, admin.username)
+    sid = _default_school_id()
+    assert sid is not None
+
+    before = client.get("/zasloni/osvezi_at").json()["osvezi_at"]
+    r = client.post(f"/api/schools/{sid}/zasloni/osvezi")
+    assert r.status_code == 200, r.text
+    after = client.get("/zasloni/osvezi_at").json()["osvezi_at"]
+    assert after and after != before
+
+
+def _tiny_png() -> bytes:
+    import io
+    from PIL import Image
+    buf = io.BytesIO()
+    Image.new("RGB", (60, 30), (200, 30, 30)).save(buf, "PNG")
+    return buf.getvalue()
+
+
+def test_zasloni_upload_png_in_prikaz(client, make_user):
+    """Nalaganje obvestila (png) → pojavi se v /zasloni/obvestila in se servira."""
+    admin = make_user(role="admin")
+    login(client, admin.username)
+    sid = _default_school_id()
+    assert sid is not None
+
+    png = _tiny_png()
+    r = client.post(
+        f"/api/schools/{sid}/zasloni/upload",
+        files={"file": ("moje_obvestilo.png", png, "image/png")},
+    )
+    assert r.status_code == 200, r.text
+    fname = r.json()["filename"]
+    assert fname == "moje_obvestilo.png"
+
+    data = client.get("/zasloni/obvestila").json()["obvestila"]
+    srcs = [x["src"] for x in data if x["type"] == "image"]
+    assert f"vec_obvestil/{fname}" in srcs
+
+    media = client.get(f"/zasloni/media/vec_obvestil/{fname}")
+    assert media.status_code == 200
+    assert media.headers["content-type"].startswith("image/png")
+    assert media.content == png
+
+
+def test_zasloni_upload_pdf_se_pretvori_v_jpg(client, make_user):
+    """PDF se ob nalaganju pretvori v JPG; v sistem gre samo slika (1 polje)."""
+    import io
+    from weasyprint import HTML
+    admin = make_user(role="admin")
+    login(client, admin.username)
+    sid = _default_school_id()
+    assert sid is not None
+
+    buf = io.BytesIO()
+    HTML(string="<p>Obvestilo PDF</p>").write_pdf(buf)
+    pdf = buf.getvalue()
+    r = client.post(
+        f"/api/schools/{sid}/zasloni/upload",
+        files={"file": ("plakat.pdf", pdf, "application/pdf")},
+    )
+    assert r.status_code == 200, r.text
+    fname = r.json()["filename"]
+    assert fname.endswith(".jpg"), fname
+    assert "plakat" in fname
+
+    data = client.get("/zasloni/obvestila").json()["obvestila"]
+    srcs = [x["src"] for x in data if x["type"] == "image"]
+    assert f"vec_obvestil/{fname}" in srcs
+
+    media = client.get(f"/zasloni/media/vec_obvestil/{fname}")
+    assert media.status_code == 200
+    assert media.headers["content-type"].startswith("image/jpeg")
+    assert media.content.startswith(b"\xff\xd8\xff")
+
+
+def test_zasloni_upload_zavrne_neveljavno(client, make_user):
+    """Napačna končnica ali ponarejena vsebina → 400."""
+    admin = make_user(role="admin")
+    login(client, admin.username)
+    sid = _default_school_id()
+    assert sid is not None
+
+    r = client.post(
+        f"/api/schools/{sid}/zasloni/upload",
+        files={"file": ("skripta.txt", b"echo hi", "text/plain")},
+    )
+    assert r.status_code == 400, r.text
+
+    r = client.post(
+        f"/api/schools/{sid}/zasloni/upload",
+        files={"file": ("lazni.png", b"to ni png", "image/png")},
+    )
+    assert r.status_code == 400, r.text
+
+
+def test_zasloni_delete_obvestila(client, make_user):
+    """Brisanje obvestila (✕) → izgine iz /zasloni/obvestila."""
+    admin = make_user(role="admin")
+    login(client, admin.username)
+    sid = _default_school_id()
+    assert sid is not None
+
+    r = client.post(
+        f"/api/schools/{sid}/zasloni/upload",
+        files={"file": ("za_brisat.png", _tiny_png(), "image/png")},
+    )
+    assert r.status_code == 200, r.text
+    fname = r.json()["filename"]
+
+    r = client.post(f"/api/schools/{sid}/zasloni/delete", json={"filename": fname})
+    assert r.status_code == 200, r.text
+
+    data = client.get("/zasloni/obvestila").json()["obvestila"]
+    srcs = [x["src"] for x in data if x["type"] == "image"]
+    assert f"vec_obvestil/{fname}" not in srcs
+
+    r = client.post(f"/api/schools/{sid}/zasloni/delete", json={"filename": fname})
+    assert r.status_code == 404, r.text

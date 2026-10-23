@@ -178,6 +178,18 @@ function osveziStranMedLogotipom() {
 }
 setTimeout(osveziStranMedLogotipom, INTERVAL_OSVEZITVE);
 
+// Osveži vse naprave: šolski admin pritisne gumb v nastavitvah →
+// ZASLON_OSVEZI_AT se spremeni; vsi zasloni tu pollajo in ob spremembi reloadajo.
+const OSNOVNI_OSVEZI_AT = {{ osvezi_at | tojson }};
+async function preveriOsvezi() {
+    try {
+        const r = await fetch('/zasloni/osvezi_at?t=' + Date.now());
+        const d = await r.json();
+        if (d.osvezi_at && d.osvezi_at !== OSNOVNI_OSVEZI_AT) location.reload();
+    } catch (e) { /* prezremo */ }
+}
+setInterval(preveriOsvezi, 10000);
+
 // Ura na zaslonu: časovni pas določi šolski admin (ZASLON_TIME_ZONE).
 const CASOVNI_PAS = {{ time_zone | tojson }};
 function updateTime() {
