@@ -110,6 +110,33 @@ def _fmt_eur(v) -> str:
     return f"{float(v):.2f}".replace(".", ",")
 
 
+def _clean_price(value, default: int = DEFAULT_PRICE_EUR) -> str:
+    """Cena za shranjevanje: prazno/neveljavno/negativno → privzeto.
+
+    Eno mesto validacije — uporabljata ga save_selling_config in
+    save_price_eur, da se cene v bazi ne da pokvariti s tipkarsko napako.
+    """
+    text = str(value if value is not None else "").strip()
+    if text == "":
+        return str(default)
+    try:
+        if float(text.replace(",", ".")) < 0:
+            return str(default)
+    except ValueError:
+        return str(default)
+    return text
+
+
+def save_price_eur(db: Session, price: str | int | None) -> None:
+    """Shrani ceno LETNEGA plana (€/leto) — ENA globalna cena za vse šole.
+
+    Kliče se iz /global-settings (main admin) in /narocnina/nastavitve.
+    Vse ostalo (sorazmerna cena, e-račun, prikazi) ceno le BERE prek
+    price_eur()/plan_price() — zato sprememba tu velja povsod.
+    """
+    set_app_setting(db, KEY_PRICE, _clean_price(price))
+
+
 def plan_price(db: Session, plan_id: str) -> float:
     """Cena LETNEGA plana v €; 0 = brez plačila."""
     plan_id = plan_id if plan_id in PLAN_MONTHS else "leto"
@@ -256,19 +283,8 @@ def save_selling_config(
     treba vseeno obnoviti za vsako obdobje); prazna/neveljavna vrednost pade na
     privzeto ceno, da se v obrazcu ne da »pokvariti« nastavitve s tipkarsko napako.
     """
-    def _clean(value, default: int) -> str:
-        text = str(value if value is not None else "").strip()
-        if text == "":
-            return str(default)
-        try:
-            if float(text.replace(",", ".")) < 0:
-                return str(default)
-        except ValueError:
-            return str(default)
-        return text
-
     set_app_setting(db, KEY_SELLING, "1" if enabled else "0")
-    set_app_setting(db, KEY_PRICE, _clean(price, DEFAULT_PRICE_EUR))
+    set_app_setting(db, KEY_PRICE, _clean_price(price))
     set_app_setting(db, KEY_PAYPAL, (paypal or "").strip())
     set_app_setting(db, KEY_PAYPAL_SUB, (paypal_sub or "").strip())
     set_app_setting(db, KEY_NOTE, (note or "").strip())

@@ -145,7 +145,7 @@
       {% if prodaja and prodaja.enabled %}
       <li><strong>Uredite naročnino</strong> — admin mora pod <strong>{{ t('set_naslov', 'Nastavitve šole') }}</strong> - <strong>{{ t('btn_podaljsaj_narocnino', 'Podaljšaj naročnino') }}</strong></li>
       {% endif %}
-          Naročnina je vedno do naslednjega 1. 9. (do konca šolskega leta),  podaljšajo lahko šele po 15. 8.). Trenutno je naročnina 0 €, toda ker za to da app teče skrbum, se nebi branil kakšne donacije.
+          Naročnina je vedno do naslednjega 1. 9. (do konca šolskega leta),  podaljšajo lahko šele po 15. 8.). Trenutna cena naročnine: {% if prodaja and not prodaja.free %}{{ prodaja.price_label }}{% else %}0 €{% endif %}. Toda ker za to, da app teče, skrbimo, se ne bi branili kakšne donacije.
       <li><em>Neobvezno:</em> prilagodite omejitve ocenjevanj, urnik in čas neaktivnosti.</li>
     </ol>
     <div class="navodila">

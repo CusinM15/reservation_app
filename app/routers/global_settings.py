@@ -19,7 +19,10 @@ from app.templating import make_templates
 from app.app_settings import (
     global_mail_config,
     get_global_backup_email,
+    price_eur,
     save_global_mail,
+    save_price_eur,
+    selling_config,
 )
 from app.config import settings
 
@@ -49,6 +52,8 @@ def global_settings_page(request: Request, db: Session = Depends(get_db)):
         "user": user,
         "mail": mail,
         "backup_email": backup_email,
+        # Cena naročnine: ena globalna cena (€/leto) za vse šole.
+        "selling": selling_config(db),
         "inactivity_timeout_ms": (int(getattr(settings, "INACTIVITY_TIMEOUT_ADMIN_MINUTES", 20)) * 60 * 1000),
     })
 
@@ -84,12 +89,25 @@ async def update_global_settings(request: Request, db: Session = Depends(get_db)
         from_addr=str(body.get("from", "")).strip(),
         backup_email=str(body.get("backup_email", "")).strip(),
     )
+
+    # Cena naročnine: ena globalna spremenljivka (€/leto) za vse šole.
+    # Uporabijo jo izračuni (sorazmerna cena, e-račun) in vsi prikazi cene.
+    price_raw = str(body.get("price", "")).strip()
+    if price_raw != "":
+        save_price_eur(db, price_raw)
     db.commit()
 
     log_audit(db, user.id, user.username, "update_global_settings",
-              "server=" + str(body.get("server", "")).strip())
+              "server=" + str(body.get("server", "")).strip()
+              + (f", cena_leto={price_raw} EUR" if price_raw != "" else ""))
     mail = global_mail_config(db)
-    return {"ok": True, "mail": mail, "backup_email": get_global_backup_email(db)}
+    return {
+        "ok": True,
+        "mail": mail,
+        "backup_email": get_global_backup_email(db),
+        "price_eur": price_eur(db),
+        "price_label": selling_config(db)["price_label"],
+    }
 
 
 @router.post("/api/global-settings/backup")

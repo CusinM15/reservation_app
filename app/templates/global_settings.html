@@ -54,6 +54,13 @@
     </form>
     <button class="btn" onclick="saveMail()">Shrani e-poštne nastavitve</button>
 
+    <h3>Cena naročnine (letna)</h3>
+    <label>Cena v € na leto — velja za vse šole (izračun, e-račun in prikaz cene)</label>
+    <input type="number" id="price-eur" min="0" step="0.01" value="{{ selling.price_eur }}">
+    <p class="hint">0 = brez plačila; naročnino je treba vseeno obnoviti za vsako obdobje.
+       Trenutno: {{ selling.price_label }}.</p>
+    <button class="btn" onclick="savePrice()">Shrani ceno</button>
+
     <h3>Varnostno kopiranje cele baze</h3>
     <label>Backup e-pošta (prejme .sql celotne baze — vse šole)</label>
     <input type="text" id="backup-email" value="{{ backup_email }}" placeholder="matej.cusin2@guest.arnes.si">
@@ -82,6 +89,16 @@ async function saveMail() {
         const r = await fetch('/api/global-settings', {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(data)});
         const j = await r.json();
         if (r.ok) { showMsg('✅ E-poštne nastavitve shranjene.', true); }
+        else { showMsg('❌ ' + (j.detail || 'Napaka.'), false); }
+    } catch (e) { showMsg('❌ ' + e, false); }
+}
+async function savePrice() {
+    const v = document.getElementById('price-eur').value.trim();
+    if (v === '') { showMsg('❌ Vpišite ceno.', false); return; }
+    try {
+        const r = await fetch('/api/global-settings', {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({price: v})});
+        const j = await r.json();
+        if (r.ok) { showMsg('✅ Cena shranjena: ' + (j.price_label || (v + ' €')) + '.', true); }
         else { showMsg('❌ ' + (j.detail || 'Napaka.'), false); }
     } catch (e) { showMsg('❌ ' + e, false); }
 }
