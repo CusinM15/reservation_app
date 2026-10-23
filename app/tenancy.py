@@ -45,10 +45,13 @@ ALIAS_KINDS = {
     # Digitalni zaslon (nadomeščanja): vsaka šola dobi svojo kratko pot
     # /nadomescanja_<slug>, ki se prevede v /zasloni te šole.
     "nadomescanja": "/zasloni",
+    # Govorilne ure: vsaka šola dobi svojo kratko pot /govorilne_<slug>,
+    # ki se prevede v /govorilne te šole (javna prijavna stran staršev).
+    "govorilne": "/govorilne",
 }
 
 # Regex prepozna alias v prvem segmentu poti: <kind>_<slug>
-_ALIAS_RE = re.compile(r"^(rezervacije|ocenjevanje|nadomescanja)_([A-Za-z0-9][A-Za-z0-9_-]*)$")
+_ALIAS_RE = re.compile(r"^(rezervacije|ocenjevanje|nadomescanja|govorilne)_([A-Za-z0-9][A-Za-z0-9_-]*)$")
 
 # ── Ključi nastavitev po šoli ──────────────────────────────────────────
 # Ista imena kot v .env, da je preslikava 1:1 in da lahko School Admin
@@ -230,7 +233,8 @@ def generate_aliases(slug: str) -> list[tuple[str, str]]:
 
     Vrne seznam parov (alias, kind): npr. za slug "ostcj" →
     [("rezervacije_ostcj", "rezervacije"), ("ocenjevanje_ostcj", "ocenjevanje"),
-     ("nadomescanja_ostcj", "nadomescanja"), ("ostcj", "nadomescanja")].
+     ("nadomescanja_ostcj", "nadomescanja"), ("govorilne_ostcj", "govorilne"),
+     ("ostcj", "nadomescanja")].
 
     Zadnji par je GOLI slug (brez predpone) — skrajšana pot za digitalni zaslon
     te šole (npr. /ostcj → /zasloni / nadomeščanja). Vsaka šola ima svoj goli

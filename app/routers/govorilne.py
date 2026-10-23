@@ -32,6 +32,7 @@ from app.tenancy import (
     get_request_user,
     is_main_admin,
     is_school_admin,
+    request_school_id,
     role_value,
 )
 from app.govorilne_podatki import (
@@ -164,13 +165,14 @@ def govorilne_stran(request: Request, db: Session = Depends(get_db)):
 @router.get("/govorilne/api/termini")
 def govorilne_termini(
     ucitelj: str,
+    request: Request,
     db: Session = Depends(get_db),
 ):
     """Prosti termini izbranega učitelja (JSON) — za dinamični UI."""
     u = _ucitelj_by_ime(ucitelj)
     if u is None:
         raise HTTPException(status_code=404, detail="Učitelj ne obstaja")
-    school_id = _default_school_id(db)
+    school_id = request_school_id(request) or _default_school_id(db)
     return {"ucitelj": u["ime"], "termini": _prosti_termini(db, school_id, u)}
 
 
@@ -203,7 +205,7 @@ async def govorilne_prijava(
     if not _termin_obstaja(u, datum, ura_od):
         raise HTTPException(status_code=400, detail="Termin ne obstaja za tega učitelja")
 
-    school_id = _default_school_id(db) or 1
+    school_id = request_school_id(request) or _default_school_id(db) or 1
 
     # Prepreči dvojno prijavo istega termina (tudi ob sočasnih zahtevkih —
     # UniqueConstraint v bazi; tu najprej prijazno preverimo).

@@ -179,7 +179,11 @@ class AuthMiddleware(BaseHTTPMiddleware):
         # goli /ostcj) je prav tako javen — prevedemo ga na kanonično /zasloni pot.
         if not is_public:
             _alias_canon = resolve_alias_path(path)[1]
-            if _alias_canon and (_alias_canon == "/zasloni" or _alias_canon.startswith("/zasloni")):
+            if _alias_canon and (
+                _alias_canon.startswith("/zasloni")
+                or _alias_canon == "/govorilne"
+                or _alias_canon.startswith("/govorilne/api")
+            ):
                 is_public = True
         # Javni predogled navodil za neprijavljene: /nastavitev?demo=1 prikaže
         # psevdo (demo) podatke brez prijave (povezava je na prijavni strani).

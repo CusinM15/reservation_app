@@ -45,6 +45,23 @@ def test_govorilne_stran_javna_in_vsebuje_ucitelje():
         assert "Arijana Đuretić" in r.text
 
 
+def test_govorilne_alias_sluga_javen():
+    """Per-šola alias /govorilne_<slug> (npr. /govorilne_ostcj) je javen."""
+    with TestClient(app) as c:
+        # Javna stran prek aliasa — brez prijave.
+        r = c.get("/govorilne_ostcj")
+        assert r.status_code == 200
+        assert "Prijava na govorilne ure" in r.text
+        # API prek aliasa — prav tako javno.
+        r = c.get("/govorilne_ostcj/api/termini", params={"ucitelj": "Matej Čušin"})
+        assert r.status_code == 200
+        assert r.json()["ucitelj"] == "Matej Čušin"
+        # Pregled prijav prek aliasa NI javen (login jest).
+        r = c.get("/govorilne_ostcj/prijave", follow_redirects=False)
+        assert r.status_code in (302, 307)
+        assert r.headers.get("location", "").startswith("/auth/login")
+
+
 def test_termini_api_javen_in_vraca_15min_termine():
     with TestClient(app) as c:
         r = c.get("/govorilne/api/termini", params={"ucitelj": "Matej Čušin"})
@@ -170,27 +187,38 @@ def test_prijave_pregled_auth_in_vloge(make_user):
         assert "Matej Čušin" in r.text
 
 
-def _ucitelj_uporabnik(db, ime: str, priimek: str):
-    """Učitelj (role=teacher) s polnim imenom iz podatkov, za test vidnosti prijav."""
+def _ucitelj_uporabnik(ime: str, priimek: str):
+    """Učitelj (role=teacher) s polnim imenom iz podatkov, za test vidnosti prijav.
+
+    Uporabi SVOJO sejo in jo zapre — klicateljeva je lahko že zaprta
+    (prejšnji finally jo je zaprl) in ponovna uporaba bi pustila odprto
+    transakcijo (db.refresh po commitu), ki blokira clean_db TRUNCATE
+    naslednjega testa.
+    """
     from uuid import uuid4
     from app.models import User, RoleEnum
     from app.tenancy import _default_school_id
     from tests.conftest import pwd_context, TEST_PASSWORD
+    from app.database import SessionLocal
     username = f"ucitelj_{uuid4().hex[:8]}"
-    user = User(
-        school_id=_default_school_id(db),
-        username=username,
-        email=f"{username}@test.si",
-        first_name=ime,
-        last_name=priimek,
-        password_hash=pwd_context.hash(TEST_PASSWORD),
-        role=RoleEnum.teacher,
-        is_active=True,
-    )
-    db.add(user)
-    db.commit()
-    db.refresh(user)
-    return user
+    db = SessionLocal()
+    try:
+        user = User(
+            school_id=_default_school_id(db),
+            username=username,
+            email=f"{username}@test.si",
+            first_name=ime,
+            last_name=priimek,
+            password_hash=pwd_context.hash(TEST_PASSWORD),
+            role=RoleEnum.teacher,
+            is_active=True,
+        )
+        db.add(user)
+        db.commit()
+        db.refresh(user)
+        return user
+    finally:
+        db.close()
 
 
 def test_prijave_so_vidne_ucitelju_po_imenu():
@@ -219,7 +247,7 @@ def test_prijave_so_vidne_ucitelju_po_imenu():
         finally:
             db.close()
 
-        user = _ucitelj_uporabnik(db, ime, priimek)
+        user = _ucitelj_uporabnik(ime, priimek)
         login(c, user.username)
         r = c.get("/govorilne/prijave")
         assert r.status_code == 200
