@@ -136,6 +136,17 @@ def _prosti_termini(db: Session, school_id: int | None, ucitelj: dict) -> list[d
     return prosti
 
 
+def _termini_z_flagom(db: Session, school_id: int | None, ucitelj: dict) -> list[dict]:
+    """Vsi termini učitelja z bool ``zaseden`` (za javno stran staršev)."""
+    zauzeti = _zasedeni_termini(db, school_id, ucitelj["ime"])
+    termini = []
+    for t in _vsi_termini_ucitelja(ucitelj):
+        vnos = dict(t)
+        vnos["zaseden"] = (t["datum"], t["ura_od"]) in zauzeti
+        termini.append(vnos)
+    return termini
+
+
 def _termin_obstaja(ucitelj: dict, datum: str, ura_od: str) -> bool:
     """Ali je (datum, ura_od) en izmed veljavnih terminov tega učitelja?"""
     return any(t["datum"] == datum and t["ura_od"] == ura_od
@@ -173,7 +184,7 @@ def govorilne_termini(
     if u is None:
         raise HTTPException(status_code=404, detail="Učitelj ne obstaja")
     school_id = request_school_id(request) or _default_school_id(db)
-    return {"ucitelj": u["ime"], "termini": _prosti_termini(db, school_id, u)}
+    return {"ucitelj": u["ime"], "termini": _termini_z_flagom(db, school_id, u)}
 
 
 @router.post("/govorilne/api/prijava")

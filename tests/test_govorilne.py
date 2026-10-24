@@ -76,6 +76,32 @@ def test_termini_api_javen_in_vraca_15min_termine():
             h1, m1 = map(int, tt["ura_od"].split(":"))
             h2, m2 = map(int, tt["ura_do"].split(":"))
             assert (h2 * 60 + m2) - (h1 * 60 + m1) == 15
+            # Vsak termin ima flag zaseden (javna stran kaže tudi zasedene).
+            assert "zaseden" in tt
+
+
+def test_termini_api_zasedeni_so_oznaceni():
+    """Po prijavi se termin v javnem API-ju prikaže kot zaseden (flag true)."""
+    t = _termin("Matej Čušin")
+    with TestClient(app) as c:
+        payload = {
+            "ucitelj": "Matej Čušin",
+            "datum": t["datum"],
+            "ura_od": t["ura_od"],
+            "ura_do": t["ura_do"],
+            "ime_starsa": "Janez Novak",
+            "email": "janez.novak@example.si",
+            "otrok": "Miha Novak (3. b)",
+        }
+        r = c.post("/govorilne/api/prijava", json=payload)
+        assert r.status_code == 200, r.text
+
+        # Prav zaseden termin je v API-ju označen kot zaseden.
+        r2 = c.get("/govorilne/api/termini", params={"ucitelj": "Matej Čušin"})
+        assert r2.status_code == 200
+        oznake = {(tt["datum"], tt["ura_od"]): tt["zaseden"]
+                  for tt in r2.json()["termini"]}
+        assert oznake[(t["datum"], t["ura_od"])] is True
 
 
 def test_termini_api_neznan_ucitelj_404():

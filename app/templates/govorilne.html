@@ -125,12 +125,25 @@ function naloziTermine(){
                 box.innerHTML = '<div class="msg info">Trenutno ni prostih terminov.</div>';
                 return;
             }
+            let prosti = 0;
             for(const t of data.termini){
                 const btn = document.createElement('button');
-                btn.className = 'termin';
-                btn.textContent = lepDatum(t.datum) + ' · ' + t.ura_od + '–' + t.ura_do;
-                btn.onclick = function(){ izberiTermin(t, btn); };
+                const label = lepDatum(t.datum) + ' · ' + t.ura_od + '–' + t.ura_do;
+                if(t.zaseden){
+                    btn.className = 'termin';
+                    btn.disabled = true;
+                    btn.textContent = label + ' — zasedeno';
+                    btn.title = 'Ta termin je že zaseden';
+                } else {
+                    btn.className = 'termin';
+                    btn.textContent = label;
+                    btn.onclick = function(){ izberiTermin(t, btn); };
+                    prosti++;
+                }
                 box.appendChild(btn);
+            }
+            if(prosti === 0){
+                box.innerHTML = '<div class="msg info">Trenutno ni prostih terminov (vsi so zasedeni).</div>';
             }
         })
         .catch(e => { box.innerHTML = '<div class="msg err">' + (e.message || e) + '</div>'; });
