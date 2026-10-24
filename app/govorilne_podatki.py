@@ -346,6 +346,51 @@ UCITELJI = [{'ime': 'Arijana Đuretić',
   'po_dogovoru': False}
 ]
 
+# Predmeti, ki jih učijo RAZREDNIKI. Vir zaposleni ne objavlja predmeta razrednika,
+# zato je povezava ročna: razredni učitelji (1.–5. razred) učijo razredni pouk;
+# razredniki predmetne stopnje (6.–9. razred) učijo predmet iz svojega kabineta.
+# (Uporabnik, 24. 10. 2026: poleg razreda prikaži tudi predmet.)
+RAZREDNIK_PREDMET = {
+    # 1.–5. razred — razredni pouk (razredni učitelj uči razredno-razredne predmete)
+    'Arijana Đuretić': 'razredni pouk',
+    'Monika Pogačar': 'razredni pouk',
+    'Tanja Pongrac': 'razredni pouk',
+    'Nataša Vene': 'razredni pouk',
+    'Nancy Bohak': 'razredni pouk',
+    'Anica Mertelj Zgonc': 'razredni pouk',
+    'Nina Hrovat': 'razredni pouk',
+    'Katja Mrak': 'razredni pouk',
+    'Rebeka Poček Oštir': 'razredni pouk',
+    'Lara Glavič': 'razredni pouk',
+    'Jolanda Prešern': 'razredni pouk',
+    'Karmen Petrovčič': 'razredni pouk',
+    'Darja Sitar': 'razredni pouk',
+    'Barbara Potočan Iskra': 'razredni pouk',
+    'Klavdija Klinar': 'razredni pouk',
+    'Elena Vasilkova': 'razredni pouk',
+    'Neli Pegan Košir': 'razredni pouk',
+    'Magda Brus': 'razredni pouk',
+    'Anja Kristan': 'razredni pouk',
+    'Tilen Ažman Vovk': 'razredni pouk',
+    'Jana Fabčič': 'razredni pouk',
+    'Tjaša Vilman Oven': 'razredni pouk',
+    # 6.–9. razred — predmet iz kabineta učitelja
+    'Jožica Urukalo': 'Matematika',
+    'Lea Bertoncelj': 'Kemija',
+    'Linda Ropret': 'Likovna umetnost',
+    'Uroš Vrhunc': 'Geografija',
+    'Barbara Velušček': 'Slovenščina',
+    'Eva Pušnik': 'Športna vzgoja',
+    'Sabina Rekar': 'Pedagogika',
+    'Uroš Pogačnik': 'Športna vzgoja',
+    'Mojca Čušin': 'Slovenščina',
+    'Stanka Majc': 'Angleščina',
+    'Špela Skumavec': 'Slovenščina',
+    'Zehra Biščević': 'Športna vzgoja',
+    'Bernarda Potočnik': 'Naravoslovje',
+    'Lucija Opalk': 'Športna vzgoja',
+}
+
 POPOLDAN_DATUMI = ['2026-11-19', '2026-12-17', '2027-01-21', '2027-02-18', '2027-03-18', '2027-04-14', '2027-05-20']
 
 URA_ZACETKI = {1: '07:50', 2: '08:40', 3: '09:30', 4: '10:25', 5: '11:15', 6: '12:05', 7: '12:55'}

@@ -40,6 +40,7 @@ from app.govorilne_podatki import (
     POPOLDAN_DATUMI,
     URA_ZACETKI,
     GOVORILNE_DOPOLDAN_TEDEN,
+    RAZREDNIK_PREDMET,
 )
 
 router = APIRouter(tags=["govorilne"])
@@ -73,11 +74,12 @@ _RAZRED_RE = re.compile(r"^\d+\.\s*[a-zč]\s*$", re.IGNORECASE)
 
 
 def _opis_ucitelja(u: dict) -> str:
-    """Opis ob imenu: razredniki → 'razrednik <razred>' (uči razredni pouk),
-    predmetni učitelji → predmet kot je objavljen."""
+    """Opis ob imenu: razredniki → 'predmet - razrednik <razred>' (npr.
+    'Slovenščina - razrednik 8. a'); predmetni učitelji → predmet kot je objavljen."""
     p = (u.get("predmet") or "").strip()
     if _RAZRED_RE.match(p):
-        return f"razrednik {p}"
+        predmet = RAZREDNIK_PREDMET.get(u.get("ime", ""), "razredni pouk")
+        return f"{predmet} - razrednik {p}"
     return p
 
 

@@ -452,12 +452,16 @@ def test_prijave_se_izbrisejo_24ur_po_terminu(make_user):
 
 def test_ucitelji_sortirani_po_priimkih_in_razredniki_oznaceni(make_user):
     """Javna stran: učitelji po abecedi priimkov; razredniki z oznako
-    'razrednik <razred>', da starši vedo."""
+    'predmet - razrednik <razred>', da starši vedo predmet in razred."""
     from app.routers.govorilne import _opis_ucitelja
 
-    # Razrednik (v polju predmet = razred) → oznaka z razredom.
-    assert _opis_ucitelja({"predmet": "1. a"}) == "razrednik 1. a"
-    assert _opis_ucitelja({"predmet": "8. č"}) == "razrednik 8. č"
+    # Razrednik (v polju predmet = razred) → predmet + 'razrednik <razred>'.
+    # Brez imena → privzeti 'razredni pouk'.
+    assert _opis_ucitelja({"predmet": "1. a"}) == "razredni pouk - razrednik 1. a"
+    assert _opis_ucitelja({"predmet": "8. č"}) == "razredni pouk - razrednik 8. č"
+    # Z imenom iz slovarja RAZREDNIK_PREDMET → njegov dejanski predmet.
+    assert _opis_ucitelja({"ime": "Mojca Čušin", "predmet": "8. a"}) == "Slovenščina - razrednik 8. a"
+    assert _opis_ucitelja({"ime": "Špela Skumavec", "predmet": "8. c"}) == "Slovenščina - razrednik 8. c"
     # Predmetni učitelj → predmet kot je objavljen.
     assert _opis_ucitelja({"predmet": "Matematika"}) == "Matematika"
     assert _opis_ucitelja({"predmet": ""}) == ""
@@ -465,8 +469,8 @@ def test_ucitelji_sortirani_po_priimkih_in_razredniki_oznaceni(make_user):
     with TestClient(app) as c:
         r = c.get("/govorilne")
         assert r.status_code == 200
-        # Razrednik je označen z razredom.
-        assert "razrednik 1. a" in r.text
+        # Razrednik je označen s predmetom in razredom.
+        assert "razredni pouk - razrednik 1. a" in r.text
         # Sort po priimkih: Đuretić pred Pogačar (obe razrednici 1. a).
         assert r.text.index("Arijana Đuretić") < r.text.index("Monika Pogačar")
 
@@ -475,5 +479,5 @@ def test_ucitelji_sortirani_po_priimkih_in_razredniki_oznaceni(make_user):
         login(c, admin.username)
         r2 = c.get("/govorilne/ure")
         assert r2.status_code == 200
-        assert "razrednik 1. a" in r2.text
+        assert "razredni pouk - razrednik 1. a" in r2.text
         assert r2.text.index("Arijana Đuretić") < r2.text.index("Monika Pogačar")
