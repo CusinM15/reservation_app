@@ -60,6 +60,7 @@ const IMA_TABELO = {{ 'true' if pokazi_nadomescanja and tabela else 'false' }};
 const IMA_SPOROCILO = {{ 'true' if pokazi_nadomescanja and not tabela else 'false' }};
 const CAS_OBV = {{ cas_obvestila }} * 1000;
 const CAS_SPOROCILA = 5000;
+const CAS_INTERSTICIJA = 4000;
 const MIN_CAS_TABELE = {{ min_cas_tabele }} * 1000;
 const HITROST_DRSENJA = {{ hitrost_drsenja }};
 
@@ -153,10 +154,25 @@ async function showImage() {
     if (IMA_TABELO) {
         // Po CAS_OBV se vrnemo na tabelo nadomeščanj.
         timerShowTable = setTimeout(showTable, CAS_OBV);
+    } else if (IMA_SPOROCILO) {
+        // Nadomeščanj ni: med dvema obvestiloma za 4 s pokažemo modro masko
+        // "ni nadomeščanj", nato naslednje obvestilo (obvestila se še vedno
+        // vrtijo po vrsti, vsako za CAS_OBV).
+        timerShowImage = setTimeout(showIntersticij, CAS_OBV);
     } else {
         // Brez tabele: čez CAS_OBV se pokaže naslednje obvestilo.
         timerShowImage = setTimeout(showImage, CAS_OBV);
     }
+}
+
+// Med dvema obvestiloma (ko nadomeščanj ni) pokažemo msgView za 4 s,
+// nato nadaljujemo z naslednjim obvestilom.
+function showIntersticij() {
+    if (timerShowImage) clearTimeout(timerShowImage);
+    showingTable = false;
+    imageView.style.opacity = '0';
+    if (msgView) msgView.style.opacity = '1';
+    timerShowImage = setTimeout(showImage, CAS_INTERSTICIJA);
 }
 
 let timerShowImage, timerShowTable;
