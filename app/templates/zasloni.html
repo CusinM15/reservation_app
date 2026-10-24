@@ -21,6 +21,8 @@
         .text-danger { color:#dc3545; font-weight:bold; text-decoration:line-through; }
         .image-view { background:#0b3b5c; display:flex; align-items:center; justify-content:center; z-index:1; }
         .image-view img { max-width:96%; max-height:96%; object-fit:contain; box-shadow:0 10px 30px rgba(0,0,0,0.5); }
+        .msg-view { background:#0b3b5c; display:flex; align-items:center; justify-content:center; z-index:3; }
+        .msg-view .msg-text { color:#fff; font-size:4rem; font-weight:bold; text-align:center; padding:40px 60px; text-shadow:0 2px 8px rgba(0,0,0,0.4); }
     </style>
 </head>
 <body>
@@ -35,6 +37,12 @@
             <img src="/zasloni/media/{{ obvestilo_path }}" alt="Obvestilo" id="obvestiloImg">
             <div id="obvestiloTxt" style="display:none;align-items:center;justify-content:center;height:100%;padding:40px 60px;color:#fff;text-align:center;font-size:3.5rem;line-height:1.25;text-shadow:0 2px 8px rgba(0,0,0,0.4);"></div>
         </div>
+        <!-- SPOROČILO: danes ni nadomeščanj (samo kadar so vklopljena, a tabele ni) -->
+        {% if pokazi_nadomescanja and not tabela %}
+        <div class="view msg-view" id="msgView" style="opacity:1;">
+            <div class="msg-text">Danes ni nadomeščanj</div>
+        </div>
+        {% endif %}
         <!-- TABELA (samo če so nadomeščanja vklopljena) -->
         {% if pokazi_nadomescanja and tabela %}
         <div class="view table-view" id="tableView" style="opacity:1;">
@@ -49,7 +57,9 @@
 // Ko so nadomeščanja vklopljena, se izmenjujeta tabela ↔ slika/tekst; sicer
 // se vrtijo SAMO slike/tekstovna obvestila (vseeno napredujejo).
 const IMA_TABELO = {{ 'true' if pokazi_nadomescanja and tabela else 'false' }};
+const IMA_SPOROCILO = {{ 'true' if pokazi_nadomescanja and not tabela else 'false' }};
 const CAS_OBV = {{ cas_obvestila }} * 1000;
+const CAS_SPOROCILA = 5000;
 const MIN_CAS_TABELE = {{ min_cas_tabele }} * 1000;
 const HITROST_DRSENJA = {{ hitrost_drsenja }};
 
@@ -57,6 +67,7 @@ const tableView = document.getElementById('tableView');
 const imageView = document.getElementById('imageView');
 const obvestiloImg = document.getElementById('obvestiloImg');
 const obvestiloTxt = document.getElementById('obvestiloTxt');
+const msgView = document.getElementById('msgView');
 let scrollInterval = null;
 let showingTable = false;
 
@@ -136,6 +147,7 @@ async function showImage() {
     }
 
     if (tableView) tableView.style.opacity = '0';
+    if (msgView) msgView.style.opacity = '0';
     imageView.style.opacity = '1';
     showingTable = false;
     if (IMA_TABELO) {
@@ -152,6 +164,9 @@ let obvestilaSeznam = [];
 let obvestilaIndex = 0;
 if (IMA_TABELO) {
     showTable();
+} else if (IMA_SPOROCILO) {
+    // Danes ni nadomeščanj: sporočilo pokažemo 5 s, nato gremo na obvestila.
+    timerShowImage = setTimeout(showImage, CAS_SPOROCILA);
 } else {
     // Začetna slika je že v HTML-ju; po CAS_OBV rotiramo na naslednje obvestilo.
     timerShowImage = setTimeout(showImage, CAS_OBV);
