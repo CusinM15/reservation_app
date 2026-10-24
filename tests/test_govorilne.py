@@ -478,6 +478,9 @@ def test_ucitelji_sortirani_po_priimkih_in_razredniki_oznaceni(make_user):
         assert "razredni pouk — razrednik 1. a" in r.text
         # Sort po priimkih + priimek naprej: Đuretić pred Pogačar (obe razrednici 1. a).
         assert r.text.index("Đuretić Arijana") < r.text.index("Pogačar Monika")
+        # Prostor govorilnih ur je prikazan ob učitelju (kje so govorilne ure).
+        assert "Đuretić Arijana — razredni pouk — razrednik 1. a" in r.text
+        assert "— učilnica 1. a" in r.text
 
         # Enako v učiteljevem/adminskem pogledu /govorilne/ure.
         admin = make_user(role="admin")
