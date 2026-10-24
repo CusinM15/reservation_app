@@ -486,3 +486,113 @@ def test_ucitelji_sortirani_po_priimkih_in_razredniki_oznaceni(make_user):
         assert r2.status_code == 200
         assert "razredni pouk — razrednik 1. a" in r2.text
         assert r2.text.index("Đuretić Arijana") < r2.text.index("Pogačar Monika")
+
+
+# ─────────────────────────────────────────────────────────────────────────
+# UREJANJE na /govorilne/ure — popoldanske ure + lastni zapis učitelja
+# ─────────────────────────────────────────────────────────────────────────
+
+def test_ure_popoland_nezahtevan():
+    with TestClient(app) as c:
+        r = c.post("/govorilne/api/ure/popoldan", json={"popoldan_datumi": ["2026-12-10"]})
+        assert r.status_code in (401, 403, 307)
+
+
+def test_ure_popoldan_ucitelj_nima_pravic(make_user):
+    """Navaden učitelj ne more urejati popoldanskih govorilnih ur (403)."""
+    from app.govorilne_podatki import UCITELJI
+    prvi = next(u for u in UCITELJI if not u["po_dogovoru"])
+    ime, priimek = prvi["ime"].split(" ", 1)
+    user = _ucitelj_uporabnik(ime, priimek)
+    with TestClient(app) as c:
+        login(c, user.username)
+        r = c.post("/govorilne/api/ure/popoldan", json={"popoldan_datumi": ["2026-12-10"]})
+        assert r.status_code == 403
+
+
+def test_ure_admin_uredi_popoldanske_datum (make_user):
+    """Šolski admin spremeni popoldanske datume (kdaj so); javna stran to upošteva."""
+    from app.tenancy import _default_school_id
+    admin = make_user(role="admin")
+    with TestClient(app) as c:
+        login(c, admin.username)
+        r = c.post("/govorilne/api/ure/popoldan", json={"popoldan_datumi": ["2026-12-17"]})
+        assert r.status_code == 200, r.text
+        assert r.json()["popoldan_datumi"] == ["2026-12-17"]
+
+        # Konfiguracija je shranjena v school_settings (per šola).
+        db = SessionLocal()
+        try:
+            from app.routers.govorilne import _load_cfg, GOVORILNE_SETTING_KEY
+            cfg = _load_cfg(db, _default_school_id(db))
+            assert cfg["popoldan_datumi"] == ["2026-12-17"]
+        finally:
+            db.close()
+
+
+def test_ure_ucitelj_uredi_svoj_zapis():
+    """Učitelj uredi SVOJ dopoldanski termin, predmet in razred (razrednik eslint)."""
+    from app.govorilne_podatki import UCITELJI
+    prvi = next(u for u in UCITELJI if not u["po_dogovoru"])
+    ime, priimek = prvi["ime"].split(" ", 1)
+
+    user = _ucitelj_uporabnik(ime, priimek)
+    with TestClient(app) as c:
+        login(c, user.username)
+        # Poskuša spremeniti zapis — a ime se vedno vzame iz prijave (ne more
+        # urejati nekoga drugega, četudi pošlje tuje ime).
+        r = c.post("/govorilne/api/ure/ucitelj", json={
+            "ime": "Nekdo Drug",
+            "predmet": "Razredni pouk",
+            "razred": "1. a",
+            "razred_prev": "",
+            "dan": 0,
+            "ura": 3,
+            "prostor": "učilnica 1. a",
+        })
+        assert r.status_code == 200, r.text
+        # Ime se vedno vzame iz prijave (tuje ime je ignorirano).
+        data = r.json()["ucitelj"]
+        assert data["ime"] == prvi["ime"]
+        assert data["predmet_raw"] == "Razredni pouk"
+        assert data["razred"] == "1. a"
+        assert data["dan"] == 0
+        assert data["ura"] == 3
+        # Ostali učitelji se niso spremenili (tuje ime je ignorirano).
+        r2 = c.post("/govorilne/api/ure/ucitelj", json={
+            "ime": "Nekdo Drug",
+            "predmet": "Pristranski",
+            "razred": "5. č",
+            "dan": 4,
+            "ura": 1,
+            "prostor": "x",
+        })
+        data2 = r2.json()["ucitelj"]
+        assert data2["ime"] == prvi["ime"]
+
+
+def test_ure_admin_uredi_vse_ucitelje(make_user):
+    """Šolski admin lahko uredi poljubnega učitelja (podan `ime`)."""
+    from app.govorilne_podatki import UCITELJI
+    prvi = next(u for u in UCITELJI if not u["po_dogovoru"])
+    admin = make_user(role="admin")
+    with TestClient(app) as c:
+        login(c, admin.username)
+        r = c.post("/govorilne/api/ure/ucitelj", json={
+            "ime": prvi["ime"],
+            "predmet": "Slovenščina",
+            "razred": "7. b",
+            "dan": 2,
+            "ura": 4,
+            "prostor": "učilnica SLJ 1",
+        })
+        assert r.status_code == 200, r.text
+        data = r.json()["ucitelj"]
+        assert data["razred"] == "7. b"
+        assert data["predmet_raw"] == "Slovenščina"
+
+
+def test_ure_ucitelj_brez_prijave_401():
+    with TestClient(app) as c:
+        r = c.post("/govorilne/api/ure/ucitelj", json={"predmet": "x"})
+        assert r.status_code in (401, 403, 307)

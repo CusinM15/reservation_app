@@ -63,6 +63,33 @@
   Vodstvo, šolski admin, glavni admin: pregled urnikov VSEH učiteljev.
 - Neprijavljen → preusmeritev na `/auth/login` (ni javna stran).
 
+## UREJANJE (24. 10. 2026) — podatki v bazi, ne več v kodi
+Podatki o govorilnih urah so **po šoli shranjeni v school_settings (ključ
+`GOVORILNE_KONFIG`, JSON)** in ne več samo hardkodirani v `app/govorilne_podatki.py`.
+Ta modul je zdaj le **seed** (privzete vrednosti) — ob prvem dostopu za šolo se
+konfiguracija iz njega zapiše v bazo; od takrat urejanje poteka v bazi.
+Struktura `GOVORILNE_KONFIG`:
+```json
+{
+  "ucitelji": [ {"ime","razred","predmet","dan","ura","prostor","po_dogovoru"}, ...],
+  "popoldan_datumi": ["2026-11-19", ...],
+  "ura_zacetki": {"1":"07:50","2":"08:40",...},
+  "dopoldan_teden": "2026-10-26"
+}
+```
+- **Admin/vodstvo/glavni admin** uredi na `/govorilne/ure`:
+  - **popoldanske govorilne ure — kdaj so** (seznam datumov, ob četrtkih 17:30–18:30),
+  - potem **vse učitelje** (dopoldanski dan/uro, predmet, razred iz dropdowna, prostor).
+- **Učitelj** uredi na `/govorilne/ure` **samo svoj zapis**: dopoldanski termin,
+  **predmet** in **razred iz spustnega seznama** (če je razrednik); `ime` se vedno
+  vzame iz prijave (tuje ime je ignorirano).
+- API:
+  - `POST /govorilne/api/ure/popoldan` — editor: `{popoldan_datumi:[...]}`
+  - `POST /govorilne/api/ure/ucitelj` — teacher svoj / editor poljubnega:
+    `{ime?, predmet, razred, dan, ura, prostor}`
+- Javna stran `/govorilne`, `/govorilne/api/*` in `/govorilne/prijave` vse berejo
+  iz DB-konfiga šole; spremembe takoj veljajo za starše.
+
 ## Deploy
 - Zgrajeno na k3s nodu (podman `mato12345/sola-app:latest`), rollout
   `deployment/sola-app`; verifikacija:

@@ -26,19 +26,55 @@
         th { background:#eef2f6; color:#0b3b5c; font-weight:600; }
         .empty { background:#fff; padding:1.5rem; text-align:center; border-radius:10px; color:#5a6b7a; box-shadow:0 2px 10px rgba(0,0,0,.06); margin-bottom:1rem; }
         .note { margin-top:1rem; font-size:.82rem; color:#7a8b99; }
+        /* ── Urejanje ── */
+        .edit-block { background:#f4f8fc; border:1px solid #d5e3ef; border-radius:8px; padding:.8rem .9rem; margin-top:.8rem; }
+        .edit-block h3 { font-size:.8rem; color:#0b3b5c; margin-bottom:.6rem; }
+        .form-row { display:flex; flex-wrap:wrap; gap:.6rem; align-items:center; margin-bottom:.5rem; }
+        .form-row label { font-size:.82rem; color:#2c3e50; min-width:110px; }
+        .form-row input[type=text], .form-row select { padding:.35rem .5rem; border:1px solid #c3d3e2; border-radius:6px; font-size:.86rem; }
+        .btn { background:#14608c; color:#fff; border:none; border-radius:6px; padding:.4rem .8rem; font-size:.84rem; cursor:pointer; }
+        .btn:hover { background:#0b4a6e; }
+        .btn.small { padding:.25rem .6rem; font-size:.78rem; }
+        .btn.ghost { background:#eef2f6; color:#14608c; }
+        .msg { font-size:.82rem; margin-top:.5rem; color:#14608c; }
+        .msg.err { color:#b02a2a; }
+        .popoldan-list li { display:flex; align-items:center; gap:.5rem; }
+        .popoldan-list input[type=date] { padding:.25rem .4rem; border:1px solid #c3d3e2; border-radius:6px; }
+        .del { background:transparent; border:none; color:#b02a2a; cursor:pointer; font-size:.9rem; }
     </style>
 </head>
 <body>
 <div class="wrap">
     <header>
         <h1>🗓️ Govorilne ure
-            {% if is_teacher %}<span class="badge">vaš urnik</span>{% endif %}
+            {% if is_teacher %}<span class="badge">vaš urnik</span>
+            {% else %}<span class="badge">pregled</span>{% endif %}
         </h1>
         <div>
             {% if not is_teacher %}<a class="back" style="margin-right:1rem;" href="/govorilne/prijave">📋 Prijave staršev</a>{% endif %}
             <a class="back" href="/">← Nazaj v aplikacijo</a>
         </div>
     </header>
+
+    <!-- Popoldanske govorilne ure — kdaj so (samo admin/vodstvo) -->
+    {% if is_editor %}
+    <div class="card">
+        <div class="card-header"><span class="name">Popoldanske govorilne ure</span></div>
+        <div class="card-body" id="popoldan-block">
+            <h2>Kdaj so (datum ob četrtkih 17:30–18:30)</h2>
+            <ul class="popoldan-list" id="popoldan-list">
+                {% for d in popoldan_datumi %}
+                <li><input type="date" value="{{ d }}" data-idx="{{ loop.index0 }}"> <button class="del" type="button" data-idx="{{ loop.index0 }}" onclick="rmPopoldan(this)">✕</button></li>
+                {% endfor %}
+            </ul>
+            <div class="form-row" style="margin-top:.6rem;">
+                <button class="btn ghost" type="button" onclick="addPopoldan()">+ Dodaj datum</button>
+                <button class="btn" type="button" onclick="savePopoldan()">💾 Shrani popoldanske ure</button>
+            </div>
+            <div class="msg" id="popoldan-msg"></div>
+        </div>
+    </div>
+    {% endif %}
 
     {% if not prikaz %}
     <div class="empty">
@@ -47,7 +83,7 @@
     {% endif %}
 
     {% for u in prikaz %}
-    <div class="card">
+    <div class="card" data-ime="{{ u.ime }}">
         <div class="card-header">
             <div>
                 <span class="name">{{ u.ime_priimek }}</span>
@@ -91,11 +127,113 @@
             {% else %}
             <div class="empty">Ni rezervacij za vaše termine.</div>
             {% endif %}
+
+            <!-- Urejanje lastnega zapisa (učitelj) ali vseh (editor) -->
+            {% if not is_teacher or u.editable %}
+            <div class="edit-block">
+                <h3>Uredi govorilne ure in podatke</h3>
+                <form onsubmit="saveUcitelj(event, this)">
+                    {% if is_editor and u.ime %}<input type="hidden" name="ime" value="{{ u.ime }}">{% endif %}
+                    <div class="form-row">
+                        <label>Predmet</label>
+                        <input type="text" name="predmet" value="{{ u.predmet_raw }}" placeholder="npr. Matematika / razredni pouk">
+                    </div>
+                    <div class="form-row">
+                        <label>Razrednik razreda</label>
+                        <select name="razred">
+                            <option value="">— ni razrednik —</option>
+                            {% for r in razredi %}
+                            <option value="{{ r }}" {% if u.razred == r %}selected{% endif %}>{{ r }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="form-row">
+                        <label>Dan (dopoldan)</label>
+                        <select name="dan">
+                            <option value="po_dogovoru" {% if u.po_dogovoru %}selected{% endif %}>Po dogovoru</option>
+                            <option value="0" {% if u.dan == 0 and not u.po_dogovoru %}selected{% endif %}>Ponedeljek</option>
+                            <option value="1" {% if u.dan == 1 and not u.po_dogovoru %}selected{% endif %}>Torek</option>
+                            <option value="2" {% if u.dan == 2 and not u.po_dogovoru %}selected{% endif %}>Sreda</option>
+                            <option value="3" {% if u.dan == 3 and not u.po_dogovoru %}selected{% endif %}>Četrtek</option>
+                            <option value="4" {% if u.dan == 4 and not u.po_dogovoru %}selected{% endif %}>Petek</option>
+                        </select>
+                        <label>Šolska ura</label>
+                        <select name="ura">
+                            <option value="po_dogovoru" {% if u.po_dogovoru %}selected{% endif %}>Po dogovoru</option>
+                            {% for i in [1,2,3,4,5,6,7] %}
+                            <option value="{{ i }}" {% if u.ura == i and not u.po_dogovoru %}selected{% endif %}>{{ i }}. ura</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="form-row">
+                        <label>Prostor</label>
+                        <input type="text" name="prostor" value="{{ u.prostor }}" placeholder="npr. učilnica MAT 3">
+                    </div>
+                    <button class="btn" type="submit">💾 Shrani</button>
+                    <div class="msg" style="display:none"></div>
+                </form>
+            </div>
+            {% endif %}
         </div>
     </div>
     {% endfor %}
 
-    <p class="note">Rezervacije so vidne samo učitelju (in šolski upravi). Samodejno se izbrišejo 24 ur po koncu govorilnih ur. Dopoldanski termin je v testnem tednu — ob morebitni spremembi se urnik posodobi.</p>
+    <p class="note">Rezervacije so vidne samo učitelju (in šolski upravi). Samodejno se izbrišejo 24 ur po koncu govorilnih ur. {% if is_teacher %}Svoje podatke lahko urejate zgoraj (dopoldanski termin, predmet in razred, če ste razrednik).{% else %}Spremembe shranjene tukaj takoj veljajo na javni strani za starše.{% endif %}</p>
 </div>
+
+<script>
+const IS_TEACHER = {{ 'true' if is_teacher else 'false' }};
+const IS_EDITOR = {{ 'true' if is_editor else 'false' }};
+
+async function _post(url, body, msgEl) {
+    try {
+        const r = await fetch(url, {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify(body),
+        });
+        const data = await r.json().catch(() => ({}));
+        if (!r.ok) throw new Error(data.detail || ('Napaka ' + r.status));
+        if (msgEl) { msgEl.textContent = '✔ Shranjeno.'; msgEl.className = 'msg'; msgEl.style.display = 'block'; }
+        setTimeout(() => { if (msgEl) msgEl.style.display = 'none'; }, 2500);
+        return data;
+    } catch (e) {
+        if (msgEl) { msgEl.textContent = '✖ ' + e.message; msgEl.className = 'msg err'; msgEl.style.display = 'block'; }
+        throw e;
+    }
+}
+
+// ── Popoldanske ure (editor only) ──
+function addPopoldan() {
+    const ul = document.getElementById('popoldan-list');
+    const li = document.createElement('li');
+    li.innerHTML = '<input type="date"> <button class="del" type="button" onclick="rmPopoldan(this)">✕</button>';
+    ul.appendChild(li);
+}
+function rmPopoldan(btn) { btn.closest('li').remove(); }
+async function savePopoldan() {
+    const msg = document.getElementById('popoldan-msg');
+    const inputs = document.querySelectorAll('#popoldan-list input[type=date]');
+    const datumi = [...inputs].map(i => i.value).filter(Boolean);
+    if (!datumi.length) { msg.textContent = '✖ Dodajte vsaj en datum.'; msg.className = 'msg err'; msg.style.display='block'; return; }
+    await _post('/govorilne/api/ure/popoldan', {popoldan_datumi: datumi}, msg);
+}
+
+// ── Učiteljev zapis ──
+async function saveUcitelj(event, form) {
+    event.preventDefault();
+    const msg = form.querySelector('.msg');
+    const fd = new FormData(form);
+    const body = {
+        predmet: (fd.get('predmet')||'').trim(),
+        razred: (fd.get('razred')||'').trim(),
+        dan: fd.get('dan'),
+        ura: fd.get('ura'),
+        prostor: (fd.get('prostor')||'').trim(),
+    };
+    if (fd.get('ime')) body['ime'] = fd.get('ime').trim();
+    await _post('/govorilne/api/ure/ucitelj', body, msg);
+}
+</script>
 </body>
 </html>
