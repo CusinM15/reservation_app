@@ -283,3 +283,70 @@ def _pocisti_stare(db: Session, rok: date) -> int:
         old.delete(synchronize_session=False)
         db.commit()
     return count
+
+
+# ═══════════════════════════════════════════════════════════════════════
+# »Moje govorilne ure« — učitelj v appu vidi svoj objavljeni urnik
+# ═══════════════════════════════════════════════════════════════════════
+
+# Dnevi v tednu (0=pon..4=pet) za prikaz govorilnih ur.
+_DANI = ["ponedeljek", "torek", "sreda", "četrtek", "petek"]
+
+
+def _urnik_ucitelja(db: Session, school_id: int | None, u: dict) -> dict:
+    """Pripravi prikaz objavljenega urnika govorilnih ur enega učitelja
+    (dopoldanski + popoldanski termin) skupaj z rezervacijami staršev."""
+    dopoldan = None
+    if not u.get("po_dogovoru") and u.get("dan") is not None and u.get("ura") is not None:
+        dan = _DANI[u["dan"]] if 0 <= u["dan"] < 5 else f"dan {u['dan']}"
+        dopoldan = {
+            "dan": dan,
+            "ura": u["ura"],
+            "zacetek": URA_ZACETKI.get(u["ura"]),
+            "datum": _testni_datum(u["dan"]).isoformat(),
+        }
+    q = db.query(GovorilnaPrijava).filter(
+        GovorilnaPrijava.ucitelj == u["ime"],
+        GovorilnaPrijava.datum >= date.today() - timedelta(days=HRAMBA_DNI),
+    )
+    if school_id is not None:
+        q = q.filter(GovorilnaPrijava.school_id == school_id)
+    rezervacije = q.order_by(GovorilnaPrijava.datum, GovorilnaPrijava.ura_od).all()
+    return {
+        "ime": u["ime"],
+        "predmet": u["predmet"],
+        "prostor": u["prostor"],
+        "po_dogovoru": bool(u.get("po_dogovoru")),
+        "dopoldan": dopoldan,
+        "popoldan_datumi": list(POPOLDAN_DATUMI),
+        "rezervacije": rezervacije,
+    }
+
+
+@router.get("/govorilne/ure", response_class=HTMLResponse)
+def govorilne_ure_stran(request: Request, db: Session = Depends(get_db)):
+    """Učitelj v appu vidi svoj objavljeni urnik govorilnih ur in rezervacije.
+
+    - Učitelj: samo svoj objavljeni termin (dan/uro/prostor + termin za prijave).
+    - Vodstvo, šolski admin, glavni admin: pregled urnikov vseh učiteljev.
+    """
+    user = get_request_user(request, db)
+    if user is None:
+        return RedirectResponse(url="/auth/login")
+
+    role = role_value(user)
+    school_id = request_school_id(request) or _default_school_id(db)
+    if not is_main_admin(user):
+        school_id = user.school_id or school_id
+
+    if role == "teacher":
+        polno_ime = f"{user.first_name} {user.last_name}".strip()
+        ucitelj = _ucitelj_by_ime(polno_ime)
+        prikaz = [_urnik_ucitelja(db, school_id, ucitelj)] if ucitelj else []
+    else:
+        prikaz = [_urnik_ucitelja(db, school_id, u) for u in UCITELJI]
+
+    return templates.TemplateResponse(
+        request, "govorilne_ure.html",
+        {"prikaz": prikaz, "role": role, "is_teacher": role == "teacher"},
+    )

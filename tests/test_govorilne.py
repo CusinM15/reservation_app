@@ -252,3 +252,68 @@ def test_prijave_so_vidne_ucitelju_po_imenu():
         r = c.get("/govorilne/prijave")
         assert r.status_code == 200
         assert "Ana Starš" in r.text
+
+
+# ─────────────────────────────────────────────────────────────────────────
+# »Moje govorilne ure« — /govorilne/ure (objavljeni urnik za učitelja)
+# ─────────────────────────────────────────────────────────────────────────
+
+def test_govorilne_ure_nezahtevana_zahteva_login():
+    """Neprijavljen → preusmeritev na login (ni javna stran)."""
+    with TestClient(app) as c:
+        r = c.get("/govorilne/ure", follow_redirects=False)
+        assert r.status_code in (302, 307)
+
+
+def test_govorilne_ure_ucitelj_vidi_samo_svoj_urnik():
+    """Učitelj vidi svoj objavljeni termin; drug učitelj se ne prikaže."""
+    from app.govorilne_podatki import UCITELJI
+    prvi = next(u for u in UCITELJI if not u["po_dogovoru"])
+    ime, priimek = prvi["ime"].split(" ", 1)
+    drugi = next(u for u in UCITELJI if u["ime"] != prvi["ime"])
+
+    user = _ucitelj_uporabnik(ime, priimek)
+    with TestClient(app) as c:
+        login(c, user.username)
+        r = c.get("/govorilne/ure")
+        assert r.status_code == 200
+        assert prvi["ime"] in r.text
+        assert drugi["ime"] not in r.text
+
+
+def test_govorilne_ure_admin_vidi_vse_ucitelje(make_user):
+    """Šolski admin/glavni admin vidi urnike vseh učiteljev (npr. testni Matej Čušin)."""
+    admin = make_user(role="admin")
+    with TestClient(app) as c:
+        login(c, admin.username)
+        r = c.get("/govorilne/ure")
+        assert r.status_code == 200
+        assert "Matej Čušin" in r.text
+
+
+def test_govorilne_ure_ucitelj_vidi_svoje_rezervacije():
+    """Učitelj v svojem urniku vidi rezervacije staršev za svoje termine."""
+    from app.govorilne_podatki import UCITELJI
+    prvi = next(u for u in UCITELJI if not u["po_dogovoru"])
+    ime, priimek = prvi["ime"].split(" ", 1)
+
+    from app.tenancy import _default_school_id
+    with TestClient(app) as c:
+        db = SessionLocal()
+        try:
+            t = _termin(prvi["ime"])
+            p = GovorilnaPrijava(
+                school_id=_default_school_id(db), ucitelj=prvi["ime"],
+                datum=t["datum"][:10], ura_od=t["ura_od"], ura_do=t["ura_do"],
+                ime_starsa="Bojan Starš", email="bojan@example.si", otrok="Otrok",
+            )
+            db.add(p)
+            db.commit()
+        finally:
+            db.close()
+
+        user = _ucitelj_uporabnik(ime, priimek)
+        login(c, user.username)
+        r = c.get("/govorilne/ure")
+        assert r.status_code == 200
+        assert "Bojan Starš" in r.text

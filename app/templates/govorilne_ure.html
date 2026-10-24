@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="sl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Govorilne ure</title>
+    <style>
+        * { margin:0; padding:0; box-sizing:border-box; }
+        body { font-family:'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background:#f0f4f8; color:#1a1a2e; padding:2rem 1rem; }
+        .wrap { max-width:1000px; margin:0 auto; }
+        header { display:flex; justify-content:space-between; align-items:center; margin-bottom:1.2rem; flex-wrap:wrap; gap:.6rem; }
+        h1 { font-size:1.4rem; color:#0b3b5c; }
+        a.back { color:#14608c; text-decoration:none; font-size:.9rem; }
+        .badge { display:inline-block; background:#dde9f4; color:#0b3b5c; border-radius:20px; padding:.15rem .7rem; font-size:.78rem; font-weight:700; }
+        .card { background:#fff; border-radius:10px; box-shadow:0 2px 10px rgba(0,0,0,.06); margin-bottom:1.2rem; overflow:hidden; }
+        .card-header { background:#0b3b5c; color:#fff; padding:.8rem 1rem; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:.4rem; }
+        .card-header .name { font-weight:700; font-size:1rem; }
+        .card-header .subj { font-size:.8rem; opacity:.9; }
+        .card-body { padding:1rem; }
+        h2 { font-size:.85rem; text-transform:uppercase; letter-spacing:.05em; color:#0b3b5c; margin:0 0 .5rem; }
+        .term { background:#eef6fb; border-left:4px solid #14608c; border-radius:6px; padding:.6rem .8rem; margin-bottom:.6rem; font-size:.92rem; }
+        .term .t-label { font-weight:700; color:#0b3b5c; }
+        .popoldan ul { margin:.4rem 0 0 1.2rem; font-size:.9rem; color:#2c3e50; }
+        table { width:100%; border-collapse:collapse; font-size:.86rem; }
+        th, td { padding:.5rem .6rem; text-align:left; border-bottom:1px solid #e8eef4; }
+        th { background:#eef2f6; color:#0b3b5c; font-weight:600; }
+        .empty { background:#fff; padding:1.5rem; text-align:center; border-radius:10px; color:#5a6b7a; box-shadow:0 2px 10px rgba(0,0,0,.06); margin-bottom:1rem; }
+        .note { margin-top:1rem; font-size:.82rem; color:#7a8b99; }
+    </style>
+</head>
+<body>
+<div class="wrap">
+    <header>
+        <h1>🗓️ Govorilne ure
+            {% if is_teacher %}<span class="badge">vaš urnik</span>{% endif %}
+        </h1>
+        <div>
+            {% if not is_teacher %}<a class="back" style="margin-right:1rem;" href="/govorilne/prijave">📋 Prijave staršev</a>{% endif %}
+            <a class="back" href="/">← Nazaj v aplikacijo</a>
+        </div>
+    </header>
+
+    {% if not prikaz %}
+    <div class="empty">
+        {% if is_teacher %}Za vas niso objavljene govorilne ure (vaše ime ni med objavljenimi termini).{% else %}Ni učiteljev z objavljenimi govorilnimi urami.{% endif %}
+    </div>
+    {% endif %}
+
+    {% for u in prikaz %}
+    <div class="card">
+        <div class="card-header">
+            <div>
+                <span class="name">{{ u.ime }}</span>
+                {% if u.predmet %} <span class="subj">— {{ u.predmet }}</span>{% endif %}
+            </div>
+            {% if u.prostor %}<div class="subj">📍 {{ u.prostor }}</div>{% endif %}
+        </div>
+        <div class="card-body">
+            <h2>Objavljeni termin</h2>
+            {% if u.dopoldan %}
+            <div class="term">
+                <span class="t-label">Dopoldan:</span>
+                {{ u.dopoldan.dan }}, {{ u.dopoldan.ura }}. šolska ura
+                {% if u.dopoldan.zacetek %}(ob {{ u.dopoldan.zacetek }}){% endif %} — {{ u.dopoldan.datum }}
+            </div>
+            {% elif u.po_dogovoru %}
+            <div class="term"><span class="t-label">Dopoldan:</span> po dogovoru</div>
+            {% else %}
+            <div class="term"><span class="t-label">Dopoldan:</span> ni določenega termina</div>
+            {% endif %}
+            <div class="term">
+                <span class="t-label">Popoldan:</span> četrtki 17:30–18:30 (4 × 15 min)
+                <ul>
+                    {% for d in u.popoldan_datumi %}<li>{{ d }}</li>{% endfor %}
+                </ul>
+            </div>
+
+            <h2>Rezervacije staršev</h2>
+            {% if u.rezervacije %}
+            <table>
+                <tr><th>Datum</th><th>Ura</th><th>Starš</th><th>Otrok</th></tr>
+                {% for p in u.rezervacije %}
+                <tr>
+                    <td>{{ p.datum.strftime('%d. %m. %Y') }}</td>
+                    <td>{{ p.ura_od }}–{{ p.ura_do }}</td>
+                    <td>{{ p.ime_starsa }}</td>
+                    <td>{{ p.otrok }}</td>
+                </tr>
+                {% endfor %}
+            </table>
+            {% else %}
+            <div class="empty">Ni rezervacij za vaše termine.</div>
+            {% endif %}
+        </div>
+    </div>
+    {% endfor %}
+
+    <p class="note">Rezervacije so vidne samo učitelju (in šolski upravi). Samodejno se izbrišejo 14 dni po dnevu govorilnih ur. Dopoldanski termin je v testnem tednu — ob morebitni spremembi se urnik posodobi.</p>
+</div>
+</body>
+</html>
