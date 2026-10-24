@@ -44,7 +44,7 @@
 <div class="wrap">
     <header>
         <h1>📅 Prijava na govorilne ure</h1>
-        <p>Izberite učitelja in 15-minutni termin. Predhodna najava staršem zagotovi, da vas učitelj sprejme brez čakanja.</p>
+        <p>Izberite učitelja in {{ termin_minut }}-minutni termin. Predhodna najava staršem zagotovi, da vas učitelj sprejme brez čakanja.</p>
     </header>
 
     <div class="card">
@@ -59,7 +59,7 @@
     </div>
 
     <div class="card" id="terminiCard" style="display:none">
-        <h2>2 · Izberite termin <span class="tag" id="terminTag">15 min</span></h2>
+        <h2>2 · Izberite termin <span class="tag" id="terminTag">{{ termin_minut }} min</span></h2>
         <div id="terminiBox">
             <div class="msg info" id="terminiLoading">Nalaganje terminov…</div>
         </div>
@@ -78,10 +78,13 @@
         <label for="otrok">Ime in priimek otroka (ter razred, če ga poznate)</label>
         <input type="text" id="otrok">
 
+        <label for="opis">Kratek opis (zakaj se prijavljate) — ni obvezno</label>
+        <textarea id="opis" rows="2" style="width:100%;padding:.65rem .85rem;font-size:1rem;border:1.5px solid #c9d6e2;border-radius:8px;resize:vertical;" placeholder="npr. Pregled ocen in napredka pri slovenščini"></textarea>
+
         <div class="check">
             <input type="checkbox" id="soglasje">
             <label for="soglasje" style="margin:0;font-weight:400">
-                Strinjam se, da se podatki (ime starša, e-naslov, ime otroka) uporabijo izključno
+                Strinjam se, da se podatki (ime starša, e-naslov, ime otroka, kratek opis) uporabijo izključno
                 za najavo na govorilne ure, da jih vidi samo izbrani učitelj in da se
                 samodejno izbrišejo 24 ur po koncu govorilnih ur.
             </label>
@@ -91,12 +94,20 @@
         <div class="msg" id="msgBox"></div>
     </div>
 
+    <div class="card" id="potrdiloCard" style="display:none;">
+        <h2>✅ Prijava je uspela</h2>
+        <div class="prijava-info" id="potrdiloText"></div>
+        <div class="hint" style="margin-top:1rem;color:#a02a2a;font-weight:600;">⚠️ Prepisite ali slikajte zgornje podatke — drugje jih ne boste več mogli videti.</div>
+        <button class="cta" style="margin-top:1rem;background:#5a6b7a;" onclick="novaPrijava()">Nova prijava</button>
+    </div>
+
     <footer>
         <a href="/docs/pogoji-uporabe">Pogoji uporabe</a> · OŠ Toneta Čufarja Jesenice
     </footer>
 </div>
 
 <script>
+const TERMIN_MINUT = {{ termin_minut }};
 let IZBRAN = null;  // izbrani termin {datum, ura_od, ura_do}
 
 document.getElementById('soglasje').addEventListener('change', function(){
@@ -112,6 +123,7 @@ function naloziTermine(){
     document.getElementById('izbraniTermin').textContent = '';
     document.getElementById('msgBox').className = 'msg';
     document.getElementById('msgBox').textContent = '';
+    document.getElementById('potrdiloCard').style.display = 'none';
     document.getElementById('soglasje').checked = false;
     document.getElementById('btnPrijava').disabled = true;
     if(!ime){ card.style.display='none'; return; }
@@ -176,7 +188,8 @@ function oddajPrijavo(){
         ura_do: IZBRAN.ura_do,
         ime_starsa: document.getElementById('ime_starsa').value.trim(),
         email: document.getElementById('email').value.trim(),
-        otrok: document.getElementById('otrok').value.trim()
+        otrok: document.getElementById('otrok').value.trim(),
+        opis: document.getElementById('opis').value.trim()
     };
     const msg = document.getElementById('msgBox');
     if(!payload.ime_starsa || !payload.email || !payload.otrok){
@@ -195,8 +208,9 @@ function oddajPrijavo(){
         msg.className = 'msg ok';
         msg.textContent = '✅ ' + (data.sporocilo || 'Prijava uspela.') +
             ' Učitelj bo videl vašo najavo.';
-        document.getElementById('obrazecCard').style.display = 'none';
         document.getElementById('terminiCard').style.display = 'none';
+        document.getElementById('obrazecCard').style.display = 'none';
+        prikaziPotrdilo(data);
         return data;
     })
     .catch(e => {
@@ -204,6 +218,25 @@ function oddajPrijavo(){
         msg.textContent = '❌ ' + (e.message || e);
         document.getElementById('btnPrijava').disabled = false;
     });
+}
+
+function prikaziPotrdilo(data){
+    const pot = (data && data.potrdilo) || {};
+    const ucitelj = pot.ucitelj || document.getElementById('ucitelj').value;
+    const datum = pot.datum || (IZBRAN ? IZBRAN.datum : '');
+    const od = pot.ura_od || (IZBRAN ? IZBRAN.ura_od : '');
+    const doo = pot.ura_do || (IZBRAN ? IZBRAN.ura_do : '');
+    const opis = pot.opis || '';
+    let h = '<b>Učitelj:</b> ' + ucitelj + '<br>'
+          + '<b>Termin:</b> ' + (datum ? lepDatum(datum) + ' ob ' + od + '–' + doo : '—') + '<br>'
+          + '<b>Kratek opis:</b> ' + (opis || '—');
+    document.getElementById('potrdiloText').innerHTML = h;
+    document.getElementById('potrdiloCard').style.display = 'block';
+}
+function novaPrijava(){
+    document.getElementById('potrdiloCard').style.display = 'none';
+    document.getElementById('ucitelj').value = '';
+    IZBRAN = null;
 }
 </script>
 </body>

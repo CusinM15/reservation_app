@@ -55,8 +55,16 @@ router = APIRouter(tags=["govorilne"])
 TEMPLATES_DIR = Path(__file__).resolve().parent.parent / "templates"
 templates = Jinja2Templates(directory=str(TEMPLATES_DIR))
 
-# Koliko minut traja en termin (zahteva uporabnika: 15 minut).
+# Koliko minut traja en termin (privzeto 15; šola lahko nastavi v /govorilne/ure).
 TERMIN_MINUT = 15
+# Začetek popoldanskih govorilnih ur (uradni četrtek).
+POPOLDAN_ZACETEK = "17:30"
+# Osnovno trajanje popoldanskih govorilnih ur (1 ura — toliko terminov
+# ponudimo najprej; ko so vsi zasedeni, dodajamo po en → POPOLDAN_MAX_UR).
+POPOLDAN_OSNOVNI_MIN = 60
+# Največ koliko UR lahko trajajo popoldanske govorilne OD ZAČETKA (17:30 →
+# do 22:30). Ko je osnovna ura polna, se doda po en nov termin do te meje.
+POPOLDAN_MAX_UR = 5
 # Prijave se samodejno izbrišejo 24 ur po koncu termina govorilnih ur.
 HRAMBA_UR = 24
 # Termin je staršem viden največ 24 ur po začetku (starejši izginejo).
@@ -77,6 +85,7 @@ def _default_cfg() -> dict:
         "popoldan_datumi": POPOLDAN_DATUMI,
         "ura_zacetki": URA_ZACETKI,
         "dopoldan_teden": GOVORILNE_DOPOLDAN_TEDEN,
+        "termin_minut": TERMIN_MINUT,
     }
 
 
@@ -208,11 +217,41 @@ def _add_minutes(hhmm: str, minutes: int) -> str:
     return f"{t // 60:02d}:{t % 60:02d}"
 
 
-def _testni_datum(dan: int, cfg: dict | None = None) -> date:
-    """Dopoldanski termin: teden iz konfiguracije + dan učitelja (0=pon..4=pet)."""
+def _term_min(cfg: dict | None = None) -> int:
+    """Dolžina termina v minutah (šola nastavi; privzeto TERMIN_MINUT)."""
     cfg = cfg or _default_cfg()
-    teden = cfg.get("dopoldan_teden") or GOVORILNE_DOPOLDAN_TEDEN
-    return date.fromisoformat(teden) + timedelta(days=dan)
+    try:
+        v = int(cfg.get("termin_minut") or TERMIN_MINUT)
+        return v if v >= 5 else TERMIN_MINUT
+    except (TypeError, ValueError):
+        return TERMIN_MINUT
+
+
+def _dopoldan_monday(cfg: dict | None = None) -> date | None:
+    """Ponedeljek tedna naslednjih popoldanskih govorilnih ur.
+
+    Pravilo uporabnika: dopoldanske govorilne potekajo SAMO tisti teden,
+    ko so tudi popoldanske. Dopoldan termina učitelja = PON + dan
+    (0=pon..4=pet) tega tedna. Če ni prihajajočih popoldanskih, dopoldanih ni.
+    """
+    cfg = cfg or _default_cfg()
+    danes = date.today()
+    for d in (cfg.get("popoldan_datumi") or POPOLDAN_DATUMI):
+        dd = date.fromisoformat(d)
+        if dd >= danes:
+            return dd - timedelta(days=dd.weekday())
+    return None
+
+
+def _testni_datum(dan: int, cfg: dict | None = None) -> date | None:
+    """Dopoldanski termin učitelja v tednu popoldanskih govorilnih ur.
+
+    Vrne PONEDELJEK tega tedna + dan učitelja (0=pon..4=pet); None, če
+    tisti teden ni popoldanskih govorilnih (torej tudi dopoldanskih ni).
+    """
+    cfg = cfg or _default_cfg()
+    pon = _dopoldan_monday(cfg)
+    return None if pon is None else (pon + timedelta(days=dan))
 
 
 def _dopoldan_termini(u: dict, cfg: dict | None = None) -> list[dict]:
@@ -228,27 +267,83 @@ def _dopoldan_termini(u: dict, cfg: dict | None = None) -> list[dict]:
     if not start:
         return []
     datum = _testni_datum(u["dan"], cfg)
+    if datum is None:
+        return []  # tisti teden ni popoldanskih govorilnih → tudi dopoldanih ni
+    term_min = _term_min(cfg)
     out = []
-    for i in range(3):  # 45-min šolska ura → 3 × 15 min
-        od = _add_minutes(start, i * TERMIN_MINUT)
-        do = _add_minutes(od, TERMIN_MINUT)
+    for i in range(45 // term_min):  # 45-min šolska ura → več terminov dolžine term_min
+        od = _add_minutes(start, i * term_min)
+        do = _add_minutes(od, term_min)
         out.append({"datum": datum.isoformat(), "ura_od": od, "ura_do": do})
     return out
 
 
-def _popoldan_termini(cfg: dict | None = None) -> list[dict]:
-    """Popoldanski termini — uradni četrtki 17:30–18:30 → 4 × 15 min.
+def _popoldan_term_od(i: int, term_min: int) -> str:
+    """Začetek i-tega popoldanskega termina od začetka (17:30)."""
+    return _add_minutes(POPOLDAN_ZACETEK, i * term_min)
 
-    Veljajo za VSE učitelje (tudi tiste po dogovoru / brez dopoldanskega termina).
+
+def _popoldan_osnovnih_termov(cfg: dict | None = None) -> int:
+    """Koliko terminov pokriva osnovno 1 uro popoldanskih govorilnih ur."""
+    return max(1, POPOLDAN_OSNOVNI_MIN // _term_min(cfg))
+
+
+def _popoldan_max_termov(cfg: dict | None = None) -> int:
+    """Največ možnih popoldanskih terminov: do POPOLDAN_MAX_UR ur od 17:30."""
+    return max(1, (POPOLDAN_MAX_UR * 60) // _term_min(cfg))
+
+
+def _popoldan_odobrenih_termov(datum: str, zauzeti: set, cfg: dict | None = None) -> int:
+    """Koliko popoldanskih terminov ponuditi za dan: osnovno 1 uro, nato pa
+    po en nov termin dodajamo, dokler so vsi trenutni termini zasedeni —
+    največ do POPOLDAN_MAX_UR ur od začetka (17:30)."""
+    cfg = cfg or _default_cfg()
+    term_min = _term_min(cfg)
+    n = _popoldan_osnovnih_termov(cfg)
+    max_t = _popoldan_max_termov(cfg)
+    while n < max_t:
+        vseh = all((datum, _popoldan_term_od(i, term_min)) in zauzeti for i in range(n))
+        if not vseh:
+            break
+        n += 1
+    return n
+
+
+def _popoldan_termini(db: Session | None, school_id: int | None,
+                      ucitelj_ime: str, cfg: dict | None = None) -> list[dict]:
+    """Popoldanski termini — uradni četrtki OD 17:30.
+
+    Veljajo za VSE učitelje. Dinamično podaljšanje: ko so vsi trenutni termini
+    zasedeni (osnovna 1 ura), se doda po en nov termin — do največ 5 ur od začetka.
+    Če sta podana db + school_id, podaljšanje upošteva zasedenost.
     """
     cfg = cfg or _default_cfg()
-    datumi = cfg.get("popoldan_datumi") or POPOLDAN_DATUMI
+    term_min = _term_min(cfg)
+    zauzeti = (_zasedeni_termini(db, school_id, ucitelj_ime)
+               if (db is not None and school_id is not None) else set())
     out = []
-    for d in datumi:
-        for i in range(4):  # 17:30–18:30 = 60 min → 4 × 15 min
-            od = _add_minutes("17:30", i * TERMIN_MINUT)
-            do = _add_minutes(od, TERMIN_MINUT)
+    for d in (cfg.get("popoldan_datumi") or POPOLDAN_DATUMI):
+        n = _popoldan_odobrenih_termov(d, zauzeti, cfg)
+        for i in range(n):
+            od = _popoldan_term_od(i, term_min)
+            do = _add_minutes(od, term_min)
             out.append({"datum": d, "ura_od": od, "ura_do": do})
+    return out
+
+
+def _popoldan_termini_maximalni(cfg: dict | None = None) -> list[dict]:
+    """VSI možni popoldanski termini (osnova + dodatki do 5 ur od 17:30).
+
+    Za validacijo prijave — sprejmemo tudi pravkar dodane termine (zasedenost
+    se medtem lahko spremeni); dvojne prijave prepreči unikat oz. 409.
+    """
+    cfg = cfg or _default_cfg()
+    term_min = _term_min(cfg)
+    out = []
+    for d in (cfg.get("popoldan_datumi") or POPOLDAN_DATUMI):
+        for i in range(_popoldan_max_termov(cfg)):
+            od = _popoldan_term_od(i, term_min)
+            out.append({"datum": d, "ura_od": od, "ura_do": _add_minutes(od, term_min)})
     return out
 
 
@@ -285,11 +380,19 @@ def _v_oknu(t: dict, cfg: dict | None = None) -> bool:
     return True
 
 
-def _vsi_termini_ucitelja(u: dict, cfg: dict | None = None) -> list[dict]:
+def _vsi_termini_ucitelja(u: dict, cfg: dict | None = None,
+                          db: Session | None = None,
+                          school_id: int | None = None) -> list[dict]:
     """Vsi termini učitelja (dopoldan + popoldan), ki so TRENUTNO VIDNI
-    (okno: 24 ur nazaj → naslednje popoldanske govorilne), urejeni po datumu/uri."""
+    (okno: 24 ur nazaj → naslednje popoldanske govorilne), urejeni po datumu/uri.
+
+    Popoldanski termini se dinamično podaljšujejo glede na zasedenost (ko so
+    podani db + school_id): ko je osnovna ura polna, se doda po en termin
+    do največ 5 ur od začetka.
+    """
     cfg = cfg or _default_cfg()
-    terms = _dopoldan_termini(u, cfg) + _popoldan_termini(cfg)
+    ime = u.get("ime", "") if isinstance(u, dict) else ""
+    terms = _dopoldan_termini(u, cfg) + _popoldan_termini(db, school_id, ime, cfg)
     terms = [t for t in terms if _v_oknu(t, cfg)]
     terms.sort(key=lambda t: (t["datum"], t["ura_od"]))
     return terms
@@ -306,7 +409,7 @@ def _zasedeni_termini(db: Session, school_id: int | None, ucitelj: str) -> set[t
 def _prosti_termini(db: Session, school_id: int | None, ucitelj: dict, cfg: dict | None = None) -> list[dict]:
     zauzeti = _zasedeni_termini(db, school_id, ucitelj["ime"])
     prosti = []
-    for t in _vsi_termini_ucitelja(ucitelj, cfg):
+    for t in _vsi_termini_ucitelja(ucitelj, cfg, db, school_id):
         if (t["datum"], t["ura_od"]) not in zauzeti:
             prosti.append(t)
     return prosti
@@ -316,7 +419,7 @@ def _termini_z_flagom(db: Session, school_id: int | None, ucitelj: dict, cfg: di
     """Vsi termini učitelja z bool ``zaseden`` (za javno stran staršev)."""
     zauzeti = _zasedeni_termini(db, school_id, ucitelj["ime"])
     termini = []
-    for t in _vsi_termini_ucitelja(ucitelj, cfg):
+    for t in _vsi_termini_ucitelja(ucitelj, cfg, db, school_id):
         vnos = dict(t)
         vnos["zaseden"] = (t["datum"], t["ura_od"]) in zauzeti
         termini.append(vnos)
@@ -324,9 +427,18 @@ def _termini_z_flagom(db: Session, school_id: int | None, ucitelj: dict, cfg: di
 
 
 def _termin_obstaja(ucitelj: dict, datum: str, ura_od: str, cfg: dict | None = None) -> bool:
-    """Ali je (datum, ura_od) en izmed veljavnih terminov tega učitelja?"""
-    return any(t["datum"] == datum and t["ura_od"] == ura_od
-               for t in _vsi_termini_ucitelja(ucitelj, cfg))
+    """Ali je (datum, ura_od) veljaven termin tega učitelja v vidnem oknu?
+
+    Popoldan validiramo proti polnemu oknu (osnova + do 5 ur), da sprejmemo
+    tudi pravkar dinamično dodane termine (zasedenost se medtem lahko spremeni).
+    """
+    cfg = cfg or _default_cfg()
+    for t in _dopoldan_termini(ucitelj, cfg) + _popoldan_termini_maximalni(cfg):
+        if not _v_oknu(t, cfg):
+            continue
+        if t["datum"] == datum and t["ura_od"] == ura_od:
+            return True
+    return False
 
 
 # ═══════════════════════════════════════════════════════════════════════
@@ -346,7 +458,7 @@ def govorilne_stran(request: Request, db: Session = Depends(get_db)):
     )
     return templates.TemplateResponse(
         request, "govorilne.html",
-        {"ucitelji": ucitelji, "termin_minut": TERMIN_MINUT,
+        {"ucitelji": ucitelji, "termin_minut": _term_min(cfg),
          "hramba_ur": HRAMBA_UR},
     )
 
@@ -384,6 +496,7 @@ async def govorilne_prijava(
     ime_starsa = (body.get("ime_starsa") or "").strip()
     email = (body.get("email") or "").strip()
     otrok = (body.get("otrok") or "").strip()
+    opis = (body.get("opis") or "").strip()
 
     school_id = request_school_id(request) or _default_school_id(db) or 1
     cfg = _load_cfg(db, school_id)
@@ -417,6 +530,7 @@ async def govorilne_prijava(
         ime_starsa=ime_starsa,
         email=email,
         otrok=otrok,
+        opis=opis,
     )
     db.add(prijava)
     try:
@@ -425,7 +539,17 @@ async def govorilne_prijava(
         db.rollback()
         raise HTTPException(status_code=409, detail="Ta termin je že zaseden")
 
-    return {"ok": True, "sporocilo": "Prijava je uspela."}
+    return {
+        "ok": True,
+        "sporocilo": "Prijava je uspela.",
+        "potrdilo": {
+            "ucitelj": u["ime"],
+            "datum": datum,
+            "ura_od": ura_od,
+            "ura_do": ura_do,
+            "opis": opis,
+        },
+    }
 
 
 # ═══════════════════════════════════════════════════════════════════════
@@ -496,11 +620,12 @@ def _urnik_ucitelja(db: Session, school_id: int | None, u: dict, cfg: dict | Non
     dopoldan = None
     if not u.get("po_dogovoru") and u.get("dan") is not None and u.get("ura") is not None:
         dan = _DANI[u["dan"]] if 0 <= u["dan"] < 5 else f"dan {u['dan']}"
+        dd = _testni_datum(u["dan"], cfg)
         dopoldan = {
             "dan": dan,
             "ura": u["ura"],
             "zacetek": ura_zacetki.get(u["ura"]),
-            "datum": _testni_datum(u["dan"], cfg).isoformat(),
+            "datum": dd.isoformat() if dd else "",
         }
     q = db.query(GovorilnaPrijava).filter(
         GovorilnaPrijava.ucitelj == u["ime"],
@@ -569,7 +694,7 @@ def govorilne_ure_stran(request: Request, db: Session = Depends(get_db)):
          "razredi": razredi,
          "popoldan_datumi": cfg.get("popoldan_datumi") or POPOLDAN_DATUMI,
          "dopoldan_teden": cfg.get("dopoldan_teden") or GOVORILNE_DOPOLDAN_TEDEN,
-         "termin_minut": TERMIN_MINUT},
+         "termin_minut": cfg.get("termin_minut") or TERMIN_MINUT},
     )
 
 
@@ -579,6 +704,20 @@ def govorilne_ure_stran(request: Request, db: Session = Depends(get_db)):
 
 def _polno_ime_user(user) -> str:
     return f"{user.first_name} {user.last_name}".strip()
+
+
+def _poberi_termin_minut(body: dict) -> int | None:
+    """Preberi in preveri `termin_minut` iz telesa; None, če ni podan."""
+    raw = body.get("termin_minut")
+    if raw is None or str(raw).strip() == "":
+        return None
+    try:
+        v = int(raw)
+    except (TypeError, ValueError):
+        raise HTTPException(status_code=400, detail="Dolžina termina mora biti število minut")
+    if v < 5 or v > 120:
+        raise HTTPException(status_code=400, detail="Dolžina termina naj bo med 5 in 120 minut")
+    return v
 
 
 @router.post("/govorilne/api/ure/popoldan")
@@ -615,8 +754,12 @@ async def ure_popoldan(request: Request, db: Session = Depends(get_db)):
         school_id = user.school_id or school_id
     cfg = _load_cfg(db, school_id)
     cfg["popoldan_datumi"] = datumi
+    termin_minut = _poberi_termin_minut(body)
+    if termin_minut is not None:
+        cfg["termin_minut"] = termin_minut
     _save_cfg(db, school_id, cfg)
-    return {"ok": True, "popoldan_datumi": datumi}
+    return {"ok": True, "popoldan_datumi": datumi,
+            "termin_minut": cfg.get("termin_minut")}
 
 
 @router.post("/govorilne/api/ure/ucitelj")

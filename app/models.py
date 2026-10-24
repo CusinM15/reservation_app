@@ -347,6 +347,7 @@ class GovorilnaPrijava(Base):
     ime_starsa = Column(String, nullable=False, default="")
     email = Column(String, nullable=False, default="")
     otrok = Column(String, nullable=False, default="")
+    opis = Column(String, nullable=False, default="")          # kratek opis starša ob najavi
     created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
 
     __table_args__ = (

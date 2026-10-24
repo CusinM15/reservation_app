@@ -32,7 +32,7 @@
     {% if prijave %}
     <table>
         <tr>
-            <th>Datum</th><th>Ura</th><th>Učitelj</th><th>Starš</th><th>Otrok</th><th>E-naslov</th>
+            <th>Datum</th><th>Ura</th><th>Učitelj</th><th>Starš</th><th>Otrok</th><th>Kratek opis</th><th>E-naslov</th>
         </tr>
         {% for p in prijave %}
         <tr>
@@ -41,6 +41,7 @@
             <td>{{ p.ucitelj }}</td>
             <td>{{ p.ime_starsa }}</td>
             <td>{{ p.otrok }}</td>
+            <td>{{ p.opis or '' }}</td>
             <td>{{ p.email }}</td>
         </tr>
         {% endfor %}

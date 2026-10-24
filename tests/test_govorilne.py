@@ -599,3 +599,163 @@ def test_ure_ucitelj_brez_prijave_401():
     with TestClient(app) as c:
         r = c.post("/govorilne/api/ure/ucitelj", json={"predmet": "x"})
         assert r.status_code in (401, 403, 307)
+
+
+# ─────────────────────────────────────────────────────────────────────────
+# NOVI FEATUREJI (24. 10. 2026):
+#   1. Admin nastavi dolžino termina (termin_minut v school settings).
+#   2. Dopoldanske govorilne SAMO teden, ko so tudi popoldanske.
+#   3. Popoldan se dinamično podaljšuje: osnovna 1 ura → po en termin, max 5 ur.
+#   4. Prijava vrne potrdilo (učitelj + termin + kratek opis).
+# ─────────────────────────────────────────────────────────────────────────
+
+def test_termin_minut_admin_nastavi_in_vpliva_na_termine(make_user):
+    """Admin v /govorilne/ure nastavi dolžino termina; javni termini to upoštevajo."""
+    from app.routers.govorilne import _load_cfg, _naslednji_popoldan
+    from app.tenancy import _default_school_id
+    naslednji = _naslednji_popoldan()
+    admin = make_user(role="admin")
+    with TestClient(app) as c:
+        login(c, admin.username)
+        r = c.post("/govorilne/api/ure/popoldan",
+                   json={"popoldan_datumi": [naslednji], "termin_minut": 30})
+        assert r.status_code == 200, r.text
+        assert r.json()["termin_minut"] == 30
+        # Shranjeno po šoli v school_settings.
+        db = SessionLocal()
+        try:
+            cfg = _load_cfg(db, _default_school_id(db))
+            assert cfg["termin_minut"] == 30
+        finally:
+            db.close()
+        # Neja Grohar = po dogovoru → samo popoldanski termini, zdaj 30-minutni.
+        r2 = c.get("/govorilne/api/termini", params={"ucitelj": "Neja Grohar"})
+        assert r2.status_code == 200
+        terms = r2.json()["termini"]
+        assert terms
+        for t in terms:
+            h1, m1 = map(int, t["ura_od"].split(":"))
+            h2, m2 = map(int, t["ura_do"].split(":"))
+            assert (h2 * 60 + m2) - (h1 * 60 + m1) == 30
+
+
+def test_termin_minut_neveljaven_400(make_user):
+    """Dolžina termina izven dovoljenega obsega → 400 (admin)."""
+    from app.routers.govorilne import _naslednji_popoldan
+    admin = make_user(role="admin")
+    with TestClient(app) as c:
+        login(c, admin.username)
+        r = c.post("/govorilne/api/ure/popoldan",
+                   json={"popoldan_datumi": [_naslednji_popoldan()], "termin_minut": 150})
+        assert r.status_code == 400
+
+
+def test_dopoldan_samo_teden_popoldanskih():
+    """Dopoldanske govolne: termini so v ISTEM tednu kot naslednje popoldanske
+    (učitelj dobi svoj dan znotraj tega tedna), ne v fiksnem testnem tednu."""
+    import datetime as dt
+
+    from app.routers.govorilne import (
+        _dopoldan_monday,
+        _naslednji_popoldan,
+        _testni_datum,
+    )
+    naslednji = _naslednji_popoldan()
+    assert naslednji is not None
+    nd = dt.date.fromisoformat(naslednji)
+    pon = nd - dt.timedelta(days=nd.weekday())  # ponedeljek tedna tega četrtka
+    assert _dopoldan_monday() == pon
+    # Vsak dan učitelja pade v teden, ki vsebuje popoldanske govorilne.
+    for dan in range(5):
+        d = _testni_datum(dan)
+        assert d is not None
+        assert d.isocalendar()[1] == nd.isocalendar()[1]
+        assert d.weekday() == dan
+
+
+def test_popoldan_dinamicno_podaljsanje_do_5ur():
+    """Osnovna 1 ura; ko so vsi termini zasedeni, se doda po en
+    nov termin — do največ 5 ur od začetka (17:30 → 22:30)."""
+    from app.routers.govorilne import (
+        _naslednji_popoldan,
+        _popoldan_max_termov,
+        _popoldan_odobrenih_termov,
+        _popoldan_osnovnih_termov,
+        _popoldan_term_od,
+        _term_min,
+    )
+    base = _popoldan_osnovnih_termov()
+    max_t = _popoldan_max_termov()
+    assert base == 4            # 60 min / 15 min
+    assert max_t == 20          # 5 ur / 15 min
+    naslednji = _naslednji_popoldan()
+    assert naslednji is not None
+    tm = _term_min()
+    # Prazen → samo osnovna 1 ura (4 termini).
+    assert _popoldan_odobrenih_termov(naslednji, set()) == base
+    # Vsi osnovni zasedeni → 1 nov termin (5).
+    zasedi = {(naslednji, _popoldan_term_od(i, tm)) for i in range(base)}
+    assert _popoldan_odobrenih_termov(naslednji, zasedi) == base + 1
+    # Zasedeni do največ → ostane na max (20).
+    zasedi_max = {(naslednji, _popoldan_term_od(i, tm)) for i in range(max_t)}
+    assert _popoldan_odobrenih_termov(naslednji, zasedi_max) == max_t
+
+
+def test_popoldan_ko_polna_ura_doda_nove_termine():
+    """Po zasedbi vseh osnovnih popoldanskih terminov se v API-ju pojavi nov
+    (podaljšan) termin pozneje popoldne."""
+    from app.routers.govorilne import (
+        _add_minutes,
+        _naslednji_popoldan,
+        _popoldan_osnovnih_termov,
+    )
+    ime = "Neja Grohar"  # po dogovoru → samo popoldanski termini
+    naslednji = _naslednji_popoldan()
+    base = _popoldan_osnovnih_termov()
+    with TestClient(app) as c:
+        # Zasedemo vse osnovne termine (17:30–18:30 → 4 × 15 min).
+        for i in range(base):
+            od = _add_minutes("17:30", i * 15)
+            do = _add_minutes(od, 15)
+            r = c.post("/govorilne/api/prijava", json={
+                "ucitelj": ime, "datum": naslednji, "ura_od": od, "ura_do": do,
+                "ime_starsa": "Starš", "email": "s@example.si", "otrok": "Otrok",
+            })
+            assert r.status_code == 200, r.text
+        r = c.get("/govorilne/api/termini", params={"ucitelj": ime})
+        assert r.status_code == 200
+        data = r.json()["termini"]
+        naslednji_ods = [t for t in data if t["datum"] == naslednji]
+        # Pojavil se je vsaj en PROST podaljšani termin na koncu osnovne ure (18:30+).
+        assert any(t["ura_od"] >= "18:30" and not t["zaseden"] for t in naslednji_ods), \
+            "Po zasedbi osnovne ure se mora pojaviti podaljšan termin"
+
+
+def test_prijava_vrne_potrdilo_z_opisom():
+    """Prijava vrne potrdilo (učitelj + termin + kratek opis), da ga starš
+    prepiše/slika, ker ga drugje ne bo več videl."""
+    from app.routers.govorilne import _naslednji_popoldan
+    naslednji = _naslednji_popoldan()
+    with TestClient(app) as c:
+        r = c.post("/govorilne/api/prijava", json={
+            "ucitelj": "Neja Grohar", "datum": naslednji,
+            "ura_od": "17:30", "ura_do": "17:45",
+            "ime_starsa": "Ana Starš", "email": "ana@example.si",
+            "otrok": "Miha Novak", "opis": "Pregled ocen pri matematiki",
+        })
+        assert r.status_code == 200, r.text
+        pot = r.json()["potrdilo"]
+        assert pot["ucitelj"] == "Neja Grohar"
+        assert pot["datum"] == naslednji
+        assert pot["ura_od"] == "17:30"
+        assert pot["opis"] == "Pregled ocen pri matematiki"
+
+
+def test_govorilne_stran_vsebuje_opis_in_prepis_potrdilo():
+    """Javna stran ima polje 'Kratek opis' in potrdilo s pozivom, naj starš
+    podatek prepiše/slika (ni vidno drugje)."""
+    with TestClient(app) as c:
+        r = c.get("/govorilne")
+        assert r.status_code == 200
+        assert "Kratek opis" in r.text
+        assert "Prepisite ali slikajte" in r.text

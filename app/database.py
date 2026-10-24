@@ -126,6 +126,10 @@ def init_db():
     _migrate("CREATE INDEX IF NOT EXISTS ix_reservations_series_id ON reservations (series_id)")
     _migrate("ALTER TABLE reservations ADD COLUMN IF NOT EXISTS name VARCHAR")
 
+    # ── Govorilne prijave ───────────────────────────────
+    # opis: kratek opis starša (zakaj se prijavlja) ob najavi na govorilne.
+    _migrate("ALTER TABLE govorilne_prijave ADD COLUMN IF NOT EXISTS opis VARCHAR DEFAULT ''")
+
     # ── Nova tabela: activity_days (UI "Vnos dejavnosti") ──────────────
     _migrate(
         "CREATE TABLE IF NOT EXISTS activity_days ("

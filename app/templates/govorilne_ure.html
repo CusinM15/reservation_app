@@ -61,12 +61,17 @@
     <div class="card">
         <div class="card-header"><span class="name">Popoldanske govorilne ure</span></div>
         <div class="card-body" id="popoldan-block">
-            <h2>Kdaj so (datum ob četrtkih 17:30–18:30)</h2>
+            <h2>Kdaj so (datum ob četrtkih 17:30)</h2>
             <ul class="popoldan-list" id="popoldan-list">
                 {% for d in popoldan_datumi %}
                 <li><input type="date" value="{{ d }}" data-idx="{{ loop.index0 }}"> <button class="del" type="button" data-idx="{{ loop.index0 }}" onclick="rmPopoldan(this)">✕</button></li>
                 {% endfor %}
             </ul>
+            <div class="form-row" style="margin-top:.6rem;">
+                <label>Dolžina termina (min)</label>
+                <input type="number" id="terminMinut" min="5" max="120" value="{{ termin_minut }}" style="width:90px;">
+                <span class="hint" style="margin-left:.4rem;">Osnovna 1 ura; ko je polna, se dodaja po en terminu do največ 5 ur.</span>
+            </div>
             <div class="form-row" style="margin-top:.6rem;">
                 <button class="btn ghost" type="button" onclick="addPopoldan()">+ Dodaj datum</button>
                 <button class="btn" type="button" onclick="savePopoldan()">💾 Shrani popoldanske ure</button>
@@ -105,7 +110,7 @@
             <div class="term"><span class="t-label">Dopoldan:</span> ni določenega termina</div>
             {% endif %}
             <div class="term">
-                <span class="t-label">Popoldan:</span> četrtki 17:30–18:30 (4 × 15 min)
+                <span class="t-label">Popoldan:</span> četrtki od 17:30 (osnovna ura; po potrebi podaljšanje do 5 ur)
                 <ul>
                     {% for d in u.popoldan_datumi %}<li>{{ d }}</li>{% endfor %}
                 </ul>
@@ -216,7 +221,10 @@ async function savePopoldan() {
     const inputs = document.querySelectorAll('#popoldan-list input[type=date]');
     const datumi = [...inputs].map(i => i.value).filter(Boolean);
     if (!datumi.length) { msg.textContent = '✖ Dodajte vsaj en datum.'; msg.className = 'msg err'; msg.style.display='block'; return; }
-    await _post('/govorilne/api/ure/popoldan', {popoldan_datumi: datumi}, msg);
+    const terminMinut = document.getElementById('terminMinut').value.trim();
+    await _post('/govorilne/api/ure/popoldan', {
+        popoldan_datumi: datumi, termin_minut: terminMinut
+    }, msg);
 }
 
 // ── Učiteljev zapis ──
