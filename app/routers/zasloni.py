@@ -24,6 +24,8 @@ import mimetypes
 import time
 import subprocess
 from pathlib import Path
+from datetime import datetime
+from zoneinfo import ZoneInfo
 
 from fastapi import APIRouter, Request, Depends, HTTPException
 from fastapi.responses import HTMLResponse, JSONResponse, PlainTextResponse, FileResponse, Response
@@ -236,12 +238,63 @@ def _izrezi_prvo_tabelo(html: str) -> str | None:
     return None
 
 
-def _pridobi_tabelo(url: str) -> str | None:
-    """Sveža tabela iz eAsistenta; uspeh shrani v predpomnilnik."""
-    html = _nadomescanja_html(url)
-    if not html:
+def _danes_easistent_datum(time_zone: str) -> str:
+    """Današnji datum (YYYY-MM-DD) v šolskem časovnem pasu, kot ga eAsistent
+    pričakuje v AJAX seznam URL-ju."""
+    try:
+        tz = ZoneInfo(time_zone or "Europe/Ljubljana")
+    except Exception:
+        tz = ZoneInfo("Europe/Ljubljana")
+    return datetime.now(tz).strftime("%Y-%m-%d")
+
+
+def _tabela_iz_ajax(url: str, time_zone: str) -> str | None:
+    """eAsistent (od 10/2026) glavne nadomeščanjske tabele NE vključi v inicialni
+    HTML — naloži jo prek AJAX GET /nadomescanja/{hash}/{Datum}/seznam, ki odda
+    JSON {data: "<html tabela>"}. Ta funkcija požene ta URL in vrne tabelo.
+
+    Če eAsistent pobere datum iz datepickerja — mi pošljemo današnji datum po
+    šolskem času; eAsistent vrne tabelo za ta dan (ali '' za 'ni nadomeščanj')."""
+    import requests
+    dan = _danes_easistent_datum(time_zone)
+    base = url.rstrip("/")
+    # URL je npr. https://urniki.easistent.com/nadomescanja/<hash> → dodamo /<dan>/seznam
+    seznam_url = f"{base}/{dan}/seznam"
+    try:
+        resp = requests.get(
+            seznam_url,
+            timeout=20,
+            allow_redirects=True,
+            verify=False,  # enako kot PHP CURLOPT_SSL_VERIFYPEER=false
+            headers={
+                "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
+                "X-Requested-With": "XMLHttpRequest",
+            },
+        )
+        resp.raise_for_status()
+        payload = resp.json()
+    except Exception:
         return None
-    tabela = _izrezi_prvo_tabelo(html)
+    data = payload.get("data") if isinstance(payload, dict) else None
+    if not isinstance(data, str) or not data.strip():
+        return None
+    if "nadomeščanj" in data.lower() and "<table" not in data:
+        # eAsistent: "Za ta dan ni nadomeščanj." → brez tabele
+        return None
+    return _izrezi_prvo_tabelo(data)
+
+
+def _pridobi_tabelo(url: str, time_zone: str = "Europe/Ljubljana") -> str | None:
+    """Sveža tabela iz eAsistenta; uspeh shrani v predpomnilnik.
+
+    Primarno poskusi eAsistent AJAX seznam endpoint (tabela ni več v inicialnem
+    HTML), fallback na stari parse inicialnega HTML-ja."""
+    tabela = _tabela_iz_ajax(url, time_zone)
+    if not tabela:
+        # Fallback: stari način (če AJAX pade ali se eAsistent vrne na staro obliko).
+        html = _nadomescanja_html(url)
+        if html:
+            tabela = _izrezi_prvo_tabelo(html)
     if not tabela:
         return None
     try:
@@ -513,7 +566,7 @@ def zasloni_praznos(request: Request, db: Session = Depends(get_db)):
     tabela = None
 
     if settings["pokazi_nadomescanja"]:
-        sveza = _pridobi_tabelo(settings["url"])
+        sveza = _pridobi_tabelo(settings["url"], settings.get("time_zone", "Europe/Ljubljana"))
         if sveza:
             tabela = sveza
         else:

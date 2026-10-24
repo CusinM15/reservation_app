@@ -379,3 +379,43 @@ def test_zasloni_delete_obvestila(client, make_user):
 
     r = client.post(f"/api/schools/{sid}/zasloni/delete", json={"filename": fname})
     assert r.status_code == 404, r.text
+
+
+def test_izrezi_tabelo_iz_ajax_data():
+    """eAsistent (10/2026) tabelo naloži prek AJAX /seznam → JSON {data}; ta data
+    mora _izrezi_prvo_tabelo sparsati v tabelo, tudi ko inicialni HTML tabele nima."""
+    from app.routers.zasloni import _izrezi_prvo_tabelo
+    # Četrtek 23.10.2026 z nadomeščanji (realna AJAX data iz eAsistenta).
+    ajax_data = (
+        '<div class="card"><div class=card-title>Nadomeščanja po razredih</div>\r\n'
+        '<div class=card-content>\r\n'
+        '<table class="table_list"><thead><tr>\r\n'
+        '<th>Razred</th><th>Ura</th><th>Nadomešča</th>'
+        '<th>Učilnica</th><th width="42%">Opombe</th>\r\n'
+        "</tr></thead>\r\n"
+        '<tr class="not-clickable rowspan border">'
+        '<td rowspan="3" class="no-hover">1. A</td>'
+        "<td>2b.</td><td><strong>Đuretić Arijana</strong>, MAT</td>"
+        "<td>u_1a</td><td>/</td></tr>\r\n"
+        "</table>\r\n</div></div>"
+    )
+    out = _izrezi_prvo_tabelo(ajax_data)
+    assert out is not None
+    assert "<th>Razred</th>" in out
+    assert "table_list" in out
+    assert "Đuretić" in out
+
+
+def test_tabela_iz_ajax_brez_nadomescanj_vrne_none():
+    """eAsistent vrne 'Za ta dan ni nadomeščanj.' (data brez <table>) → None, ne
+    prazna tabela."""
+    from app.routers.zasloni import _tabela_iz_ajax
+    class Resp:
+        def raise_for_status(self):
+            return None
+        def json(self):
+            # realni eAsistent: data je 'Za ta dan ni nadomeščanj.'
+            return {"data": "        Za ta dan ni nadomeščanj."}
+    import unittest.mock as mock
+    with mock.patch("requests.get", return_value=Resp()):
+        assert _tabela_iz_ajax("https://urniki.easistent.com/nadomescanja/hash", "Europe/Ljubljana") is None
