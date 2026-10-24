@@ -49,8 +49,10 @@ templates = Jinja2Templates(directory=str(TEMPLATES_DIR))
 
 # Koliko minut traja en termin (zahteva uporabnika: 15 minut).
 TERMIN_MINUT = 15
-# Prijave se brišejo 14 dni po dnevu govorilnih ur.
-HRAMBA_DNI = 14
+# Prijave se samodejno izbrišejo 24 ur po koncu termina govorilnih ur.
+HRAMBA_UR = 24
+# Termin je staršem viden največ 24 ur po začetku (starejši izginejo).
+TERMIN_MAX_STAROST_UR = 24
 
 
 # ═══════════════════════════════════════════════════════════════════════
@@ -112,9 +114,43 @@ def _popoldan_termini() -> list[dict]:
     return out
 
 
+def _naslednji_popoldan() -> str | None:
+    """Prvi popoldanski datum (četrtek) >= danes — zgornja meja prikaza terminov."""
+    danes = date.today().isoformat()
+    return next((d for d in POPOLDAN_DATUMI if d >= danes), None)
+
+
+def _konec_termina(p) -> datetime:
+    """Konec termina prijave kot datetime (ura_do, sicer ura_od)."""
+    ura = p.ura_do or p.ura_od or "00:00"
+    h, m = map(int, ura.split(":")[:2])
+    return datetime(p.datum.year, p.datum.month, p.datum.day, h, m)
+
+
+def _prijava_pretekla(p) -> bool:
+    """Ali je od konca termina minilo več kot HRAMBA_UR ur (→ avtomatski izbris)."""
+    return _konec_termina(p) < datetime.now() - timedelta(hours=HRAMBA_UR)
+
+
+def _v_oknu(t: dict) -> bool:
+    """Ali je termin viden staršem: ni starejši od 24 ur in ni po naslednjih
+    popoldanskih govorilnih (starejše/bolj oddaljene skrijemo)."""
+    h, m = map(int, t["ura_od"].split(":"))
+    d = date.fromisoformat(t["datum"])
+    zacetek = datetime(d.year, d.month, d.day, h, m)
+    if zacetek < datetime.now() - timedelta(hours=TERMIN_MAX_STAROST_UR):
+        return False
+    naslednji = _naslednji_popoldan()
+    if naslednji is not None and t["datum"] > naslednji:
+        return False
+    return True
+
+
 def _vsi_termini_ucitelja(u: dict) -> list[dict]:
-    """Vsi možni termini učitelja (dopoldan + popoldan), urejeni po datumu/uri."""
+    """Vsi termini učitelja (dopoldan + popoldan), ki so TRENUTNO VIDNI
+    (okno: 24 ur nazaj → naslednje popoldanske govorilne), urejeni po datumu/uri."""
     terms = _dopoldan_termini(u) + _popoldan_termini()
+    terms = [t for t in terms if _v_oknu(t)]
     terms.sort(key=lambda t: (t["datum"], t["ura_od"]))
     return terms
 
@@ -169,7 +205,7 @@ def govorilne_stran(request: Request, db: Session = Depends(get_db)):
     return templates.TemplateResponse(
         request, "govorilne.html",
         {"ucitelji": ucitelji, "termin_minut": TERMIN_MINUT,
-         "hramba_dni": HRAMBA_DNI},
+         "hramba_ur": HRAMBA_UR},
     )
 
 
@@ -272,13 +308,10 @@ def govorilne_prijave_stran(request: Request, db: Session = Depends(get_db)):
     prijave = q.order_by(GovorilnaPrijava.datum.desc(),
                          GovorilnaPrijava.ura_od).all()
 
-    # GDPR: po 14 dneh od dneva govorilnih so prijave pretekle (in se v
-    # ozadju tudi zbrišejo) — v pregledu jih ne prikazujemo več.
-    rok = date.today() - timedelta(days=HRAMBA_DNI)
-    prijave = [p for p in prijave if p.datum >= rok]
-
-    # Poženi čiščenje starih prijav (idempotentno; ob vsakem ogledu).
-    _pocisti_stare(db, rok)
+    # GDPR: prijave se izbrišejo 24 ur po koncu termina — pretekle
+    # ne prikazujemo več (v ozadju se tudi pobrišejo).
+    _pocisti_stare(db)
+    prijave = [p for p in prijave if not _prijava_pretekla(p)]
 
     return templates.TemplateResponse(
         request, "govorilne_prijave.html",
@@ -286,14 +319,14 @@ def govorilne_prijave_stran(request: Request, db: Session = Depends(get_db)):
     )
 
 
-def _pocisti_stare(db: Session, rok: date) -> int:
-    """Izbriši prijave starejše od HRAMBA_DNI dni (14 dni po govorilnih)."""
-    old = db.query(GovorilnaPrijava).filter(GovorilnaPrijava.datum < rok)
-    count = old.count()
-    if count:
-        old.delete(synchronize_session=False)
+def _pocisti_stare(db: Session) -> int:
+    """Izbriši prijave, od katerih je minilo več kot HRAMBA_UR ur (24 ur po dogodku)."""
+    starih = [p for p in db.query(GovorilnaPrijava).all() if _prijava_pretekla(p)]
+    if starih:
+        for p in starih:
+            db.delete(p)
         db.commit()
-    return count
+    return len(starih)
 
 
 # ═══════════════════════════════════════════════════════════════════════
@@ -318,18 +351,23 @@ def _urnik_ucitelja(db: Session, school_id: int | None, u: dict) -> dict:
         }
     q = db.query(GovorilnaPrijava).filter(
         GovorilnaPrijava.ucitelj == u["ime"],
-        GovorilnaPrijava.datum >= date.today() - timedelta(days=HRAMBA_DNI),
+        # Širši kos (včerajšnji datum): natančno izločimo pretekle v Pythonu.
+        GovorilnaPrijava.datum >= date.today() - timedelta(days=1),
     )
     if school_id is not None:
         q = q.filter(GovorilnaPrijava.school_id == school_id)
-    rezervacije = q.order_by(GovorilnaPrijava.datum, GovorilnaPrijava.ura_od).all()
+    rezervacije = [p for p in q.order_by(GovorilnaPrijava.datum,
+                                         GovorilnaPrijava.ura_od).all()
+                   if not _prijava_pretekla(p)]
+    naslednji = _naslednji_popoldan()
     return {
         "ime": u["ime"],
         "predmet": u["predmet"],
         "prostor": u["prostor"],
         "po_dogovoru": bool(u.get("po_dogovoru")),
         "dopoldan": dopoldan,
-        "popoldan_datumi": list(POPOLDAN_DATUMI),
+        # Samo AKTUALNE popoldanske govorilne (naslednji četrtek) — ne celo leto.
+        "popoldan_datumi": [naslednji] if naslednji else [],
         "rezervacije": rezervacije,
     }
 

@@ -40,7 +40,7 @@
 ## GDPR / zakonitost
 - Prijava ne kreira računa; ime otroka je NAVADEN osebni podatek (ne občutljiv).
 - Pravna podlaga: organizacija govorilnih ur (šolska naloga) + soglasje starša.
-- Hramba: `_pocisti_stare(db, rok)` briše prijave starejše od 14 dni po dnevu
+- Hramba: `_pocisti_stare(db)` briše prijave, od katerih je minilo več kot 24 ur po koncu termina
   govorilnih ur (zažene se ob vsakem ogledu `/govorilne/prijave`).
 - Ni potrebe po prijavi zbirke pri Informacijskem pooblaščencu (GDPR/ZVOP-2).
 

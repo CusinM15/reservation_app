@@ -343,3 +343,108 @@ def test_govorilne_ure_ucitelj_vidi_svoje_rezervacije():
         r = c.get("/govorilne/ure")
         assert r.status_code == 200
         assert "Bojan Starš" in r.text
+
+
+def test_termini_okno_24ur_do_naslednjih_popoldanskih():
+    """Javna stran kaže samo termine od 24 ur nazaj do naslednjih popoldanskih
+    govorilnih — starejši in bolj oddaljeni (po naslednjem četrtku) izginejo."""
+    from datetime import date, timedelta
+
+    from app.govorilne_podatki import POPOLDAN_DATUMI
+    from app.routers.govorilne import _naslednji_popoldan, _v_oknu
+
+    naslednji = _naslednji_popoldan()
+    assert naslednji is not None  # v času testa obstaja prihodnji četrtek
+
+    # Starejši od 24 ur → ven.
+    stari = {"datum": (date.today() - timedelta(days=2)).isoformat(), "ura_od": "17:30"}
+    assert _v_oknu(stari) is False
+
+    # Naslednji popoldanski datum → v oknu (termini 17:30–18:30).
+    for ura in ("17:30", "18:15"):
+        assert _v_oknu({"datum": naslednji, "ura_od": ura}) is True
+
+    # Datum po naslednjih popoldanskih govorilnih → ven.
+    if POPOLDAN_DATUMI[-1] > naslednji:
+        assert _v_oknu({"datum": POPOLDAN_DATUMI[-1], "ura_od": "17:30"}) is False
+
+    # API (javna stran staršev) vrača samo termine znotraj okna.
+    with TestClient(app) as c:
+        r = c.get("/govorilne/api/termini", params={"ucitelj": "Matej Čušin"})
+        assert r.status_code == 200
+        datumi = {tt["datum"] for tt in r.json()["termini"]}
+        assert all(d <= naslednji for d in datumi)
+        assert naslednji in datumi
+        if POPOLDAN_DATUMI[-1] > naslednji:
+            assert POPOLDAN_DATUMI[-1] not in datumi
+
+
+def test_prijava_termina_po_naslednjih_govorilnih_400():
+    """Prijava na termin po naslednjih popoldanskih govorilnih ni dovoljena."""
+    from app.govorilne_podatki import POPOLDAN_DATUMI
+    zadnji = POPOLDAN_DATUMI[-1]
+    with TestClient(app) as c:
+        r = c.post("/govorilne/api/prijava", json={
+            "ucitelj": "Matej Čušin",
+            "datum": zadnji,
+            "ura_od": "17:30",
+            "ura_do": "17:45",
+            "ime_starsa": "Janez Novak",
+            "email": "janez.novak@example.si",
+            "otrok": "Miha Novak",
+        })
+        assert r.status_code == 400
+
+
+def test_prijave_se_izbrisejo_24ur_po_terminu(make_user):
+    """Prijava, od katere je minilo več kot 24 ur po koncu termina, se avtomatsko
+    izbriše in ni več vidna; sveža (v prihodnosti) ostane."""
+    from datetime import date, timedelta
+
+    from app.routers.govorilne import _prijava_pretekla
+    from app.tenancy import _default_school_id
+
+    with TestClient(app) as c:
+        # Bootstrap privzete šole se zgodi ob odprtju TestClient-a (conftest);
+        # šele nato ročno ustvarimo prijave (rabijo veljaven school_id).
+        db = SessionLocal()
+        try:
+            # Pretekla prijava: termin pred 2 dnevoma (konec + 24 h je že mimo).
+            p = GovorilnaPrijava(
+                school_id=_default_school_id(db), ucitelj="Matej Čušin",
+                datum=date.today() - timedelta(days=2),
+                ura_od="17:30", ura_do="17:45",
+                ime_starsa="Stari Starš", email="stari@example.si", otrok="Otrok",
+            )
+            db.add(p)
+            db.commit()
+            assert _prijava_pretekla(p) is True
+
+            # Sveža prijava: termin v prihodnosti → ni pretekla.
+            p2 = GovorilnaPrijava(
+                school_id=_default_school_id(db), ucitelj="Matej Čušin",
+                datum=date.today() + timedelta(days=1),
+                ura_od="17:30", ura_do="17:45",
+                ime_starsa="Sveži Starš", email="svezi@example.si", otrok="Otrok",
+            )
+            db.add(p2)
+            db.commit()
+            assert _prijava_pretekla(p2) is False
+        finally:
+            db.close()
+
+        admin = make_user(role="admin")
+        login(c, admin.username)
+        r = c.get("/govorilne/prijave")
+        assert r.status_code == 200
+        assert "Stari Starš" not in r.text   # pretekla ni več vidna (izbrisana)
+        assert "Sveži Starš" in r.text       # sveža še vidna
+
+    # _pocisti_stare ob ogledu fizično izbriše preteklo prijavo.
+    db = SessionLocal()
+    try:
+        ostala = db.query(GovorilnaPrijava).filter(
+            GovorilnaPrijava.email == "stari@example.si").first()
+        assert ostala is None
+    finally:
+        db.close()
