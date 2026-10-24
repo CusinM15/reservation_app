@@ -40,7 +40,6 @@ from app.govorilne_podatki import (
     POPOLDAN_DATUMI,
     URA_ZACETKI,
     GOVORILNE_DOPOLDAN_TEDEN,
-    RAZREDNIK_PREDMET,
 )
 
 router = APIRouter(tags=["govorilne"])
@@ -69,19 +68,16 @@ def _ucitelj_by_ime(ime: str) -> dict | None:
     return None
 
 
-# Razrednik = učitelj, pri katerem je v polju »predmet« RAZRED (npr. "3. b").
-_RAZRED_RE = re.compile(r"^\d+\.\s*[a-zč]\s*$", re.IGNORECASE)
-
-
 def _opis_ucitelja(u: dict) -> str:
-    """Opis ob imenu (za »Priimek Ime — predmet — razrednik«): razredniki →
-    'predmet — razrednik <razred>' (npr. 'Slovenščina — razrednik 8. a'),
-    predmetni učitelji → predmet kot je objavljen."""
-    p = (u.get("predmet") or "").strip()
-    if _RAZRED_RE.match(p):
-        predmet = RAZREDNIK_PREDMET.get(u.get("ime", ""), "razredni pouk")
-        return f"{predmet} — razrednik {p}"
-    return p
+    """Opis ob imenu (za »Priimek Ime — predmet«, po potrebi dodan razrednik):
+    razrednik → 'predmet — razrednik <razred>' (npr. 'Slovenščina — razrednik 8. a'),
+    predmetni učitelj → zgolj predmet (npr. 'Angleščina'). Podatki že ločijo
+    razred (razrednik) od predmeta — tu samo sestavimo izpis."""
+    predmet = (u.get("predmet") or "").strip()
+    razred = (u.get("razred") or "").strip()
+    if razred:
+        return f"{predmet} — razrednik {razred}"
+    return predmet
 
 
 def _ime_priimek(ime: str) -> str:

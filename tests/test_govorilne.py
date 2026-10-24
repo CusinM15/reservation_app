@@ -461,16 +461,15 @@ def test_ucitelji_sortirani_po_priimkih_in_razredniki_oznaceni(make_user):
     assert _ime_priimek("Barbara Potočan Iskra") == "Iskra Barbara Potočan"
     assert _ime_priimek("Matej Čušin") == "Čušin Matej"
 
-    # Razrednik (v polju predmet = razred) → predmet + 'razrednik <razred>'.
-    # Brez imena → privzeti 'razredni pouk'.
-    assert _opis_ucitelja({"predmet": "1. a"}) == "razredni pouk — razrednik 1. a"
-    assert _opis_ucitelja({"predmet": "8. č"}) == "razredni pouk — razrednik 8. č"
-    # Z imenom iz slovarja RAZREDNIK_PREDMET → njegov dejanski predmet.
-    assert _opis_ucitelja({"ime": "Mojca Čušin", "predmet": "8. a"}) == "Slovenščina — razrednik 8. a"
-    assert _opis_ucitelja({"ime": "Špela Skumavec", "predmet": "8. c"}) == "Slovenščina — razrednik 8. c"
-    # Predmetni učitelj → predmet kot je objavljen.
-    assert _opis_ucitelja({"predmet": "Matematika"}) == "Matematika"
-    assert _opis_ucitelja({"predmet": ""}) == ""
+    # Razrednik (ima ločeno polje razred) → predmet + 'razrednik <razred>'.
+    assert _opis_ucitelja({"razred": "1. a", "predmet": "razredni pouk"}) == "razredni pouk — razrednik 1. a"
+    assert _opis_ucitelja({"razred": "8. č", "predmet": "razredni pouk"}) == "razredni pouk — razrednik 8. č"
+    # Predmet iz podatkov (iz kabineta razrednika predmetne stopnje).
+    assert _opis_ucitelja({"razred": "8. a", "predmet": "Slovenščina"}) == "Slovenščina — razrednik 8. a"
+    assert _opis_ucitelja({"razred": "8. c", "predmet": "Slovenščina"}) == "Slovenščina — razrednik 8. c"
+    # Predmetni učitelj (ni razrednik, razred=prazen) → zgolj predmet.
+    assert _opis_ucitelja({"razred": None, "predmet": "Matematika"}) == "Matematika"
+    assert _opis_ucitelja({"razred": None, "predmet": ""}) == ""
 
     with TestClient(app) as c:
         r = c.get("/govorilne")
