@@ -68,6 +68,29 @@ def _ucitelj_by_ime(ime: str) -> dict | None:
     return None
 
 
+# Razrednik = učitelj, pri katerem je v polju »predmet« RAZRED (npr. "3. b").
+_RAZRED_RE = re.compile(r"^\d+\.\s*[a-zč]\s*$", re.IGNORECASE)
+
+
+def _opis_ucitelja(u: dict) -> str:
+    """Opis ob imenu: razredniki → 'razrednik <razred>' (uči razredni pouk),
+    predmetni učitelji → predmet kot je objavljen."""
+    p = (u.get("predmet") or "").strip()
+    if _RAZRED_RE.match(p):
+        return f"razrednik {p}"
+    return p
+
+
+_SORT_MAP = str.maketrans({"č": "cz", "ć": "cz", "š": "sz", "ž": "zs", "đ": "dz"})
+
+
+def _priimek(ime: str) -> str:
+    """Zadnja beseda polnega imena, transliterirana za SLOVENSKI abecedni red
+    (č→cz, š→sz, ž→zs, đ→dz — da č/š/ž/đ pridejo za c/s/z/d, kot v abecedi;
+    Python bi jih sicer sortiral po Unicode codepointih za vse navadne črke)."""
+    return ime.rsplit(maxsplit=1)[-1].lower().translate(_SORT_MAP)
+
+
 def _add_minutes(hhmm: str, minutes: int) -> str:
     """"09:30" + 15 → "09:45" (24-urni zapis, samo navzgor)."""
     h, m = int(hhmm[:2]), int(hhmm[3:5])
@@ -198,9 +221,9 @@ def govorilne_stran(request: Request, db: Session = Depends(get_db)):
     """Javna prijavna stran: izbor učitelja, nato 15-minutni termini."""
     school_id = _default_school_id(db)
     ucitelji = sorted(
-        [{"ime": u["ime"], "predmet": u["predmet"], "prostor": u["prostor"]}
+        [{"ime": u["ime"], "predmet": _opis_ucitelja(u), "prostor": u["prostor"]}
          for u in UCITELJI],
-        key=lambda x: x["ime"].lower(),
+        key=lambda x: _priimek(x["ime"]),
     )
     return templates.TemplateResponse(
         request, "govorilne.html",
@@ -362,7 +385,7 @@ def _urnik_ucitelja(db: Session, school_id: int | None, u: dict) -> dict:
     naslednji = _naslednji_popoldan()
     return {
         "ime": u["ime"],
-        "predmet": u["predmet"],
+        "predmet": _opis_ucitelja(u),
         "prostor": u["prostor"],
         "po_dogovoru": bool(u.get("po_dogovoru")),
         "dopoldan": dopoldan,
@@ -393,7 +416,8 @@ def govorilne_ure_stran(request: Request, db: Session = Depends(get_db)):
         ucitelj = _ucitelj_by_ime(polno_ime)
         prikaz = [_urnik_ucitelja(db, school_id, ucitelj)] if ucitelj else []
     else:
-        prikaz = [_urnik_ucitelja(db, school_id, u) for u in UCITELJI]
+        urejeni = sorted(UCITELJI, key=lambda u: _priimek(u["ime"]))
+        prikaz = [_urnik_ucitelja(db, school_id, u) for u in urejeni]
 
     return templates.TemplateResponse(
         request, "govorilne_ure.html",

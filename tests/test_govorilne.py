@@ -448,3 +448,32 @@ def test_prijave_se_izbrisejo_24ur_po_terminu(make_user):
         assert ostala is None
     finally:
         db.close()
+
+
+def test_ucitelji_sortirani_po_priimkih_in_razredniki_oznaceni(make_user):
+    """Javna stran: učitelji po abecedi priimkov; razredniki z oznako
+    'razrednik <razred>', da starši vedo."""
+    from app.routers.govorilne import _opis_ucitelja
+
+    # Razrednik (v polju predmet = razred) → oznaka z razredom.
+    assert _opis_ucitelja({"predmet": "1. a"}) == "razrednik 1. a"
+    assert _opis_ucitelja({"predmet": "8. č"}) == "razrednik 8. č"
+    # Predmetni učitelj → predmet kot je objavljen.
+    assert _opis_ucitelja({"predmet": "Matematika"}) == "Matematika"
+    assert _opis_ucitelja({"predmet": ""}) == ""
+
+    with TestClient(app) as c:
+        r = c.get("/govorilne")
+        assert r.status_code == 200
+        # Razrednik je označen z razredom.
+        assert "razrednik 1. a" in r.text
+        # Sort po priimkih: Đuretić pred Pogačar (obe razrednici 1. a).
+        assert r.text.index("Arijana Đuretić") < r.text.index("Monika Pogačar")
+
+        # Enako v učiteljevem/adminskem pogledu /govorilne/ure.
+        admin = make_user(role="admin")
+        login(c, admin.username)
+        r2 = c.get("/govorilne/ure")
+        assert r2.status_code == 200
+        assert "razrednik 1. a" in r2.text
+        assert r2.text.index("Arijana Đuretić") < r2.text.index("Monika Pogačar")
