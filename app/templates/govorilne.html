@@ -52,7 +52,7 @@
         <select id="ucitelj" onchange="naloziTermine()">
             <option value="">— izberite učitelja —</option>
             {% for u in ucitelji %}
-            <option value="{{ u.ime }}">{{ u.ime }}{% if u.predmet %} — {{ u.predmet }}{% endif %}</option>
+            <option value="{{ u.ime }}">{{ u.ime_priimek }}{% if u.predmet %} — {{ u.predmet }}{% endif %}</option>
             {% endfor %}
         </select>
         <div class="hint">Prijave so vidne samo izbranemu učitelju (in šolski upravi).</div>

@@ -74,13 +74,23 @@ _RAZRED_RE = re.compile(r"^\d+\.\s*[a-zč]\s*$", re.IGNORECASE)
 
 
 def _opis_ucitelja(u: dict) -> str:
-    """Opis ob imenu: razredniki → 'predmet - razrednik <razred>' (npr.
-    'Slovenščina - razrednik 8. a'); predmetni učitelji → predmet kot je objavljen."""
+    """Opis ob imenu (za »Priimek Ime — predmet — razrednik«): razredniki →
+    'predmet — razrednik <razred>' (npr. 'Slovenščina — razrednik 8. a'),
+    predmetni učitelji → predmet kot je objavljen."""
     p = (u.get("predmet") or "").strip()
     if _RAZRED_RE.match(p):
         predmet = RAZREDNIK_PREDMET.get(u.get("ime", ""), "razredni pouk")
-        return f"{predmet} - razrednik {p}"
+        return f"{predmet} — razrednik {p}"
     return p
+
+
+def _ime_priimek(ime: str) -> str:
+    """»Priimek Ime« — zadnja beseda (priimek) naprej: 'Barbara Potočan Iskra'
+    → 'Iskra Barbara Potočan'. Konsistentno s sortom po priimkih (_priimek)."""
+    deli = (ime or "").split()
+    if len(deli) <= 1:
+        return ime or ""
+    return " ".join([deli[-1]] + deli[:-1])
 
 
 _SORT_MAP = str.maketrans({"č": "cz", "ć": "cz", "š": "sz", "ž": "zs", "đ": "dz"})
@@ -223,7 +233,8 @@ def govorilne_stran(request: Request, db: Session = Depends(get_db)):
     """Javna prijavna stran: izbor učitelja, nato 15-minutni termini."""
     school_id = _default_school_id(db)
     ucitelji = sorted(
-        [{"ime": u["ime"], "predmet": _opis_ucitelja(u), "prostor": u["prostor"]}
+        [{"ime": u["ime"], "ime_priimek": _ime_priimek(u["ime"]),
+          "predmet": _opis_ucitelja(u), "prostor": u["prostor"]}
          for u in UCITELJI],
         key=lambda x: _priimek(x["ime"]),
     )
@@ -387,6 +398,7 @@ def _urnik_ucitelja(db: Session, school_id: int | None, u: dict) -> dict:
     naslednji = _naslednji_popoldan()
     return {
         "ime": u["ime"],
+        "ime_priimek": _ime_priimek(u["ime"]),
         "predmet": _opis_ucitelja(u),
         "prostor": u["prostor"],
         "po_dogovoru": bool(u.get("po_dogovoru")),

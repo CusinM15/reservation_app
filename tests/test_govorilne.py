@@ -294,6 +294,7 @@ def test_govorilne_ure_nezahtevana_zahteva_login():
 def test_govorilne_ure_ucitelj_vidi_samo_svoj_urnik():
     """Učitelj vidi svoj objavljeni termin; drug učitelj se ne prikaže."""
     from app.govorilne_podatki import UCITELJI
+    from app.routers.govorilne import _ime_priimek
     prvi = next(u for u in UCITELJI if not u["po_dogovoru"])
     ime, priimek = prvi["ime"].split(" ", 1)
     drugi = next(u for u in UCITELJI if u["ime"] != prvi["ime"])
@@ -303,7 +304,7 @@ def test_govorilne_ure_ucitelj_vidi_samo_svoj_urnik():
         login(c, user.username)
         r = c.get("/govorilne/ure")
         assert r.status_code == 200
-        assert prvi["ime"] in r.text
+        assert _ime_priimek(prvi["ime"]) in r.text
         assert drugi["ime"] not in r.text
 
 
@@ -314,7 +315,7 @@ def test_govorilne_ure_admin_vidi_vse_ucitelje(make_user):
         login(c, admin.username)
         r = c.get("/govorilne/ure")
         assert r.status_code == 200
-        assert "Matej Čušin" in r.text
+        assert "Čušin Matej" in r.text
 
 
 def test_govorilne_ure_ucitelj_vidi_svoje_rezervacije():
@@ -452,16 +453,21 @@ def test_prijave_se_izbrisejo_24ur_po_terminu(make_user):
 
 def test_ucitelji_sortirani_po_priimkih_in_razredniki_oznaceni(make_user):
     """Javna stran: učitelji po abecedi priimkov; razredniki z oznako
-    'predmet - razrednik <razred>', da starši vedo predmet in razred."""
-    from app.routers.govorilne import _opis_ucitelja
+    'predmet — razrednik <razred>'; priimek naprej v prikazu."""
+    from app.routers.govorilne import _opis_ucitelja, _ime_priimek
+
+    # Priimek-ime: zadnja beseda naprej.
+    assert _ime_priimek("Arijana Đuretić") == "Đuretić Arijana"
+    assert _ime_priimek("Barbara Potočan Iskra") == "Iskra Barbara Potočan"
+    assert _ime_priimek("Matej Čušin") == "Čušin Matej"
 
     # Razrednik (v polju predmet = razred) → predmet + 'razrednik <razred>'.
     # Brez imena → privzeti 'razredni pouk'.
-    assert _opis_ucitelja({"predmet": "1. a"}) == "razredni pouk - razrednik 1. a"
-    assert _opis_ucitelja({"predmet": "8. č"}) == "razredni pouk - razrednik 8. č"
+    assert _opis_ucitelja({"predmet": "1. a"}) == "razredni pouk — razrednik 1. a"
+    assert _opis_ucitelja({"predmet": "8. č"}) == "razredni pouk — razrednik 8. č"
     # Z imenom iz slovarja RAZREDNIK_PREDMET → njegov dejanski predmet.
-    assert _opis_ucitelja({"ime": "Mojca Čušin", "predmet": "8. a"}) == "Slovenščina - razrednik 8. a"
-    assert _opis_ucitelja({"ime": "Špela Skumavec", "predmet": "8. c"}) == "Slovenščina - razrednik 8. c"
+    assert _opis_ucitelja({"ime": "Mojca Čušin", "predmet": "8. a"}) == "Slovenščina — razrednik 8. a"
+    assert _opis_ucitelja({"ime": "Špela Skumavec", "predmet": "8. c"}) == "Slovenščina — razrednik 8. c"
     # Predmetni učitelj → predmet kot je objavljen.
     assert _opis_ucitelja({"predmet": "Matematika"}) == "Matematika"
     assert _opis_ucitelja({"predmet": ""}) == ""
@@ -470,14 +476,14 @@ def test_ucitelji_sortirani_po_priimkih_in_razredniki_oznaceni(make_user):
         r = c.get("/govorilne")
         assert r.status_code == 200
         # Razrednik je označen s predmetom in razredom.
-        assert "razredni pouk - razrednik 1. a" in r.text
-        # Sort po priimkih: Đuretić pred Pogačar (obe razrednici 1. a).
-        assert r.text.index("Arijana Đuretić") < r.text.index("Monika Pogačar")
+        assert "razredni pouk — razrednik 1. a" in r.text
+        # Sort po priimkih + priimek naprej: Đuretić pred Pogačar (obe razrednici 1. a).
+        assert r.text.index("Đuretić Arijana") < r.text.index("Pogačar Monika")
 
         # Enako v učiteljevem/adminskem pogledu /govorilne/ure.
         admin = make_user(role="admin")
         login(c, admin.username)
         r2 = c.get("/govorilne/ure")
         assert r2.status_code == 200
-        assert "razredni pouk - razrednik 1. a" in r2.text
-        assert r2.text.index("Arijana Đuretić") < r2.text.index("Monika Pogačar")
+        assert "razredni pouk — razrednik 1. a" in r2.text
+        assert r2.text.index("Đuretić Arijana") < r2.text.index("Pogačar Monika")
