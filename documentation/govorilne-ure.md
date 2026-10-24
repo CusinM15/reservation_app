@@ -18,7 +18,9 @@
 ## Vir podatkov o učiteljih in terminih
 - **`app/govorilne_podatki.py`** (generirano iz HTML tabele; vir:
   https://ostcjesenice.splet.arnes.si/za-starse/govorilne-ure/ — posnetek
-  23. 10. 2026). Vsebuje `UCITELJI` (ime, predmet, dan 0–4, šolska ura,
+  23. 10. 2026). Vsebuje `UCITELJI` (ime, **razred** — razrednik, **predmet** —
+  kar učitelj poučuje; ločeni polji, app sam sestavi izpis 'predmet — razrednik
+  razred' oz. zgolj predmet za ne-razrednike —, dan 0–4, šolska ura,
   prostor, po_dogovoru), `POPOLDAN_DATUMI` (uradni četrtki 17:30–18:30),
   `URA_ZACETKI` (začetek šolskih ur) in `GOVORILNE_DOPOLDAN_TEDEN`.
 - **Dopoldanski termini SO TESTNI**: vsak učitelj z določenim dnem dobi
