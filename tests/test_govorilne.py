@@ -309,13 +309,19 @@ def test_govorilne_ure_ucitelj_vidi_samo_svoj_urnik():
 
 
 def test_govorilne_ure_admin_vidi_vse_ucitelje(make_user):
-    """Šolski admin/glavni admin vidi urnike vseh učiteljev (npr. testni Matej Čušin)."""
+    """Šolski admin/glavni admin vidi urnike vseh učiteljev (npr. testni Matej Čušin)
+    in ima urejanje učiteljev (dodaj/odstrani) + nastavitve popoldanskih ur."""
     admin = make_user(role="admin")
     with TestClient(app) as c:
         login(c, admin.username)
         r = c.get("/govorilne/ure")
         assert r.status_code == 200
         assert "Čušin Matej" in r.text
+        # Nove admin zmoglivosti.
+        assert "Dodaj učitelja" in r.text
+        assert "Odstrani" in r.text
+        assert "Začetek ur" in r.text
+        assert "Največ ur" in r.text
 
 
 def test_govorilne_ure_ucitelj_vidi_svoje_rezervacije():
@@ -759,3 +765,100 @@ def test_govorilne_stran_vsebuje_opis_in_prepis_potrdilo():
         assert r.status_code == 200
         assert "Kratek opis" in r.text
         assert "Prepisite ali slikajte" in r.text
+
+
+def test_admin_doda_novega_ucitelja(make_user):
+    """Admin/vodstvo lahko doda novega učitelja — pojavi se v javni strani."""
+    from app.routers.govorilne import _ucitelj_by_ime
+    admin = make_user(role="admin")
+    with TestClient(app) as c:
+        login(c, admin.username)
+        r = c.post("/govorilne/api/ure/ucitelj/dodaj", json={
+            "ime": "Testni Učitelj", "predmet": "Angleščina", "prostor": "učilnica ANG 2",
+            "dan": 1, "ura": 3,
+        })
+        assert r.status_code == 200, r.text
+        assert r.json()["ok"] is True
+        # Javna stran ga zdaj izpiše.
+        r2 = c.get("/govorilne")
+        assert r2.status_code == 200
+        assert "Testni Učitelj" in r2.text
+
+
+def test_admin_odstrani_ucitelja(make_user):
+    """Admin/vodstvo lahko odstrani učitelja — izgine iz javne strani."""
+    from app.routers.govorilne import _ucitelj_by_ime
+    admin = make_user(role="admin")
+    with TestClient(app) as c:
+        login(c, admin.username)
+        # dodaj
+        r = c.post("/govorilne/api/ure/ucitelj/dodaj", json={
+            "ime": "Za Odstrani", "predmet": "Zgodovina", "prostor": "učilnica ZGO 1",
+        })
+        assert r.status_code == 200, r.text
+        assert "Za Odstrani" in c.get("/govorilne").text
+        # odstrani
+        r2 = c.post("/govorilne/api/ure/ucitelj/odstrani", json={"ime": "Za Odstrani"})
+        assert r2.status_code == 200, r2.text
+        assert r2.json()["ok"] is True
+        assert "Za Odstrani" not in c.get("/govorilne").text
+
+
+def test_dodaj_ucitelja_duplikat_409(make_user):
+    """Dodajanje učitelja, ki že obstaja, vrne 409."""
+    from app.routers.govorilne import _ucitelj_by_ime
+    admin = make_user(role="admin")
+    with TestClient(app) as c:
+        login(c, admin.username)
+        r = c.post("/govorilne/api/ure/ucitelj/dodaj", json={"ime": "Neja Grohar"})
+        assert r.status_code == 409
+
+
+def test_ucitelj_nima_pravic_dodajati(make_user):
+    """Navaden učitelj ne more dodajati/odstranjevati učiteljev."""
+    from app.govorilne_podatki import UCITELJI
+    prvi = next(u for u in UCITELJI if not u["po_dogovoru"])
+    ime, priimek = prvi["ime"].split(" ", 1)
+    user = _ucitelj_uporabnik(ime, priimek)
+    with TestClient(app) as c:
+        login(c, user.username)
+        r = c.post("/govorilne/api/ure/ucitelj/dodaj", json={"ime": "Nov Učitelj"})
+        assert r.status_code == 403
+        r2 = c.post("/govorilne/api/ure/ucitelj/odstrani", json={"ime": prvi["ime"]})
+        assert r2.status_code == 403
+
+
+def test_popoldan_zacetek_spremeni_ure(make_user):
+    """Admin spremeni začetek popoldanskih ur (npr. 16:00) — termini se od njega začnejo."""
+    from app.routers.govorilne import _naslednji_popoldan, _popoldan_osnovnih_termov
+    admin = make_user(role="admin")
+    naslednji = _naslednji_popoldan()
+    with TestClient(app) as c:
+        login(c, admin.username)
+        r = c.post("/govorilne/api/ure/popoldan", json={
+            "popoldan_datumi": [naslednji], "popoldan_zacetek": "16:00",
+            "popoldan_osnovni_min": 45, "popoldan_max_ur": 2,
+        })
+        assert r.status_code == 200, r.text
+        data = r.json()
+        assert data["popoldan_zacetek"] == "16:00"
+        assert data["popoldan_osnovni_min"] == 45
+        assert data["popoldan_max_ur"] == 2
+        # Javna (ali ure) stran: termin za "Neja Grohar" (po dogovoru) se začne 16:00.
+        r2 = c.get("/govorilne/api/termini", params={"ucitelj": "Neja Grohar"})
+        assert r2.status_code == 200
+        ods = [t["ura_od"] for t in r2.json()["termini"] if t["datum"] == naslednji]
+        assert ods and ods[0] == "16:00"
+
+
+def test_popoldan_zacetek_neveljaven_400(make_user):
+    """Neveljaven začetek popoldanskih ur vrne 400."""
+    admin = make_user(role="admin")
+    from app.routers.govorilne import _naslednji_popoldan
+    naslednji = _naslednji_popoldan()
+    with TestClient(app) as c:
+        login(c, admin.username)
+        r = c.post("/govorilne/api/ure/popoldan", json={
+            "popoldan_datumi": [naslednji], "popoldan_zacetek": "99:99",
+        })
+        assert r.status_code == 400

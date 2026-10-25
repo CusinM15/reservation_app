@@ -86,6 +86,9 @@ def _default_cfg() -> dict:
         "ura_zacetki": URA_ZACETKI,
         "dopoldan_teden": GOVORILNE_DOPOLDAN_TEDEN,
         "termin_minut": TERMIN_MINUT,
+        "popoldan_zacetek": POPOLDAN_ZACETEK,
+        "popoldan_osnovni_min": POPOLDAN_OSNOVNI_MIN,
+        "popoldan_max_ur": POPOLDAN_MAX_UR,
     }
 
 
@@ -278,19 +281,54 @@ def _dopoldan_termini(u: dict, cfg: dict | None = None) -> list[dict]:
     return out
 
 
-def _popoldan_term_od(i: int, term_min: int) -> str:
-    """Začetek i-tega popoldanskega termina od začetka (17:30)."""
-    return _add_minutes(POPOLDAN_ZACETEK, i * term_min)
+def _popoldan_zacetek(cfg: dict | None = None) -> str:
+    """Začetek popoldanskih govorilnih ur (šola nastavi; privzeto '17:30')."""
+    cfg = cfg or _default_cfg()
+    v = (cfg.get("popoldan_zacetek") or POPOLDAN_ZACETEK or "").strip()
+    if not v:
+        return POPOLDAN_ZACETEK
+    try:
+        h, m = map(int, v.split(":")[:2])
+        if not (0 <= h < 24 and 0 <= m < 60):
+            return POPOLDAN_ZACETEK
+        return f"{h:02d}:{m:02d}"
+    except (TypeError, ValueError):
+        return POPOLDAN_ZACETEK
+
+
+def _popoldan_osnovni_min(cfg: dict | None = None) -> int:
+    """Osnovno trajanje popoldanskih govorilnih ur v minutah (privzeto 60)."""
+    cfg = cfg or _default_cfg()
+    try:
+        v = int(cfg.get("popoldan_osnovni_min") or POPOLDAN_OSNOVNI_MIN)
+        return v if 15 <= v <= 180 else POPOLDAN_OSNOVNI_MIN
+    except (TypeError, ValueError):
+        return POPOLDAN_OSNOVNI_MIN
+
+
+def _popoldan_max_ur(cfg: dict | None = None) -> int:
+    """Največ koliko ur lahko trajajo popoldanske govorilne (privzeto 5)."""
+    cfg = cfg or _default_cfg()
+    try:
+        v = int(cfg.get("popoldan_max_ur") or POPOLDAN_MAX_UR)
+        return v if 1 <= v <= 8 else POPOLDAN_MAX_UR
+    except (TypeError, ValueError):
+        return POPOLDAN_MAX_UR
+
+
+def _popoldan_term_od(i: int, term_min: int, cfg: dict | None = None) -> str:
+    """Začetek i-tega popoldanskega termina od začetka (privzeto 17:30)."""
+    return _add_minutes(_popoldan_zacetek(cfg), i * term_min)
 
 
 def _popoldan_osnovnih_termov(cfg: dict | None = None) -> int:
-    """Koliko terminov pokriva osnovno 1 uro popoldanskih govorilnih ur."""
-    return max(1, POPOLDAN_OSNOVNI_MIN // _term_min(cfg))
+    """Koliko terminov pokriva osnovno trajanje popoldanskih govorilnih ur."""
+    return max(1, _popoldan_osnovni_min(cfg) // _term_min(cfg))
 
 
 def _popoldan_max_termov(cfg: dict | None = None) -> int:
-    """Največ možnih popoldanskih terminov: do POPOLDAN_MAX_UR ur od 17:30."""
-    return max(1, (POPOLDAN_MAX_UR * 60) // _term_min(cfg))
+    """Največ možnih popoldanskih terminov: do _popoldan_max_ur ur od začetka."""
+    return max(1, (_popoldan_max_ur(cfg) * 60) // _term_min(cfg))
 
 
 def _popoldan_odobrenih_termov(datum: str, zauzeti: set, cfg: dict | None = None) -> int:
@@ -302,7 +340,7 @@ def _popoldan_odobrenih_termov(datum: str, zauzeti: set, cfg: dict | None = None
     n = _popoldan_osnovnih_termov(cfg)
     max_t = _popoldan_max_termov(cfg)
     while n < max_t:
-        vseh = all((datum, _popoldan_term_od(i, term_min)) in zauzeti for i in range(n))
+        vseh = all((datum, _popoldan_term_od(i, term_min, cfg)) in zauzeti for i in range(n))
         if not vseh:
             break
         n += 1
@@ -325,7 +363,7 @@ def _popoldan_termini(db: Session | None, school_id: int | None,
     for d in (cfg.get("popoldan_datumi") or POPOLDAN_DATUMI):
         n = _popoldan_odobrenih_termov(d, zauzeti, cfg)
         for i in range(n):
-            od = _popoldan_term_od(i, term_min)
+            od = _popoldan_term_od(i, term_min, cfg)
             do = _add_minutes(od, term_min)
             out.append({"datum": d, "ura_od": od, "ura_do": do})
     return out
@@ -342,7 +380,7 @@ def _popoldan_termini_maximalni(cfg: dict | None = None) -> list[dict]:
     out = []
     for d in (cfg.get("popoldan_datumi") or POPOLDAN_DATUMI):
         for i in range(_popoldan_max_termov(cfg)):
-            od = _popoldan_term_od(i, term_min)
+            od = _popoldan_term_od(i, term_min, cfg)
             out.append({"datum": d, "ura_od": od, "ura_do": _add_minutes(od, term_min)})
     return out
 
@@ -694,7 +732,10 @@ def govorilne_ure_stran(request: Request, db: Session = Depends(get_db)):
          "razredi": razredi,
          "popoldan_datumi": cfg.get("popoldan_datumi") or POPOLDAN_DATUMI,
          "dopoldan_teden": cfg.get("dopoldan_teden") or GOVORILNE_DOPOLDAN_TEDEN,
-         "termin_minut": cfg.get("termin_minut") or TERMIN_MINUT},
+         "termin_minut": cfg.get("termin_minut") or TERMIN_MINUT,
+         "popoldan_zacetek": cfg.get("popoldan_zacetek") or POPOLDAN_ZACETEK,
+         "popoldan_osnovni_min": cfg.get("popoldan_osnovni_min") or POPOLDAN_OSNOVNI_MIN,
+         "popoldan_max_ur": cfg.get("popoldan_max_ur") or POPOLDAN_MAX_UR},
     )
 
 
@@ -757,9 +798,47 @@ async def ure_popoldan(request: Request, db: Session = Depends(get_db)):
     termin_minut = _poberi_termin_minut(body)
     if termin_minut is not None:
         cfg["termin_minut"] = termin_minut
+
+    # Začetek popoldanskih ur (nova nastavitev).
+    zacetek_raw = body.get("popoldan_zacetek")
+    if zacetek_raw is not None and str(zacetek_raw).strip() != "":
+        zacetek = str(zacetek_raw).strip()
+        try:
+            hh, mm = map(int, zacetek.split(":")[:2])
+            if not (0 <= hh < 24 and 0 <= mm < 60):
+                raise ValueError
+            cfg["popoldan_zacetek"] = f"{hh:02d}:{mm:02d}"
+        except (ValueError, TypeError):
+            raise HTTPException(status_code=400, detail="Neveljaven začetek popoldanskih ur (npr. 17:30)")
+
+    # Osnovno trajanje popoldanskih ur v minutah (npr. 60 = osnovna ura).
+    osnovni_raw = body.get("popoldan_osnovni_min")
+    if osnovni_raw is not None and str(osnovni_raw).strip() != "":
+        try:
+            v = int(osnovni_raw)
+        except (TypeError, ValueError):
+            raise HTTPException(status_code=400, detail="Osnovno trajanje mora biti število minut")
+        if v < 15 or v > 180:
+            raise HTTPException(status_code=400, detail="Osnovno trajanje naj bo med 15 in 180 minut")
+        cfg["popoldan_osnovni_min"] = v
+
+    # Največ koliko ur trajajo popoldanske govorilne (od začetka).
+    max_ur_raw = body.get("popoldan_max_ur")
+    if max_ur_raw is not None and str(max_ur_raw).strip() != "":
+        try:
+            v = int(max_ur_raw)
+        except (TypeError, ValueError):
+            raise HTTPException(status_code=400, detail="Največ ur mora biti število")
+        if v < 1 or v > 8:
+            raise HTTPException(status_code=400, detail="Največ ur naj bo med 1 in 8")
+        cfg["popoldan_max_ur"] = v
+
     _save_cfg(db, school_id, cfg)
     return {"ok": True, "popoldan_datumi": datumi,
-            "termin_minut": cfg.get("termin_minut")}
+            "termin_minut": cfg.get("termin_minut"),
+            "popoldan_zacetek": cfg.get("popoldan_zacetek"),
+            "popoldan_osnovni_min": cfg.get("popoldan_osnovni_min"),
+            "popoldan_max_ur": cfg.get("popoldan_max_ur")}
 
 
 @router.post("/govorilne/api/ure/ucitelj")
@@ -864,3 +943,118 @@ async def ure_ucitelj(request: Request, db: Session = Depends(get_db)):
                        for u2 in cfg["ucitelji"]]
     _save_cfg(db, school_id, cfg)
     return {"ok": True, "ucitelj": _urnik_ucitelja(db, school_id, novi, cfg)}
+
+
+@router.post("/govorilne/api/ure/ucitelj/dodaj")
+async def ure_ucitelj_dodaj(request: Request, db: Session = Depends(get_db)):
+    """Admin/vodstvo/glavni admin DODA novega učitelja (ime + poljubne)."""
+    user = get_request_user(request, db)
+    if user is None:
+        raise HTTPException(status_code=401, detail="Ni prijave")
+    if not _lahko_ureja_vse(user):
+        raise HTTPException(status_code=403, detail="Nimate pravic za dodajanje učitelja")
+
+    try:
+        body = await request.json()
+    except Exception:
+        raise HTTPException(status_code=400, detail="Neveljaven JSON")
+
+    ime = (body.get("ime") or "").strip()
+    if not ime:
+        raise HTTPException(status_code=400, detail="Manjka 'ime' učitelja")
+
+    school_id = request_school_id(request) or _default_school_id(db)
+    if not is_main_admin(user):
+        school_id = user.school_id or school_id
+    cfg = _load_cfg(db, school_id)
+
+    if _ucitelj_by_ime(ime, cfg["ucitelji"]) is not None:
+        raise HTTPException(status_code=409, detail="Učitelj s tem imenom že obstaja")
+
+    novi = {
+        "ime": ime,
+        "predmet": (body.get("predmet") or "").strip(),
+        "razred": (str(body.get("razred") or "").strip() or None),
+        "prostor": (body.get("prostor") or "").strip(),
+        "dan": None,
+        "ura": None,
+        "po_dogovoru": True,
+    }
+
+    def _parsiraj_dan_v(v):
+        if v is None:
+            return None
+        s = str(v).strip()
+        if s in ("", "null", "None", "po_dogovoru"):
+            return None
+        try:
+            d = int(s)
+        except (TypeError, ValueError):
+            raise HTTPException(status_code=400, detail=f"Neveljaven dan: {s}")
+        if d < 0 or d > 4:
+            raise HTTPException(status_code=400, detail="Dan mora biti med 0 (pon) in 4 (pet)")
+        return d
+
+    def _parsiraj_uro_v(v):
+        if v is None:
+            return None
+        s = str(v).strip()
+        if s in ("", "null", "None", "po_dogovoru"):
+            return None
+        try:
+            u = int(s)
+        except (TypeError, ValueError):
+            raise HTTPException(status_code=400, detail=f"Neveljavna ura: {s}")
+        max_ura = (cfg.get("ura_zacetki") or URA_ZACETKI)
+        if u < 1 or (max_ura and u > max(max_ura.keys())):
+            raise HTTPException(status_code=400, detail=f"Ura mora biti med 1 in {max(max_ura.keys())}")
+        return u
+
+    dan = _parsiraj_dan_v(body.get("dan"))
+    ura = _parsiraj_uro_v(body.get("ura"))
+    novi["dan"] = dan
+    novi["ura"] = ura
+    novi["po_dogovoru"] = not (dan is not None and ura is not None)
+
+    cfg["ucitelji"].append(novi)
+    _save_cfg(db, school_id, cfg)
+    return {"ok": True, "ucitelj": _urnik_ucitelja(db, school_id, novi, cfg)}
+
+
+@router.post("/govorilne/api/ure/ucitelj/odstrani")
+async def ure_ucitelj_odstrani(request: Request, db: Session = Depends(get_db)):
+    """Admin/vodstvo/glavni admin ODSTRANI učitelja iz seznama."""
+    user = get_request_user(request, db)
+    if user is None:
+        raise HTTPException(status_code=401, detail="Ni prijave")
+    if not _lahko_ureja_vse(user):
+        raise HTTPException(status_code=403, detail="Nimate pravic za odstranjevanje učitelja")
+
+    try:
+        body = await request.json()
+    except Exception:
+        raise HTTPException(status_code=400, detail="Neveljaven JSON")
+
+    ime = (body.get("ime") or "").strip()
+    if not ime:
+        raise HTTPException(status_code=400, detail="Manjka 'ime' učitelja")
+
+    school_id = request_school_id(request) or _default_school_id(db)
+    if not is_main_admin(user):
+        school_id = user.school_id or school_id
+    cfg = _load_cfg(db, school_id)
+
+    ucitelj = _ucitelj_by_ime(ime, cfg["ucitelji"])
+    if ucitelj is None:
+        raise HTTPException(status_code=404, detail="Učitelj ni v konfiguraciji")
+
+    cfg["ucitelji"] = [u2 for u2 in cfg["ucitelji"]
+                       if u2.get("ime") != ucitelj["ime"]]
+    _save_cfg(db, school_id, cfg)
+    # Zbriši tudi obstoječe prijave tega učitelja (da ni nedoslednosti).
+    q = db.query(GovorilnaPrijava).filter(GovorilnaPrijava.ucitelj == ucitelj["ime"])
+    if school_id is not None:
+        q = q.filter(GovorilnaPrijava.school_id == school_id)
+    q.delete(synchronize_session=False)
+    db.commit()
+    return {"ok": True, "ime": ucitelj["ime"]}

@@ -61,22 +61,78 @@
     <div class="card">
         <div class="card-header"><span class="name">Popoldanske govorilne ure</span></div>
         <div class="card-body" id="popoldan-block">
-            <h2>Kdaj so (datum ob četrtkih 17:30)</h2>
+            <h2>Kdaj so (popoldanske govorilne ure)</h2>
             <ul class="popoldan-list" id="popoldan-list">
                 {% for d in popoldan_datumi %}
                 <li><input type="date" value="{{ d }}" data-idx="{{ loop.index0 }}"> <button class="del" type="button" data-idx="{{ loop.index0 }}" onclick="rmPopoldan(this)">✕</button></li>
                 {% endfor %}
             </ul>
             <div class="form-row" style="margin-top:.6rem;">
+                <label>Začetek ur (npr. 17:30)</label>
+                <input type="time" id="popoldanZacetek" value="{{ popoldan_zacetek }}" style="width:110px;">
+            </div>
+            <div class="form-row" style="margin-top:.6rem;">
                 <label>Dolžina termina (min)</label>
                 <input type="number" id="terminMinut" min="5" max="120" value="{{ termin_minut }}" style="width:90px;">
-                <span class="hint" style="margin-left:.4rem;">Osnovna 1 ura; ko je polna, se dodaja po en terminu do največ 5 ur.</span>
+            </div>
+            <div class="form-row" style="margin-top:.6rem;">
+                <label>Osnovno trajanje (min)</label>
+                <input type="number" id="popoldanOsnovniMin" min="15" max="180" value="{{ popoldan_osnovni_min }}" style="width:90px;">
+                <span class="hint" style="margin-left:.4rem;">privzeto 60 (1 ura)</span>
+            </div>
+            <div class="form-row" style="margin-top:.6rem;">
+                <label>Največ ur</label>
+                <input type="number" id="popoldanMaxUr" min="1" max="8" value="{{ popoldan_max_ur }}" style="width:90px;">
+                <span class="hint" style="margin-left:.4rem;">od začetka; ko je polno, se dodaja po en terminu</span>
             </div>
             <div class="form-row" style="margin-top:.6rem;">
                 <button class="btn ghost" type="button" onclick="addPopoldan()">+ Dodaj datum</button>
                 <button class="btn" type="button" onclick="savePopoldan()">💾 Shrani popoldanske ure</button>
             </div>
             <div class="msg" id="popoldan-msg"></div>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Dodajanje novega učitelja (samo admin/vodstvo) -->
+    {% if is_editor %}
+    <div class="card">
+        <div class="card-header"><span class="name">Dodaj učitelja</span></div>
+        <div class="card-body">
+            <form onsubmit="dodajUcitelja(event, this)">
+                <div class="form-row">
+                    <label>Polno ime *</label>
+                    <input type="text" name="ime" required placeholder="npr. Ime Priimek">
+                </div>
+                <div class="form-row">
+                    <label>Predmet</label>
+                    <input type="text" name="predmet" placeholder="npr. Matematika / razredni pouk">
+                </div>
+                <div class="form-row">
+                    <label>Prostor</label>
+                    <input type="text" name="prostor" placeholder="npr. učilnica MAT 3">
+                </div>
+                <div class="form-row">
+                    <label>Dan (dopoldan)</label>
+                    <select name="dan">
+                        <option value="">Po dogovoru</option>
+                        <option value="0">Ponedeljek</option>
+                        <option value="1">Torek</option>
+                        <option value="2">Sreda</option>
+                        <option value="3">Četrtek</option>
+                        <option value="4">Petek</option>
+                    </select>
+                    <label>Šolska ura</label>
+                    <select name="ura">
+                        <option value="">Po dogovoru</option>
+                        {% for i in [1,2,3,4,5,6,7] %}
+                        <option value="{{ i }}">{{ i }}. ura</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <button class="btn" type="submit">+ Dodaj učitelja</button>
+                <div class="msg" style="display:none"></div>
+            </form>
         </div>
     </div>
     {% endif %}
@@ -94,7 +150,12 @@
                 <span class="name">{{ u.ime_priimek }}</span>
                 {% if u.predmet %} <span class="subj">— {{ u.predmet }}</span>{% endif %}
             </div>
-            {% if u.prostor %}<div class="subj">📍 {{ u.prostor }}</div>{% endif %}
+            <div>
+                {% if u.prostor %}<span class="subj">📍 {{ u.prostor }}</span>{% endif %}
+                {% if is_editor and u.ime %}
+                <button class="btn small ghost" type="button" onclick="odstraniUcitelja('{{ u.ime }}', this)" style="margin-left:.5rem; background:#fdeeee; color:#b02a2a;">Odstrani</button>
+                {% endif %}
+            </div>
         </div>
         <div class="card-body">
             <h2>Objavljeni termin</h2>
@@ -110,7 +171,7 @@
             <div class="term"><span class="t-label">Dopoldan:</span> ni določenega termina</div>
             {% endif %}
             <div class="term">
-                <span class="t-label">Popoldan:</span> četrtki od 17:30 (osnovna ura; po potrebi podaljšanje do 5 ur)
+                <span class="t-label">Popoldan:</span> četrtki od {{ popoldan_zacetek }} (osnovno {{ popoldan_osnovni_min }} min; po potrebi podaljšanje do {{ popoldan_max_ur }} ur)
                 <ul>
                     {% for d in u.popoldan_datumi %}<li>{{ d }}</li>{% endfor %}
                 </ul>
@@ -222,8 +283,12 @@ async function savePopoldan() {
     const datumi = [...inputs].map(i => i.value).filter(Boolean);
     if (!datumi.length) { msg.textContent = '✖ Dodajte vsaj en datum.'; msg.className = 'msg err'; msg.style.display='block'; return; }
     const terminMinut = document.getElementById('terminMinut').value.trim();
+    const zacetek = document.getElementById('popoldanZacetek').value.trim();
+    const osnovniMin = document.getElementById('popoldanOsnovniMin').value.trim();
+    const maxUr = document.getElementById('popoldanMaxUr').value.trim();
     await _post('/govorilne/api/ure/popoldan', {
-        popoldan_datumi: datumi, termin_minut: terminMinut
+        popoldan_datumi: datumi, termin_minut: terminMinut,
+        popoldan_zacetek: zacetek, popoldan_osnovni_min: osnovniMin, popoldan_max_ur: maxUr
     }, msg);
 }
 
@@ -241,6 +306,35 @@ async function saveUcitelj(event, form) {
     };
     if (fd.get('ime')) body['ime'] = fd.get('ime').trim();
     await _post('/govorilne/api/ure/ucitelj', body, msg);
+}
+
+// ── Dodaj novega učitelja (editor only) ──
+async function dodajUcitelja(event, form) {
+    event.preventDefault();
+    const msg = form.querySelector('.msg');
+    const fd = new FormData(form);
+    const body = {
+        ime: (fd.get('ime')||'').trim(),
+        predmet: (fd.get('predmet')||'').trim(),
+        prostor: (fd.get('prostor')||'').trim(),
+        dan: fd.get('dan') || '',
+        ura: fd.get('ura') || '',
+    };
+    const r = await _post('/govorilne/api/ure/ucitelj/dodaj', body, msg);
+    if (r && r.ok) setTimeout(() => location.reload(), 700);
+}
+
+// ── Odstrani učitelja (editor only) ──
+async function odstraniUcitelja(ime, btn) {
+    const imeClean = ime.replace(/'/g, "\\'");
+    if (!confirm('Odstrani učitelja "' + imeClean + '" iz govorilnih ur (in njene prijave)?')) return;
+    const card = btn.closest('.card');
+    const msg = document.createElement('div');
+    msg.className = 'msg';
+    msg.style.marginTop = '.5rem';
+    card.querySelector('.card-body').appendChild(msg);
+    const r = await _post('/govorilne/api/ure/ucitelj/odstrani', { ime: ime }, msg);
+    if (r && r.ok) setTimeout(() => location.reload(), 700);
 }
 </script>
 </body>
