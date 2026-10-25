@@ -61,3 +61,24 @@ def test_settings_toggle_hint_js_obstaja(client):
     html = _get_settings_html(client)
     assert "d.addEventListener('toggle'" in html
     assert "h.textContent = d.open ? ' ▾ manj' : ' ▸ več';" in html
+
+
+def test_settings_osnovno_ločeni_razdelki(client):
+    """24.10.2026→ 26.10: Osnovno razpada v ločene zložljive razdelke —
+    Razredi, Prostori, Urnik; Števila so GNJEZDEN podrazdelek znotraj Prostorov."""
+    html = _get_settings_html(client)
+    # vsak glavni razdelek je details s summary
+    for naslov in ("Razredi", "Prostori", "Urnik", "Števila"):
+        assert f"<summary><h3>{naslov}</h3>" in html
+    # Števila mora bit GNJEZDEN znotraj Prostorov: Prostori details »open« se zapre
+    # ŠELE PO Števila razdelku. Najdemo pozicije.
+    i_prostori = html.find('<summary><h3>Prostori</h3>')
+    i_stevila = html.find('<summary><h3>Števila</h3>')
+    i_urnik = html.find('<summary><h3>Urnik</h3>')
+    assert 0 < i_prostori < i_stevila < i_urnik, \
+        "vrstni red razdelkov ni Prostori[Števila] → Urnik"
+    # med Prostori summary-jem in Urnik summary-jem mora biti vsaj en </details>
+    # (zapiranje notranjega Števila) — torej je Števila podvrstica Prostorov.
+    segment = html[i_prostori:i_urnik]
+    assert segment.count("</details>") == 2, \
+        "Števila ni pravilno gnezdeno znotraj Prostorov (pričakovana 2 zapiranja: Števila + Prostori)"

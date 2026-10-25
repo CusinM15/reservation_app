@@ -97,7 +97,7 @@
         <form id="settings-form">
             <input type="hidden" name="school_id" value="{{ school.id }}">
 
-            <details class="collapsible" open>
+    <details class="collapsible" open>
                 <summary><h3>{{ t('set_osnovno', 'Osnovno') }}</h3><span class="toggle-hint">▾ manj</span></summary>
 
             <!-- JEZIK VMESNIKA: izbira jezika (SL/EN) za napise gumbov in oken.
@@ -113,20 +113,6 @@
                     {{ t('set_hint_jezik_1', 'Jezik, v katerem aplikacija prikaže napise gumbov in pogovornih oken (besedila se berejo iz tabele') }} <code>ui_strings</code>).
                 </div>
             </div>
-
-            <!-- RAZREDI: vsak razred v SVOJI vrstici (kot prostori in urnik),
-                 da je urejanje pregledno in brez vejic. Ob shranjevanju se
-                 vrstice sestavijo nazaj v vejica-ločen seznam (ključ RAZREDI). -->
-            <div class="field">
-                <label>{{ t('set_razredi', 'Razredi') }}</label>
-                {% if is_main_admin %}<span class="key">RAZREDI</span>{% endif %}
-                <div id="razredi-rows"></div>
-                <button type="button" class="btn" style="margin-top:8px;" onclick="addRazredRow(); return false;">{{ t('set_dodaj_razred', '＋ Dodaj razred') }}</button>
-                <div class="hint" style="margin-top:6px;">
-                    {{ t('set_hint_razredi_1', 'V vsako vrstico vpišite en razred, npr.') }} <code>1.a</code>{{ t('set_hint_razredi_2', '. Vrstico odstranite z ✕. Razredi se uporabljajo pri ocenjevanjih in dnevih dejavnosti (pri rezervacijah prostorov se ne uporabljajo).') }}
-                </div>
-            </div>
-
             {% for f in fields %}{% if f.key in ('INACTIVITY_TIMEOUT_MINUTES','INACTIVITY_TIMEOUT_ADMIN_MINUTES') %}
             <div class="field">
                 <label>{{ t('setf_' ~ f.key, f.label) }}</label>
@@ -141,23 +127,24 @@
                 {% endif %}
             </div>
             {% endif %}{% endfor %}
-
-            <!-- ŠTEVILA: imenovane številske spremenljivke (npr. »Število tablic«),
-                 vsaka v SVOJI vrstici — enako kot urnik. Ob shranjevanju se
-                 vrstice sestavijo v JSON objekt (ključ STEVILA). Na ta imena se
-                 sklicujejo prostori (kljukica »število« + spustni seznam). -->
+    </details>
+    <details class="collapsible" open>
+        <summary><h3>{{ t('set_razredi', 'Razredi') }}</h3><span class="toggle-hint">▾ manj</span></summary>
+            <!-- RAZREDI: vsak razred v SVOJI vrstici (kot prostori in urnik),
+                 da je urejanje pregledno in brez vejic. Ob shranjevanju se
+                 vrstice sestavijo nazaj v vejica-ločen seznam (ključ RAZREDI). -->
             <div class="field">
-                <label>{{ t('set_stevila', 'Števila') }}</label>
-                {% if is_main_admin %}<span class="key">STEVILA</span>{% endif %}
-                <div id="stevila-rows"></div>
-                <button type="button" class="btn" style="margin-top:8px;" onclick="addSteviloRow(); return false;">{{ t('set_dodaj_stevilo', '＋ Dodaj število') }}</button>
+                <label>{{ t('set_razredi', 'Razredi') }}</label>
+                {% if is_main_admin %}<span class="key">RAZREDI</span>{% endif %}
+                <div id="razredi-rows"></div>
+                <button type="button" class="btn" style="margin-top:8px;" onclick="addRazredRow(); return false;">{{ t('set_dodaj_razred', '＋ Dodaj razred') }}</button>
                 <div class="hint" style="margin-top:6px;">
-                    {{ t('set_hint_stevila_1', 'Vsaka vrstica je imenovana številska spremenljivka (ime + vrednost), npr.') }}
-                    <code>Število tablic</code> = <code>25</code> {{ t('set_hint_stevila_ali', 'ali') }} <code>Število računalnikov</code> = <code>30</code>.
-                    {{ t('set_hint_stevila_2', 'Na ta imena se vežejo prostori (spodaj) — kapaciteta prostora na uro je vrednost te spremenljivke.') }}
+                    {{ t('set_hint_razredi_1', 'V vsako vrstico vpišite en razred, npr.') }} <code>1.a</code>{{ t('set_hint_razredi_2', '. Vrstico odstranite z ✕. Razredi se uporabljajo pri ocenjevanjih in dnevih dejavnosti (pri rezervacijah prostorov se ne uporabljajo).') }}
                 </div>
             </div>
-
+    </details>
+    <details class="collapsible" open>
+        <summary><h3>{{ t('set_prostori', 'Prostori') }}</h3><span class="toggle-hint">▾ manj</span></summary>
             <!-- PROSTORI: vsak prostor v SVOJI vrstici + kljukica »število«.
                  Ob kljukici se odpre spustni seznam z vsemi številskimi
                  spremenljivkami (STEVILA) — prostor se veže na izbrano. -->
@@ -176,8 +163,29 @@
                     {{ t('set_hint_prostori_primer', 'Primer: <code>tablice</code> s kljukico in spremenljivko <code>Število tablic</code>, <code>racunalnica</code> brez.') | safe }}
                 </div>
             </div>
-
-            <!-- URNIK: vsaka ura v SVOJI vrstici (ne surov JSON), da je urejanje
+            <!-- ŠTEVILA (podrazdelek Prostorov) -->
+            <details class="collapsible" open>
+                <summary><h3>{{ t('set_stevila', 'Števila') }}</h3><span class="toggle-hint">▾ manj</span></summary>
+            <!-- ŠTEVILA: imenovane številske spremenljivke (npr. »Število tablic«),
+                 vsaka v SVOJI vrstici — enako kot urnik. Ob shranjevanju se
+                 vrstice sestavijo v JSON objekt (ključ STEVILA). Na ta imena se
+                 sklicujejo prostori (kljukica »število« + spustni seznam). -->
+            <div class="field">
+                <label>{{ t('set_stevila', 'Števila') }}</label>
+                {% if is_main_admin %}<span class="key">STEVILA</span>{% endif %}
+                <div id="stevila-rows"></div>
+                <button type="button" class="btn" style="margin-top:8px;" onclick="addSteviloRow(); return false;">{{ t('set_dodaj_stevilo', '＋ Dodaj število') }}</button>
+                <div class="hint" style="margin-top:6px;">
+                    {{ t('set_hint_stevila_1', 'Vsaka vrstica je imenovana številska spremenljivka (ime + vrednost), npr.') }}
+                    <code>Število tablic</code> = <code>25</code> {{ t('set_hint_stevila_ali', 'ali') }} <code>Število računalnikov</code> = <code>30</code>.
+                    {{ t('set_hint_stevila_2', 'Na ta imena se vežejo prostori (spodaj) — kapaciteta prostora na uro je vrednost te spremenljivke.') }}
+                </div>
+            </div>
+            </details>
+    </details>
+    <details class="collapsible" open>
+        <summary><h3>{{ t('set_urnik_sklop', 'Urnik') }}</h3><span class="toggle-hint">▾ manj</span></summary>
+                    <!-- URNIK: vsaka ura v SVOJI vrstici (ne surov JSON), da je urejanje
                  preprosto in pregledno. Ob shranjevanju se vrstice sestavijo
                  nazaj v JSON (ključ SCHEDULE). -->
             <div class="field">
@@ -189,7 +197,6 @@
                     {{ t('set_hint_urnik_1', 'V vsako vrstico vpišite razpon ure, npr.') }} <code>07:30-08:15</code>{{ t('set_hint_urnik_2', '. Vrstico odstranite z ✕. Ure se uporabljajo v urniku in pri rezervacijah (za prostore brez kljukice »popoldanski urnik«).') }}
                 </div>
             </div>
-
             <!-- POPOLDANSKI URNIK (POPOLDAN_SCHEDULE): termini za prostore,
                  ki imajo spodaj kljukico »popoldanski urnik« (privzeto 15:00–21:00). -->
             <div class="field">
@@ -201,8 +208,7 @@
                     {{ t('set_hint_popoldan_1', 'Termini za prostore s kljukico »popoldanski urnik« (privzeto po 1 uro od 15:00 do 21:00). Npr.') }} <code>15:00-16:00</code>{{ t('set_hint_popoldan_2', '. Vrstico odstranite z ✕.') }}
                 </div>
             </div>
-
-            </details>
+    </details>
 
             <details class="collapsible">
                 <summary><h3>{{ t('set_pravila_ocenjevanja', 'Pravila ocenjevanja') }}</h3><span class="toggle-hint">▸ več</span></summary>
