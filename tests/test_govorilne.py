@@ -865,3 +865,108 @@ def test_popoldan_zacetek_neveljaven_400(make_user):
             "popoldan_datumi": [naslednji], "popoldan_zacetek": "99:99",
         })
         assert r.status_code == 400
+
+
+# ── Brisanje rezervacij — SAMO šolski admin (nihče drug) ─────────────────
+
+def _naredi_prijavo():
+    """Ustvari rezervacijo starša v prvi prosti termin — vrne njen id."""
+    from app.routers.govorilne import _ucitelj_by_ime, _prosti_termini
+    from app.tenancy import _default_school_id
+    db = SessionLocal()
+    try:
+        u = _ucitelj_by_ime("Matej Čušin")
+        assert u is not None
+        terms = _prosti_termini(db, _default_school_id(db), u)
+        assert terms, "učitelj nima prostih terminov"
+        t = terms[0]
+        p = GovorilnaPrijava(
+            school_id=_default_school_id(db), ucitelj="Matej Čušin",
+            datum=t["datum"][:10], ura_od=t["ura_od"], ura_do=t["ura_do"],
+            ime_starsa="Janez Novak", email="janez.novak@example.si",
+            otrok="Miha Novak", opis="Vprašanje o snovi",
+        )
+        db.add(p)
+        db.commit()
+        db.refresh(p)
+        return p.id
+    finally:
+        db.close()
+
+
+def test_prijava_brisanje_neprijavljen_401():
+    """Neprijavljen ne more brisati rezervacij."""
+    with TestClient(app) as c:
+        r = c.post("/govorilne/api/prijava/odstrani", json={"id": 1})
+        assert r.status_code == 401
+
+
+def test_prijava_brisanje_ucitelj_403(make_user):
+    """Učitelj NE more brisati rezervacij (niti svojega učitelja)."""
+    with TestClient(app) as c:
+        pid = _naredi_prijavo()
+        teacher = make_user(role="teacher")
+        login(c, teacher.username)
+        r = c.post("/govorilne/api/prijava/odstrani", json={"id": pid})
+        assert r.status_code == 403
+        # Prijava mora še vedno obstajati.
+        db = SessionLocal()
+        try:
+            assert db.query(GovorilnaPrijava).filter(GovorilnaPrijava.id == pid).first() is not None
+        finally:
+            db.close()
+
+
+def test_prijava_brisanje_vodstvo_403(make_user):
+    """Vodstvo NE more brisati rezervacij — samo šolski admin."""
+    with TestClient(app) as c:
+        pid = _naredi_prijavo()
+        vodstvo = make_user(role="vodstvo")
+        login(c, vodstvo.username)
+        r = c.post("/govorilne/api/prijava/odstrani", json={"id": pid})
+        assert r.status_code == 403
+
+
+def test_prijava_brisanje_main_admin_403(make_user):
+    """Glavni admin tudi NE more brisati — 'nihče drug' razen šolskega admina."""
+    with TestClient(app) as c:
+        pid = _naredi_prijavo()
+        main = make_user(role="main_admin")
+        login(c, main.username)
+        r = c.post("/govorilne/api/prijava/odstrani", json={"id": pid})
+        assert r.status_code == 403
+
+
+def test_prijava_brisanje_solski_admin_200(make_user):
+    """Šolski admin IZBRIŠE rezervacijo — 200 in prijava izgine."""
+    with TestClient(app) as c:
+        pid = _naredi_prijavo()
+        admin = make_user(role="admin")
+        login(c, admin.username)
+        r = c.post("/govorilne/api/prijava/odstrani", json={"id": pid})
+        assert r.status_code == 200, r.text
+        data = r.json()
+        assert data.get("ok") is True
+        db = SessionLocal()
+        try:
+            assert db.query(GovorilnaPrijava).filter(GovorilnaPrijava.id == pid).first() is None
+        finally:
+            db.close()
+
+
+def test_prijava_brisanje_neobstojece_404(make_user):
+    """Neobstoječa prijava vrne 404 tudi šolskemu adminu."""
+    with TestClient(app) as c:
+        admin = make_user(role="admin")
+        login(c, admin.username)
+        r = c.post("/govorilne/api/prijava/odstrani", json={"id": 999999})
+        assert r.status_code == 404
+
+
+def test_prijava_brisanje_manjka_id_400(make_user):
+    """Telo brez 'id' vrne 400."""
+    with TestClient(app) as c:
+        admin = make_user(role="admin")
+        login(c, admin.username)
+        r = c.post("/govorilne/api/prijava/odstrani", json={})
+        assert r.status_code == 400

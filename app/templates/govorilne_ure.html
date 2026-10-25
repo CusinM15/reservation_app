@@ -190,7 +190,7 @@
             <h2>Rezervacije staršev</h2>
             {% if u.rezervacije %}
             <table>
-                <tr><th>Datum</th><th>Ura</th><th>Starš</th><th>Otrok</th><th>Kratek opis</th></tr>
+                <tr><th>Datum</th><th>Ura</th><th>Starš</th><th>Otrok</th><th>Kratek opis</th>{% if is_admin %}<th></th>{% endif %}</tr>
                 {% for p in u.rezervacije %}
                 <tr>
                     <td>{{ p.datum.strftime('%d. %m. %Y') }}</td>
@@ -198,6 +198,7 @@
                     <td>{{ p.ime_starsa }}</td>
                     <td>{{ p.otrok }}</td>
                     <td>{{ p.opis or '—' }}</td>
+                    {% if is_admin %}<td><button class="btn small ghost del" type="button" onclick="odstraniPrijavo({{ p.id }}, this)" title="Izbriši rezervacijo" style="background:#fdeeee; color:#b02a2a;">Briši</button></td>{% endif %}
                 </tr>
                 {% endfor %}
             </table>
@@ -354,6 +355,20 @@ async function odstraniUcitelja(ime, btn) {
     msg.style.marginTop = '.5rem';
     card.querySelector('.card-body').appendChild(msg);
     const r = await _post('/govorilne/api/ure/ucitelj/odstrani', { ime: ime }, msg);
+    if (r && r.ok) setTimeout(() => location.reload(), 700);
+}
+
+// ── Odstrani rezervacijo starša (samo šolski admin) ──
+async function odstraniPrijavo(id, btn) {
+    const row = btn.closest('tr');
+    const stars = row ? (row.cells[2]?.textContent || '').trim() : '';
+    if (!confirm('Izbriši rezervacijo' + (stars ? ' starša ' + stars : '') + '?')) return;
+    const card = btn.closest('.card');
+    const msg = document.createElement('div');
+    msg.className = 'msg';
+    msg.style.marginTop = '.5rem';
+    card.querySelector('.card-body').appendChild(msg);
+    const r = await _post('/govorilne/api/prijava/odstrani', { id: id }, msg);
     if (r && r.ok) setTimeout(() => location.reload(), 700);
 }
 </script>

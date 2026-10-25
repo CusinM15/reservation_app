@@ -620,7 +620,8 @@ def govorilne_prijave_stran(request: Request, db: Session = Depends(get_db)):
 
     return templates.TemplateResponse(
         request, "govorilne_prijave.html",
-        {"prijave": prijave, "role": role, "is_teacher": role == "teacher"},
+        {"prijave": prijave, "role": role, "is_teacher": role == "teacher",
+         "is_admin": is_school_admin(user)},
     )
 
 
@@ -632,6 +633,44 @@ def _pocisti_stare(db: Session) -> int:
             db.delete(p)
         db.commit()
     return len(starih)
+
+
+@router.post("/govorilne/api/prijava/odstrani")
+async def govorilne_prijava_odstrani(
+    request: Request,
+    db: Session = Depends(get_db),
+):
+    """Brisanje rezervacije — SAMO šolski admin (vloga admin), nihče drug.
+
+    Učitelji, vodstvo in glavni admin lahko rezervacijo le vidijo, izbrisati
+    sme zgolj šolski admin (role=admin) svoje šole.
+    """
+    user = get_request_user(request, db)
+    if user is None:
+        raise HTTPException(status_code=401, detail="Ni prijave")
+    if not is_school_admin(user):
+        raise HTTPException(status_code=403, detail="Samo šolski admin lahko briše rezervacije")
+
+    try:
+        body = await request.json()
+    except Exception:
+        raise HTTPException(status_code=400, detail="Neveljaven JSON")
+
+    prijava_id = body.get("id")
+    if prijava_id is None:
+        raise HTTPException(status_code=400, detail="Manjka 'id' prijave")
+
+    school_id = user.school_id or request_school_id(request) or _default_school_id(db)
+    q = db.query(GovorilnaPrijava).filter(GovorilnaPrijava.id == prijava_id)
+    if school_id is not None:
+        q = q.filter(GovorilnaPrijava.school_id == school_id)
+    prijava = q.first()
+    if prijava is None:
+        raise HTTPException(status_code=404, detail="Prijava ne obstaja")
+
+    db.delete(prijava)
+    db.commit()
+    return {"ok": True, "id": prijava_id}
 
 
 # ═══════════════════════════════════════════════════════════════════════
@@ -729,6 +768,7 @@ def govorilne_ure_stran(request: Request, db: Session = Depends(get_db)):
         request, "govorilne_ure.html",
         {"prikaz": prikaz, "role": role, "is_teacher": role == "teacher",
          "is_editor": _lahko_ureja_vse(user),
+         "is_admin": is_school_admin(user),
          "razredi": razredi,
          "popoldan_datumi": cfg.get("popoldan_datumi") or POPOLDAN_DATUMI,
          "dopoldan_teden": cfg.get("dopoldan_teden") or GOVORILNE_DOPOLDAN_TEDEN,

@@ -32,7 +32,7 @@
     {% if prijave %}
     <table>
         <tr>
-            <th>Datum</th><th>Ura</th><th>Učitelj</th><th>Starš</th><th>Otrok</th><th>Kratek opis</th><th>E-naslov</th>
+            <th>Datum</th><th>Ura</th><th>Učitelj</th><th>Starš</th><th>Otrok</th><th>Kratek opis</th><th>E-naslov</th>{% if is_admin %}<th></th>{% endif %}
         </tr>
         {% for p in prijave %}
         <tr>
@@ -43,6 +43,7 @@
             <td>{{ p.otrok }}</td>
             <td>{{ p.opis or '' }}</td>
             <td>{{ p.email }}</td>
+            {% if is_admin %}<td><button type="button" class="btn small ghost del" onclick="odstraniPrijavo({{ p.id }}, this)" title="Izbriši rezervacijo" style="background:#fdeeee; color:#b02a2a;">Briši</button></td>{% endif %}
         </tr>
         {% endfor %}
     </table>
@@ -52,5 +53,22 @@
 
     <p class="note">Prijave so vidne samo učitelju (in šolski upravi). Samodejno se izbrišejo 24 ur po koncu govorilnih ur.</p>
 </div>
+<script>
+async function odstraniPrijavo(id, btn) {
+    const row = btn.closest('tr');
+    const stars = row ? (row.cells[3]?.textContent || '').trim() : '';
+    if (!confirm('Izbriši rezervacijo' + (stars ? ' starša ' + stars : '') + '?')) return;
+    try {
+        const r = await fetch('/govorilne/api/prijava/odstrani', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({ id: id }),
+        });
+        const data = await r.json().catch(() => ({}));
+        if (!r.ok) { alert('✖ ' + (data.detail || ('Napaka ' + r.status))); return; }
+    } catch (e) { alert('✖ ' + e.message); return; }
+    location.reload();
+}
+</script>
 </body>
 </html>
