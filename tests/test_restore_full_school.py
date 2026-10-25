@@ -271,3 +271,66 @@ def test_restore_endpoint_returns_summary_and_logs(client, make_user):
             AuditLog.school_id == sid_b).count() >= 1
     finally:
         db.close()
+
+
+# ── 5. Regresijski test: rezervni (fallback) id se po re-insertu uporabnikov ──
+#    Obnova »vse« IZBRIŠE in znova vstavi vse uporabnike šole z NOVIM id-jem.
+#    Če obnavlja šolski admin (npr. id 81), se ta po re-insertu preseli na drug id.
+#    Vsaka rezervacija z učiteljem, ki ga v kopiji NI, je prej padla na STARI id
+#    admina (81), ki po brisanju ne obstaja več → ForeignKeyViolation teacher_id=81.
+#    (Produkcijski incident pri obnovi OŠ Toneta Čufarja, 2026-10-25.)
+
+def _raw_backup_with_admin_and_unknown_teacher(sid_b: int, admin_username: str) -> str:
+    """Ročna pg_dump-CLO kopija: user = le admin šole; rezervacija = neobstoječ učitelj.
+
+    Rezervacija sklicuje na teacher_id 424242, ki NI v kopiji uporabnikov → pri
+    obnovi pade na rezervni (fallback) račun, torej na admina, ki obnavlja.
+    """
+    # Vrstica users (COPY tab-ločena): id, username, email, first, last, hash, role, is_active, reset_token, school_id
+    user_line = f"10\t{admin_username}\ta@b\t\t\tp\tadmin\tt\t\t{sid_b}"
+    # Vrstica reservations: id, prostor, date, hour, razred, qty, teacher_id, series_id, name, school_id
+    res_line = f"1\ttablice\t2026-09-25\t6\t\t23\t424242\t\\N\t\\N\t{sid_b}"
+    return (
+        "BEGIN;\n"
+        "COPY public.users (id,username,email,first_name,last_name,password_hash,role,is_active,reset_token,school_id) FROM stdin;\n"
+        f"{user_line}\n"
+        "\\.\n"
+        "COPY public.reservations (id,prostor,date,hour,razred,qty,teacher_id,series_id,name,school_id) FROM stdin;\n"
+        f"{res_line}\n"
+        "\\.\n"
+        "COMMIT;\n"
+    )
+
+
+def test_restore_all_fallback_points_to_fresh_admin_id(client, make_user):
+    """Obnova 'vse', ki jo izvaja ŠOLSKI ADMIN same šole, ne sme pasti na FK.
+
+    Prej: admin (fallback) je imel v bazi id npr. 81; obnova je izbrisala in
+    znova vstavila uporabnike z NOVIM id-jem, rezervacija z manjkajočim
+    učiteljem pa je še vedno kazala na STARI id 81 → ForeignKeyViolation.
+    Zdaj: id rezervnega računa se po re-insertu preračuna na svež id.
+    """
+    sid_b, _uid, _uname = _school_with_everything(make_user)
+    db = SessionLocal()
+    try:
+        # Počisti vse podatke šole (kot sveža šola), nato ustvari admina — ta
+        # mora OBSTOJATI, ko restore_domain ugotavlja njegovo uporabniško ime
+        # PRED svojim internim brisanjem uporabnikov.
+        _wipe_school(db, sid_b)
+        admin_b = make_user(role="admin", school_id=sid_b)
+        backup = _raw_backup_with_admin_and_unknown_teacher(sid_b, admin_b.username)
+        old_fallback_id = admin_b.id
+        assert db.query(User).filter(User.school_id == sid_b).count() == 1
+        # restore_domain ZA "vse" sam izbriše in znova vstavi uporabnike šole
+        summary = restore_domain(db, sid_b, backup, "vse", fallback_user_id=old_fallback_id)
+        db.commit()
+
+        # Rezervacija obstaja in teacher_id kaže na KOREN uporabnika (svež admin id)
+        res = db.query(Reservation).filter(Reservation.school_id == sid_b).one()
+        fresh = db.query(User).filter(User.id == res.teacher_id).one()
+        assert fresh.username == admin_b.username
+        # fallback_used=1: ravno neznani učitelj je padel na rezervo (admina)
+        assert summary["tables"]["reservations"]["fallback_used"] == 1
+        assert summary["tables"]["reservations"]["inserted"] == 1
+    finally:
+        db.close()
