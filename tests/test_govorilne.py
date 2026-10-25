@@ -901,11 +901,11 @@ def test_prijava_brisanje_neprijavljen_401():
         assert r.status_code == 401
 
 
-def test_prijava_brisanje_ucitelj_403(make_user):
-    """Učitelj NE more brisati rezervacij (niti svojega učitelja)."""
+def test_prijava_brisanje_ucitelj_tuja_403():
+    """Učitelj NE more izbrisati rezervacije drugega učitelja (ne svoje)."""
     with TestClient(app) as c:
-        pid = _naredi_prijavo()
-        teacher = make_user(role="teacher")
+        pid = _naredi_prijavo()  # prijava za "Matej Čušin"
+        teacher = _ucitelj_uporabnik("Drugi", "Učenik")
         login(c, teacher.username)
         r = c.post("/govorilne/api/prijava/odstrani", json={"id": pid})
         assert r.status_code == 403
@@ -913,6 +913,22 @@ def test_prijava_brisanje_ucitelj_403(make_user):
         db = SessionLocal()
         try:
             assert db.query(GovorilnaPrijava).filter(GovorilnaPrijava.id == pid).first() is not None
+        finally:
+            db.close()
+
+
+def test_prijava_brisanje_ucitelj_svojo_200():
+    """Učitelj IZBRIŠE lastno rezervacijo — 200 in prijava izgine."""
+    with TestClient(app) as c:
+        pid = _naredi_prijavo()  # prijava za "Matej Čušin"
+        teacher = _ucitelj_uporabnik("Matej", "Čušin")
+        login(c, teacher.username)
+        r = c.post("/govorilne/api/prijava/odstrani", json={"id": pid})
+        assert r.status_code == 200, r.text
+        assert r.json().get("ok") is True
+        db = SessionLocal()
+        try:
+            assert db.query(GovorilnaPrijava).filter(GovorilnaPrijava.id == pid).first() is None
         finally:
             db.close()
 

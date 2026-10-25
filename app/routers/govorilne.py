@@ -640,16 +640,19 @@ async def govorilne_prijava_odstrani(
     request: Request,
     db: Session = Depends(get_db),
 ):
-    """Brisanje rezervacije — SAMO šolski admin (vloga admin), nihče drug.
+    """Brisanje rezervacije.
 
-    Učitelji, vodstvo in glavni admin lahko rezervacijo le vidijo, izbrisati
-    sme zgolj šolski admin (role=admin) svoje šole.
+    Šolski admin (role=admin) lahko izbriše katerokoli rezervacijo svoje šole.
+    Učitelj lahko izbriše samo lastno rezervacijo (tisto na svoje ime).
+    Vodstvo in glavni admin lahko rezervacijo le vidijo, ne brišejo je.
     """
     user = get_request_user(request, db)
     if user is None:
         raise HTTPException(status_code=401, detail="Ni prijave")
-    if not is_school_admin(user):
-        raise HTTPException(status_code=403, detail="Samo šolski admin lahko briše rezervacije")
+    school_admin = is_school_admin(user)
+    if not school_admin and role_value(user) != "teacher":
+        raise HTTPException(status_code=403,
+                            detail="Samo šolski admin ali zadevni učitelj lahko briše rezervacije")
 
     try:
         body = await request.json()
@@ -667,6 +670,10 @@ async def govorilne_prijava_odstrani(
     prijava = q.first()
     if prijava is None:
         raise HTTPException(status_code=404, detail="Prijava ne obstaja")
+
+    if not school_admin and prijava.ucitelj != _polno_ime_user(user):
+        raise HTTPException(status_code=403,
+                            detail="Učitelj lahko izbriše samo svojo rezervacijo")
 
     db.delete(prijava)
     db.commit()

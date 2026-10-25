@@ -190,7 +190,7 @@
             <h2>Rezervacije staršev</h2>
             {% if u.rezervacije %}
             <table>
-                <tr><th>Datum</th><th>Ura</th><th>Starš</th><th>Otrok</th><th>Kratek opis</th>{% if is_admin %}<th></th>{% endif %}</tr>
+                <tr><th>Datum</th><th>Ura</th><th>Starš</th><th>Otrok</th><th>Kratek opis</th>{% if is_admin or is_teacher %}<th></th>{% endif %}</tr>
                 {% for p in u.rezervacije %}
                 <tr>
                     <td>{{ p.datum.strftime('%d. %m. %Y') }}</td>
@@ -198,7 +198,7 @@
                     <td>{{ p.ime_starsa }}</td>
                     <td>{{ p.otrok }}</td>
                     <td>{{ p.opis or '—' }}</td>
-                    {% if is_admin %}<td><button class="btn small ghost del" type="button" onclick="odstraniPrijavo({{ p.id }}, this)" title="Izbriši rezervacijo" style="background:#fdeeee; color:#b02a2a;">Briši</button></td>{% endif %}
+                    {% if is_admin or is_teacher %}<td><button class="btn small ghost del" type="button" onclick="odstraniPrijavo({{ p.id }}, this)" title="Izbriši rezervacijo" style="background:#fdeeee; color:#b02a2a;">Briši</button></td>{% endif %}
                 </tr>
                 {% endfor %}
             </table>
