@@ -41,6 +41,16 @@
         .popoldan-list li { display:flex; align-items:center; gap:.5rem; }
         .popoldan-list input[type=date] { padding:.25rem .4rem; border:1px solid #c3d3e2; border-radius:6px; }
         .del { background:transparent; border:none; color:#b02a2a; cursor:pointer; font-size:.9rem; }
+        /* ── Zložljiva »več/manj« poglavja ── */
+        details.collapsible > summary,
+        details.edit-block > summary { list-style:none; cursor:pointer; }
+        details.collapsible > summary::-webkit-details-marker,
+        details.edit-block > summary::-webkit-details-marker { display:none; }
+        details.collapsible > summary.card-header { user-select:none; }
+        .toggle-hint { font-weight:700; font-size:.78rem; opacity:.85; margin-left:.4rem; white-space:nowrap; }
+        details.edit-block { background:#f4f8fc; border:1px solid #d5e3ef; border-radius:8px; padding:.35rem .9rem .6rem; margin-top:.8rem; }
+        details.edit-block > summary { font-size:.8rem; color:#0b3b5c; margin-bottom:.2rem; padding-top:.35rem; }
+        details.edit-block[open] > summary { margin-bottom:.6rem; border-bottom:1px dashed #c3d3e2; padding-bottom:.35rem; }
     </style>
 </head>
 <body>
@@ -58,8 +68,8 @@
 
     <!-- Popoldanske govorilne ure — kdaj so (samo admin/vodstvo) -->
     {% if is_editor %}
-    <div class="card">
-        <div class="card-header"><span class="name">Popoldanske govorilne ure</span></div>
+    <details class="card collapsible" id="popoldan-card">
+        <summary class="card-header"><span class="name">Popoldanske govorilne ure</span><span class="toggle-hint">▸ več</span></summary>
         <div class="card-body" id="popoldan-block">
             <h2>Kdaj so (popoldanske govorilne ure)</h2>
             <ul class="popoldan-list" id="popoldan-list">
@@ -91,13 +101,13 @@
             </div>
             <div class="msg" id="popoldan-msg"></div>
         </div>
-    </div>
+    </details>
     {% endif %}
 
     <!-- Dodajanje novega učitelja (samo admin/vodstvo) -->
     {% if is_editor %}
-    <div class="card">
-        <div class="card-header"><span class="name">Dodaj učitelja</span></div>
+    <details class="card collapsible">
+        <summary class="card-header"><span class="name">Dodaj učitelja</span><span class="toggle-hint">▸ več</span></summary>
         <div class="card-body">
             <form onsubmit="dodajUcitelja(event, this)">
                 <div class="form-row">
@@ -134,7 +144,7 @@
                 <div class="msg" style="display:none"></div>
             </form>
         </div>
-    </div>
+    </details>
     {% endif %}
 
     {% if not prikaz %}
@@ -195,10 +205,10 @@
             <div class="empty">Ni rezervacij za vaše termine.</div>
             {% endif %}
 
-            <!-- Urejanje lastnega zapisa (učitelj) ali vseh (editor) -->
+            <!-- Urejanje lastnega zapisa (učitelj) ali vseh (editor) — zložljivo (več/manj) -->
             {% if not is_teacher or u.editable %}
-            <div class="edit-block">
-                <h3>Uredi govorilne ure in podatke</h3>
+            <details class="edit-block">
+                <summary>Uredi govorilne ure in podatke <span class="toggle-hint">▸ več</span></summary>
                 <form onsubmit="saveUcitelj(event, this)">
                     {% if is_editor and u.ime %}<input type="hidden" name="ime" value="{{ u.ime }}">{% endif %}
                     <div class="form-row">
@@ -239,7 +249,7 @@
                     <button class="btn" type="submit">💾 Shrani</button>
                     <div class="msg" style="display:none"></div>
                 </form>
-            </div>
+            </details>
             {% endif %}
         </div>
     </div>
@@ -251,6 +261,15 @@
 <script>
 const IS_TEACHER = {{ 'true' if is_teacher else 'false' }};
 const IS_EDITOR = {{ 'true' if is_editor else 'false' }};
+
+// Zložljiva poglavja (več/manj): ob odpiranju/zapiranju posodobi oznako.
+document.querySelectorAll('details.collapsible, details.edit-block').forEach(d => {
+    d.addEventListener('toggle', () => {
+        d.querySelectorAll('.toggle-hint').forEach(h => {
+            h.textContent = d.open ? ' ▾ manj' : ' ▸ več';
+        });
+    });
+});
 
 async function _post(url, body, msgEl) {
     try {
