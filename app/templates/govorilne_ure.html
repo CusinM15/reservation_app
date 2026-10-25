@@ -154,19 +154,20 @@
     {% endif %}
 
     {% for u in prikaz %}
-    <div class="card" data-ime="{{ u.ime }}">
-        <div class="card-header">
-            <div>
+    <details class="card collapsible" data-ime="{{ u.ime }}">
+        <summary class="card-header">
+            <span>
                 <span class="name">{{ u.ime_priimek }}</span>
                 {% if u.predmet %} <span class="subj">— {{ u.predmet }}</span>{% endif %}
-            </div>
-            <div>
+            </span>
+            <span>
                 {% if u.prostor %}<span class="subj">📍 {{ u.prostor }}</span>{% endif %}
                 {% if is_editor and u.ime %}
-                <button class="btn small ghost" type="button" onclick="odstraniUcitelja('{{ u.ime }}', this)" style="margin-left:.5rem; background:#fdeeee; color:#b02a2a;">Odstrani</button>
+                <button class="btn small ghost" type="button" onclick="odstraniUcitelja('{{ u.ime }}', this, event)" style="margin-left:.5rem; background:#fdeeee; color:#b02a2a;">Odstrani</button>
                 {% endif %}
-            </div>
-        </div>
+                <span class="toggle-hint">▸ več</span>
+            </span>
+        </summary>
         <div class="card-body">
             <h2>Objavljeni termin</h2>
             {% if u.dopoldan %}
@@ -253,7 +254,7 @@
             </details>
             {% endif %}
         </div>
-    </div>
+    </details>
     {% endfor %}
 
     <p class="note">Rezervacije so vidne samo učitelju (in šolski upravi). Samodejno se izbrišejo 24 ur po koncu govorilnih ur. {% if is_teacher %}Svoje podatke lahko urejate zgoraj (dopoldanski termin, predmet in razred, če ste razrednik).{% else %}Spremembe shranjene tukaj takoj veljajo na javni strani za starše.{% endif %}</p>
@@ -346,7 +347,8 @@ async function dodajUcitelja(event, form) {
 }
 
 // ── Odstrani učitelja (editor only) ──
-async function odstraniUcitelja(ime, btn) {
+async function odstraniUcitelja(ime, btn, ev) {
+    if (ev) { ev.preventDefault(); ev.stopPropagation(); }  // klik na Odstrani ne sme zložiti kartice
     const imeClean = ime.replace(/'/g, "\\'");
     if (!confirm('Odstrani učitelja "' + imeClean + '" iz govorilnih ur (in njene prijave)?')) return;
     const card = btn.closest('.card');

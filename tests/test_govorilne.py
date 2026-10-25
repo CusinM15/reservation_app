@@ -324,6 +324,30 @@ def test_govorilne_ure_admin_vidi_vse_ucitelje(make_user):
         assert "Največ ur" in r.text
 
 
+def test_govorilne_ure_uciteljska_kartica_zlozljiva_več_manj(make_user):
+    """Učiteljska kartica na /govorilne/ure je zložljiva (več/manj): header (ime pa to)
+    ostane vedno viden kot summary, vse ostalo (termin, rezervacije, uredi-obrazec) je
+    v details vsebini."""
+    from app.govorilne_podatki import UCITELJI
+    prvi = next(u for u in UCITELJI if not u["po_dogovoru"])
+    admin = make_user(role="admin")
+    with TestClient(app) as c:
+        login(c, admin.username)
+        r = c.get("/govorilne/ure")
+        assert r.status_code == 200
+        # Kartica = details.collapsible z data-ime; header = summary, vsebina zložljiva.
+        assert "<details class=\"card collapsible\" data-ime=\"" in r.text
+        assert "<summary class=\"card-header\">" in r.text
+        # Ime učitelja je v headerju (summary), kjer je tudi toggle oznaka.
+        assert "toggle-hint" in r.text
+        assert "▸ več" in r.text
+        # Vsebina (termin + rezervacije) je znotraj details, ne v summary.
+        body_start = r.text.index("<details class=\"card collapsible\" data-ime=\"")
+        summary_end = r.text.index("</summary>", body_start)
+        assert "Objavljeni termin" not in r.text[body_start:summary_end]
+        assert prvi["ime"] in r.text
+
+
 def test_govorilne_ure_ucitelj_vidi_svoje_rezervacije():
     """Učitelj v svojem urniku vidi rezervacije staršev za svoje termine."""
     from app.govorilne_podatki import UCITELJI
