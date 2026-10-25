@@ -339,6 +339,7 @@ def test_govorilne_ure_ucitelj_vidi_svoje_rezervacije():
                 school_id=_default_school_id(db), ucitelj=prvi["ime"],
                 datum=t["datum"][:10], ura_od=t["ura_od"], ura_do=t["ura_do"],
                 ime_starsa="Bojan Starš", email="bojan@example.si", otrok="Otrok",
+                opis="Pregled ocen pri slovenščini",
             )
             db.add(p)
             db.commit()
@@ -350,6 +351,8 @@ def test_govorilne_ure_ucitelj_vidi_svoje_rezervacije():
         r = c.get("/govorilne/ure")
         assert r.status_code == 200
         assert "Bojan Starš" in r.text
+        assert "Kratek opis" in r.text
+        assert "Pregled ocen pri slovenščini" in r.text
 
 
 def test_termini_okno_24ur_do_naslednjih_popoldanskih():

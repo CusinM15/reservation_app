@@ -180,13 +180,14 @@
             <h2>Rezervacije staršev</h2>
             {% if u.rezervacije %}
             <table>
-                <tr><th>Datum</th><th>Ura</th><th>Starš</th><th>Otrok</th></tr>
+                <tr><th>Datum</th><th>Ura</th><th>Starš</th><th>Otrok</th><th>Kratek opis</th></tr>
                 {% for p in u.rezervacije %}
                 <tr>
                     <td>{{ p.datum.strftime('%d. %m. %Y') }}</td>
                     <td>{{ p.ura_od }}–{{ p.ura_do }}</td>
                     <td>{{ p.ime_starsa }}</td>
                     <td>{{ p.otrok }}</td>
+                    <td>{{ p.opis or '—' }}</td>
                 </tr>
                 {% endfor %}
             </table>
