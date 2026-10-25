@@ -391,10 +391,23 @@ def restore_domain(
     # ustvaril uporabnik, ki ga v kopiji ni): najprej admin, ki obnavlja, sicer
     # glavni (najstarejši) admin te šole.
     effective_fallback = fallback_user_id
+    fallback_username = None
     if effective_fallback is None:
         from app.tenancy import primary_admin
         admin = primary_admin(db, school_id)
         effective_fallback = admin.id if admin is not None else None
+    # Preden v fazi 2 vrstice uporabnikov IZBRIŠEMO in znova vstavimo (z NOVIM
+    # avtomatskim id-jem), si zapomnimo uporabniško ime rezervnega uporabnika.
+    # Id se po re-insertu spremeni — navezovati ga moramo prek unikatnega imena,
+    # sicer bi vsi podatki, ki padejo na rezervo, kazali na sedaj neobstoječ id
+    # (ForeignKeyViolation), kar se je zgodilo pri obnovi »Vse« (teacher_id 81).
+    if effective_fallback is not None:
+        row = db.execute(
+            sql_text("SELECT username FROM users WHERE id = :fid"),
+            {"fid": effective_fallback},
+        ).first()
+        if row:
+            fallback_username = row[0]
 
     # ── 1. FAZA BRISANJA: podatki → nastavitve → uporabniki ─────────────
     for table in _DELETE_ORDER:
@@ -412,6 +425,16 @@ def restore_domain(
         id_map = _build_user_id_map(db, school_id, blocks["users"])
         summary["id_map_size"] = len(id_map)
         summary["tables"]["users"].update(result)
+        # Uporabniki so bili re-insertani z NOVIM id-jem. Poistemo tudi rezervni
+        # račun (admin, ki obnavlja) in mu vzamemo SVEŽ id — ne več stari, ki je
+        # bil pravkar izbrisan. Preslikava prek uporabniškega imena (unikatno).
+        if fallback_username:
+            fresh = db.execute(
+                sql_text("SELECT id FROM users WHERE lower(username) = lower(:un)"),
+                {"un": fallback_username},
+            ).first()
+            if fresh:
+                effective_fallback = fresh[0]
 
     for table in present:
         if table == "users":
