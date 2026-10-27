@@ -248,6 +248,7 @@
     <a href="{{ nav_rezervacije }}" class="active" data-tab="rezervacije">{{ t('nav_rezervacije', 'Rezervacije') }}</a>
     <a href="{{ nav_ocenjevanje }}" data-tab="ocenjevanja">{{ t('nav_ocenjevanje_dejavnosti', 'Ocenjevanje in dnevi dejavnosti') }}</a>
     <a href="/govorilne/ure" id="govorilne-nav" style="display:none;">{{ t('nav_govorilne', '🗓️ Moje govorilne ure') }}</a>
+    <a href="/obrazci" id="obrazci-nav" style="display:none;">📄 Obrazci</a>
     <!-- ADMIN IN AUDIT POVEZAVE — prikazane le za admin vlogo.
          Skrijemo jih privzeto (style="display:none"), JS jih pokaže
          glede na vlogo uporabnika. Tako učitelji in vodstvo ne vidijo
@@ -2154,6 +2155,12 @@
             document.getElementById('schools-link').style.display = 'inline';
             // Katero šolo gleda glavni admin, pove spustni seznam Šola
             // (izrisan na strežniku), zato tu ni več ločenega klica.
+        }
+        if (currentUser.role === 'admin' || currentUser.role === 'vodstvo') {
+            document.getElementById('obrazci-nav').style.display = 'inline';
+        }
+        if (currentUser.role === 'main_admin') {
+            document.getElementById('obrazci-nav').style.display = 'inline';
         }
         if (currentUser.role === 'admin' || currentUser.role === 'vodstvo') {
             document.getElementById('export-rez-link').style.display = 'inline';

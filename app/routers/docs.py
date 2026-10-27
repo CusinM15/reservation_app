@@ -19,7 +19,12 @@
 # da Cloudflare ne sproži email obfuscation, ki bi pokvaril popup okno.
 # ─────────────────────────────────────────────────────────────────────────
 
-from fastapi import APIRouter, Request
+from fastapi import APIRouter, Request, Depends, HTTPException
+from fastapi.responses import RedirectResponse
+from fastapi.templating import Jinja2Templates
+from app.database import get_db
+from app.tenancy import role_value, get_request_user
+from sqlalchemy.orm import Session
 from fastapi.responses import JSONResponse, Response, HTMLResponse
 from pathlib import Path
 import markdown
@@ -30,6 +35,8 @@ import html as html_mod
 from app.emoji_pdf import replace_emojis
 
 router = APIRouter(tags=["docs"])
+
+OBRAZCI_TEMPLATES = Jinja2Templates(directory=str(Path(__file__).resolve().parent.parent / "templates"))
 
 DOCS_DIR = Path(__file__).resolve().parent.parent.parent / "documentation"
 
@@ -43,6 +50,8 @@ ALLOWED = {
     "navodila-admin": ["navodila-admin.md"],
     "navodila-admin-en": ["en/navodila-admin.md"],
     "pogoji-uporabe": ["pogoji-uporabe.md"],
+    "obvestilo-ucitelji": ["obvestilo-ucitelji.md"],
+    "obvestilo-starsi": ["obvestilo-starsi.md"],
 }
 
 DOC_LABELS = {
@@ -53,6 +62,8 @@ DOC_LABELS = {
     "navodila-admin": "Navodila za administratorja",
     "navodila-admin-en": "Administrator Guide",
     "pogoji-uporabe": "Pogoji uporabe",
+    "obvestilo-ucitelji": "Obvestilo za učitelje — govorilne ure",
+    "obvestilo-starsi": "Obvestilo za starše — najava na govorilne ure",
 }
 
 
@@ -271,3 +282,22 @@ async def download_doc(name: str):
         media_type="application/pdf",
         headers={"Content-Disposition": f'attachment; filename="{safe_name}"'},
     )
+
+# ═══════════════════════════════════════════════════════════════
+# Obvestila / Obrazci (za vodstvo in admina)
+# ═══════════════════════════════════════════════════════════════
+@router.get("/obrazci", response_class=HTMLResponse)
+def obrazci_stran(request: Request, db: Session = Depends(get_db)):
+    """Zaščitena stran Obvestila/Obrazci — samo vodstvo in admin.
+
+    Pokaže seznam obvestil (učitelji + starši), vsako s prikazom in
+    PDF prenosom (via /docs/html in /docs/download).
+    """
+    tmpl = OBRAZCI_TEMPLATES
+    user = get_request_user(request, db)
+    if user is None:
+        return RedirectResponse(url="/auth/login")
+    role = role_value(user)
+    if role not in ("admin", "vodstvo", "main_admin"):
+        raise HTTPException(status_code=403, detail="Ni dostopa")
+    return tmpl.TemplateResponse(request, "obrazci.html", {"role": role})

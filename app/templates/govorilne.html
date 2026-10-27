@@ -35,6 +35,10 @@
         .msg.info { display:block; background:#eef5fb; border:1px solid #c4d9ea; color:#0b3b5c; }
         .prijava-info { background:#f6f9fc; border-radius:8px; padding:.9rem 1.1rem; font-size:.88rem; color:#3d5a6e; }
         .prijava-info b { color:#0b3b5c; }
+        .cta-link { display:inline-block; margin-top:.7rem; padding:.55rem 1.15rem; font-size:.92rem; font-weight:700; background:#0b3b5c; color:#fff; border-radius:8px; text-decoration:none; }
+        .cta-link:hover { background:#14608c; }
+        .priv { background:#fbeef0; border-left:4px solid #b02a2a; border-radius:6px; padding:.7rem .9rem; margin-top:.7rem; font-size:.86rem; color:#7a2230; }
+        .rov { display:flex; gap:1.2rem; flex-wrap:wrap; }
         footer { text-align:center; color:#7a8b99; font-size:.82rem; margin-top:1.5rem; }
         footer a { color:#14608c; text-decoration:none; }
         .tag { display:inline-block; font-size:.75rem; font-weight:700; background:#dde9f4; color:#0b3b5c; border-radius:20px; padding:.15rem .7rem; margin-left:.4rem; vertical-align:middle; }
@@ -46,6 +50,31 @@
         <h1>📅 Prijava na govorilne ure</h1>
         <p>Izberite učitelja in {{ termin_minut }}-minutni termin. Predhodna najava staršem zagotovi, da vas učitelj sprejme brez čakanja.</p>
     </header>
+
+    <div class="rov">
+        <div class="card" style="flex:1; min-width:280px;">
+            <h2>👨‍🏫 Za učitelje</h2>
+            <p style="font-size:.95rem; color:#2c3e50;">V aplikaciji z enim vpisom vodite svoje govorilne ure:</p>
+            <ul style="margin:.6rem 0 0 1.2rem; font-size:.9rem; color:#3d5a6e;">
+                <li>nastavite si svoj <b>dopoldanski termin</b> (dan in šolsko uro) ter predmet in razred, če ste razrednik;</li>
+                <li>vidite svoj objavljeni <b>urnik</b> in prijave staršev na vaše termine;</li>
+                <li>z eno stranjo upravljate vse — prijave se prikažejo same, ko se starš naroči.</li>
+            </ul>
+            <a class="cta-link" href="/auth/login">Prijava za učitelje →</a>
+        </div>
+
+        <div class="card" style="flex:1; min-width:280px;">
+            <h2>👨‍👩‍👧 Za starše</h2>
+            <p style="font-size:.95rem; color:#2c3e50;">Do govorilnih ur se naročite spodaj:</p>
+            <ol style="margin:.6rem 0 0 1.2rem; font-size:.9rem; color:#3d5a6e;">
+                <li>izberite <b>učitelja</b>;</li>
+                <li>izberite prosti <b>termin</b>;</li>
+                <li>izpolnite svoje podatke in potrdite prijavo.</li>
+            </ol>
+            <div class="priv"><b>Varstvo podatkov:</b> vaši podatki (ime, e-naslov, ime otroka, kratek opis) so vidni <b>zgolj učitelju, na katerega se naročate, in vodstvu šole</b> — nikomur drugemu. Iz aplikacije se samodejno izbrišejo <b>24 ur po koncu govorilnih ur</b>.</div>
+            <a class="cta-link" href="#obrazecCard">Najava na govorilne ↓</a>
+        </div>
+    </div>
 
     <div class="card">
         <h2>1 · Izberite učitelja</h2>
