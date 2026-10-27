@@ -11,7 +11,7 @@
 # ─────────────────────────────────────────────────────────────────────────
 
 import re
-from datetime import date, timedelta
+from datetime import date, datetime, timedelta
 from uuid import uuid4
 
 import pytest
@@ -34,6 +34,7 @@ from app.tenancy import (
     TEST_EMAIL_PLACEHOLDER,
     TEST_MAIL_PASSWORD,
     TEST_MAIL_USERNAME,
+    create_school,
     default_school_admin_username,
     get_school_config,
     school_admin_username_from_initials,
@@ -47,6 +48,8 @@ from app.subscriptions import (
     get_valid_until,
     is_active,
     next_charge_day,
+    AUTO_PURGE_DAYS,
+    purge_unsubscribed_schools,
     school_year_target,
     self_extend_open,
     set_valid_until,
@@ -848,12 +851,12 @@ def test_default_plan_is_yearly_only():
 # ── 15. Samopostrežno podaljšanje šolskega leta (1. 9.) ──────────────
 
 def test_self_extend_open_window():
-    """ZAČASNO onemogočeno — vedno False (uporabnik bo nastavil 2026-10-08)."""
-    assert self_extend_open(date(2026, 8, 14)) is False
-    assert self_extend_open(date(2026, 8, 15)) is False
-    assert self_extend_open(date(2026, 9, 1)) is False
-    assert self_extend_open(date(2026, 10, 2)) is False
-    assert self_extend_open(date(2026, 6, 1)) is False
+    """Od 15. 8. dalje je samopostrežno podaljšanje dovoljeno (do konca leta)."""
+    assert self_extend_open(date(2026, 6, 1)) is False    # pred 15. 8.
+    assert self_extend_open(date(2026, 8, 14)) is False   # pred 15. 8.
+    assert self_extend_open(date(2026, 8, 15)) is True    # od 15. 8.
+    assert self_extend_open(date(2026, 9, 1)) is True
+    assert self_extend_open(date(2026, 10, 2)) is True
 
 
 def test_school_year_target_is_next_september():
@@ -1124,3 +1127,40 @@ def test_schools_page_shows_subscription_status_and_buttons(client):
                     follow_redirects=True)
     assert r.status_code == 200
     assert _db_until() is None
+
+
+# ── 16. Avtomatski izbris šol brez naročnine po 28 dneh ───────────────
+
+def test_purge_unsubscribed_schools_brises_le_iztekle_brez_narocnine():
+    """Po 28 dneh se izbriše le stara šola brez naročnine (ne sveža, ne
+    šola z veljavno naročnino, ne privzeta šola)."""
+    _set_selling(True)
+    db = SessionLocal()
+    try:
+        # Stara (created_at ~29 dni nazaj) in brez naročnine → KANDIDAT.
+        star = create_school(db, name="Brez narocnine star",
+                             slug="star-brez-nar", ui_language="sl")
+        star.created_at = datetime.utcnow() - timedelta(days=AUTO_PURGE_DAYS + 1)
+        # Stara, a Z naročnino → NE sme se izbrisati.
+        star_z_nar = create_school(db, name="Star z narocnino",
+                                   slug="star-z-nar", ui_language="sl")
+        star_z_nar.created_at = datetime.utcnow() - timedelta(days=AUTO_PURGE_DAYS + 1)
+        set_valid_until(db, star_z_nar.id, date.today() + timedelta(days=30))
+        # Sveža in brez naročnine → NE sme se izbrisati.
+        svez = create_school(db, name="Svez brez narocnine",
+                             slug="svez-brez", ui_language="sl")
+        db.commit()
+
+        ok = purge_unsubscribed_schools(db)
+        deleted_ids = {x["id"] for x in ok}
+        assert star.id in deleted_ids
+        assert star_z_nar.id not in deleted_ids
+        assert svez.id not in deleted_ids
+        assert db.query(School).filter(School.id == star.id).first() is None
+        assert db.query(School).filter(School.id == star_z_nar.id).first() is not None
+        assert db.query(School).filter(School.id == svez.id).first() is not None
+        # Privzeta šola (ostcj) se nikoli ne briše.
+        assert default_school_id() and default_school_id() not in deleted_ids
+    finally:
+        db.close()
+    _set_selling(False)

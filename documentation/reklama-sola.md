@@ -76,9 +76,17 @@ spletni rešitvi. Brez namestitve na računalnike, brez naročniških pasti.
 
 ## 🚀 Kako začeti?
 
-1. **Registracija šole** — v nekaj minutah dobite svoje okolje.
-2. **Nastavite prostore, razrede, urnik in pravila ocenjevanja** — vse v lepem vmesniku.
-3. **Uvozite učitelje** in začnite uporabljati še isti dan.
+1. **Šola si sama ustvari račun** — na strani za registracijo vpišete ime šole in takoj
+  dobite **administratorski račun** (račun ustvari administrator sam, ne čaka na nas).
+2. **Administrator in vodstvo pripravita vse** — nastavita e-pošto za pošiljanje (SMTP),
+  razrede, prostore, urnik in pravila ocenjevanja — **še preden začnejo uporabljati učitelji**.
+3. **Uredite naročnino** — velja vedno **do 1. 9.**; za naslednje leto jo lahko sklenete
+  **šele od 15. 8. dalje**.
+4. **Uvozite učitelje** in začnite uporabljati — učitelji in vodstvo se prijavijo, ko je
+  naročnina urejena in potrjena.
+
+> ⚠️ **Naročnino je treba skleniti v 28 dneh** od ustvaritve računa. Če je v tem roku
+> ne sklenete, se šola **samodejno izbriše**.
 
 > Aplikacija teče na hitrem, zanesljivem strežniku v Sloveniji/EU. Podpora in
 > prilagoditve po dogovoru.

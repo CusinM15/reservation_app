@@ -134,10 +134,8 @@ EXTEND_FROM_DAY = 15    # 15. 8.
 
 def self_extend_open(today: date | None = None) -> bool:
     """Ali je samopostrežno podaljšanje dovoljeno (od 15. 8. dalje)?"""
-    # ZAČASNO onemogočeno — uporabnik bo nastavil jutri (2026-10-08).
-    return False
-    # d = today or date.today()
-    # return (d.month, d.day) >= (EXTEND_FROM_MONTH, EXTEND_FROM_DAY)
+    d = today or date.today()
+    return (d.month, d.day) >= (EXTEND_FROM_MONTH, EXTEND_FROM_DAY)
 
 
 def school_year_target(today: date | None = None) -> date:
@@ -162,3 +160,57 @@ def subscription_state(db: Session, school_id: int) -> dict:
         "until": until,
         "days_left": days_left(db, school_id),
     }
+
+
+# ── Avtomatski izbris šol brez naročnine (zahteva uporabnika 2026-10-27) ──
+# Nova šola, ki si ustvari račun, mora naročnino skleniti v 28 dneh. Če je v tem
+# roku ne sklene (nima nastavljenega datuma veljavnosti NAROCNINA_DO), se šola
+# avtomatsko izbriše — da nekdo ne bi izkoriščal brezplačnega računa.
+AUTO_PURGE_DAYS = 28
+
+
+def purge_unsubscribed_schools(db: Session) -> list[dict]:
+    """Izbriši šole, ki 28 dni po ustvaritvi še nimajo naročnine.
+
+    Kriterij: prodaja je vklopljena, šola NI privzeta, njen created_at je
+    starejši od AUTO_PURGE_DAYS in get_valid_until(...) je None (naročnine še
+    nikoli ni sklenila). Vsako šolo pred brisanjem znova preberemo iz baze
+    (idempotentno — sočasno zagnan purge v drugem podu tako ne pade). Vrne
+    seznam opisov izbrisanih šol.
+    """
+    from datetime import timedelta
+
+    from app.config import settings
+    from app.app_settings import selling_enabled
+    from app.models import School
+    from app.tenancy import delete_school_data
+
+    if not selling_enabled(db):
+        return []
+    cutoff = datetime.utcnow() - timedelta(days=AUTO_PURGE_DAYS)
+    kandidati = db.query(School).filter(
+        School.slug != settings.DEFAULT_SCHOOL_SLUG
+    ).all()
+    izbrisane: list[dict] = []
+    for s in kandidati:
+        if get_valid_until(db, s.id) is not None:
+            continue
+        if s.created_at is None or s.created_at >= cutoff:
+            continue
+        # Še enkrat preberi šolo: če jo je medtem izbrisal drug pod, preskoči.
+        obstojeca = db.query(School).filter(School.id == s.id).first()
+        if obstojeca is None:
+            continue
+        try:
+            counts = delete_school_data(db, obstojeca)
+            db.commit()
+        except Exception:
+            db.rollback()
+            continue
+        izbrisane.append({
+            "id": s.id,
+            "slug": s.slug,
+            "name": s.name,
+            "deleted": counts,
+        })
+    return izbrisane

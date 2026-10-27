@@ -11,6 +11,8 @@
 # znotraj šole, kjer so piškotki enostavnejši za implementacijo.
 # ─────────────────────────────────────────────────────────────────────────
 
+import asyncio
+
 from fastapi import FastAPI, Request, Query, Depends
 from fastapi.middleware.gzip import GZipMiddleware
 from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse
@@ -260,6 +262,49 @@ def on_startup():
         seed_ui_strings(db)
     finally:
         db.close()
+
+# ── Ozadnji dnevni izbris šol brez naročnine (28 dni) ──────────────────
+# Nova šola, ki v 28 dneh ne sklene naročnine, se avtomatsko izbriše — da
+# nekdo ne more izkoriščati brezplačnega računa. Zanka teče ob zagonu in nato
+# vsakih 24 h. Varnost: če je prodaja izklopljena, purge ne briše ničesar;
+# purge je idempotenten (vsako šolo pred brisanjem znova prebere iz baze).
+PURGE_INTERVAL_SECONDS = 24 * 60 * 60
+
+
+def _purge_once() -> None:
+    from app.audit import log_audit
+    from app.database import SessionLocal
+
+    db = SessionLocal()
+    try:
+        from app.subscriptions import purge_unsubscribed_schools
+
+        izbrisane = purge_unsubscribed_schools(db)
+        for s in izbrisane:
+            log_audit(
+                db, None, "system", "auto_purge_school",
+                f"school_id={s['id']}, slug={s['slug']}, name={s['name']}, "
+                f"deleted={s['deleted']}",
+                school_id=None,
+            )
+    finally:
+        db.close()
+
+
+async def _purge_loop() -> None:
+    await asyncio.sleep(30)  # počakamo, da se app povsem zažene
+    while True:
+        try:
+            _purge_once()
+        except Exception:
+            pass  # zanka nikoli ne sme umreti
+        await asyncio.sleep(PURGE_INTERVAL_SECONDS)
+
+
+@app.on_event("startup")
+async def _start_purge_loop() -> None:
+    asyncio.create_task(_purge_loop())
+
 
 # ── Health check ──────────────────────────────────────────────────────
 # Uporablja ga Kubernetes za preverjanje, ali aplikacija živi.
