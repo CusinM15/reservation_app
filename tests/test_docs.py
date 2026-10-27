@@ -75,3 +75,24 @@ def test_vodstvo_navodila_poudarjajo_dejavnosti(client):
         assert r.status_code == 200
         assert needle in r.text
     assert "Vnos dejavnosti" in client.get("/docs/html/navodila-vodstvo").text
+
+def test_obvestili_vsebujeta_link(client):
+    """Vsako obvestilo vključuje link: učitelji → login stran, starši → /govorilne_<šola>."""
+    r = client.get("/docs/html/obvestilo-ucitelji")
+    assert r.status_code == 200
+    assert "https://reservationapp.site/auth/login" in r.text
+    assert "Prijava v aplikacijo" in r.text
+
+    r = client.get("/docs/html/obvestilo-starsi")
+    assert r.status_code == 200
+    assert "https://reservationapp.site/govorilne_ostcj" in r.text
+    assert "Najava na govorilne" in r.text
+
+
+def test_obvestila_imajo_cta_izgled(client):
+    """Obvestila uporabljajo banner CSS (gradient h1 + CTA gumb za link)."""
+    r = client.get("/docs/html/obvestilo-ucitelji")
+    assert "linear-gradient(135deg, #0b3b5c" in r.text
+    assert "blockquote a, blockquote a:visited" in r.text
+    r = client.get("/docs/html/obvestilo-starsi")
+    assert "linear-gradient(135deg, #0b3b5c" in r.text

@@ -3,6 +3,9 @@
 > Aplikacija šole zdaj podpira **govorilne ure** — z enim vpisom vodite vse svoje
 > govorilne ure, brez papirnatih seznamov in klicev.
 
+> **Prijavite se v aplikacijo in začnite:**
+> **[🔑 Prijava v aplikacijo](https://reservationapp.site/auth/login)**
+
 ---
 
 ## Kaj dobite?

@@ -3,10 +3,10 @@
 > Spoštovani starši, na govorilne ure šole se lahko naročite kar prek spleta,
 > v nekaj trenutkih in brez čakanja.
 
----
-
-> Prijavno stran govorilnih ur vaše šole odprete tukaj:
+> **Prijavno stran govorilnih ur vaše šole odprete tukaj:**
 > **[🌐 Najava na govorilne](https://reservationapp.site/govorilne_ostcj)**
+
+---
 
 ## Kako se naročite (3 koraki)
 

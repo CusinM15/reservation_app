@@ -104,6 +104,16 @@ li { margin-bottom: 3pt; }
 .title-page hr { width: 60%; margin: 22pt auto; border-top: 2px solid #4a6cf7; }
 .page-break { page-break-before: always; }
 """
+_OBVESTILA_CSS = """
+# Poseben izgled za obvestila (obvestilo-*) — uporabljen v HTML preview in PDF.
+# Banner h1 (gradient), CTA gumb iz linka v blockquote, moder poudarek.
+h1 { background: linear-gradient(135deg, #0b3b5c, #14608c); color: #ffffff !important; padding: 0.9rem 1.2rem; border-radius: 12px; box-shadow: 0 4px 14px rgba(11,59,92,.25); }
+h2 { color: #0b3b5c; border-left: 4px solid #4a6cf7; padding-left: 0.6rem; margin-top: 1.5rem; }
+blockquote { background: #eef4fb; border: 1px solid #c9ddf0; border-left: 5px solid #4a6cf7; border-radius: 10px; padding: 0.7rem 1rem; }
+blockquote a, blockquote a:visited { display: inline-block; margin-top: 0.4rem; background: #0b3b5c; color: #ffffff !important; padding: 0.65rem 1.3rem; border-radius: 8px; text-decoration: none; font-weight: 700; }
+blockquote a:hover { background: #14608c; }
+hr { border: none; border-top: 2px solid #4a6cf7; margin: 1.4rem 0; }
+"""
 
 
 
@@ -122,7 +132,7 @@ def _doc_to_html(content: str, label: str) -> str:
     return html
 
 
-def _make_pdf(md_content: str, title: str) -> bytes:
+def _make_pdf(md_content: str, title: str, obvestilo: bool = False) -> bytes:
     """Pretvori markdown v lep PDF s pomočjo weasyprint (HTML+CSS → PDF).
     
     Odstrani morebitni YAML frontmatter (--- ... ---) in doda naslovno
@@ -145,7 +155,7 @@ def _make_pdf(md_content: str, title: str) -> bytes:
 <html>
 <head>
 <meta charset="utf-8">
-<style>{_PDF_CSS}</style>
+<style>{_PDF_CSS + (_OBVESTILA_CSS if obvestilo else '')}</style>
 </head>
 <body>
 <div class="title-page">
@@ -249,6 +259,8 @@ async def get_doc_html(name: str):
   {body_html}
 </body>
 </html>"""
+    if name.startswith("obvestilo"):
+        full_html = full_html.replace("</style>", _OBVESTILA_CSS + "</style>", 1)
     return HTMLResponse(
         content=full_html,
         headers={
@@ -272,7 +284,7 @@ async def download_doc(name: str):
         return JSONResponse({"error": str(e)}, status_code=404)
 
     try:
-        pdf_bytes = _make_pdf(content, title)
+        pdf_bytes = _make_pdf(content, title, obvestilo=name.startswith("obvestilo"))
     except Exception as e:
         return JSONResponse({"error": f"Napaka: {str(e)}"}, status_code=500)
 
