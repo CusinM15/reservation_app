@@ -23,7 +23,7 @@ from fastapi import APIRouter, Request, Depends, HTTPException
 from fastapi.responses import RedirectResponse
 from fastapi.templating import Jinja2Templates
 from app.database import get_db
-from app.tenancy import role_value, get_request_user
+from app.tenancy import role_value, get_request_user, is_main_admin
 from sqlalchemy.orm import Session
 from fastapi.responses import JSONResponse, Response, HTMLResponse
 from pathlib import Path
@@ -33,6 +33,8 @@ import os
 import html as html_mod
 
 from app.emoji_pdf import replace_emojis
+from app.audit import log_audit
+from app.models import User, AppSetting
 
 router = APIRouter(tags=["docs"])
 
@@ -52,6 +54,7 @@ ALLOWED = {
     "pogoji-uporabe": ["pogoji-uporabe.md"],
     "obvestilo-ucitelji": ["obvestilo-ucitelji.md"],
     "obvestilo-starsi": ["obvestilo-starsi.md"],
+    "reklama-sola": ["reklama-sola.md"],
 }
 
 DOC_LABELS = {
@@ -64,6 +67,7 @@ DOC_LABELS = {
     "pogoji-uporabe": "Pogoji uporabe",
     "obvestilo-ucitelji": "Obvestilo za učitelje — govorilne ure",
     "obvestilo-starsi": "Obvestilo za starše — najava na govorilne ure",
+    "reklama-sola": "Predstavitev aplikacije (reklama)",
 }
 
 
@@ -231,14 +235,54 @@ def _make_pdf(md_content: str, title: str, obvestilo: bool = False) -> bytes:
 # ═══════════════════════════════════════════════════════════════════════
 
 
-def _read_docs(name: str) -> tuple[str, str]:
+# Predpona ključev v AppSetting za shranjene .md predloge (glavni admin override).
+# Glavni admin v /navodila shrani svojo .md verzijo navodila; ta se prikaže
+# namesto vgrajene datoteke v dokumentaciji/ (za učitelje/vodstvo/admina,
+# v HTML predogledu in v PDF).
+DOC_OVERRIDE_PREFIX = "DOC_OVERRIDE:"
+
+
+def _get_override(db: Session | None, name: str) -> str | None:
+    """Vrni shranjeno .md predlogo (glavni admin override) ali None."""
+    if db is None:
+        return None
+    row = db.query(AppSetting).filter(AppSetting.key == DOC_OVERRIDE_PREFIX + name).first()
+    if row is None or not row.value:
+        return None
+    return row.value
+
+
+def _save_override(db: Session, name: str, content: str) -> None:
+    """Shrani/posodobi .md override (glavni admin)."""
+    row = db.query(AppSetting).filter(AppSetting.key == DOC_OVERRIDE_PREFIX + name).first()
+    if row is None:
+        db.add(AppSetting(key=DOC_OVERRIDE_PREFIX + name, value=content))
+    else:
+        row.value = content
+    db.commit()
+
+
+def _clear_override(db: Session, name: str) -> None:
+    """Ponastavi dokument na vgrajeno .md datoteko (pobriše override)."""
+    row = db.query(AppSetting).filter(AppSetting.key == DOC_OVERRIDE_PREFIX + name).first()
+    if row is not None:
+        db.delete(row)
+        db.commit()
+
+
+def _read_docs(name: str, db: Session | None = None) -> tuple[str, str]:
     """Prebere dokumentacijo. Vrne (vsebina, naslov).
-    
-    Uporablja whitelist (ALLOWED) za preprečevanje directory traversal.
-    Če datoteka ne obstaja, vrne ValueError.
+
+    Če ima glavni admin shranjen override (.md v DB), se ta prikaže namesto
+    vgrajene datoteke. Uporablja whitelist (ALLOWED) za preprečevanje directory
+    traversal. Če datoteka ne obstaja, vrne ValueError.
     """
     if name not in ALLOWED:
         raise ValueError(f"Dokument '{name}' ne obstaja")
+
+    override = _get_override(db, name)
+    if override:
+        return override, DOC_LABELS.get(name, name)
 
     files = ALLOWED[name]
     content_parts = []
@@ -262,17 +306,17 @@ def _read_docs(name: str) -> tuple[str, str]:
 
 
 @router.get("/docs/{name}")
-async def get_doc(name: str):
+async def get_doc(name: str, db: Session = Depends(get_db)):
     """JSON preview (za klice iz appa)."""
     try:
-        content, label = _read_docs(name)
+        content, label = _read_docs(name, db)
     except ValueError as e:
         return JSONResponse({"error": str(e)}, status_code=404)
     return {"content": content, "label": label, "name": name}
 
 
 @router.get("/docs/html/{name}", response_class=HTMLResponse)
-async def get_doc_html(name: str):
+async def get_doc_html(name: str, db: Session = Depends(get_db)):
     """HTML preview s slikami (za hover popup v appu).
     
     Vključuje celoten HTML dokument s CSS oblikovanjem, primernim za
@@ -280,7 +324,7 @@ async def get_doc_html(name: str):
     spremembe dokumentacije takoj pokažejo.
     """
     try:
-        content, label = _read_docs(name)
+        content, label = _read_docs(name, db)
     except ValueError as e:
         return HTMLResponse(f"<p style='color:red;'>{e}</p>")
 
@@ -325,14 +369,14 @@ async def get_doc_html(name: str):
 
 
 @router.get("/docs/download/{name}")
-async def download_doc(name: str):
+async def download_doc(name: str, db: Session = Depends(get_db)):
     """PDF download z weasyprint.
     
     Generira PDF iz Markdown dokumentacije. Če weasyprint ni nameščen
     (npr. v Docker sliki), vrne 500 napako.
     """
     try:
-        content, title = _read_docs(name)
+        content, title = _read_docs(name, db)
     except ValueError as e:
         return JSONResponse({"error": str(e)}, status_code=404)
 
@@ -366,3 +410,90 @@ def obrazci_stran(request: Request, db: Session = Depends(get_db)):
     if role not in ("admin", "vodstvo", "main_admin"):
         raise HTTPException(status_code=403, detail="Ni dostopa")
     return tmpl.TemplateResponse(request, "obrazci.html", {"role": role})
+
+# ═══════════════════════════════════════════════════════════════
+# Navodila (glavni admin) — sitemap UI strani + urejanje .md
+# ═══════════════════════════════════════════════════════════════
+def _require_main_admin(request: Request, db: Session) -> User:
+    """Vrni prijavljenega glavnega admina ali 403/redirect."""
+    from app.security import get_current_user_id
+    user_id = get_current_user_id(request)
+    if not user_id:
+        raise HTTPException(status_code=401, detail="Niste prijavljeni")
+    user = db.query(User).filter(User.id == int(user_id)).first()
+    if user is None or not is_main_admin(user):
+        raise HTTPException(status_code=403, detail="Dostop samo za glavnega admina")
+    return user
+
+
+def _editable_docs() -> list[str]:
+    """Urejevalni dokumenti = slovenske različice navodil/obvestil (brez -en)."""
+    return [k for k in ALLOWED if not k.endswith("-en")]
+
+
+@router.get("/navodila", response_class=HTMLResponse)
+def navodila_main_page(request: Request, db: Session = Depends(get_db)):
+    """Stran 'Navodila' — samo glavni admin.
+
+    Pokaže pregled vseh strani, ki so dostopne prek UI-ja, ter urejevalnik
+    .md navodil/obvestil (shranjevanje v DB kot override).
+    """
+    user = _require_main_admin(request, db)
+    docs = [
+        {"name": k, "label": DOC_LABELS.get(k, k), "overridden": bool(_get_override(db, k))}
+        for k in _editable_docs()
+    ]
+    return OBRAZCI_TEMPLATES.TemplateResponse("navodila_main.html", {
+        "request": request,
+        "user": user,
+        "docs": docs,
+        "all_preview": [{"name": k, "label": DOC_LABELS.get(k, k)} for k in _editable_docs()],
+    })
+
+
+@router.get("/api/navodila/docs")
+def navodila_list_docs(request: Request, db: Session = Depends(get_db)):
+    _require_main_admin(request, db)
+    return {"docs": [
+        {"name": k, "label": DOC_LABELS.get(k, k), "overridden": bool(_get_override(db, k))}
+        for k in _editable_docs()
+    ]}
+
+
+@router.get("/api/navodila/docs/{name}")
+def navodila_get_doc(name: str, request: Request, db: Session = Depends(get_db)):
+    _require_main_admin(request, db)
+    if name not in ALLOWED:
+        raise HTTPException(status_code=404, detail="Dokument ne obstaja")
+    content, label = _read_docs(name, db)
+    return {
+        "name": name,
+        "label": label,
+        "content": content,
+        "overridden": bool(_get_override(db, name)),
+    }
+
+
+@router.post("/api/navodila/docs/{name}", status_code=200)
+async def navodila_save_doc(name: str, request: Request, db: Session = Depends(get_db)):
+    user = _require_main_admin(request, db)
+    if name not in _editable_docs():
+        raise HTTPException(status_code=400, detail="Ta dokument ni urejevalen")
+    try:
+        body = await request.json()
+    except Exception:
+        raise HTTPException(status_code=400, detail="Neveljaven JSON")
+    content = str(body.get("content", "")) or ""
+    _save_override(db, name, content)
+    log_audit(db, user.id, user.username, "edit_doc", name)
+    return {"ok": True, "name": name, "label": DOC_LABELS.get(name, name), "overridden": True}
+
+
+@router.post("/api/navodila/docs/{name}/reset", status_code=200)
+def navodila_reset_doc(name: str, request: Request, db: Session = Depends(get_db)):
+    user = _require_main_admin(request, db)
+    if name not in _editable_docs():
+        raise HTTPException(status_code=400, detail="Ta dokument ni urejevalen")
+    _clear_override(db, name)
+    log_audit(db, user.id, user.username, "reset_doc", name)
+    return {"ok": True, "name": name, "overridden": False}

@@ -228,6 +228,55 @@ ima svoj zavihek.
 
 ---
 
+---
+
+## 7b. Govorilne ure
+
+Aplikacija vključuje **najavo staršev na govorilne ure**. Učitelji svoj
+**dopoldanski termin** (dan, šolska ura, prostor) in **popoldanski termin**
+nastavijo sami na strani **»🗓️ Moje govorilne ure«** (`/govorilne/ure`, prikazana
+vsem prijavljenim razen glavnemu adminu). Starši se nato najavijo prek javne
+strani **`/govorilne`** (ali poti šole, npr. `/govorilne_ostcj`).
+
+Vlogo ima pri urejanju učiteljev/vodstvo/admin; **glavni admin govorilnih
+nastavitev ne vidi** (po nameri — tako je definirano).
+
+| Kaj | Kje |
+|---|---|
+| Ure popoldanskih govorilnih (nastavljive) | `/govorilne/ure` → učiteljev obrazec |
+| Dolžina termina (privzeto 15 min) | `/govorilne/ure` → nastavitve |
+| Prijave staršev (pregled) | `/govorilne/prijave` |
+| Obvestilo za starše/učitelje | Stran **📄 Obrazci** → PDF |
+
+> 🔒 Prijave staršev se samodejno brišejo **24 ur po koncu termina** — za
+> varovanje osebnih podatkov.
+
+---
+
+## 7c. Digitalni zaslon (nadomeščanja)
+
+Na strani **⚙️ Nastavitve šole → Digitalni zaslon** nastavite zaslon, ki v
+preddverju/shrambi vrti **nadomeščanja iz eAsistenta** + obvestila šole.
+
+| Nastavitev | Kaj |
+|---|---|
+| `ZASLON_URL` | Javni URL eAsistentovih nadomeščanj |
+| Obvestila (slike + teksti) | Naložite jpg/png/pdf ali dodajte besedilo — vrtijo se po vašem izboru |
+| Časovni pas in hitrost drsenja | Prilagodite prikazu |
+| **Osveži vse naprave** | Pošlje vsem zaslonom predlogo (reload) — sprememba se pokaže v ≤10 s |
+
+> Zaslon je javen na **`/zasloni`** (ali goli poti šole). Za nadomeščanja iz
+> eAsistenta se uporabi javni URL, ki ga admin vnese v nastavitvah.
+
+---
+
+## 7d. Obrazci in obvestila (za vodstvo in admin)
+
+Na strani **📄 Obrazci** (`/obrazci`) so pripravljeni **obvestili za učitelje in
+za starše** (npr. obvestilo o govorilnih urah), vsako s predogledom in **PDF**
+prenosom — takoj pošljete po e-asistentu ali natisnete. Obvestila so oblikovana
+kot A4 dokument.
+
 ## 8. Audit log (dnevnik sprememb)
 
 **📋 Audit log** omogoča **pregled vseh pomembnih sprememb v sistemu** — kdo je kaj

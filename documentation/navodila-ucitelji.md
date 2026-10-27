@@ -221,7 +221,24 @@ Izberete posamezen razred ali — za 8. in 9. razred — celotno generacijo. S f
 
 ---
 
+---
+
+## 6b. Moje govorilne ure (najava staršev)
+
+Če vaša šola uporablja govorilne ure prek aplikacije, lahko sami **objavite svoj
+termin** (dopoldanski dan, šolska ura, prostor in po želji popoldanski termin) na
+strani **»🗓️ Moje govorilne ure«** v meniju.
+
+Starši se nato najavijo sami prek javne povezave šole. Vse najave (datum, ura,
+ime starša, ime otroka) vidite na isti strani — svoj termin lahko tudi izbrišete.
+Prijave se samodejno počistijo **24 ur po koncu termina** (varovanje podatkov).
+
+> 💡 Termin nastavite enkrat; starši izberejo prosto uro izmed vaših objavljenih.
+
+---
+
 ## 7. Spreminjanje gesla
+
 
 1. V meniju kliknite **Spremeni geslo**
 2. Vnesite **trenutno geslo**

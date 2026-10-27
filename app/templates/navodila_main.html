@@ -1,0 +1,257 @@
+<!DOCTYPE html>
+<html lang="sl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Navodila — pregled strani in urejevalnik</title>
+    <style>
+        * { margin:0; padding:0; box-sizing:border-box; }
+        body { font-family:'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background:#eef2f7; color:#1a1a2e; line-height:1.55; }
+        .wrap { max-width:1180px; margin:0 auto; padding:1.6rem 1rem 4rem; }
+        header { background:linear-gradient(135deg,#0b3b5c,#14608c); color:#fff; border-radius:14px; padding:1.5rem 2rem; margin-bottom:1.4rem; box-shadow:0 4px 18px rgba(11,59,92,.35); display:flex; align-items:center; justify-content:space-between; gap:1rem; flex-wrap:wrap; }
+        header h1 { font-size:1.45rem; }
+        header p { opacity:.92; font-size:.95rem; margin-top:.25rem; }
+        a.back { color:#fff; text-decoration:none; font-size:.9rem; font-weight:600; background:rgba(255,255,255,.15); padding:.5rem .9rem; border-radius:8px; }
+        a.back:hover { background:rgba(255,255,255,.28); }
+        .grid { display:grid; grid-template-columns:1fr 1fr; gap:1.2rem; }
+        @media (max-width:900px){ .grid{grid-template-columns:1fr;} }
+        .card { background:#fff; border-radius:12px; padding:1.4rem 1.6rem; box-shadow:0 2px 10px rgba(0,0,0,.06); margin-bottom:1.2rem; }
+        .card h2 { font-size:1.12rem; color:#0b3b5c; margin-bottom:.7rem; display:flex; align-items:center; gap:.5rem; border-bottom:2px solid #e3ecf4; padding-bottom:.5rem; }
+        .card h3 { font-size:.95rem; color:#14608c; margin:1rem 0 .4rem; }
+        .card p { color:#3d5a6e; font-size:.93rem; }
+        .pages { display:flex; flex-direction:column; gap:.3rem; margin-top:.4rem; }
+        .page { display:flex; align-items:center; justify-content:space-between; gap:.8rem; padding:.45rem .7rem; border-radius:8px; background:#f6f9fc; border:1px solid #e6eef6; }
+        .page:hover { background:#eef5fb; }
+        .page .pl { display:flex; align-items:center; gap:.6rem; text-decoration:none; color:#1a1a2e; }
+        .page .pl:hover .pt { color:#14608c; }
+        .page .ico { font-size:1.1rem; }
+        .page .pt { font-weight:600; font-size:.92rem; }
+        .page .pd { color:#7a8b99; font-size:.82rem; }
+        .page .plink { font-size:.78rem; font-family:ui-monospace, Menlo, monospace; color:#0b5ed7; background:#eef5fb; padding:.15rem .5rem; border-radius:20px; white-space:nowrap; }
+        .tag { display:inline-block; font-size:.72rem; font-weight:700; background:#dde9f4; color:#0b3b5c; border-radius:20px; padding:.12rem .6rem; }
+        /* ------------------------------------------------ editor ---- */
+        .editor { display:flex; flex-direction:column; gap:.6rem; }
+        .editor-head { display:flex; align-items:center; gap:.8rem; flex-wrap:wrap; }
+        .editor-head select { padding:.5rem .8rem; border-radius:8px; border:1px solid #ccc; font-size:.9rem; min-width:280px; }
+        .btn { display:inline-flex; align-items:center; gap:.4rem; padding:.55rem 1rem; font-size:.88rem; font-weight:700; border-radius:8px; border:none; cursor:pointer; text-decoration:none; }
+        .btn.primary { background:#0b3b5c; color:#fff; }
+        .btn.primary:hover { background:#14608c; }
+        .btn.reset { background:#fff; color:#b02a37; border:1px solid #e2a6ae; }
+        .btn.reset:hover { background:#fdeef0; }
+        .btn.small { padding:.35rem .7rem; font-size:.8rem; }
+        .btn.ghost { background:#eef5fb; color:#0b3b5c; border:1px solid #c4d9ea; }
+        .badge-ov { display:inline-block; font-size:.72rem; font-weight:700; background:#d1fae5; color:#065f46; border-radius:20px; padding:.12rem .6rem; }
+        .badge-file { display:inline-block; font-size:.72rem; font-weight:700; background:#eef1f5; color:#55627a; border-radius:20px; padding:.12rem .6rem; }
+        textarea { width:100%; min-height:380px; font-family:ui-monospace, Menlo, Consolas, monospace; font-size:.86rem; line-height:1.5; padding:.9rem; border:1px solid #ccc; border-radius:10px; resize:vertical; }
+        textarea:focus { outline:none; border-color:#14608c; box-shadow:0 0 0 3px rgba(20,96,140,.12); }
+        .mtoolbar { display:flex; gap:.5rem; flex-wrap:wrap; }
+        .mtoolbar button { padding:.35rem .7rem; font-size:.8rem; }
+        .msg { margin-top:.5rem; font-size:.88rem; }
+        .msg.ok { color:#065f46; }
+        .msg.err { color:#991b1b; }
+        .hint { color:#7a8b99; font-size:.84rem; margin-top:.6rem; }
+        .actions { display:flex; gap:.6rem; flex-wrap:wrap; margin-top:.6rem; }
+        blockquote.note { border-left:4px solid #14608c; background:#f0f6fc; padding:.6rem 1rem; border-radius:8px; color:#344c5c; font-size:.9rem; margin:.6rem 0; }
+        @media (max-width:700px){ .page{flex-direction:column;align-items:flex-start;} }
+    </style>
+</head>
+<body>
+<div class="wrap">
+    <header>
+        <div>
+            <h1>🧭 Navodila — pregled aplikacije in urejevalnik</h1>
+            <p>Vse strani, ki so dostopne prek vmesnika, + urejanje .md navodil in obvestil (samo glavni admin).</p>
+        </div>
+        <a class="back" href="/schools">← Šole</a>
+    </header>
+
+    <blockquote class="note">Urejanje .md shrani tvojo različico v bazo. Pokaže se učiteljem/vodstvu/adminu (predogled in PDF), namesto vgrajene datoteke. Gumb <b>Ponastavi</b> vrne vgrajeno tovarniško različico.</blockquote>
+
+    <div class="grid">
+        <div>
+            <!-- ============ PREGLED STRANI ============ -->
+            <div class="card">
+                <h2>🗺️ Pregled vseh strani aplikacije</h2>
+                <p>Dejanske naslove strani šole dobiš iz spustnega seznama na vrhu glavnega zaslona (ali iz <code>/schools</code> → poti šole). Spodaj so kanonične poti.</p>
+
+                <h3>🔓 Javno (brez prijave)</h3>
+                <div class="pages">
+                    <a class="page" href="/govorilne"><span class="pl"><span class="ico">🗓️</span><span><span class="pt">Najava na govorilne ure</span><br><span class="pd">Javna prijavna stran za starše</span></span></span><span class="plink">/govorilne</span></a>
+                    <a class="page" href="/zasloni"><span class="pl"><span class="ico">🖥️</span><span><span class="pt">Digitalni zaslon (nadomeščanja)</span><br><span class="pd">Nadomeščanja + obvestila zašolski zaslon</span></span></span><span class="plink">/zasloni</span></a>
+                    <a class="page" href="/rezervacije"><span class="pl"><span class="ico">📅</span><span><span class="pt">Rezervacije (pregled)</span><br><span class="pd">Prijavljenim uporabnikom</span></span></span><span class="plink">/rezervacije</span></a>
+                </div>
+
+                <h3>👨‍🏫 Učitelji (prijavljeni)</h3>
+                <div class="pages">
+                    <a class="page" href="/rezervacije"><span class="pl"><span class="ico">📅</span><span><span class="pt">Rezervacije prostorov</span><br><span class="pd">Rezerviraj prostore/tablice, ogled tedenskega koledarja</span></span></span><span class="plink">/rezervacije</span></a>
+                    <a class="page" href="/ocenjevanje"><span class="pl"><span class="ico">📝</span><span><span class="pt">Ocenjevanje in dnevi dejavnosti</span><br><span class="pd">Napovej ocenjevanja, koledar + dejavnosti</span></span></span><span class="plink">/ocenjevanje</span></a>
+                    <a class="page" href="/govorilne/ure"><span class="pl"><span class="ico">🗓️</span><span><span class="pt">Moje govorilne ure</span><br><span class="pd">Urnik in najave staršev</span></span></span><span class="plink">/govorilne/ure</span></a>
+                </div>
+
+                <h3>🧭 Vodstvo (prijavljeni + vodstvo)</h3>
+                <div class="pages">
+                    <a class="page" href="/ocenjevanje/dejavnosti"><span class="pl"><span class="ico">🎒</span><span><span class="pt">Vnos dejavnosti</span><br><span class="pd">Dnevi dejavnosti, celodnevne/krajše</span></span></span><span class="plink">/ocenjevanje/dejavnosti</span></a>
+                    <a class="page" href="/obrazci"><span class="pl"><span class="ico">📄</span><span><span class="pt">Obrazci in obvestila</span><br><span class="pd">Obvestila za učitelje/starše + PDF</span></span></span><span class="plink">/obrazci</span></a>
+                    <a class="page" href="/settings"><span class="pl"><span class="ico">⚙️</span><span><span class="pt">Nastavitve šole</span><br><span class="pd">admin/vodstvo</span></span></span><span class="plink">/settings</span></a>
+                </div>
+
+                <h3>🛠️ Šolski admin</h3>
+                <div class="pages">
+                    <a class="page" href="/auth/admin/users"><span class="pl"><span class="ico">👥</span><span><span class="pt">Upravljanje uporabnikov</span><br><span class="pd">Dodajaj/urejaj učitelje, vodstvo, admine</span></span></span><span class="plink">/auth/admin/users</span></a>
+                    <a class="page" href="/history"><span class="pl"><span class="ico">📋</span><span><span class="pt">Dnevnik dogodkov</span><br><span class="pd">Audit log svoje šole</span></span></span><span class="plink">/history</span></a>
+                    <a class="page" href="/narocnina"><span class="pl"><span class="ico">💳</span><span><span class="pt">Naročnina</span><br><span class="pd">Stanje naročnine šole</span></span></span><span class="plink">/narocnina</span></a>
+                </div>
+
+                <h3>🌐 Glavni admin</h3>
+                <div class="pages">
+                    <a class="page" href="/schools"><span class="pl"><span class="ico">🏫</span><span><span class="pt">Šole</span><br><span class="pd">Vse šole, poti, naročnine, brisanje</span></span></span><span class="plink">/schools</span></a>
+                    <a class="page" href="/global-settings"><span class="pl"><span class="ico">🌐</span><span><span class="pt">Globalne nastavitve</span><br><span class="pd">SMTP, backup, cene</span></span></span><span class="plink">/global-settings</span></a>
+                    <a class="page" href="/history"><span class="pl"><span class="ico">📋</span><span><span class="pt">Dnevnik dogodkov (vse šole)</span><br><span class="pd">Audit log celotne namestitve</span></span></span><span class="plink">/history</span></a>
+                    <a class="page" href="/navodila"><span class="pl"><span class="ico">🧭</span><span><span class="pt">Navodila (ta stran)</span><br><span class="pd">Pregled + urejanje .md</span></span></span><span class="plink">/navodila</span></a>
+                </div>
+
+                <h3>📚 Navodila / dokumenti (dosegljivi)</h3>
+                <div class="pages">
+                    {% for d in all_preview %}
+                    <a class="page" href="/docs/html/{{ d.name }}" target="_blank"><span class="pl"><span class="ico">📄</span><span><span class="pt">{{ d.label }}</span><br><span class="pd">Predogled HTML · PDF</span></span></span><span class="plink">/docs/{{ d.name }}</span></a>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+
+        <div>
+            <!-- ============ UREJEVALNIK ============ -->
+            <div class="card">
+                <h2>✏️ Urejanje .md navodil in obvestil</h2>
+                <div class="editor">
+                    <div class="editor-head">
+                        <select id="docSelect" onchange="loadDoc()">
+                            {% for d in all_preview %}
+                            <option value="{{ d.name }}">{{ d.label }}</option>
+                            {% endfor %}
+                        </select>
+                        <span id="docStateBadge" class="badge-file">vgrajen</span>
+                        <a id="docPreview" class="btn ghost small" href="#" target="_blank">👁 Predogled</a>
+                        <a id="docPdf" class="btn ghost small" href="#">📥 PDF</a>
+                    </div>
+
+                    <textarea id="docEditor" spellcheck="false" placeholder="Nalaganje ..."></textarea>
+
+                    <div class="mtoolbar">
+                        <button class="btn ghost small" onclick="prependMd('# ')"># Naslov</button>
+                        <button class="btn ghost small" onclick="prependMd('## ')">## Podnaslov</button>
+                        <button class="btn ghost small" onclick="wrapMd('**','**')"><b>Bold</b></button>
+                        <button class="btn ghost small" onclick="wrapMd('> ','')">> citat</button>
+                        <button class="btn ghost small" onclick="wrapMd('- ','')">• seznam</button>
+                        <button class="btn ghost small" onclick="wrapMd('```\n','\n```')">``` koda</button>
+                        <button class="btn ghost small" onclick="wrapMd('| stolpec | stolpec |\n|---|---|\n| ',' |')">tabela</button>
+                    </div>
+
+                    <div class="actions">
+                        <button class="btn primary" onclick="saveDoc()">💾 Shrani spremembe</button>
+                        <button class="btn reset" onclick="resetDoc()">↩️ Ponastavi na vgrajeno</button>
+                    </div>
+                    <div id="docMsg" class="msg"></div>
+                    <div class="hint">Velja: markdown (naslovi #, poudarki **, seznami -, tabele |, citati &gt;, koda ```). Shranjene spremembe so VIDNE takoj (predogled in PDF), brez ponovnega zagona.</div>
+                </div>
+            </div>
+
+            <div class="card">
+                <h2>ℹ️ Kako dostopajo do navodil?</h2>
+                <p>
+                    Učitelji/vodstvo/admin imajo na <b>desni strani aplikacije</b> padajočo mrežo gumbov
+                    <b>👩‍🏫 Učitelji · 🧭 Vodstvo · 🛠️ Admin</b>. Vsak odpre predogled svojih navodil
+                    (v lupi) in na dnu gumb <b>Prenesi PDF</b>. Obvestila (učitelji/starši) so dosegljiva
+                    prek strani <b>📄 Obrazci</b> (će je vloga dovoljena).
+                </p>
+                <div class="hint" style="margin-top:.8rem;">Shranjena .md se uporabi na VSEH teh mestih (predogled + PDF + obrazci) in za vse šole.</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+let CURRENT_DOC = null;
+
+async function api0(url, opts) {
+    const r = await fetch(url, opts);
+    if (!r.ok) { let m = (r.statusText || r.status); try { const j = await r.json(); m = j.detail || m; } catch(e){} throw new Error(m); }
+    return r;
+}
+
+async function loadDoc() {
+    const name = document.getElementById('docSelect').value;
+    const msg = document.getElementById('docMsg');
+    msg.className = 'msg'; msg.textContent = 'Nalaganje ...';
+    try {
+        const j = await (await api0('/api/navodila/docs/' + encodeURIComponent(name))).json();
+        CURRENT_DOC = name;
+        document.getElementById('docEditor').value = j.content;
+        const badge = document.getElementById('docStateBadge');
+        badge.textContent = j.overridden ? 'urejanje (shranjeno)' : 'vgrajen';
+        badge.className = j.overridden ? 'badge-ov' : 'badge-file';
+        document.getElementById('docPreview').href = '/docs/html/' + name + '?_=' + Date.now();
+        document.getElementById('docPdf').href = '/docs/download/' + name;
+        msg.textContent = '';
+    } catch (e) {
+        msg.className = 'msg err'; msg.textContent = 'Napaka: ' + e.message;
+    }
+}
+
+async function saveDoc() {
+    if (!CURRENT_DOC) return;
+    const msg = document.getElementById('docMsg');
+    const content = document.getElementById('docEditor').value;
+    msg.className = 'msg'; msg.textContent = 'Shranjujem ...';
+    try {
+        await api0('/api/navodila/docs/' + encodeURIComponent(CURRENT_DOC), {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({content}),
+        });
+        const badge = document.getElementById('docStateBadge');
+        badge.textContent = 'urejanje (shranjeno)';
+        badge.className = 'badge-ov';
+        msg.className = 'msg ok'; msg.textContent = '✅ Shranjeno.';
+        setTimeout(() => { msg.textContent = ''; }, 2500);
+    } catch (e) {
+        msg.className = 'msg err'; msg.textContent = 'Napaka: ' + e.message;
+    }
+}
+
+async function resetDoc() {
+    if (!CURRENT_DOC) return;
+    if (!confirm('Ponastavim to navodilo na vgrajeno tovarniško različico?')) return;
+    const msg = document.getElementById('docMsg');
+    msg.className = 'msg'; msg.textContent = 'Ponastavljam ...';
+    try {
+        await api0('/api/navodila/docs/' + encodeURIComponent(CURRENT_DOC) + '/reset', { method: 'POST' });
+        await loadDoc();
+        msg.className = 'msg ok'; msg.textContent = '✅ Ponastavljeno na vgrajeno.';
+        setTimeout(() => { msg.textContent = ''; }, 2500);
+    } catch (e) {
+        msg.className = 'msg err'; msg.textContent = 'Napaka: ' + e.message;
+    }
+}
+
+function prependMd(txt) {
+    const ta = document.getElementById('docEditor');
+    const s = ta.selectionStart;
+    ta.value = ta.value.slice(0, s) + txt + ta.value.slice(s);
+    ta.focus();
+    ta.selectionStart = ta.selectionEnd = s + txt.length;
+}
+function wrapMd(b, a) {
+    const ta = document.getElementById('docEditor');
+    const s = ta.selectionStart, e = ta.selectionEnd;
+    const sel = ta.value.slice(s, e);
+    ta.value = ta.value.slice(0, s) + b + sel + a + ta.value.slice(e);
+    ta.focus();
+    ta.selectionStart = s + b.length;
+    ta.selectionEnd = e + b.length;
+}
+
+document.addEventListener('DOMContentLoaded', loadDoc);
+</script>
+</body>
+</html>
