@@ -105,14 +105,66 @@ li { margin-bottom: 3pt; }
 .page-break { page-break-before: always; }
 """
 _OBVESTILA_CSS = """
-# Poseben izgled za obvestila (obvestilo-*) — uporabljen v HTML preview in PDF.
-# Banner h1 (gradient), CTA gumb iz linka v blockquote, moder poudarek.
-h1 { background: linear-gradient(135deg, #0b3b5c, #14608c); color: #ffffff !important; padding: 0.9rem 1.2rem; border-radius: 12px; box-shadow: 0 4px 14px rgba(11,59,92,.25); }
-h2 { color: #0b3b5c; border-left: 4px solid #4a6cf7; padding-left: 0.6rem; margin-top: 1.5rem; }
-blockquote { background: #eef4fb; border: 1px solid #c9ddf0; border-left: 5px solid #4a6cf7; border-radius: 10px; padding: 0.7rem 1rem; }
-blockquote a, blockquote a:visited { display: inline-block; margin-top: 0.4rem; background: #0b3b5c; color: #ffffff !important; padding: 0.65rem 1.3rem; border-radius: 8px; text-decoration: none; font-weight: 700; }
+# ===== Obvestila: eleganten A4 dokument (obvestilo-*) =====
+# Na zaslonu (HTML preview) izgleda kot bel A4 list na sivem ozadju;
+# v PDF (weasyprint, print media) pa ostane na @page A4 — čist brez linij.
+@media screen {
+  html { background: #e8eef4; }
+  body {
+    max-width: 794px;           /* ~21 cm A4 širina */
+    margin: 40px auto;
+    background: #ffffff;
+    box-shadow: 0 12px 48px rgba(15,40,65,.20);
+    padding: 56px 64px 72px;
+    border-radius: 6px;
+  }
+}
+h1 {
+  background: linear-gradient(135deg, #0b3b5c, #14608c);
+  color: #ffffff !important;
+  padding: 34px 40px;
+  border-radius: 14px;
+  margin: 0 0 34px;
+  font-size: 21pt;
+  text-align: center;
+  box-shadow: 0 6px 22px rgba(11,59,92,.30);
+  border: none !important;
+}
+h2 {
+  color: #0b3b5c;
+  font-size: 15pt;
+  margin-top: 34px;
+  padding-bottom: 6px;
+  border-left: 5px solid #14608c;
+  padding-left: 14px;
+}
+p { font-size: 11.5pt; color: #28323c; }
+ol, ul { padding-left: 24px; }
+li { margin-bottom: 8px; font-size: 11.5pt; color: #28323c; }
+hr { border: none; margin: 30px 0; }          /* brez vidnih linij */
+blockquote {
+  background: #f0f6fc;
+  border: 1px solid #cfe0ee;
+  border-left: 6px solid #14608c;
+  border-radius: 12px;
+  padding: 18px 22px;
+  font-size: 11.5pt;
+  color: #344c5c;
+  page-break-inside: avoid;
+}
+blockquote a, blockquote a:visited {
+  display: inline-block;
+  margin-top: 14px;
+  background: linear-gradient(135deg,#0b3b5c,#14608c);
+  color: #ffffff !important;
+  padding: 12px 28px;
+  border-radius: 30px;
+  text-decoration: none;
+  font-weight: 700;
+  font-size: 12pt;
+  box-shadow: 0 4px 12px rgba(11,59,92,.25);
+}
 blockquote a:hover { background: #14608c; }
-hr { border: none; border-top: 2px solid #4a6cf7; margin: 1.4rem 0; }
 """
 
 
@@ -158,12 +210,12 @@ def _make_pdf(md_content: str, title: str, obvestilo: bool = False) -> bytes:
 <style>{_PDF_CSS + (_OBVESTILA_CSS if obvestilo else '')}</style>
 </head>
 <body>
-<div class="title-page">
+{f'''<div class="title-page">
   <h1>{html_mod.escape(title)}</h1>
   <p class="sub">Navodila za uporabo</p>
   <hr>
 </div>
-{body_html}
+''' if not obvestilo else ''}{body_html}
 </body>
 </html>"""
 
