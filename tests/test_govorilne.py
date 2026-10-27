@@ -1029,3 +1029,109 @@ def test_prijava_brisanje_manjka_id_400(make_user):
         login(c, admin.username)
         r = c.post("/govorilne/api/prijava/odstrani", json={})
         assert r.status_code == 400
+
+
+# ─────────────────────────────────────────────────────────────────────────
+# ŠOLSKI ZVONČNI URNIKI (17. 10. 2026; vir: /za-ucence-in-starse/solski-zvonec/)
+# Vsak učitelj izbere svoj urnik (1.-2., 3.-5. ali 6.-9. razred); začetek
+# njegove dopoldanske šolske ure (termina govorilnih) se vzame iz tega urnika.
+# ─────────────────────────────────────────────────────────────────────────
+
+def test_urnik_razberi_iz_razreda():
+    """Privzet zvončni urnik se razbere iz razreda razrednika."""
+    from app.govorilne_podatki import _razberi_urnik, _urnik_ucitelja_za
+    assert _razberi_urnik("1. a") == "1-2"
+    assert _razberi_urnik("2. č") == "1-2"
+    assert _razberi_urnik("3. b") == "3-5"
+    assert _razberi_urnik("5. č") == "3-5"
+    assert _razberi_urnik("6. a") == "6-9"
+    assert _razberi_urnik("9. c") == "6-9"
+    assert _razberi_urnik(None) == "6-9"
+    assert _razberi_urnik("") == "6-9"
+    # Eksplicitna izbira učitelja prevlada nad razredom.
+    u = {"ime": "X", "razred": "1. a", "urnik": "6-9"}
+    assert _urnik_ucitelja_za(u) == "6-9"
+    assert _urnik_ucitelja_za({"ime": "Y", "razred": "1. a"}) == "1-2"
+
+
+def test_zacetki_za_ucitelja_po_njegovem_urniku():
+    """Tabela začetkov se izbere po učiteljevem urniku (ne globalni)."""
+    from app.govorilne_podatki import URNIKI, _urnik_ucitelja_za
+    from app.routers.govorilne import _zacetki_za_ucitelja
+    # Učitelj 1. razreda → urnik 1-2 (npr. 2. ura = 09:25).
+    u12 = {"ime": "A", "razred": "1. a", "ura": 2}
+    assert _urnik_ucitelja_za(u12) == "1-2"
+    assert _zacetki_za_ucitelja(u12)[2] == URNIKI["1-2"]["zacetki"][2]
+    # Učitelj 6.-9. razreda → 2. ura = 09:15 (drugače kot 1-2).
+    u69 = {"ime": "B", "razred": "8. b", "ura": 2}
+    assert _zacetki_za_ucitelja(u69)[2] == URNIKI["6-9"]["zacetki"][2]
+    assert URNIKI["6-9"]["zacetki"][2] != URNIKI["1-2"]["zacetki"][2]
+    # Neznan id → fallback na private globalne URA_ZACETKI.
+    assert _zacetki_za_ucitelja({"ime": "C", "razred": "1. a", "urnik": "nonsense"})
+
+
+def test_dopoldan_termin_zacetek_sledi_urniku():
+    """Dopoldanski termin učitelja se začne ob uri iz NEGOVEGA urnika (ne 07:50)."""
+    from app.govorilne_podatki import URNIKI, _urnik_ucitelja_za
+    from app.routers.govorilne import _dopoldan_termini
+    # Učitelj razrednega pouka 1. a, 2. ura → 1-2 urnik → 09:25.
+    u1 = {"ime": "Arijana Đuretić", "razred": "1. a", "dan": 0, "ura": 2, "po_dogovoru": False}
+    terms1 = _dopoldan_termini(u1, {})
+    assert terms1  # mora obstajati (teden popoldanskih = 2026-11-19 → naprej)
+    assert terms1[0]["ura_od"] == URNIKI["1-2"]["zacetki"][2]
+    # Eksplicitno predmetni učitelj (6-9), 3. ura → 10:20.
+    u2 = {"ime": "Goran Ilić", "razred": None, "dan": 0, "ura": 3, "po_dogovoru": False}
+    terms2 = _dopoldan_termini(u2, {})
+    assert terms2 and terms2[0]["ura_od"] == URNIKI["6-9"]["zacetki"][3]
+
+
+def test_urnik_neveljaven_400(make_user):
+    """Neznan id urnika pri urejanju → 400."""
+    from app.govorilne_podatki import UCITELJI
+    prvi = next(u for u in UCITELJI if not u["po_dogovoru"])
+    admin = make_user(role="admin")
+    with TestClient(app) as c:
+        login(c, admin.username)
+        r = c.post("/govorilne/api/ure/ucitelj", json={
+            "ime": prvi["ime"], "urnik": "ne-veljaven", "dan": 0, "ura": 1,
+        })
+        assert r.status_code == 400
+
+
+def test_admin_uredi_urnik_in_zacetek_se_spremeni(make_user):
+    """Admin nastavi učitelju 3-5 urnik; dopoldanski termin dobi pripadajoči začetek."""
+    from app.govorilne_podatki import URNIKI, UCITELJI
+    from app.routers.govorilne import _testni_datum
+    prvi = next(u for u in UCITELJI if not u["po_dogovoru"])
+    admin = make_user(role="admin")
+    with TestClient(app) as c:
+        login(c, admin.username)
+        # Nastavi 3-5 urnik, 3. ura.
+        r = c.post("/govorilne/api/ure/ucitelj", json={
+            "ime": prvi["ime"], "urnik": "3-5", "dan": 0, "ura": 3, "prostor": "x",
+        })
+        assert r.status_code == 200, r.text
+        data = r.json()["ucitelj"]
+        assert data["urnik"] == "3-5"
+        assert data["urnik_label"] == URNIKI["3-5"]["label"]
+        # Javni termini zdaj oddajajo 3-5 začetek za 3. uro (dopoldanski datum).
+        od = _testni_datum(0).isoformat()
+        r2 = c.get("/govorilne/api/termini", params={"ucitelj": prvi["ime"]})
+        assert r2.status_code == 200
+        spodnji = [t["ura_od"] for t in r2.json()["termini"]
+                   if t["datum"] == od and t["ura_od"].startswith(URNIKI["3-5"]["zacetki"][3])]
+        assert spodnji, f"dopoldanski termin ({od}) naj bo pri 3-5 začetku 3. ure"
+
+
+def test_obrazec_za_ucitelje_ima_urnik_dropdown_in_link(make_user):
+    """Obrazec /govorilne/ure vsebuje izbiro šolskega zvončnega urnika + link."""
+    with TestClient(app) as c:
+        admin = make_user(role="admin")
+        login(c, admin.username)
+        r = c.get("/govorilne/ure")
+        assert r.status_code == 200
+        # Dropdown za urnik z 3 opcijami + link na zvončni urnik šole.
+        assert 'name="urnik"' in r.text
+        assert 'value="1-2"' in r.text and 'value="3-5"' in r.text and 'value="6-9"' in r.text
+        assert "šolski-zvonec" in r.text or "zvonec" in r.text
+        assert "urnik zvonjenja" in r.text

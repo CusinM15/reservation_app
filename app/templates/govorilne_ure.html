@@ -123,6 +123,15 @@
                     <input type="text" name="prostor" placeholder="npr. učilnica MAT 3">
                 </div>
                 <div class="form-row">
+                    <label>Šolski zvončni urnik</label>
+                    <select name="urnik">
+                        {% for uid, urnik in urniki.items() %}
+                        <option value="{{ uid }}">{{ urnik.label }}</option>
+                        {% endfor %}
+                    </select>
+                    <a class="back" href="{{ zvonec_url }}" target="_blank" rel="noopener" style="font-size:.78rem;">🔔 urnik zvonjenja ↗</a>
+                </div>
+                <div class="form-row">
                     <label>Dan (dopoldan)</label>
                     <select name="dan">
                         <option value="">Po dogovoru</option>
@@ -135,7 +144,7 @@
                     <label>Šolska ura</label>
                     <select name="ura">
                         <option value="">Po dogovoru</option>
-                        {% for i in [1,2,3,4,5,6,7] %}
+                        {% for i in range(1, 9) %}
                         <option value="{{ i }}">{{ i }}. ura</option>
                         {% endfor %}
                     </select>
@@ -175,6 +184,7 @@
                 <span class="t-label">Dopoldan:</span>
                 {{ u.dopoldan.dan }}, {{ u.dopoldan.ura }}. šolska ura
                 {% if u.dopoldan.zacetek %}(ob {{ u.dopoldan.zacetek }}){% endif %} — {{ u.dopoldan.datum }}
+                {% if u.urnik_label %}<span class="tag" style="display:inline-block;font-size:.72rem;background:#eef6fb;color:#0b3b5c;border-radius:14px;padding:.1rem .5rem;margin-left:.3rem;">🔔 {{ u.urnik_label }}</span>{% endif %}
             </div>
             {% elif u.po_dogovoru %}
             <div class="term"><span class="t-label">Dopoldan:</span> po dogovoru</div>
@@ -227,6 +237,15 @@
                         </select>
                     </div>
                     <div class="form-row">
+                        <label>Šolski zvončni urnik</label>
+                        <select name="urnik">
+                            {% for uid, urnik in urniki.items() %}
+                            <option value="{{ uid }}" {% if u.urnik == uid %}selected{% endif %}>{{ urnik.label }}</option>
+                            {% endfor %}
+                        </select>
+                        <a class="back" href="{{ zvonec_url }}" target="_blank" rel="noopener" style="font-size:.78rem;">🔔 urnik zvonjenja ↗</a>
+                    </div>
+                    <div class="form-row">
                         <label>Dan (dopoldan)</label>
                         <select name="dan">
                             <option value="po_dogovoru" {% if u.po_dogovoru %}selected{% endif %}>Po dogovoru</option>
@@ -239,7 +258,7 @@
                         <label>Šolska ura</label>
                         <select name="ura">
                             <option value="po_dogovoru" {% if u.po_dogovoru %}selected{% endif %}>Po dogovoru</option>
-                            {% for i in [1,2,3,4,5,6,7] %}
+                            {% for i in range(1, u.urnik_max_ura + 1) %}
                             <option value="{{ i }}" {% if u.ura == i and not u.po_dogovoru %}selected{% endif %}>{{ i }}. ura</option>
                             {% endfor %}
                         </select>
@@ -324,6 +343,7 @@ async function saveUcitelj(event, form) {
         razred: (fd.get('razred')||'').trim(),
         dan: fd.get('dan'),
         ura: fd.get('ura'),
+        urnik: (fd.get('urnik')||'').trim(),
         prostor: (fd.get('prostor')||'').trim(),
     };
     if (fd.get('ime')) body['ime'] = fd.get('ime').trim();
@@ -341,6 +361,7 @@ async function dodajUcitelja(event, form) {
         prostor: (fd.get('prostor')||'').trim(),
         dan: fd.get('dan') || '',
         ura: fd.get('ura') || '',
+        urnik: (fd.get('urnik')||'').trim(),
     };
     const r = await _post('/govorilne/api/ure/ucitelj/dodaj', body, msg);
     if (r && r.ok) setTimeout(() => location.reload(), 700);

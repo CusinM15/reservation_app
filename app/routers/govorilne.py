@@ -48,6 +48,9 @@ from app.govorilne_podatki import (
     POPOLDAN_DATUMI,
     URA_ZACETKI,
     GOVORILNE_DOPOLDAN_TEDEN,
+    URNIKI,
+    ZBONJEC_URL,
+    _urnik_ucitelja_za,
 )
 
 router = APIRouter(tags=["govorilne"])
@@ -84,6 +87,8 @@ def _default_cfg() -> dict:
         "ucitelji": UCITELJI,
         "popoldan_datumi": POPOLDAN_DATUMI,
         "ura_zacetki": URA_ZACETKI,
+        "urniki": URNIKI,
+        "zvonec_url": ZBONJEC_URL,
         "dopoldan_teden": GOVORILNE_DOPOLDAN_TEDEN,
         "termin_minut": TERMIN_MINUT,
         "popoldan_zacetek": POPOLDAN_ZACETEK,
@@ -230,6 +235,27 @@ def _term_min(cfg: dict | None = None) -> int:
         return TERMIN_MINUT
 
 
+def _zacetki_za_ucitelja(u: dict, cfg: dict | None = None) -> dict:
+    """Tabela 'šolska ura → začetek' po URNIKOVEM izbranem urniku učitelja.
+
+    Upošteva učiteljevo polje `urnik` (npr. '1-2', '3-5', '6-9'); če ga učitelj
+    nima, razbere iz njegovega razreda (razrednik). Fallback na stare globalne
+    URA_ZACETKI (časovno nekoliko drugačni, a za nedoločeno varno).
+    """
+    cfg = cfg or _default_cfg()
+    uid = _urnik_ucitelja_za(u)
+    urnik = (cfg.get("urniki") or URNIKI).get(uid)
+    if urnik and urnik.get("zacetki"):
+        # DB-shranjene urnike JSON pretvori ključe v str → nazaj v int.
+        return _int_keys(urnik["zacetki"])
+    return URA_ZACETKI
+
+
+def _max_solska_ura(u: dict, cfg: dict | None = None) -> int:
+    """Najvišja šolska ura, ki jo učitelj sme izbrati (po njegovem urniku)."""
+    return max(_zacetki_za_ucitelja(u, cfg).keys())
+
+
 def _dopoldan_monday(cfg: dict | None = None) -> date | None:
     """Ponedeljek tedna naslednjih popoldanskih govorilnih ur.
 
@@ -266,7 +292,7 @@ def _dopoldan_termini(u: dict, cfg: dict | None = None) -> list[dict]:
     cfg = cfg or _default_cfg()
     if u.get("po_dogovoru") or u.get("dan") is None or u.get("ura") is None:
         return []
-    start = (cfg.get("ura_zacetki") or URA_ZACETKI).get(u["ura"])
+    start = _zacetki_za_ucitelja(u, cfg).get(u["ura"])
     if not start:
         return []
     datum = _testni_datum(u["dan"], cfg)
@@ -705,7 +731,9 @@ def _urnik_ucitelja(db: Session, school_id: int | None, u: dict, cfg: dict | Non
     """Pripravi prikaz objavljenega urnika govorilnih ur enega učitelja
     (dopoldanski + popoldanski termin) skupaj z rezervacijami staršev."""
     cfg = cfg or _default_cfg()
-    ura_zacetki = cfg.get("ura_zacetki") or URA_ZACETKI
+    ura_zacetki = _zacetki_za_ucitelja(u, cfg)
+    urnik_id = _urnik_ucitelja_za(u)
+    urnik_obj = (cfg.get("urniki") or URNIKI).get(urnik_id) or {}
     dopoldan = None
     if not u.get("po_dogovoru") and u.get("dan") is not None and u.get("ura") is not None:
         dan = _DANI[u["dan"]] if 0 <= u["dan"] < 5 else f"dan {u['dan']}"
@@ -736,6 +764,9 @@ def _urnik_ucitelja(db: Session, school_id: int | None, u: dict, cfg: dict | Non
         "razred_raw": u.get("razred"),
         "dan": u.get("dan"),
         "ura": u.get("ura"),
+        "urnik": urnik_id,
+        "urnik_label": urnik_obj.get("label") or urnik_id,
+        "urnik_max_ura": max(ura_zacetki.keys()),
         "prostor": u.get("prostor") or "",
         "po_dogovoru": bool(u.get("po_dogovoru")),
         "editable": editable,
@@ -791,7 +822,9 @@ def govorilne_ure_stran(request: Request, db: Session = Depends(get_db)):
          "termin_minut": cfg.get("termin_minut") or TERMIN_MINUT,
          "popoldan_zacetek": cfg.get("popoldan_zacetek") or POPOLDAN_ZACETEK,
          "popoldan_osnovni_min": cfg.get("popoldan_osnovni_min") or POPOLDAN_OSNOVNI_MIN,
-         "popoldan_max_ur": cfg.get("popoldan_max_ur") or POPOLDAN_MAX_UR},
+         "popoldan_max_ur": cfg.get("popoldan_max_ur") or POPOLDAN_MAX_UR,
+         "urniki": cfg.get("urniki") or URNIKI,
+         "zvonec_url": cfg.get("zvonec_url") or ZBONJEC_URL},
     )
 
 
@@ -965,6 +998,18 @@ async def ure_ucitelj(request: Request, db: Session = Depends(get_db)):
             raise HTTPException(status_code=400, detail="Dan mora biti med 0 (pon) in 4 (pet)")
         return d
 
+    # Novo polje: izbrani ŠOLSKI ZVONČNI URNIK (npr. '6-9'). Veljaven id iz URNIKI.
+    urnik_raw = _opt("urnik", "")
+    urnik = str(urnik_raw or "").strip() or None
+    if urnik is not None and urnik not in (_cfg_urniki := (cfg.get("urniki") or URNIKI)):
+        raise HTTPException(status_code=400,
+                            detail="Neveljaven urnik (izberite 1.-2., 3.-5. ali 6.-9. razred)")
+
+    # Kandidat za max uro: upoštevaj NOVO izbiro urnika, ne stare.
+    kandidat = dict(novi)
+    if urnik is not None:
+        kandidat["urnik"] = urnik
+
     def _parsiraj_uro(v):
         if v is None:
             return None
@@ -977,9 +1022,10 @@ async def ure_ucitelj(request: Request, db: Session = Depends(get_db)):
             u = int(s)
         except ValueError:
             raise HTTPException(status_code=400, detail=f"Neveljavna ura: {s}")
-        max_ura = (cfg.get("ura_zacetki") or URA_ZACETKI)
-        if u < 1 or (max_ura and u > max(max_ura.keys())):
-            raise HTTPException(status_code=400, detail=f"Ura mora biti med 1 in {max(max_ura.keys())}")
+        # Najvišja ura po učiteljevem (novo) izbranem urniku (npr. 6-9 ima do 8. ure).
+        max_ura = _max_solska_ura(kandidat, cfg)
+        if u < 1 or u > max_ura:
+            raise HTTPException(status_code=400, detail=f"Ura mora biti med 1 in {max_ura}")
         return u
 
     dan = _parsiraj_dan(dan_raw)
@@ -992,6 +1038,7 @@ async def ure_ucitelj(request: Request, db: Session = Depends(get_db)):
     novi["razred"] = razred or None
     novi["dan"] = dan
     novi["ura"] = ura
+    novi["urnik"] = urnik
     novi["prostor"] = prostor
     novi["po_dogovoru"] = po_dogovoru
 
@@ -1034,8 +1081,17 @@ async def ure_ucitelj_dodaj(request: Request, db: Session = Depends(get_db)):
         "prostor": (body.get("prostor") or "").strip(),
         "dan": None,
         "ura": None,
+        "urnik": None,
         "po_dogovoru": True,
     }
+
+    # Novo polje: izbrani šolski zvončni urnik (npr. '6-9'); veljaven id iz URNIKI.
+    urnik_raw = body.get("urnik")
+    urnik = str(urnik_raw or "").strip() or None
+    if urnik is not None and urnik not in (cfg.get("urniki") or URNIKI):
+        raise HTTPException(status_code=400,
+                            detail="Neveljaven urnik (izberite 1.-2., 3.-5. ali 6.-9. razred)")
+    novi["urnik"] = urnik
 
     def _parsiraj_dan_v(v):
         if v is None:
@@ -1061,9 +1117,9 @@ async def ure_ucitelj_dodaj(request: Request, db: Session = Depends(get_db)):
             u = int(s)
         except (TypeError, ValueError):
             raise HTTPException(status_code=400, detail=f"Neveljavna ura: {s}")
-        max_ura = (cfg.get("ura_zacetki") or URA_ZACETKI)
-        if u < 1 or (max_ura and u > max(max_ura.keys())):
-            raise HTTPException(status_code=400, detail=f"Ura mora biti med 1 in {max(max_ura.keys())}")
+        max_ura = _max_solska_ura(novi, cfg)
+        if u < 1 or u > max_ura:
+            raise HTTPException(status_code=400, detail=f"Ura mora biti med 1 in {max_ura}")
         return u
 
     dan = _parsiraj_dan_v(body.get("dan"))

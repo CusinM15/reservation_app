@@ -25,6 +25,8 @@
 # Popoldanski termini so Uradni četrtki 17:30–18:30 (4 termina po 15 min).
 # ─────────────────────────────────────────────────────────────────────────
 
+import re
+
 UCITELJI = [{'ime': 'Arijana Đuretić',
   'razred': '1. a',
   'predmet': 'razredni pouk',
@@ -414,6 +416,61 @@ UCITELJI = [{'ime': 'Arijana Đuretić',
 POPOLDAN_DATUMI = ['2026-11-19', '2026-12-17', '2027-01-21', '2027-02-18', '2027-03-18', '2027-04-14', '2027-05-20']
 
 URA_ZACETKI = {1: '07:50', 2: '08:40', 3: '09:30', 4: '10:25', 5: '11:15', 6: '12:05', 7: '12:55'}
+
+# ─────────────────────────────────────────────────────────────────────────
+# Šolski zvončni urniki (vir: https://www.tonecufar.si/za-ucence-in-starse/solski-zvonec/)
+# Vsaka stopnja ima svoj razpored šolskih ur, zato se tudi DATUM/IPRED tistega
+# termina, ko učitelj sprejema, veže na ZACETNI ČAS te ure v NJEGOVEM urniku.
+#
+# Struktura: ključ = id urnika; vsak ima opis (label) in tabelo
+# 'šolska ura → začetek' (ura_zacetki). Učitelj si izbere svoj urnik (polje
+# `urnik` v njegovem zapisu). Privzeto razberemo iz razreda (razrednik) oz. 6-9.
+# ─────────────────────────────────────────────────────────────────────────
+ZBONJEC_URL = "https://www.tonecufar.si/za-ucence-in-starse/solski-zvonec/"
+
+URNIKI = {
+    "1-2": {
+        "label": "1. in 2. razred",
+        "zacetki": {
+            1: "08:40", 2: "09:25", 3: "10:20", 4: "11:10", 5: "12:20", 6: "13:10",
+        },
+    },
+    "3-5": {
+        "label": "3., 4. in 5. razred",
+        "zacetki": {
+            1: "08:20", 2: "09:25", 3: "10:20", 4: "11:10", 5: "12:00", 6: "12:50",
+        },
+    },
+    "6-9": {
+        "label": "6. do 9. razred",
+        "zacetki": {
+            1: "08:20", 2: "09:15", 3: "10:20", 4: "11:10",
+            5: "12:00", 6: "12:50", 7: "14:00", 8: "14:50",
+        },
+    },
+}
+DEFAULT_URNIK = "6-9"
+
+
+def _razberi_urnik(razred: str | None) -> str:
+    """Privzet urnik iz razreda (razrednik): 1.-2.→'1-2', 3.-5.→'3-5', sicer '6-9'."""
+    m = re.match(r"^\s*([1-9])", str(razred or ""))
+    if not m:
+        return DEFAULT_URNIK
+    r = int(m.group(1))
+    if r <= 2:
+        return "1-2"
+    if r <= 5:
+        return "3-5"
+    return "6-9"
+
+
+def _urnik_ucitelja_za(u: dict) -> str:
+    """Id urnika za učitelja: upoštevaj njegovo izbiro (`urnik`), sicer razberi iz razreda."""
+    uid = (u or {}).get("urnik")
+    if uid in URNIKI:
+        return uid
+    return _razberi_urnik((u or {}).get("razred"))
 
 # Testni teden za dopoldanske govorilne ure (pon 26. 10. 2026 = prvi dan).
 GOVORILNE_DOPOLDAN_TEDEN = "2026-10-26"
