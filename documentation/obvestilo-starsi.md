@@ -5,6 +5,9 @@
 
 ---
 
+> Prijavno stran govorilnih ur vaše šole odprete tukaj:
+> **[🌐 Najava na govorilne](https://reservationapp.site/govorilne_ostcj)**
+
 ## Kako se naročite (3 koraki)
 
 1. **Izberite učitelja** na prijavni strani govorilnih ur.

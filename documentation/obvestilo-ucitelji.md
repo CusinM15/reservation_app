@@ -19,7 +19,8 @@ Z enim vpisom v aplikaciji:
 
 ## Kako začnete?
 
-1. Odprite glavno stran aplikacije svoje šole.
+1. Odprite **[prijavno stran aplikacije](https://reservationapp.site/auth/login)** in se
+   prijavite s svojim šolskim e-naslovom.
 2. V zgornji vrstici kliknite **„🗓️ Moje govorilne ure"**.
 3. Nastavite svoj termin in predmet (razredniki tudi razred).
 
