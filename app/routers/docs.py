@@ -105,13 +105,14 @@ li { margin-bottom: 3pt; }
 .page-break { page-break-before: always; }
 """
 _OBVESTILA_CSS = """
-# ===== Obvestila: eleganten A4 dokument (obvestilo-*) =====
-# Na zaslonu (HTML preview) izgleda kot bel A4 list na sivem ozadju;
-# v PDF (weasyprint, print media) pa ostane na @page A4 — čist brez linij.
+/* ===== Obvestila: eleganten A4 dokument (obvestilo-*) ===== */
+/* Na zaslonu (HTML preview) izgleda kot bel A4 list na sivem ozadju; */
+/* v PDF (weasyprint, print media) pa ostane na @page A4 — čist brez linij. */
 @media screen {
   html { background: #e8eef4; }
   body {
     max-width: 794px;           /* ~21 cm A4 širina */
+    box-sizing: border-box;      /* 794 = skupna širina s paddingom */
     margin: 40px auto;
     background: #ffffff;
     box-shadow: 0 12px 48px rgba(15,40,65,.20);
@@ -122,9 +123,9 @@ _OBVESTILA_CSS = """
 h1 {
   background: linear-gradient(135deg, #0b3b5c, #14608c);
   color: #ffffff !important;
-  padding: 34px 40px;
+  padding: 26px 36px;
   border-radius: 14px;
-  margin: 0 0 34px;
+  margin: 0 0 26px;
   font-size: 21pt;
   text-align: center;
   box-shadow: 0 6px 22px rgba(11,59,92,.30);
@@ -133,21 +134,21 @@ h1 {
 h2 {
   color: #0b3b5c;
   font-size: 15pt;
-  margin-top: 34px;
+  margin-top: 22px;
   padding-bottom: 6px;
   border-left: 5px solid #14608c;
   padding-left: 14px;
 }
 p { font-size: 11.5pt; color: #28323c; }
 ol, ul { padding-left: 24px; }
-li { margin-bottom: 8px; font-size: 11.5pt; color: #28323c; }
-hr { border: none; margin: 30px 0; }          /* brez vidnih linij */
+li { margin-bottom: 5px; font-size: 11.5pt; color: #28323c; }
+hr { border: none; margin: 18px 0; }          /* brez vidnih linij */
 blockquote {
   background: #f0f6fc;
   border: 1px solid #cfe0ee;
   border-left: 6px solid #14608c;
   border-radius: 12px;
-  padding: 18px 22px;
+  padding: 14px 18px;
   font-size: 11.5pt;
   color: #344c5c;
   page-break-inside: avoid;
