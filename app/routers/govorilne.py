@@ -600,6 +600,10 @@ def govorilne_prijave_stran(request: Request, db: Session = Depends(get_db)):
     if user is None:
         return RedirectResponse(url="/auth/login")
 
+    # Glavni admin (mainadmin, platforma) NE sme videti govorilnih ur v nobenem primeru.
+    if is_main_admin(user):
+        return RedirectResponse(url="/")
+
     role = role_value(user)
     q = db.query(GovorilnaPrijava)
     if is_main_admin(user):
@@ -687,8 +691,9 @@ async def govorilne_prijava_odstrani(
 # Dnevi v tednu (0=pon..4=pet) za prikaz govorilnih ur.
 _DANI = ["ponedeljek", "torek", "sreda", "četrtek", "petek"]
 
-# Kdo lahko UREJA vse (popoldan + vse učitelje): admin, vodstvo, glavni admin.
-_EDITOR_ROLES = ("admin", "vodstvo", "main_admin")
+# Kdo lahko UREJA vse (popoldan + vse učitelje): šolski admin in vodstvo.
+# Glavni admin (mainadmin) govorilnih ur NE SME videti niti urejati.
+_EDITOR_ROLES = ("admin", "vodstvo")
 
 
 def _lahko_ureja_vse(user) -> bool:
@@ -752,6 +757,10 @@ def govorilne_ure_stran(request: Request, db: Session = Depends(get_db)):
     user = get_request_user(request, db)
     if user is None:
         return RedirectResponse(url="/auth/login")
+
+    # Glavni admin (mainadmin, platforma) NE sme videti govorilnih ur v nobenem primeru.
+    if is_main_admin(user):
+        return RedirectResponse(url="/")
 
     role = role_value(user)
     school_id = request_school_id(request) or _default_school_id(db)

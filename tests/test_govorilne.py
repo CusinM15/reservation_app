@@ -308,8 +308,27 @@ def test_govorilne_ure_ucitelj_vidi_samo_svoj_urnik():
         assert drugi["ime"] not in r.text
 
 
+def test_govorilne_ure_mainadmin_zanikan_vedno(make_user):
+    """Glavni admin (mainadmin) NE SME videti govorilnih ur v nobenem primeru.
+
+    Preveri tako stran /govorilne/ure kot /govorilne/prijave — obe morata
+    glavnega admina preusmeriti stran (redirect, ne vsebina).
+    """
+    mainadmin = make_user(role="main_admin")
+    with TestClient(app) as c:
+        login(c, mainadmin.username)
+        for path in ("/govorilne/ure", "/govorilne/prijave"):
+            r = c.get(path, follow_redirects=False)
+            assert r.status_code in (302, 307), f"{path} -> {r.status_code}"
+            assert r.headers.get("location", "") == "/"
+        # mainadmin tudi na API-ju za urejanje nima pravic.
+        r = c.post("/govorilne/api/ure/popoldan", json={"popoldan_datumi": []},
+                   follow_redirects=False)
+        assert r.status_code in (401, 403), f"API popoldan -> {r.status_code}"
+
+
 def test_govorilne_ure_admin_vidi_vse_ucitelje(make_user):
-    """Šolski admin/glavni admin vidi urnike vseh učiteljev (npr. testni Matej Čušin)
+    """Šolski admin vidi urnike vseh učiteljev (npr. testni Matej Čušin)
     in ima urejanje učiteljev (dodaj/odstrani) + nastavitve popoldanskih ur."""
     admin = make_user(role="admin")
     with TestClient(app) as c:
