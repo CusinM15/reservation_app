@@ -51,9 +51,9 @@ v eni preprosti, hitri spletni rešitvi. Brez namestitve na računalnike, brez n
   strežnika vas bo stalo **manj kot 100 €/leto** (stari prenosniki ali nizek VPS). Vse
   ostalo bo moral prevzeti šolski administrator:
     - postavitev strežnika in namestitev aplikacije,
-    - redne posodobitve in varnostne kopije (za backupe skrbi šola sama — ni
-      avtomatskega nočnega cronjoba, ki bi ga vzpostavili za vas; varnostne kopije si
-      mora šola zagnati in vzdrževati sama),
+    - redne posodobitve in varnostne kopije (backupe si mora šolski administrator
+      nastaviti sam — ni avtomatskega nočnega cronjoba; če jih admin ne nastavi,
+      varnostnih kopij ni),
     - nastavitev e-pošte (SMTP) in SSL-potrdila,
     - varnost, spremljanje delovanja in skrb za podatke (GDPR).
   Pri odprtokodni različici so na voljo le **podrobno pisana navodila** (dokumentacija);
