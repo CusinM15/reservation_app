@@ -17,14 +17,23 @@ v eni preprosti, hitri spletni rešitvi. Brez namestitve na računalnike, brez n
   kupovati ali plačevati posebej.
 - **Proporcionalni obračun** — če se šola priključi sredi šolskega leta, se zaračuna le
   **sorazmerni (proporcionalni) delež** do 1. 9., ne celo leto.
-- Primerjava: **že samo gostovanje** na lastnem strežniku stane približno **10–20 € na
-  mesec (120–240 € na leto)** — brez postavitve, vzdrževanja, posodobitev, varnostnih
-  kopij in brez vašega časa.
+- **Strežnik je lahko skoraj brezplačen — manj kot 100 € na leto.** Aplikacijo poganjajo
+  **stari prenosniki, preslabi za Windows 11** (ta zahteva TPM 2.0 in podprt procesor,
+  Windows 10 pa je oktobra 2025 ostal brez varnostnih posodobitev). Za ~100–200 uporabnikov
+  zadostuje že **1 CPU in 1 GB RAM** — v avtorjevi produkciji aplikacija dejansko teče na
+  HP ProBook prenosnikih. Stroj stane **0 €** (šola ga že ima — namesto v smeti dobi novo
+  življenje), strošek je samo elektrika:
+    - **Primer: 3 stari prenosniki** — povprečno ~15 W vsak, prižgani 24/7 skozi leto →
+      ≈ 400 kWh/leto; ob slovenski ceni elektrike (~0,15–0,20 €/kWh) je to
+      **≈ 60–80 €/leto — manj kot 100 €**.
+- Za primerjavo: najem strežnika (VPS) stane **~7 €/mesec (~84 €/leto)**, upravljani oblak
+  (PaaS) **~10–15 €/mesec (120–180 €/leto)**, upravljani Kubernetes pa **50–100 €/mesec** —
+  za eno šolo topovska cev na muho.
 - **Bi se raje lotili sami?** Aplikacija je **odprtokodna** — koda je na voljo na GitHubu:
   [github.com/CusinM15/reservation_app](https://github.com/CusinM15/reservation_app).
-  Odprtokodna različica vsebuje **manj funkcij** kot plačljiva storitev, na letni ravni pa
-  vas bo stala **približno 120–240 € samo za strežnik**. Vse ostalo bo moral prevzeti
-  šolski administrator:
+  Odprtokodna različica vsebuje **manj funkcij** kot plačljiva storitev; strežnik vas bo
+  stal **manj kot 100 €/leto** (stari prenosniki, samo elektrika) oziroma ~84–180 €/leto za
+  najem strežnika ali oblaka. Vse ostalo bo moral prevzeti šolski administrator:
     - postavitev strežnika in namestitev aplikacije,
     - redne posodobitve in varnostne kopije (za backupe skrbi šola sama — ni
       avtomatskega nočnega cronjoba, ki bi ga vzpostavili za vas; varnostne kopije si
