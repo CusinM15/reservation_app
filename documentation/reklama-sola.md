@@ -6,15 +6,16 @@ Aplikacijo, ki jo uporabljamo tudi na šoli, kjer sem zaposlen, smo zasnovali č
 pregledno in razumljivo — tudi za manj IT-pismene uporabnike. Združuje **rezervacijo
 prostorov**, **napovedovanje ocenjevanj** s pravili (kakor veleva zakon), **pregled
 dejavnosti**, **digitalne zaslone za nadomeščanja** in **najave na govorilne ure** —
-v eni preprosti, hitri spletni rešitvi. Brez namestitve na računalnike, brez naročniških pasti.
+v eni preprosti, hitri spletni rešitvi. Brez namestitve na računalnike, brez samodejnih
+podaljšanj in skritih stroškov.
 
 ---
 
 ## 💰 Zakaj se splača? 150 € na leto, vse vključeno
 
 - **150 € na leto** — to je le **12,50 € na mesec** za celotno rešitev. Gostovanje,
-  vzdrževanje, posodobitve in varnostne kopije so že v ceni; ničesar ni treba
-  kupovati ali plačevati posebej.
+  vzdrževanje, posodobitve in varnostne kopije (e-poštni backup 1-klik) so že v ceni;
+  ničesar ni treba kupovati ali plačevati posebej.
 - **Proporcionalni obračun** — če se šola priključi sredi šolskega leta, se zaračuna le
   **sorazmerni (proporcionalni) delež** do 1. 9., ne celo leto.
 - **Za čisti self hosting imajo šole tri možnosti** — vse **cenejše od 100 € na leto** za
@@ -36,14 +37,15 @@ v eni preprosti, hitri spletni rešitvi. Brez namestitve na računalnike, brez n
         - **Prenovljen rabljen mini/stolpni računalnik** (npr. Dell OptiPlex / HP EliteDesk,
           i5/i7, 8–16 GB RAM): **~110–160 €** — najcenejši x86 z dobrim procesorjem.
     - **3. Gostovanje v oblaku (nič strojne opreme)** — najem virtualnega strežnika (VPS)
-      od **~4–10 €/mesec (~50–115 €/leto)**, brez skrbi za strojno opremo:
-        - **Hetzner** (Nemčija/Finska, samo EU): od **~5,99 €/mesec (~72 €/leto)**.
+      od **~3–8,50 €/mesec (~36–99 €/leto)**, brez skrbi za strojno opremo:
+        - **Hetzner** (EU regiji: Nemčija in Finska — vedno izberi EU regijo): od
+          **~5,99 €/mesec (~72 €/leto)**.
         - **Netcup** (Nemčija, samo EU): od **~8,26 €/mesec (~99 €/leto)** pri letni pogodbi.
         - **Scaleway** (Francija/Nizozemska/Poljska, samo EU): od **~3–4,50 €/mesec**.
         - ⚠️ **Pomembno za podatke šole:** nekateri ponudniki (npr. Contabo, IONOS, OVH,
           DigitalOcean) imajo podatkovne centre **tudi zunaj EU** — ob naročilu **vedno
-          izberi EU regijo**, po možnosti pa **samo-EU ponudnika** (Hetzner, Netcup,
-          Scaleway). Shranjevanje podatkov učencev v državi zunaj EU/EGP sproži zahtevnejši
+          izberi EU regijo**, po možnosti pa **samo-EU ponudnika** (Netcup, Scaleway).
+          Shranjevanje podatkov učencev v državi zunaj EU/EGP sproži zahtevnejši
           GDPR postopek (poglavje V) — **ne-EU gostovanje zato zelo odsvetujem**.
 - **Bi se raje lotili sami?** Aplikacija je **odprtokodna** — koda je na voljo na GitHubu:
   [github.com/CusinM15/reservation_app](https://github.com/CusinM15/reservation_app).
@@ -83,7 +85,7 @@ v eni preprosti, hitri spletni rešitvi. Brez namestitve na računalnike, brez n
   ostanejo fleksibilna. Zaradi skupin pri višjih razredih (npr. 8. razredi so 8. 1,
   8. 2, 8. 3, 8. 4 ter 8. a, 8. b, 8. c) pravila delujejo za vsak razred posebej —
   aplikacija ne ve, da 8. 1 sestavljajo učenci iz 8. a, saj imena otrok niso vnesena,
-  zato skupine in razrede obravnava kot ločene razrede.
+  zato skupine obravnava kot ločene razrede.
 - Oznake za **ponavljanje (PIP)**, izbirne predmete in barvne prikaze ocenjevanj.
 
 ### 🎒 Dnevi dejavnosti
@@ -96,7 +98,7 @@ v eni preprosti, hitri spletni rešitvi. Brez namestitve na računalnike, brez n
   rezervira (npr. od 1. do 5. šolske ure).
 
 ### 🖥️ Digitalni zasloni z nadomeščanji
-- Nadomeščanja iz **eAsistenta** prikazujte na zaslonih šole (ali preko spleta).
+- Nadomeščanja iz **eAsistenta** prikazujte na zaslonih šole (ali prek spleta).
 - Obvestila (slike in besedila) dodajate v vmesniku; na zaslonu se **vrtijo s
   tempom, ki ga izberete**.
 - Nastavljiv časovni pas, hitrost drsenja, interval prikaza in gumb
@@ -131,7 +133,7 @@ v eni preprosti, hitri spletni rešitvi. Brez namestitve na računalnike, brez n
 ### 🔒 Varnost
 - Vsaka šola ima **svoje podatke** — druge šole jih ne vidijo.
 - **GDPR-pripravljena**: aplikacija hrani le podatke osebja, prijave staršev se
-  samodejno čistijo; na zahtevo DPA.
+  samodejno čistijo; na zahtevo nadzornega organa (DPA).
 - Vsi dostopi so **beleženi** (audit log) in pregledni za šolske in glavne administratorje.
 
 ---
@@ -154,7 +156,7 @@ v eni preprosti, hitri spletni rešitvi. Brez namestitve na računalnike, brez n
 > ⚠️ **Naročnino je treba skleniti v 28 dneh** od ustvaritve računa. Če je v tem roku
 > ne sklenete, se šola **samodejno izbriše**.
 
-> Aplikacija teče na hitrem, zanesljivem strežniku v Sloveniji/EU. Prilagoditve po dogovoru.
+> Aplikacija teče na hitrem, zanesljivem strežniku v EU. Prilagoditve po dogovoru.
 
 ---
 
