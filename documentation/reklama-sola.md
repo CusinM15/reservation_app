@@ -26,9 +26,14 @@ v eni preprosti, hitri spletni rešitvi. Brez namestitve na računalnike, brez n
   vas bo stala **približno 120–240 € samo za strežnik**. Vse ostalo bo moral prevzeti
   šolski administrator:
     - postavitev strežnika in namestitev aplikacije,
-    - redne posodobitve in varnostne kopije,
+    - redne posodobitve in varnostne kopije (za backupe skrbi šola sama — ni
+      avtomatskega nočnega cronjoba, ki bi ga vzpostavili za vas; varnostne kopije si
+      mora šola zagnati in vzdrževati sama),
     - nastavitev e-pošte (SMTP) in SSL-potrdila,
     - varnost, spremljanje delovanja in skrb za podatke (GDPR).
+  Pri odprtokodni različici **podpore ne nudim** — na voljo so le **podrobno pisana
+  navodila** (dokumentacija), vse ostalo vzdrževanje, odgovornost in skrb za podatke so
+  povsem na šoli.
 
 ---
 
@@ -117,7 +122,8 @@ v eni preprosti, hitri spletni rešitvi. Brez namestitve na računalnike, brez n
 2. **Administrator in vodstvo pripravita vse** — nastavita e-pošto za pošiljanje (SMTP),
    razrede, prostore, urnik in pravila ocenjevanja — **še preden začnejo uporabljati učitelji**.
 3. **Uredite naročnino** — velja vedno **do 1. 9.**; za naslednje leto jo lahko sklenete
-   **šele od 15. 8. dalje**.
+   **šele od 15. 8. dalje**. Naročnina **se ne da prekiniti** pred iztekom (do 1. 9.) —
+   sklenete jo za celo šolsko leto.
 4. **Uvozite učitelje** in začnite uporabljati — učitelji in vodstvo se prijavijo, ko je
    naročnina urejena in potrjena.
 
