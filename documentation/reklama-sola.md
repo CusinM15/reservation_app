@@ -13,7 +13,7 @@ v eni preprosti, hitri spletni rešitvi. Brez namestitve na računalnike, brez n
 ## 💰 Zakaj se splača? 150 € na leto, vse vključeno
 
 - **150 € na leto** — to je le **12,50 € na mesec** za celotno rešitev. Gostovanje,
-  vzdrževanje, posodobitve, varnostne kopije in podpora so že v ceni; ničesar ni treba
+  vzdrževanje, posodobitve in varnostne kopije so že v ceni; ničesar ni treba
   kupovati ali plačevati posebej.
 - **Proporcionalni obračun** — če se šola priključi sredi šolskega leta, se zaračuna le
   **sorazmerni (proporcionalni) delež** do 1. 9., ne celo leto.
@@ -56,9 +56,8 @@ v eni preprosti, hitri spletni rešitvi. Brez namestitve na računalnike, brez n
       mora šola zagnati in vzdrževati sama),
     - nastavitev e-pošte (SMTP) in SSL-potrdila,
     - varnost, spremljanje delovanja in skrb za podatke (GDPR).
-  Pri odprtokodni različici **podpore ne nudim** — na voljo so le **podrobno pisana
-  navodila** (dokumentacija), vse ostalo vzdrževanje, odgovornost in skrb za podatke so
-  povsem na šoli.
+  Pri odprtokodni različici so na voljo le **podrobno pisana navodila** (dokumentacija);
+  vzdrževanje, odgovornost in skrb za podatke so povsem na šoli.
 
 ---
 
@@ -155,8 +154,7 @@ v eni preprosti, hitri spletni rešitvi. Brez namestitve na računalnike, brez n
 > ⚠️ **Naročnino je treba skleniti v 28 dneh** od ustvaritve računa. Če je v tem roku
 > ne sklenete, se šola **samodejno izbriše**.
 
-> Aplikacija teče na hitrem, zanesljivem strežniku v Sloveniji/EU. Podpora in
-> prilagoditve po dogovoru.
+> Aplikacija teče na hitrem, zanesljivem strežniku v Sloveniji/EU. Prilagoditve po dogovoru.
 
 ---
 
