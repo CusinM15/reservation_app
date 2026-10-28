@@ -17,23 +17,39 @@ v eni preprosti, hitri spletni rešitvi. Brez namestitve na računalnike, brez n
   kupovati ali plačevati posebej.
 - **Proporcionalni obračun** — če se šola priključi sredi šolskega leta, se zaračuna le
   **sorazmerni (proporcionalni) delež** do 1. 9., ne celo leto.
-- **Strežnik je lahko skoraj brezplačen — manj kot 100 € na leto.** Aplikacijo poganjajo
-  **stari prenosniki, preslabi za Windows 11** (ta zahteva TPM 2.0 in podprt procesor,
-  Windows 10 pa je oktobra 2025 ostal brez varnostnih posodobitev). Za ~100–200 uporabnikov
-  zadostuje že **1 CPU in 1 GB RAM** — v avtorjevi produkciji aplikacija dejansko teče na
-  HP ProBook prenosnikih. Stroj stane **0 €** (šola ga že ima — namesto v smeti dobi novo
-  življenje), strošek je samo elektrika:
-    - **Primer: 3 stari prenosniki** — povprečno ~15 W vsak, prižgani 24/7 skozi leto →
-      ≈ 400 kWh/leto; ob slovenski ceni elektrike (~0,15–0,20 €/kWh) je to
-      **≈ 60–80 €/leto — manj kot 100 €**.
-- Za primerjavo: najem strežnika (VPS) stane **~7 €/mesec (~84 €/leto)**, upravljani oblak
-  (PaaS) **~10–15 €/mesec (120–180 €/leto)**, upravljani Kubernetes pa **50–100 €/mesec** —
-  za eno šolo topovska cev na muho.
+- **Za čisti self hosting imajo šole tri možnosti** — vse **cenejše od 100 € na leto** za
+  samo delovanje (izjema je enkratni nakup stroja):
+    - **1. Stari prenosniki (najcenejše)** — aplikacijo poganjajo **stari prenosniki,
+      preslabi za Windows 11** (ta zahteva TPM 2.0 in podprt procesor, Windows 10 pa je
+      oktobra 2025 ostal brez varnostnih posodobitev). Za ~100–200 uporabnikov zadostuje že
+      **1 CPU in 1 GB RAM** — v avtorjevi produkciji aplikacija dejansko teče na HP ProBook
+      prenosnikih. Stroj stane **0 €** (šola ga že ima — namesto v smeti dobi novo
+      življenje), strošek je samo elektrika:
+        - **Primer: 3 stari prenosniki** — povprečno ~15 W vsak, prižgani 24/7 skozi leto →
+          ≈ 400 kWh/leto; ob slovenski ceni elektrike (~0,15–0,20 €/kWh) je to
+          **≈ 60–80 €/leto — manj kot 100 €**.
+    - **2. Nakup strežnika (enkratni strošek)** — majhen, tih in varčen namenski stroj v
+      obsegu 110–200 € (enkratno); od takrat naprej je strošek samo elektrika (~10–20 €/leto):
+        - **Intel N100 mini-PC** (8 GB RAM + 256 GB SSD): **~150–200 €** — zelo varčen (6 W), več kot dovolj za 100–200 uporabnikov.
+        - **Raspberry Pi 5 (8 GB)** + napajalnik + ohišje + shramba: **~120–160 €** — ARM,
+          poln nadzor nad podatki.
+        - **Prenovljen rabljen mini/stolpni računalnik** (npr. Dell OptiPlex / HP EliteDesk,
+          i5/i7, 8–16 GB RAM): **~110–160 €** — najcenejši x86 z dobrim procesorjem.
+    - **3. Gostovanje v oblaku (nič strojne opreme)** — najem virtualnega strežnika (VPS)
+      od **~4–10 €/mesec (~50–115 €/leto)**, brez skrbi za strojno opremo:
+        - **Hetzner** (Nemčija/Finska, samo EU): od **~5,99 €/mesec (~72 €/leto)**.
+        - **Netcup** (Nemčija, samo EU): od **~8,26 €/mesec (~99 €/leto)** pri letni pogodbi.
+        - **Scaleway** (Francija/Nizozemska/Poljska, samo EU): od **~3–4,50 €/mesec**.
+        - ⚠️ **Pomembno za podatke šole:** nekateri ponudniki (npr. Contabo, IONOS, OVH,
+          DigitalOcean) imajo podatkovne centre **tudi zunaj EU** — ob naročilu **vedno
+          izberi EU regijo**, po možnosti pa **samo-EU ponudnika** (Hetzner, Netcup,
+          Scaleway). Shranjevanje podatkov učencev v državi zunaj EU/EGP sproži zahtevnejši
+          GDPR postopek (poglavje V) — **ne-EU gostovanje zato zelo odsvetujem**.
 - **Bi se raje lotili sami?** Aplikacija je **odprtokodna** — koda je na voljo na GitHubu:
   [github.com/CusinM15/reservation_app](https://github.com/CusinM15/reservation_app).
-  Odprtokodna različica vsebuje **manj funkcij** kot plačljiva storitev; strežnik vas bo
-  stal **manj kot 100 €/leto** (stari prenosniki, samo elektrika) oziroma ~84–180 €/leto za
-  najem strežnika ali oblaka. Vse ostalo bo moral prevzeti šolski administrator:
+  Odprtokodna različica vsebuje **manj funkcij** kot plačljiva storitev; samo delovanje
+  strežnika vas bo stalo **manj kot 100 €/leto** (stari prenosniki ali nizek VPS). Vse
+  ostalo bo moral prevzeti šolski administrator:
     - postavitev strežnika in namestitev aplikacije,
     - redne posodobitve in varnostne kopije (za backupe skrbi šola sama — ni
       avtomatskega nočnega cronjoba, ki bi ga vzpostavili za vas; varnostne kopije si
