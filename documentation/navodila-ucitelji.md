@@ -172,6 +172,17 @@ Okno »Novo ocenjevanje«
 | 🗓️ **Največ 3 ocenjevanja skupaj na teden** | Vključno s ponavljanji |
 | 🔄 **Ponavljanje dovoljuje 3. test v tednu** | Vendar trije zaporedni dnevi s testom niso dovoljeni |
 
+**Kaj se zgodi, ko pravilo ni upoštevano?** Sistem tega ne dopusti: ob poskusu dodajanja ocenjevanja, ki bi krišilo katero od teh pravil, se prikaže **rdeče obvestilo**, ocenjevanje pa se ne shrani.
+
+![Dan dejavnosti — ocenjevanje ni mogoče](slike/navodila_ocenjevanje_error_dan_dejavnosti.png)
+*Na dan, ko je razred označen kot dan dejavnosti, ocenjevanje ni mogoče — sistem to preveri že v brskalniku.*
+
+![Največ 1 test na dan](slike/navodila_ocenjevanje_error_per_day.png)
+*Ko razred že ima en test v tistem danu, drugega na isti dan ne morete dodati.*
+
+![Tedenska meja — največ 2 običajna testa na teden](slike/navodila_ocenjevanje_error_tedenska_meja.png)
+*Ko so že dve običajni ocenjevanji v istem tednu, tretjo običajno ne morete dodati (ponavljanje se v to omejitev ne šteje).*
+
 ```text
 Koledar ocenjevanj (mesec)
 
@@ -268,7 +279,7 @@ Prijave se samodejno počistijo **24 ur po koncu termina** (varovanje podatkov).
 
 Na desni strani **aplikacije** je gumb **`👩‍🏫 Učitelji`**. Ko se z miško pomaknete nanj, se v manjšem oknu odprejo ta navodila, po katerih se lahko pomikate z miško. Na koncu okna je tudi gumb **Prenesi PDF**, s katerim si navodila prenesete na svoj računalnik.
 
-![Stranski gumbi za navodila](slike/navodila_rezervacije_teden.png)
+![Stranski gumbi za navodila](slike/navodila_stranski_gumbi.png)
 
 ```text
 Desna stran aplikacije
