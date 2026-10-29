@@ -61,12 +61,12 @@
         <form method="POST" action="/api/schools" id="new-school-form">
             <input type="hidden" name="lang" value="{{ lang }}">
             <input type="text" name="name" placeholder="{{ t('sch_ph_ime', 'Polno ime šole (npr. OŠ Toneta Čufarja Jesenice)') }}" required style="width:420px;">
-            <input type="text" name="slug" placeholder="{{ t('sch_ph_oznaka', 'oznaka (npr. ostcj)') }}" style="width:160px;">
+            <input type="text" name="slug" placeholder="{{ t('sch_ph_oznaka', 'kratko ime (npr. ostcj)') }}" required style="width:160px;">
             <button type="submit" class="btn btn-success">{{ t('btn_ustvari_solo', 'Ustvari šolo') }}</button>
         </form>
         <p class="hint">
             {{ t('sch_hint_oznaka_1', 'Oznaka se uporabi za poti šole:') }} <span class="badge">/rezervacije_&lt;oznaka&gt;</span>
-            {{ t('sch_hint_oznaka_2', 'in') }} <span class="badge">/ocenjevanje_&lt;oznaka&gt;</span>{{ t('sch_hint_oznaka_3', '. Če je ne vpišete, se naredi iz imena.') }}
+            {{ t('sch_hint_oznaka_2', 'in') }} <span class="badge">/ocenjevanje_&lt;oznaka&gt;</span>{{ t('sch_hint_oznaka_3', '. Kratko ime mora biti unikatno (edinstveno med vsemi šolami).') }}
         </p>
 
         <h3>{{ t('sch_seznam', 'Seznam šol') }}</h3>

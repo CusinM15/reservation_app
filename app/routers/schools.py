@@ -196,9 +196,13 @@ def create_new_school(
     _lang = (lang or request.query_params.get("lang") or "").strip().lower()[:2]
     if _lang not in ("sl", "en"):
         _lang = current_lang() or "sl"
+    if not slug or not slug.strip():
+        raise HTTPException(status_code=400,
+                            detail="Kratko ime šole (oznaka) je obvezno.")
     try:
-        school = create_school(db, name=name, slug=slug or None, ui_language=_lang)
+        school = create_school(db, name=name, slug=slug.strip(), ui_language=_lang)
     except ValueError as exc:
+        # create_school že preveri unikatnost sluga; javimo ga prijazno.
         raise HTTPException(status_code=400, detail=str(exc))
 
     log_audit(db, admin.id, admin.username, "create_school",

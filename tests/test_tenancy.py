@@ -76,6 +76,19 @@ def test_main_admin_can_create_school_with_generated_aliases(client):
     assert "xtest" in names
 
 
+def test_create_school_requires_unique_short_name(client):
+    """Kratko ime (oznaka) je obvezno in mora biti unikatno."""
+    login(client, MAIN_ADMIN_USER, MAIN_ADMIN_PASS)
+    # 1) prazen slug -> 400
+    r0 = client.post("/api/schools", data={"name": "Šola brez oznake", "slug": ""})
+    assert r0.status_code == 400, r0.text
+    assert "obvezno" in r0.json()["detail"].lower()
+    # 2) podvojen slug (obstoječa šola) -> 400
+    r1 = client.post("/api/schools", data={"name": "Duplikat", "slug": "ostcj"})
+    assert r1.status_code == 400, r1.text
+    assert "že obstaja" in r1.json()["detail"]
+
+
 def test_main_admin_sees_data_of_all_schools(client, make_user):
     """Glavni admin brez izbrane šole vidi rezervacije vseh šol."""
     from app.models import Reservation
