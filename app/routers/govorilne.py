@@ -141,6 +141,12 @@ def _load_cfg(db: Session, school_id: int | None) -> dict:
         base["ura_zacetki"] = _int_keys(base.get("ura_zacetki") or {})
         return base
     # Seed iz privzetkov in shrani (spravi v produkcijo za to šolo).
+    # ⚠️ VARNO PRED CROSS-ŠOLO PRELIVOM: ucitelji iz modula (govorilne_podatki.py)
+    # pripadajo SAMO privzeti (OSTC) šoli. Vsaka DRUGA šola, ki še nima svoje
+    # konfiguracije, se seed-a z PRAZNIM seznamom učiteljev — nikoli ne sme
+    # podedovati učiteljev druge šole (iz ene šole se ne sme videti druge).
+    if school_id != _default_school_id(db):
+        cfg["ucitelji"] = []
     text = json.dumps(cfg, ensure_ascii=False)
     if row is None:
         db.add(SchoolSetting(school_id=school_id, key=GOVORILNE_SETTING_KEY, value=text))

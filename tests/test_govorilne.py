@@ -1135,3 +1135,58 @@ def test_obrazec_za_ucitelje_ima_urnik_dropdown_in_link(make_user):
         assert 'value="1-2"' in r.text and 'value="3-5"' in r.text and 'value="6-9"' in r.text
         assert "šolski-zvonec" in r.text or "zvonec" in r.text
         assert "urnik zvonjenja" in r.text
+
+
+def test_druga_sola_ne_podeduje_uciteljev_ostc(make_user):
+    """CROSS-ŠOLA VARNOST: druga (ne-ostcj) šola na /govorilne/ure in javni
+    (/govorilne_<slug>) NIKDAR ne sme videti učiteljev OŠ Toneta Čufarja.
+
+    Pred popravkom je _load_cfg šolo brez GOVORILNE_KONFIG seed-al iz modula
+    (govorilne_podatki.py) — torej s HARDKODIRANIM OSTC seznamom učiteljev →
+    vsaka nova šola je kazala tuje (ostcj) učitelje. Zdaj se ne-ostcj šola
+    seed-a s PRAZNIM seznamom učiteljev.
+    """
+    from app.tenancy import create_school
+    from app.models import School, SchoolSetting
+    slug = "druga-sole"
+    db = SessionLocal()
+    try:
+        # Prečisti, če test teče večkrat v isti DB.
+        old = db.query(School).filter(School.slug == slug).first()
+        if old:
+            db.query(SchoolSetting).filter(
+                SchoolSetting.school_id == old.id,
+            ).delete(synchronize_session=False)
+            db.query(School).filter(School.id == old.id).delete(synchronize_session=False)
+        db.commit()
+        create_school(db, "Druga šola", slug=slug)
+        db.commit()
+        school2 = db.query(School).filter(School.slug == slug).first()
+        assert school2 is not None
+        sid = school2.id
+    finally:
+        db.close()
+
+    # Admin pripada DRUGI šoli (ne ostcj).
+    admin2 = make_user(role="admin", school_id=sid)
+    with TestClient(app) as c:
+        login(c, admin2.username)
+        r = c.get("/govorilne/ure")
+        assert r.status_code == 200
+        # Noben OSTC učitelj sme biti viden.
+        assert "Đuretić" not in r.text
+        assert "Arijana" not in r.text
+        assert "Čušin" not in r.text
+        # Javna stran druge šole prav tako brez OSTC učiteljev.
+        r2 = c.get("/govorilne_drugasole")
+        assert r2.status_code == 200
+        assert "Đuretić" not in r2.text
+        assert "Čušin" not in r2.text
+
+    # OSTC (privzeta šola) MORA še vedno kazati svoje učitelje.
+    admin_ostc = make_user(role="admin")
+    with TestClient(app) as c:
+        login(c, admin_ostc.username)
+        r3 = c.get("/govorilne/ure")
+        assert r3.status_code == 200
+        assert "Đuretić" in r3.text
