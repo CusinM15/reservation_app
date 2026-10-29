@@ -128,6 +128,21 @@
             </div>
             {% endif %}{% endfor %}
     </details>
+    <!-- KRATICA ŠOLE: kratka oznaka (slug), iz katere se generirajo URL-poti.
+         Urejata jo lahko šolski admin; mora biti UNIKATNA — ne sme biti enaka
+         kot pri drugi šoli. Ob spremembi se generirajo novi URL-aliasi. -->
+    <details class="collapsible" open>
+        <summary><h3>{{ t('set_kratica', 'Kratica šole') }}</h3><span class="toggle-hint">▾ manj</span></summary>
+            <!-- KRATICA (slug): iz nje se generirajo URL-aliasi (npr.
+                 /rezervacije_ostcj). Le male črke, številke, - in _. -->
+            <div class="field">
+                <label>{{ t('set_kratica_lbl', 'Kratica šole') }} {% if is_main_admin %}<span class="key">slug</span>{% endif %}</label>
+                <input type="text" name="slug" value="{{ school.slug }}" maxlength="40" pattern="[a-z0-9_-]+" title="{{ t('set_kratica_title', 'male črke, številke, - in _') }}" style="padding:8px 10px;border:1px solid #ddd;border-radius:5px;">
+                <div class="hint" style="margin-top:6px;">
+                    {{ t('set_kratica_hint', 'Kratica šole se uporablja v URL-ju poti te šole (npr. ') }}<code>/rezervacije_ostcj</code>{{ t('set_kratica_hint2', '). Spremenite jo le če je nujno — stari URL-ji ostaneta brez preusmeritve. Kratica mora biti unikatna, ne sme biti enaka kot pri drugi šoli.') }}
+                </div>
+            </div>
+    </details>
     <details class="collapsible" open>
         <summary><h3>{{ t('set_razredi', 'Razredi') }}</h3><span class="toggle-hint">▾ manj</span></summary>
             <!-- RAZREDI: vsak razred v SVOJI vrstici (kot prostori in urnik),

@@ -21,6 +21,7 @@ from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.templating import Jinja2Templates
 from zoneinfo import ZoneInfo
 import os
+import re
 import time
 
 from app.templating import make_templates
@@ -475,6 +476,12 @@ async def update_school_settings(school_id: int, request: Request, db: Session =
     if not isinstance(values, dict):
         raise HTTPException(status_code=400, detail="Manjka 'values' (slovar nastavitev)")
 
+    # Kratica šole (slug) je School stolpec, NE SchoolSetting — izvlečemo jo
+    # pred validacijo znanih ključev in jo obravnamo ločeno na koncu.
+    nova_kratica = None
+    if "slug" in values:
+        nova_kratica = values.pop("slug")
+
     unknown = [k for k in values if k not in SCHOOL_SETTING_KEYS]
     if unknown:
         raise HTTPException(status_code=400, detail=f"Neznane nastavitve: {', '.join(sorted(unknown))}")
@@ -586,10 +593,41 @@ async def update_school_settings(school_id: int, request: Request, db: Session =
 
     for key, value in values.items():
         set_school_setting(db, school.id, key, value)
+
+    # Kratica šole (school.slug): sprejemljiva le kadar je unikatna — ne sme
+    # biti enaka kot pri drugi šoli. Ob spremembi regeneriramo generirane
+    # URL-aliase iz novega sluga; ročno dodane (zgodovinske) pustimo nedotaknjene.
+    if nova_kratica is not None:
+        nova = re.sub(r"[^a-z0-9_-]", "", str(nova_kratica).lower())
+        nova = nova.strip("-_")
+        if not nova:
+            raise HTTPException(status_code=400,
+                detail="Kratica šole ne sme biti prazna (le male črke, številke, '-' in '_').")
+        if nova != school.slug:
+            obst = db.query(School).filter(School.slug == nova, School.id != school.id).first()
+            if obst:
+                raise HTTPException(status_code=400,
+                    detail=f"Kratica '{nova}' je že zasedena (šola '{obst.name}'). Uporabite drugo kratico.")
+            # Najprej preveri konflikte NOVIH aliased (pred kakršnim brisanjem) —
+            # da sprememba ostane atomska (če pade, nič ni že izbrisano).
+            for alias, _k in generate_aliases(nova):
+                row = db.query(SchoolAlias).filter(SchoolAlias.alias == alias,
+                                                    SchoolAlias.school_id != school.id).first()
+                if row:
+                    raise HTTPException(status_code=400,
+                        detail=f"URL pot '/{alias}' je že zasedena (druga šola). Uporabite drugo kratico.")
+            generirani_target = {a for a, _ in generate_aliases(school.slug)}
+            for row in db.query(SchoolAlias).filter(SchoolAlias.school_id == school.id).all():
+                if row.alias in generirani_target:
+                    db.delete(row)
+            for alias, kind in generate_aliases(nova):
+                db.add(SchoolAlias(school_id=school.id, alias=alias, kind=kind))
+            school.slug = nova
+            invalidate_alias_cache()
     db.commit()
 
     user = get_request_user(request, db)
-    details = f"school_id={school.id}, keys={','.join(sorted(values.keys()))}"
+    details = f"school_id={school.id}, slug={school.slug}, keys={','.join(sorted(values.keys()))}"
     if admin_email_changes:
         details += f", admin_email={'; '.join(admin_email_changes)}"
     log_audit(db, user.id if user else None, user.username if user else "?",
