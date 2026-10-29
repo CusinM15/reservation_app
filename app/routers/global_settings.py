@@ -124,54 +124,44 @@ def backup_all_schools(request: Request, db: Session = Depends(get_db)):
 
 @router.post("/api/global-settings/health")
 def send_cluster_health(request: Request, db: Session = Depends(get_db)):
-    """Pošlje dnevni (health) report z glavnega e-poštnega računa na
-    BACKUP_EMAIL (glavni admin). Snapshot: baza, šole/uporabniki, podi
-    namespace; polni cluster report (nodi, longhorn) teče na node-1."""
+    """Naloži novo poročilo o stanju clustra na GitHub (privat repo
+    CusinM15/reservation_app_sell) prek scripts/cluster_report.py
+    (--mode pod, in-cluster k8s + node-exporter + GH Contents API s tokenom
+    iz env GITHUB_TOKEN). To nadomešča stari email tok (node_report.py /
+    daily_report.py) — poročilo se bere na GitHubu, ne v mailu."""
     user = _require_main_admin(request, db)
-    sent, message = _build_and_send_health(db)
+    sent, message = _build_and_upload_health(db)
     status = 200 if sent else 500
     if sent:
-        log_audit(db, user.id, user.username, "global_health", "email=" + get_global_backup_email(db))
+        log_audit(db, user.id, user.username, "global_health",
+                  "github_reports_upload=CusinM15/reservation_app_sell")
     return JSONResponse({"sent": sent, "message": message}, status_code=status)
 
 
-def _build_and_send_health(db: Session):
-    """Sestavi POLNO poročilo o stanju clustra (nodi, longhorn, app data —
-    isto kot scripts/daily_report.py) in ga pošlje na BACKUP_EMAIL prek
-    globalne SMTP (main admin)."""
-    import ssl, smtplib, datetime
-    from email.mime.text import MIMEText
+def _build_and_upload_health(db: Session):
+    """Sestavi POLNO poročilo o stanju clustra (nodi, app, longhorn — isto
+    kot scripts/cluster_report.py) in ga naloži na GitHub (privat sell repo)
+    prek GH Contents API. Zahteva env GITHUB_TOKEN (secret sola-secrets);
+    brez tokena vrne jasno napako — email tok je ukinjen."""
+    import os, time as _time
 
-    mail = global_mail_config(db)
-    to = get_global_backup_email(db)
-    if not to:
-        return False, "BACKUP_EMAIL ni nastavljen (Globalne nastavitve)."
-    if not mail["password"]:
-        return False, "SMTP geslo ni nastavljeno (Globalne nastavitve → E-pošta)."
+    token = os.environ.get("GITHUB_TOKEN", "")
+    if not token:
+        return False, ("GITHUB_TOKEN ni nastavljen (secret sola-secrets) — "
+                       "poročila ni mogoče naložiti na GitHub.")
 
     try:
-        from scripts.daily_report import collect_and_render
-    except Exception as exc:
-        return False, f"daily_report ni na voljo: {exc}"
+        from scripts import cluster_report as cr
 
-    subject, body = collect_and_render(db)
-    body = (
-        "Zaženo: " + datetime.datetime.now().strftime("%Y-%m-%d %H:%M")
-        + " (gumb v /global-settings, glavni admin)\n\n" + body
-    )
-    msg = MIMEText(body, "plain", "utf-8")
-    msg["Subject"] = subject
-    msg["From"] = mail["from"]
-    msg["To"] = to
-    try:
-        ctx = ssl.create_default_context()
-        with smtplib.SMTP(mail["server"], mail["port"], timeout=60) as s:
-            s.starttls(context=ctx)
-            s.login(mail["username"], mail["password"])
-            s.send_message(msg)
-    except Exception as exc:
-        return False, f"Pošiljanje ni uspelo: {exc}"
-    return True, f"Zdravje clustra poslano na {to}."
+        data = cr.collect_pod()
+        body = cr.render(data)
+        ts = _time.strftime("%Y%m%d-%H%M%S")
+        ok, msg = cr.gh_push_contents(body, ts)
+        if ok:
+            return True, f"Poročilo naloženo na GitHub: {msg}"
+        return False, f"GitHub push ni uspel: {msg}"
+    except Exception as exc:  # pragma: no cover - runtime
+        return False, f"Napaka pri pripravi/nalaganju poročila: {type(exc).__name__}: {exc}"
 
 
 def _dump_and_send(db: Session):
