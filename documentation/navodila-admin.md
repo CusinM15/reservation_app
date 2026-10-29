@@ -72,6 +72,8 @@ python3 scripts/import_teachers.py --base-url https://ostc-app.org --include-all
 
 **Dostop:** V zgornji navigaciji kliknite **Admin panel**.
 
+![Admin panel — uporabniki](slike/navodila_admin_uporabniki.png)
+
 | Funkcija | Opis |
 |---|---|
 | Dodajanje | Vnesete e-pošto, ime, priimek, geslo, vlogo |
@@ -87,6 +89,8 @@ python3 scripts/import_teachers.py --base-url https://ostc-app.org --include-all
 
 Na strani **⚙️ Nastavitve šole** uredite vse, kar določa delovanje za vašo
 šolo. Po vsaki spremembi kliknite **Shrani nastavitve**.
+
+![Nastavitve šole (admin)](slike/navodila_admin_nastavitve.png)
 
 | Razdelek | Kaj urejate |
 |---|---|
@@ -187,6 +191,8 @@ s podatki iz kopije; podatki drugih šol ostanejo nedotaknjeni.
 pouka — npr. športni dan, kulturni dan, naravoslovni dan, tehniški dan, ekskurzija,
 šolska prireditev.
 
+![Dejavnosti (admin pogled)](slike/navodila_admin_dejavnosti.png)
+
 Dejavnosti se urejajo na strani **Vnos dejavnosti** (povezava v zavihku
 *Ocenjevanje in dnevi dejavnosti*, pot `/dejavnosti`). Ureja jih **vodstvo ali
 admin**; učitelji stran vidijo samo za branje. Vsak razred (generacija od 1. do 9.)
@@ -279,7 +285,9 @@ kot A4 dokument.
 
 ## 8. Audit log (dnevnik sprememb)
 
-**📋 Audit log** omogoča **pregled vseh pomembnih sprememb v sistemu** — kdo je kaj
+**📋 Audit log** omogoča **pregled vseh pomembnih sprememb v sistemu**
+
+![Audit log](slike/navodila_admin_audit.png) — kdo je kaj
 naredil in kdaj. Uporabno za sledljivost in odpravljanje napak.
 
 | Akcija | Opis |

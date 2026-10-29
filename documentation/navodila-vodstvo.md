@@ -15,6 +15,10 @@
 To je **glavna stran za vaše delo**. Do nje pridete prek zavihka **»Ocenjevanje in dnevi dejavnosti«**
 oziroma neposredno na poti **`/dejavnosti`**. Ureja jo vodstvo in admin; učitelji jo vidijo samo za branje.
 
+Spodaj je stran **»Dejavnosti«** z dnevi dejavnosti po razredih:
+
+![Stran Dejavnosti za vodstvo](slike/navodila_vodstvo_dejavnosti.png)
+
 Tam nastavite:
 - **dneve dejavnosti** (športni dan, kulturni dan, naravoslovni dan, tehniški dan, drugo),
 - **tedenske serije** (redne tedenske rezervacije, npr. izbirni predmet vsak ponedeljek),
@@ -55,6 +59,8 @@ Dejavnosti so urejene **po razredih (generacijah) od 1. do 9. razreda** — vsak
 | **Cena (€)** | Neobvezno (npr. okvirni strošek dejavnosti) |
 | **Vodja** | Neobvezno (kdo vodi dejavnost) |
 | **Opomba** | Neobvezno |
+
+![Obrazec nove dejavnosti](slike/navodila_vodstvo_nova_dejavnost.png)
 
 ### Večdnevna dejavnost (npr. šola v naravi)
 
@@ -108,6 +114,10 @@ na glavni strani (enako kot učitelji), a z dodatnimi pravicami:
 | **Novo rezervacija** | Odpre okno za rezervacijo (prostor, datum, ura, količina) |
 | **✕** na rezervaciji | Izbriše rezervacijo (svojo ali — kot vodstvo — tujo) |
 | **Osveži** | Ponovno naloži prikazane podatke |
+
+Na posnetku spodaj vodstvo vidi rezervacije vseh učiteljev (ne le svojih):
+
+![Rezervacije za vodstvo](slike/navodila_vodstvo_rezervacije.png)
 
 **Vodstvo ima več moči — lahko brišete tudi tuje rezervacije. S tem pride odgovornost.**
 Preden zbrišete učiteljevo rezervacijo, premislite.

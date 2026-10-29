@@ -68,6 +68,8 @@ Prijava v sistem
   Pozabljeno geslo?  ·  Nova šola
 ```
 
+![Prijavni zaslon](slike/navodila_prijava_login.png)
+
 > ⚠️ Če prijava ne deluje, najprej sami še nekajkrat poskusite ponastaviti geslo. Administratorja kontaktirajte šele, ko se težava ne reši.
 
 > 💡 V meniju je tudi gumb **Spremeni geslo** (glej poglavje 7).
@@ -97,6 +99,8 @@ Stran »Rezervacije«
    enotami je izpisano, koliko enot je še prostih, npr. 2/28.)
 ```
 
+![Tedenski koledar rezervacij](slike/navodila_rezervacije_teden.png)
+
 Rezerviramo lahko na **2 načina**:
 
 **Način 1 — klik na gumb `+` v tabeli:**
@@ -115,6 +119,8 @@ Okno »Nova rezervacija«
 
   [ Shrani ]   [ Prekliči ]
 ```
+
+![Okno Nova rezervacija](slike/navodila_rezervacija_modal.png)
 
 V tem oknu izberete **Prostor** iz spustnega menija; ure so po urniku vaše šole. Pri prostoru z več enotami izberete tudi **količino** — pri vsakem je prikazano, koliko enot je še prostih (oblika `x/N`).
 
@@ -153,7 +159,9 @@ Okno »Novo ocenjevanje«
   [ Shrani ]   [ Prekliči ]
 ```
 
-**Ponavlanje:** Imate možnost tudi da označite, da je pisni test ponavlanje, tako da drugače delujejo pravila za ocenjevanje.
+![Okno Novo ocenjevanje](slike/navodila_ocenjevanje_modal.png)
+
+**Ponavljanje:** Imate možnost tudi, da pisni test označite kot ponavljanje — tako drugače delujejo pravila za ocenjevanje.
 
 **Pravila, ki jih sistem samodejno preverja (za razrede od 1. do 7.):**
 
@@ -180,6 +188,8 @@ Koledar ocenjevanj (mesec)
             + = dodaj ocenjevanje
 ```
 
+![Koledar ocenjevanj](slike/navodila_ocenjevanja_koledar.png)
+
 > ℹ️ Za **8. in 9. razred** (skupinsko-razredne oznake s črkami in številkami, kjer številke predstavljajo skupine) aplikacija teh pogojev ne preverja samodejno. Učitelji morate sami skrbeti za spoštovanje pravil glede na to, kdo je v kateri skupini in razredu.
 
 > ℹ️ Za izbirni predmet je označen z drugo barvo in pri filtriranju prikazan za vse filtre od 6. razreda do 9. razreda, je pa treba preveriti pri učencih kdo dejansko piše na tisti datum.
@@ -203,6 +213,10 @@ Dejavnosti — 14. 9. 2026
   3. a     Športni dan            [ Celoten dan ]
   3. b     Naravoslovni dan       [ Ne traja cel dan ]
 ```
+
+Spodaj je primer pregleda dejavnosti, kot ga vidi učitelj:
+
+![Pregled dejavnosti](slike/navodila_dejavnosti_pregled.png)
 
 V seznamu je za vsako dejavnost naveden **razred** in oznaka:
 
@@ -246,13 +260,15 @@ Prijave se samodejno počistijo **24 ur po koncu termina** (varovanje podatkov).
 4. Potrdite novo geslo
 5. Kliknite **Spremeni geslo**
 
-> Ste pozabili geslo? Na prijavni strani kliknite **Pozabljeno geslo?**, dobite e-poštno sporoččilo in spremenite geslo tam.
+> Ste pozabili geslo? Na prijavni strani kliknite **Pozabljeno geslo?**, dobite e-poštno sporočilo in spremenite geslo tam.
 
 ---
 
 ## 8. Dostop do teh navodil znotraj aplikacije
 
 Na desni strani **aplikacije** je gumb **`👩‍🏫 Učitelji`**. Ko se z miško pomaknete nanj, se v manjšem oknu odprejo ta navodila, po katerih se lahko pomikate z miško. Na koncu okna je tudi gumb **Prenesi PDF**, s katerim si navodila prenesete na svoj računalnik.
+
+![Stranski gumbi za navodila](slike/navodila_rezervacije_teden.png)
 
 ```text
 Desna stran aplikacije
