@@ -126,6 +126,15 @@ V tem oknu izberete **Prostor** iz spustnega menija; ure so po urniku vaše šol
 
 > ⚠️ **Opomba:** Če je prostor z več enotami za posamezen termin že delno rezerviran, rezervacije prek gumba `+` ni mogoče izvesti — uporabite gumb **Nova rezervacija**.
 
+**Kaj se zgodi, ko termin ni na voljo?** Sistem shranjevanja ne dovoli in prikaže **rdeče opozorilo z razlogom**:
+
+![Termin je že zaseden](slike/navodila_rezervacija_error_zaseden.png)
+*Če izberete termin, ki je že zaseden, se prikaže opozorilo in rezervacija se ne shrani.*
+
+![Kapaciteta je prekoračena](slike/navodila_rezervacija_error_kapaciteta.png)
+*Pri prostorih z več enotami (npr. tablice) lahko rezervirate le toliko, da skupno število ne preseže kapacitete.*
+
+
 **Brisanje rezervacije:**
 Vodstvo ima pravico do brisanja **kakršnekoli** rezervacije, učitelji pa lahko brišejo **samo lastne**. Vodstvo ima možnost tudi serijskih rezervacij, priporočam da večino teh naredijo preko `/dejavnosti`. 
 
@@ -182,6 +191,13 @@ Okno »Novo ocenjevanje«
 
 ![Tedenska meja — največ 2 običajna testa na teden](slike/navodila_ocenjevanje_error_tedenska_meja.png)
 *Ko so že dve običajni ocenjevanji v istem tednu, tretjo običajno ne morete dodati (ponavljanje se v to omejitev ne šteje).*
+
+![Prepoved zaporednih dni](slike/navodila_ocenjevanje_error_zaporedni_dnevi.png)
+*Trije zaporedni dnevi s testom niso dovoljeni — tudi če je kateri od njih ponavljanje.*
+
+![Največ 3 ocenjevanja skupaj na teden](slike/navodila_ocenjevanje_error_skupna_meja.png)
+*Vključno s ponavljanji je na teden dovoljenih največ 3 ocenjevanja — četrtega sistem ne dovoli.*
+
 
 ```text
 Koledar ocenjevanj (mesec)
