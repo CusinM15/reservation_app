@@ -33,7 +33,7 @@ from fastapi.templating import Jinja2Templates
 from sqlalchemy.orm import Session
 
 from app.database import get_db
-from app.models import ZaslonFile
+from app.models import ZaslonFile, School
 from app.tenancy import (
     _default_school_id,
     get_school_config,
@@ -73,18 +73,32 @@ def _default_media_dir() -> Path:
     return Path(base).resolve()
 
 
+def _zasloni_school_id(request: Request, db: Session) -> int | None:
+    """Šola zaslona: (1) URL-alias (/nadomescanja_<slug>), (2) ?skola=<slug>
+    (JS-fetchi iste strani — obvestila/osvezi_at/media gredo na kanonične poti,
+    zato morajo šolo prenesti v query), (3) privzeta šola."""
+    sid = request_school_id(request)
+    if sid is None:
+        skola = (request.query_params.get("skola") or "").strip().lower()
+        if skola:
+            sch = db.query(School).filter(School.slug == skola).first()
+            if sch is not None:
+                sid = sch.id
+    if sid is None:
+        sid = _default_school_id(db)
+    return sid
+
+
 def _zasloni_settings(request: Request, db: Session) -> dict:
     """Zbere nastavitve zaslona (če šola obstaja → njene ZASLON_* vrednosti).
 
-    Šolo določimo iz URL-aliasa (/nadomescanja_<slug>); za javno kanonično pot
-    (brez prijave) pademo na privzeto šolo. Če ni šole, uporabimo .env fallback
-    (SchoolConfig(None, {}) → env_default_settings).
+    Šolo določimo iz URL-aliasa (/nadomescanja_<slug>) ali ?skola=<slug>; za
+    javno kanonično pot (brez prijave) pademo na privzeto šolo. Če ni šole,
+    uporabimo .env fallback (SchoolConfig(None, {}) → env_default_settings).
     """
     # Šolo izberemo iz URL-aliasa (vsaka šola dobi svojo /nadomescanja_<slug>
     # pot, ki pokaže NJENE nastavitve). Če ni aliasa → privzeta šola.
-    sid = request_school_id(request)
-    if sid is None:
-        sid = _default_school_id(db)
+    sid = _zasloni_school_id(request, db)
     config = get_school_config(db, sid)
 
     def b(key: str, fallback: bool) -> bool:
@@ -137,7 +151,17 @@ def _zasloni_settings(request: Request, db: Session) -> dict:
         "media_dir": media_dir,
         "vec_obvestil": media_dir / "vec_obvestil",
         "logo_path": "obvestila/logo.jpg",
-        "school_name": config.get_str("SCHOOL_NAME", "OŠ Toneta Čufarja"),
+        # Ime šole pride iz zapisa šole (School.name) — vsaka šola vidi SVOJE
+        # ime. Fallback (SCHOOL_NAME /.env ali OSTC) samo, če šole ni.
+        "school_name": (
+            config.school.name
+            if config.school and config.school.name
+            else config.get_str("SCHOOL_NAME", "OŠ Toneta Čufarja")
+        ),
+        # Kratica (slug) šole, ki jo JS vgradi v fetch-e (?skola=), da kanonični
+        # endpointi (/zasloni/obvestila, /zasloni/osvezi_at, /zasloni/media/...)
+        # vrnejo podatke TE šole, ne privzete.
+        "skola": config.school.slug if config.school else "",
     }
 
 
@@ -541,7 +565,7 @@ def zasloni_media_vec(filename: str, request: Request, db: Session = Depends(get
     """
     if "/" in filename or filename in (".", ".."):
         raise HTTPException(status_code=404, detail="Datoteka ne obstaja")
-    sid = request_school_id(request) or _default_school_id(db)
+    sid = _zasloni_school_id(request, db)
     row = None
     if sid is not None:
         row = db.query(ZaslonFile).filter(
@@ -598,4 +622,5 @@ def zasloni_praznos(request: Request, db: Session = Depends(get_db)):
         "obvestilo_path": obvestilo_path,
         "obvestila": obvestila,
         "school_name": settings["school_name"],
+        "skola": settings["skola"],
     })

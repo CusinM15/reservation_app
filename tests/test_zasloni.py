@@ -4,6 +4,7 @@
 
 import json
 import os
+import re
 
 os.environ.setdefault("DATABASE_URL", "postgresql://postgres@localhost:5432/testdb")
 os.environ.setdefault("SECRET_KEY", "test-secret-key")
@@ -419,3 +420,113 @@ def test_tabela_iz_ajax_brez_nadomescanj_vrne_none():
     import unittest.mock as mock
     with mock.patch("requests.get", return_value=Resp()):
         assert _tabela_iz_ajax("https://urniki.easistent.com/nadomescanja/hash", "Europe/Ljubljana") is None
+
+
+# ─────────────────────────────────────────────────────────────────────────
+# Per-šola zaslon (30.10.2026): ime šole + obvestila + rotacija
+# ─────────────────────────────────────────────────────────────────────────
+
+def _ustvari_solo(slug: str, ime: str):
+    """Ustvari (ali prečisti in ponovno ustvari) šolo — vzorec test_govorilne."""
+    from app.tenancy import create_school
+    from app.models import School, SchoolSetting
+    db = SessionLocal()
+    try:
+        old = db.query(School).filter(School.slug == slug).first()
+        if old:
+            db.query(SchoolSetting).filter(
+                SchoolSetting.school_id == old.id,
+            ).delete(synchronize_session=False)
+            db.query(School).filter(School.id == old.id).delete(synchronize_session=False)
+        db.commit()
+        create_school(db, ime, slug=slug)
+        db.commit()
+        return db.query(School).filter(School.slug == slug).first().id
+    finally:
+        db.close()
+
+
+def test_per_sola_school_name_v_naslovu():
+    """/nadomescanja_<slug> pokaže ime TE šole, ne hardkodirane OŠ Toneta Čufarja.
+
+    Pred popravkom je _zasloni_settings za VSE šole vračal trdi fallback
+    'OŠ Toneta Čufarja' (SCHOOL_NAME ni v šolskih nastavitvah) → zgled je v
+    naslovu kazal Tone Čufar. Zdaj pride ime iz School.name.
+    """
+    _ustvari_solo("zgled", "OŠ Zgled")
+    with TestClient(app) as c:
+        r = c.get("/nadomescanja_zgled")
+        assert r.status_code == 200
+        assert "OŠ Zgled" in r.text
+        assert "Toneta Čufarja" not in r.text
+    # Svež client (brez school_ctx piškotka) → privzeta šola pokaže SVOJE ime.
+    with TestClient(app) as c2:
+        r2 = c2.get("/zasloni")
+        assert r2.status_code == 200
+        assert settings.SCHOOL_NAME in r2.text
+
+
+def test_zasloni_obvestila_uposteva_skola_query(make_user):
+    """?skola=<slug> na /zasloni/obvestila vrne obvestila TE šole.
+
+    JS na /nadomescanja_<slug> fetch-a kanonično pot /zasloni/obvestila; brez
+    ?skola= bi zahtevek brez school_ctx piškotka padel na PRIVZETO šolo
+    (cross-šola preliv: zgled bi vrtel ostcj obvestila).
+    """
+    sid = _ustvari_solo("zgled", "OŠ Zgled")
+    assert sid is not None
+    admin = make_user(role="admin", school_id=sid)
+    with TestClient(app) as c:
+        login(c, admin.username)
+        r = c.put(f"/api/schools/{sid}/settings", json={"values": {
+            "ZASLON_OBVESTILA_TEKST": json.dumps(["Zgledovo obvestilo"]),
+        }})
+        assert r.status_code == 200, r.text[:300]
+
+        r = c.get("/zasloni/obvestila?skola=zgled")
+        assert r.status_code == 200
+        data = r.json()
+        assert any(x.get("type") == "text" and x.get("text") == "Zgledovo obvestilo"
+                   for x in data["obvestila"])
+
+        # Brez ?skola= (in brez piškotka — nov client) → obvestila privzete
+        # šole, zgledovega sporočila ni.
+        with TestClient(app) as c2:
+            r2 = c2.get("/zasloni/obvestila")
+            assert r2.status_code == 200
+            assert "Zgledovo obvestilo" not in json.dumps(r2.json())
+
+
+def test_zasloni_stran_skola_v_fetchih_in_rotacijski_index(make_user):
+    """Stran /nadomescanja_<slug> vgradi ?skola= v vse fetch-e in pravilen
+    začetni rotacijski indeks: -1 (nadomeščanja vklopljena — začetna HTML
+    slika je skrita, prvi JS klic pokaže obvestilo[0]) oziroma 0 (izklopljena —
+    začetna slika je vidna, prvi klic napreduje na obvestilo[1], da se ne
+    podvoji). Pred popravkom je bil indeks vedno 0 → obvestilo[0] se je ob
+    vklopljenih nadomeščanjih na prvem prehodu PRESKOČILO.
+    """
+    sid = _ustvari_solo("zgled", "OŠ Zgled")
+    assert sid is not None
+    admin = make_user(role="admin", school_id=sid)
+    with TestClient(app) as c:
+        login(c, admin.username)
+        r = c.get("/nadomescanja_zgled")
+        assert r.status_code == 200
+        assert 'const SKOLA = "zgled";' in r.text
+        assert "let obvestilaIndex = -1;" in r.text
+        assert "encodeURIComponent(SKOLA)" in r.text
+        # Začetna slika (karkoli že je) mora nositi ?skola= TE šole.
+        img_m = re.search(r'<img src="([^"]+)"', r.text)
+        assert img_m, "ni <img> na strani"
+        assert img_m.group(1).startswith("/zasloni/media/")
+        assert img_m.group(1).endswith("?skola=zgled"), img_m.group(1)
+
+        # Izklop nadomeščanj → začetna slika vidna → indeks 0.
+        r2 = c.put(f"/api/schools/{sid}/settings", json={"values": {
+            "ZASLON_POKAZI_NADOMESCANJA": False,
+        }})
+        assert r2.status_code == 200, r2.text[:300]
+        r3 = c.get("/nadomescanja_zgled")
+        assert r3.status_code == 200
+        assert "let obvestilaIndex = 0;" in r3.text
+        assert 'const SKOLA = "zgled";' in r3.text

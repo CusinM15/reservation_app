@@ -34,7 +34,7 @@
     <div class="fs-content-wrapper">
         <!-- SLIKA (vedno pripravljena) -->
         <div class="view image-view" id="imageView" style="opacity:{{ '0' if pokazi_nadomescanja else '1' }};">
-            <img src="/zasloni/media/{{ obvestilo_path }}" alt="Obvestilo" id="obvestiloImg">
+            <img src="/zasloni/media/{{ obvestilo_path }}?skola={{ skola }}" alt="Obvestilo" id="obvestiloImg">
             <div id="obvestiloTxt" style="display:none;align-items:center;justify-content:center;height:100%;padding:40px 60px;color:#fff;text-align:center;font-size:3.5rem;line-height:1.25;text-shadow:0 2px 8px rgba(0,0,0,0.4);"></div>
         </div>
         <!-- SPOROČILO: danes ni nadomeščanj (samo kadar so vklopljena, a tabele ni) -->
@@ -63,6 +63,10 @@ const CAS_SPOROCILA = 5000;
 const CAS_INTERSTICIJA = 4000;
 const MIN_CAS_TABELE = {{ min_cas_tabele }} * 1000;
 const HITROST_DRSENJA = {{ hitrost_drsenja }};
+// Kratica šole (slug) — vgrajena v vse fetch-e (?skola=), da kanonični
+// endpointi (/zasloni/obvestila, /zasloni/osvezi_at, /zasloni/media/...) vrnejo
+// podatke TE šole, ne privzete. Prazna = privzeta šola.
+const SKOLA = {{ skola | tojson }};
 
 const tableView = document.getElementById('tableView');
 const imageView = document.getElementById('imageView');
@@ -126,7 +130,7 @@ async function showImage() {
     // in pokažemo naslednjega v nizu. Ko pridemo do konca, začnemo znova.
     try {
         if (!obvestilaSeznam || obvestilaSeznam.length === 0) {
-            const r = await fetch('/zasloni/obvestila?t=' + Date.now());
+            const r = await fetch('/zasloni/obvestila?skola=' + encodeURIComponent(SKOLA) + '&t=' + Date.now());
             const d = await r.json();
             obvestilaSeznam = (d.obvestila || []);
         }
@@ -140,7 +144,7 @@ async function showImage() {
             } else {
                 obvestiloImg.style.display = 'block';
                 obvestiloTxt.style.display = 'none';
-                obvestiloImg.src = '/zasloni/media/' + (item ? item.src : obvestiloImg.src);
+                if (item) obvestiloImg.src = '/zasloni/media/' + item.src + '?skola=' + encodeURIComponent(SKOLA);
             }
         }
     } catch (e) {
@@ -177,7 +181,11 @@ function showIntersticij() {
 
 let timerShowImage, timerShowTable;
 let obvestilaSeznam = [];
-let obvestilaIndex = 0;
+// Začetna slika v HTML-ju JE obvestilo[0]. Ko so nadomeščanja VKLOPLJENA, je
+// ta slika skrita (čez njo tabela ali sporočilo), zato mora prvi JS-rotator
+// pokazati obvestilo[0] (štetje začnemo pri -1). Ko so izklopljena, je začetna
+// slika VIDNA en CAS_OBV → prvi klic napreduje na obvestilo[1] (štetje 0).
+let obvestilaIndex = {{ '-1' if pokazi_nadomescanja else '0' }};
 if (IMA_TABELO) {
     showTable();
 } else if (IMA_SPOROCILO) {
@@ -192,7 +200,7 @@ if (IMA_TABELO) {
 // da se novo dodana obvestila pojavijo čim prej.
 setInterval(async () => {
     try {
-        const r = await fetch('/zasloni/obvestila?t=' + Date.now());
+        const r = await fetch('/zasloni/obvestila?skola=' + encodeURIComponent(SKOLA) + '&t=' + Date.now());
         const d = await r.json();
         const nov = d.obvestila || [];
         if (nov.length > 0) obvestilaSeznam = nov;
@@ -214,7 +222,7 @@ setTimeout(osveziStranMedLogotipom, INTERVAL_OSVEZITVE);
 const OSNOVNI_OSVEZI_AT = {{ osvezi_at | tojson }};
 async function preveriOsvezi() {
     try {
-        const r = await fetch('/zasloni/osvezi_at?t=' + Date.now());
+        const r = await fetch('/zasloni/osvezi_at?skola=' + encodeURIComponent(SKOLA) + '&t=' + Date.now());
         const d = await r.json();
         if (d.osvezi_at && d.osvezi_at !== OSNOVNI_OSVEZI_AT) location.reload();
     } catch (e) { /* prezremo */ }
