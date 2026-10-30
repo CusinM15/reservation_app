@@ -569,7 +569,14 @@ def _termin_obstaja(ucitelj: dict, datum: str, ura_od: str, cfg: dict | None = N
 
 @router.get("/govorilne", response_class=HTMLResponse)
 def govorilne_stran(request: Request, db: Session = Depends(get_db)):
-    """Javna prijavna stran: izbor učitelja, nato 15-minutni termini."""
+    """Javna prijavna stran: izbor učitelja, nato 15-minutni termini.
+
+    ZAENKRAT jo vidi ZGOLJ šolski admin (dodatek še ni predstavljen drugemu
+    vodstvu) — neprijavljen → login, prijavljen ne-admin → domov.
+    """
+    user = get_request_user(request, db)
+    if not is_school_admin(user):
+        return RedirectResponse(url="/auth/login" if user is None else "/")
     school_id = request_school_id(request) or _default_school_id(db)
     cfg = _load_cfg(db, school_id)
     ucitelji = sorted(
@@ -591,7 +598,13 @@ def govorilne_termini(
     request: Request,
     db: Session = Depends(get_db),
 ):
-    """Prosti termini izbranega učitelja (JSON) — za dinamični UI."""
+    """Prosti termini izbranega učitelja (JSON) — za dinamični UI.
+
+    Zaenkrat dostopno zgolj šolskemu adminu.
+    """
+    user = get_request_user(request, db)
+    if not is_school_admin(user):
+        raise HTTPException(status_code=403, detail="Dostop samo za šolskega administratorja")
     school_id = request_school_id(request) or _default_school_id(db)
     cfg = _load_cfg(db, school_id)
     u = _ucitelj_by_ime(ucitelj, cfg["ucitelji"])
@@ -605,7 +618,13 @@ async def govorilne_prijava(
     request: Request,
     db: Session = Depends(get_db),
 ):
-    """Shrani prijavo starša. Termin mora biti veljaven in prost (409 sicer)."""
+    """Shrani prijavo starša. Termin mora biti veljaven in prost (409 sicer).
+
+    Zaenkrat dostopno zgolj šolskemu adminu.
+    """
+    user = get_request_user(request, db)
+    if not is_school_admin(user):
+        raise HTTPException(status_code=403, detail="Dostop samo za šolskega administratorja")
     try:
         body = await request.json()
     except Exception:
@@ -681,22 +700,12 @@ async def govorilne_prijava(
 @router.get("/govorilne/prijave", response_class=HTMLResponse)
 def govorilne_prijave_stran(request: Request, db: Session = Depends(get_db)):
     user = get_request_user(request, db)
-    if user is None:
-        return RedirectResponse(url="/auth/login")
-
-    # Glavni admin (mainadmin, platforma) NE sme videti govorilnih ur v nobenem primeru.
-    if is_main_admin(user):
-        return RedirectResponse(url="/")
+    if not is_school_admin(user):
+        return RedirectResponse(url="/auth/login" if user is None else "/")
 
     role = role_value(user)
-    q = db.query(GovorilnaPrijava)
-    if is_main_admin(user):
-        pass  # glavni admin vidi vse šole
-    else:
-        q = q.filter(GovorilnaPrijava.school_id == (user.school_id or _default_school_id(db)))
-        if role == "teacher":
-            polno_ime = f"{user.first_name} {user.last_name}".strip()
-            q = q.filter(GovorilnaPrijava.ucitelj == polno_ime)
+    q = db.query(GovorilnaPrijava).filter(
+        GovorilnaPrijava.school_id == (user.school_id or _default_school_id(db)))
 
     prijave = q.order_by(GovorilnaPrijava.datum.desc(),
                          GovorilnaPrijava.ura_od).all()
@@ -738,9 +747,9 @@ async def govorilne_prijava_odstrani(
     if user is None:
         raise HTTPException(status_code=401, detail="Ni prijave")
     school_admin = is_school_admin(user)
-    if not school_admin and role_value(user) != "teacher":
+    if not school_admin:
         raise HTTPException(status_code=403,
-                            detail="Samo šolski admin ali zadevni učitelj lahko briše rezervacije")
+                            detail="Samo šolski admin lahko briše rezervacije")
 
     try:
         body = await request.json()
@@ -844,17 +853,11 @@ def govorilne_ure_stran(request: Request, db: Session = Depends(get_db)):
       in popoldanskih govorilnih ur (kdaj so).
     """
     user = get_request_user(request, db)
-    if user is None:
-        return RedirectResponse(url="/auth/login")
-
-    # Glavni admin (mainadmin, platforma) NE sme videti govorilnih ur v nobenem primeru.
-    if is_main_admin(user):
-        return RedirectResponse(url="/")
+    if not is_school_admin(user):
+        return RedirectResponse(url="/auth/login" if user is None else "/")
 
     role = role_value(user)
-    school_id = request_school_id(request) or _default_school_id(db)
-    if not is_main_admin(user):
-        school_id = user.school_id or school_id
+    school_id = user.school_id or request_school_id(request) or _default_school_id(db)
     cfg = _load_cfg(db, school_id)
 
     # Seznam razredov za spustni seznam (razrednik). Iz nastavitev šole.
@@ -914,8 +917,8 @@ async def ure_popoldan(request: Request, db: Session = Depends(get_db)):
     user = get_request_user(request, db)
     if user is None:
         raise HTTPException(status_code=401, detail="Ni prijave")
-    if not _lahko_ureja_vse(user):
-        raise HTTPException(status_code=403, detail="Nimate pravic za urejanje popoldanskih govorilnih ur")
+    if not is_school_admin(user):
+        raise HTTPException(status_code=403, detail="Samo šolski admin lahko ureja popoldanske govorilne ure")
 
     try:
         body = await request.json()
@@ -997,6 +1000,8 @@ async def ure_ucitelj(request: Request, db: Session = Depends(get_db)):
     user = get_request_user(request, db)
     if user is None:
         raise HTTPException(status_code=401, detail="Ni prijave")
+    if not is_school_admin(user):
+        raise HTTPException(status_code=403, detail="Samo šolski admin lahko ureja govorilne ure")
     role = role_value(user)
 
     try:
@@ -1004,15 +1009,9 @@ async def ure_ucitelj(request: Request, db: Session = Depends(get_db)):
     except Exception:
         raise HTTPException(status_code=400, detail="Neveljaven JSON")
 
-    je_editor = _lahko_ureja_vse(user)
     ime = (body.get("ime") or "").strip()
-    if je_editor:
-        if not ime:
-            raise HTTPException(status_code=400, detail="Manjka 'ime' učitelja")
-    else:
-        if role != "teacher":
-            raise HTTPException(status_code=403, detail="Nimate pravic za urejanje")
-        ime = _polno_ime_user(user)
+    if not ime:
+        raise HTTPException(status_code=400, detail="Manjka 'ime' učitelja")
 
     school_id = request_school_id(request) or _default_school_id(db)
     if not is_main_admin(user):

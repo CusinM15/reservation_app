@@ -176,16 +176,12 @@ class AuthMiddleware(BaseHTTPMiddleware):
         # glavna stran, zgodovina (history), API za razrede/prostore/urnik,
         # ter statične datoteke in dokumentacija.
         public = ["/auth/login", "/auth/forgot-password", "/auth/reset-password", "/health", "/", "/history", "/api/razredi", "/api/razredi-ip", "/api/prostori", "/api/schedule", "/nakup", "/registracija"]
-        is_public = any(path == p for p in public) or path.startswith("/static") or path.startswith("/slike") or path.startswith("/docs/") or path.startswith("/zasloni") or path == "/zasloni" or path == "/govorilne" or path.startswith("/govorilne/api")
+        is_public = any(path == p for p in public) or path.startswith("/static") or path.startswith("/slike") or path.startswith("/docs/") or path.startswith("/zasloni") or path == "/zasloni"
         # Per-šola alias za digitalni zaslon (npr. /nadomescanja_ostcj ali
         # goli /ostcj) je prav tako javen — prevedemo ga na kanonično /zasloni pot.
         if not is_public:
             _alias_canon = resolve_alias_path(path)[1]
-            if _alias_canon and (
-                _alias_canon.startswith("/zasloni")
-                or _alias_canon == "/govorilne"
-                or _alias_canon.startswith("/govorilne/api")
-            ):
+            if _alias_canon and _alias_canon.startswith("/zasloni"):
                 is_public = True
         # Javni predogled navodil za neprijavljene: /nastavitev?demo=1 prikaže
         # psevdo (demo) podatke brez prijave (povezava je na prijavni strani).

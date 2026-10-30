@@ -34,7 +34,18 @@ os.environ.setdefault("MAIL_PASSWORD", "")  # _send_email je best-effort — bre
 import pytest
 from fastapi.testclient import TestClient
 from passlib.context import CryptContext
-from sqlalchemy import text
+from sqlalchemy import create_engine, text
+from sqlalchemy.orm import sessionmaker
+from sqlalchemy.pool import NullPool
+
+# ⚠️ Testi: NullPool namesto privzetega pool-a (size 5), PRED importom app.main.
+# App routerji importirajo SessionLocal ob importu — če engine ni že NullPool,
+# ostanejo na pooled engine-u in puščajo "idle in transaction" povezave, ki ob
+# clean_db TRUNCATE-u povzročajo DeadlockDetected (znana flaky težava).
+# NullPool = vsaka seja dobi svežo povezavo, ki se ob close() res zapre.
+import app.database as _db_module
+_db_module.engine = create_engine(_db_module.engine.url, poolclass=NullPool, pool_pre_ping=True)
+_db_module.SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=_db_module.engine)
 
 from app.main import app
 from app.database import SessionLocal
