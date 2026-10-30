@@ -526,17 +526,20 @@ def _fold(value: str) -> str:
 
 
 # Imena stolpcev (že »folded«) → kanonično ime.
+# E-pošta JE uporabniško ime (prijava in »Pozabljeno geslo« potekata po e-pošti),
+# zato jo uporabnik v datoteki zapiše SAMO ENKRAT. Legacy stolpec »uporabniško
+# ime« še vedno deluje kot rezerva, če pravega e-poštnega stolpca ni.
 _CSV_COLUMN_ALIASES = {
-    "username": {"username", "user", "uporabnisko_ime", "uporabnisko ime", "uporabnisko"},
-    "email": {"email", "e-posta", "eposta", "mail", "e posta", "elektronska posta"},
+    "email": {"email", "e-posta", "eposta", "mail", "e posta", "elektronska posta",
+              "username", "user", "uporabnisko_ime", "uporabnisko ime", "uporabnisko",
+              "uporabniško ime", "uporabniško"},
     "first_name": {"first_name", "ime"},
     "last_name": {"last_name", "priimek"},
     "role": {"role", "vloga"},
-    "password": {"password", "geslo"},
 }
 
-# Če glave NI, velja ta vrstni red stolpcev.
-_CSV_POSITIONAL_ORDER = ["username", "email", "first_name", "last_name", "role", "password"]
+# Če glave NI, velja ta vrstni red stolpcev (e-pošta je hkrati uporabniško ime).
+_CSV_POSITIONAL_ORDER = ["email", "first_name", "last_name", "role"]
 
 # Slovenske/angleške vloge → vrednosti RoleEnum.
 _ROLE_ALIASES = {
@@ -550,7 +553,8 @@ def _generate_import_password(length: int = 10) -> str:
     """Naključno geslo, ki VEDNO ustreza pravilom šole (mala+velika+številka, ≥5).
 
     Zakaj? Uporabnik ne sme rabiti vpisovati gesla za vsakega učitelja posebej —
-    aplikacija si ga izmisli, admin pa ga razdelí (vidno je v povzetku uvoza).
+    aplikacija si ga izmisli, a ga nikjer ne izpiše (uporabnik si ga nastavi
+    sam prek »Pozabljeno geslo«).
     """
     import random
     lower = "abcdefghijkmnopqrstuvwxyz"      # brez »l« (zamenjava s 1)
@@ -566,8 +570,9 @@ def _generate_import_password(length: int = 10) -> str:
 def _parse_user_csv(text: str) -> list[dict]:
     """Razčleni CSV v vrstice uporabnikov; glave so NEOBVEZNE.
 
-    Vrne seznam slovarjev s ključi username/email/first_name/last_name/role/password
+    Vrne seznam slovarjev s ključi email/first_name/last_name/role
     (manjkajoči stolpci so prazni nizi). Prazne vrstice so izpuščene.
+    E-pošta je hkrati uporabniško ime — v datoteki jo zapišete samo enkrat.
     """
     import csv
     import io
@@ -594,7 +599,13 @@ def _parse_user_csv(text: str) -> list[dict]:
     if "username" in header_map or "email" in header_map:
         data_rows = rows[1:]                      # prva vrstica je glava
     else:
-        header_map = {name: i for i, name in enumerate(_CSV_POSITIONAL_ORDER)}
+        # Brez glave: novi vrstni red je `e-pošta, ime, priimek, vloga`.
+        # Stare datoteke so imele `uporabniško ime, email, ime, priimek, vloga[, geslo]`
+        # (5–6 stolpcev) — uporabniško ime služi kot e-pošta, geslo se ignorira.
+        if len(rows[0]) >= 5:
+            header_map = {"email": 0, "first_name": 2, "last_name": 3, "role": 4}
+        else:
+            header_map = {name: i for i, name in enumerate(_CSV_POSITIONAL_ORDER)}
         data_rows = rows                         # brez glave — vsi podatki
 
     parsed = []
@@ -700,15 +711,18 @@ async def import_users_csv(request: Request, db: Session = Depends(get_db)):
 
     Tolerantno na obliko datoteke — v praksi jo šole pripravijo v Excelu:
       * glava stolpcev je NEOBVEZNA. Če je ni, velja vrstni red
-        `uporabniško ime, email, ime, priimek, vloga, geslo`;
-      * imena stolpcev so lahko slovenska (ime, priimek, vloga, geslo) ali
-        angleška (username, first_name, role, password);
+        `e-pošta, ime, priimek, vloga` — e-pošta je hkrati uporabniško ime,
+        zato jo zapišete samo ENKRAT (npr. `ana.novak@x.si,Ana,Novak,učitelj`);
+      * imena stolpcev so lahko slovenska (e-pošta, ime, priimek, vloga) ali
+        angleška (email, first_name, last_name, role); še vedno delujejo tudi
+        stare oblike (ločena stolpca uporabniško ime in e-pošta, stolpec geslo);
       * vloga je lahko slovenska — učitelj, vodstvo, admin (tudi profesor,
-        ravnatelj, skrbnik);
-      * GESLO JE NEOBVEZNO in se NIKOLI ne izpiše: če ga v vrstici ni, si
-        aplikacija izmisli naključno (veljavno po pravilih šole), a ga NIKJER
-        ne pokaže. Uporabnik si geslo nastavi sam prek »Pozabljeno geslo« na
-        prijavni strani — zato sta uporabniško ime in e-pošta enaka.
+        ravnatelj, skrbnik); če je ni, dobi uporabnik vlogo učitelj;
+      * GESLO NI VEČ STOLPEC: aplikacija si ga vedno izmisli (veljavno po
+        pravilih šole), a ga NIKJER ne pokaže. Uporabnik si geslo nastavi sam
+        prek »Pozabljeno geslo« na prijavni strani (uporabniško ime = e-pošta);
+      * uvoženi uporabniki PRIVZETO NIMAJO govorilnih ur — omogočite jih
+        posamično na seznamu uporabnikov.
 
     Vrne JSON povzetek: {created, skipped, errors, users} — `users` vsebuje le
     uporabniška imena in e-pošte; GESEL router ne vrača nikoli (zahteva
@@ -737,10 +751,13 @@ async def import_users_csv(request: Request, db: Session = Depends(get_db)):
     new_users: list[dict] = []
     seen: set[str] = set()
     for i, item in enumerate(rows, start=1):
-        username = item.get("username", "")
-        if not username:
-            errors.append(f"vrstica {i}: manjka uporabniško ime")
+        # E-pošta JE uporabniško ime — login in »Pozabljeno geslo« najdeta
+        # uporabnika po e-pošti (find_user_for_login), zato jo shranimo na obe mesti.
+        email_val = item.get("email", "")
+        if not email_val:
+            errors.append(f"vrstica {i}: manjka e-pošta (e-pošta je tudi uporabniško ime)")
             continue
+        username = email_val
         if username.lower() in seen:
             # Podvojenih v datoteki NE uvažamo — sicer bi nastali dvojniki
             # (username/school_id nista unikatna na ravni baze).
@@ -763,15 +780,9 @@ async def import_users_csv(request: Request, db: Session = Depends(get_db)):
             skipped += 1
             continue
 
-        password = item.get("password", "")
-        generated = not password
-        if generated:
-            password = _generate_import_password()
-        else:
-            problem = validate_password_strength(password)
-            if problem:
-                errors.append(f"vrstica {i}: geslo je prešibko ({problem})")
-                continue
+        # Geslo ni več stolpec CSV — aplikacija ga vedno izmisli in ga nikjer
+        # ne pokaže; uporabnik si ga nastavi sam prek »Pozabljeno geslo«.
+        password = _generate_import_password()
 
         db.add(User(
             school_id=school_id,
@@ -779,17 +790,19 @@ async def import_users_csv(request: Request, db: Session = Depends(get_db)):
             # Admin račun: e-pošta je vezana na nastavitev ADMIN_EMAIL šole
             # (in le, če je naslov prost — glej admin_email_for_new_user).
             email=(admin_email_for_new_user(db, school_id) if role == "admin"
-                  else (item.get("email") or None)),
+                  else email_val),
             first_name=item.get("first_name", ""),
             last_name=item.get("last_name", ""),
             password_hash=get_password_hash(password),
             role=role,
             is_active=True,
+            # Privzeto uporabnik NIMA govorilnih ur — omogoči jih na seznamu.
+            ima_govorilne=False,
         ))
         created += 1
         new_users.append({
             "username": username,
-            "email": item.get("email", ""),
+            "email": email_val,
             # GESLA NE VRAČAMO NIKOLI (tudi generiranega ne). Uporabnik si ga
             # nastavi sam prek »Pozabljeno geslo« (uporabniško ime = e-pošta).
         })

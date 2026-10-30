@@ -67,19 +67,21 @@
         </p>
                     <p style="font-size:13px;color:#666;margin:4px 0;">
                         <strong>Glava stolpcev ni obvezna.</strong> Če je ni, velja vrstni red:
-                        <code>uporabniško ime, email, ime, priimek, vloga, geslo</code> —
-                        npr. <code>ana.novak@guest.arnes.si,ana.novak@guest.arnes.si,ime,priimek,učitelj</code>.
+                        <code>e-pošta, ime, priimek, vloga</code> — npr.
+                        <code>ana.novak@guest.arnes.si,Ana,Novak,učitelj</code>.
+                        <strong>E-pošta je hkrati uporabniško ime</strong>, zato jo zapišete samo enkrat.
                         Imena stolpcev so lahko slovenska ali angleška
-                        (<code>ime, priimek, vloga, geslo</code> oz. <code>first_name, role, password</code>).
+                        (<code>e-pošta, ime, priimek, vloga</code> oz. <code>email, first_name, last_name, role</code>);
+                        stare oblike (ločena stolpca uporabniško ime in e-pošta, stolpec geslo) še delujejo.
                     </p>
                     <p style="font-size:13px;color:#666;margin:4px 0;">
                         <strong>Vloga</strong> je lahko slovenska: <code>učitelj</code> (tudi profesor),
-                        <code>vodstvo</code>, <code>admin</code>.
-                        <strong>Geslo ni potrebno in se nikoli ne izpiše.</strong> Če ga v vrstici ni,
-                        si ga aplikacija izmisli, a ga NE pokaže nikjer. Uporabnik si geslo nastavi
-                        sam na prijavni strani z gumbom <em>»Pozabljeno geslo?«</em> — vpiše svojo
-                        e-pošto in prejme povezavo za novo geslo. Zato sta <strong>uporabniško ime in
-                        e-pošta enaka</strong> (glej stolpec <code>email</code> zgoraj).
+                        <code>vodstvo</code>, <code>admin</code> — če je ni, dobi uporabnik vlogo <code>učitelj</code>.
+                        <strong>Gesla ne pišete in se nikoli ne izpiše.</strong> Aplikacija si ga izmisli,
+                        uporabnik pa si ga nastavi sam na prijavni strani z gumbom <em>»Pozabljeno geslo?«</em>
+                        — vpiše svojo e-pošto in prejme povezavo za novo geslo.
+                        <strong>Uvoženi uporabniki privzeto nimajo govorilnih ur</strong> — omogočite jih
+                        posamično na seznamu uporabnikov.
                         Uporabniki se dodajo v šolo, ki jo trenutno upravljate; obstoječa
                         uporabniška imena se preskočijo.
                     </p>

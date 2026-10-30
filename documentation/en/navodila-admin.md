@@ -46,10 +46,13 @@ to use an import (see below).
 ### Import from a CSV file
 
 On the **Users** page choose a CSV file and click **📥 Import CSV**. A header row
-is optional; the default order is
-`username, email, first name, last name, role, password`. You may omit the
-password — the app invents one and **does not show it**. Existing usernames are
-skipped.
+is optional; the default order is `email, first name, last name, role` (e.g.
+`ana.novak@guest.arnes.si,Ana,Novak,teacher`). **The email address is also the
+username**, so you write it only once. The role may be `teacher`, `vodstvo`
+(leadership) or `admin` (default: `teacher`). You do not write a password — the
+app invents one and **does not show it**; users set their own via **Forgot
+password?**. Imported users have **no office hours by default** — enable them
+individually on the user list. Existing usernames are skipped.
 
 ### Import staff with a script
 

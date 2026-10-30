@@ -45,9 +45,13 @@ je treba dodati sproti). Na začetku šolskega leta je bolje uporabiti uvoz
 ### Uvoz iz CSV datoteke
 
 Na strani **Uporabniki** izberete CSV datoteko in kliknete **📥 Uvozi CSV**.
-Glava stolpcev ni obvezna; privzeti vrstni red je
-`uporabniško ime, email, ime, priimek, vloga, geslo`. Geslo lahko izpustite —
-aplikacija si ga izmisli in ga **ne pokaže**. Obstoječa uporabniška imena se
+Glava stolpcev ni obvezna; privzeti vrstni red je `e-pošta, ime, priimek, vloga`
+(npr. `ana.novak@guest.arnes.si,Ana,Novak,učitelj`). **E-pošta je hkrati
+uporabniško ime**, zato jo zapišete samo enkrat. Vloga je lahko `učitelj`,
+`vodstvo` ali `admin` (če je ni, dobi uporabnik `učitelj`). Gesla ne pišete —
+aplikacija si ga izmisli in ga **ne pokaže**; uporabnik si ga nastavi sam prek
+**Pozabljeno geslo?**. Uvoženi uporabniki privzeto **nimajo govorilnih ur** —
+omogočite jih posamično na seznamu uporabnikov. Obstoječa uporabniška imena se
 preskočijo.
 
 ### Uvoz zaposlenih s skripto
