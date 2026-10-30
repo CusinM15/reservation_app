@@ -145,8 +145,15 @@ def _trigger_host_report() -> tuple[bool, str]:
     import os, urllib.request, urllib.error, socket
 
     # Service DNS ime znotraj clustra: <service>.<namespace>.svc.cluster.local
-    host = os.environ.get("REPORT_TRIGGER_HOST", "report-trigger.sola-app.svc.cluster.local")
-    port = os.environ.get("REPORT_TRIGGER_PORT", "8791")
+    # POZOR: k8s (enableServiceLinks) auto-injecta legacy env za Service
+    # report-trigger: REPORT_TRIGGER_PORT=tcp://IP:PORT, ..._SERVICE_HOST idr.
+    # Zato so override ključi poimenovani TRIGGER_WEBHOOK_* (brez trka) in je
+    # port robustno int-parsed (fallback na 8791 pri tcp://... vrednosti).
+    host = os.environ.get("TRIGGER_WEBHOOK_HOST", "report-trigger.sola-app.svc.cluster.local")
+    try:
+        port = int(os.environ.get("TRIGGER_WEBHOOK_PORT", "8791"))
+    except (TypeError, ValueError):
+        port = 8791
     url = f"http://{host}:{port}/"
     try:
         req = urllib.request.Request(url, data=b"", method="POST")
