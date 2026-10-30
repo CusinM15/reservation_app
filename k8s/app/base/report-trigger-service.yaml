@@ -1,0 +1,16 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: report-trigger
+  namespace: sola-app
+  labels:
+    app: report-trigger-proxy
+spec:
+  type: ClusterIP
+  ports:
+  - port: 8791
+    targetPort: 8791
+    protocol: TCP
+    name: trigger-health
+  selector:
+    app: report-trigger-proxy

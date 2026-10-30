@@ -124,13 +124,13 @@ def backup_all_schools(request: Request, db: Session = Depends(get_db)):
 
 @router.post("/api/global-settings/health")
 def send_cluster_health(request: Request, db: Session = Depends(get_db)):
-    """Naloži novo poročilo o stanju clustra na GitHub (privat repo
-    CusinM15/reservation_app_sell) prek scripts/cluster_report.py
-    (--mode pod, in-cluster k8s + node-exporter + GH Contents API s tokenom
-    iz env GITHUB_TOKEN). To nadomešča stari email tok (node_report.py /
-    daily_report.py) — poročilo se bere na GitHubu, ne v mailu."""
+    """Sproži polno poročilo o stanju clustra na GitHub (privat repo
+    CusinM15/reservation_app_sell). Pod NIMA dostopa do GitHub pusha (brez
+    tokena, ni SSH ključa), zato kliče lokalni trigger webhook na Debianu
+    (scripts/report-trigger-server.py), ki v ozadju požene cluster_report.py
+    --mode host in pusha prek SSH. Poročilo se bere na GitHubu, ne v mailu."""
     user = _require_main_admin(request, db)
-    sent, message = _build_and_upload_health(db)
+    sent, message = _trigger_host_report()
     status = 200 if sent else 500
     if sent:
         log_audit(db, user.id, user.username, "global_health",
@@ -138,30 +138,26 @@ def send_cluster_health(request: Request, db: Session = Depends(get_db)):
     return JSONResponse({"sent": sent, "message": message}, status_code=status)
 
 
-def _build_and_upload_health(db: Session):
-    """Sestavi POLNO poročilo o stanju clustra (nodi, app, longhorn — isto
-    kot scripts/cluster_report.py) in ga naloži na GitHub (privat sell repo)
-    prek GH Contents API. Zahteva env GITHUB_TOKEN (secret sola-secrets);
-    brez tokena vrne jasno napako — email tok je ukinjen."""
-    import os, time as _time
+def _trigger_host_report() -> tuple[bool, str]:
+    """Pošlje POST na Debian trigger službo (host-mode cluster_report + SSH
+    push). Dostop: ClusterIP Service 'report-trigger' v istem namespaceu.
+    Ne blokira na izvedbi skripte — vrne 202 in skripta teče v ozadju."""
+    import os, urllib.request, urllib.error, socket
 
-    token = os.environ.get("GITHUB_TOKEN", "")
-    if not token:
-        return False, ("GITHUB_TOKEN ni nastavljen (secret sola-secrets) — "
-                       "poročila ni mogoče naložiti na GitHub.")
-
+    # Service DNS ime znotraj clustra: <service>.<namespace>.svc.cluster.local
+    host = os.environ.get("REPORT_TRIGGER_HOST", "report-trigger.sola-app.svc.cluster.local")
+    port = os.environ.get("REPORT_TRIGGER_PORT", "8791")
+    url = f"http://{host}:{port}/"
     try:
-        from scripts import cluster_report as cr
-
-        data = cr.collect_pod()
-        body = cr.render(data)
-        ts = _time.strftime("%Y%m%d-%H%M%S")
-        ok, msg = cr.gh_push_contents(body, ts)
-        if ok:
-            return True, f"Poročilo naloženo na GitHub: {msg}"
-        return False, f"GitHub push ni uspel: {msg}"
-    except Exception as exc:  # pragma: no cover - runtime
-        return False, f"Napaka pri pripravi/nalaganju poročila: {type(exc).__name__}: {exc}"
+        req = urllib.request.Request(url, data=b"", method="POST")
+        with urllib.request.urlopen(req, timeout=15) as resp:
+            if resp.status == 202:
+                return True, ("Poročilo se pripravlja na strežniku in bo naloženo "
+                              "na GitHub (reports/latest.md).")
+            return False, f"Trigger služba je vrnila status {resp.status}."
+    except (urllib.error.URLError, socket.timeout, OSError) as exc:
+        return False, (f"Trigger služba ni dosegljiva (zagon na Debianu ni uspel): "
+                       f"{type(exc).__name__}: {exc}")
 
 
 def _dump_and_send(db: Session):

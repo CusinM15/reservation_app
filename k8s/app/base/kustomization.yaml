@@ -8,6 +8,8 @@ resources:
 - sola-hpa.yaml
 - sola-service.yaml
 - sola-backup-cronjob.yaml
+- report-trigger-proxy-daemonset.yaml
+- report-trigger-service.yaml
 - sola-reporter-serviceaccount.yaml
 - sola-reporter-clusterrole.yaml
 - sola-reporter-clusterrolebinding.yaml
