@@ -25,14 +25,24 @@ from app.config import settings
 # (pool_pre_ping) in obnavljanja (pool_recycle) prva zahteva po mirovanju
 # čaka na ponovno vzpostavitev povezave (ali pade) — uporabniku se to vidi kot
 # »včasih se stran nalaga več sekund«. Vrednosti so nastavljive z okoljem.
-engine = create_engine(
-    settings.DATABASE_URL,
-    pool_pre_ping=True,
-    pool_recycle=int(os.getenv("DB_POOL_RECYCLE", "300")),
-    pool_size=int(os.getenv("DB_POOL_SIZE", "5")),
-    max_overflow=int(os.getenv("DB_MAX_OVERFLOW", "10")),
-    connect_args={},
-)
+def create_db_engine():
+    """Produkcijski engine s skladom povezav (velikost + mrtve povezave).
+
+    Uporablja ga modul sam (engine = create_db_engine()) in test_performance,
+    ki mora preveriti PRAVO produkcijsko konfiguracijo — testi sicer (conftest)
+    engine nadomestijo z NullPool za izolacijo med testi.
+    """
+    return create_engine(
+        settings.DATABASE_URL,
+        pool_pre_ping=True,
+        pool_recycle=int(os.getenv("DB_POOL_RECYCLE", "300")),
+        pool_size=int(os.getenv("DB_POOL_SIZE", "5")),
+        max_overflow=int(os.getenv("DB_MAX_OVERFLOW", "10")),
+        connect_args={},
+    )
+
+
+engine = create_db_engine()
 
 # ── SessionLocal ──────────────────────────────────────────────────────
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)

@@ -12,7 +12,6 @@
 
 from pathlib import Path
 
-from app.database import engine
 from tests.conftest import login
 
 
@@ -39,17 +38,34 @@ def test_small_responses_are_not_gzipped(client):
 # ── 2. Sklad povezav na bazo ─────────────────────────────────────────
 
 def test_engine_checks_dead_connections():
-    """Brez tega prva zahteva po mirovanju čaka na ponovno vzpostavitev."""
-    pool = engine.pool
-    assert getattr(pool, "_pre_ping", False) is True
-    assert getattr(pool, "_recycle", 0) and int(pool._recycle) > 0
+    """Brez tega prva zahteva po mirovanju čaka na ponovno vzpostavitev.
+
+    Preverjamo PROIZVODNO konfiguracijo prek create_db_engine(): conftest
+    engine nadomesti z NullPool (izolacija), NullPool pa nima sklada — zato
+    testa ne smeta gledati globalnega engine-a.
+    """
+    from app.database import create_db_engine
+
+    eng = create_db_engine()
+    try:
+        pool = eng.pool
+        assert getattr(pool, "_pre_ping", False) is True
+        assert getattr(pool, "_recycle", 0) and int(pool._recycle) > 0
+    finally:
+        eng.dispose()
 
 
 def test_engine_pool_is_bounded():
     """Sklad mora imeti velikost (ne neomejeno odpiranje povezav)."""
-    pool = engine.pool
-    assert int(pool.size()) >= 1
-    assert int(getattr(pool, "_max_overflow", 0)) >= 0
+    from app.database import create_db_engine
+
+    eng = create_db_engine()
+    try:
+        pool = eng.pool
+        assert int(pool.size()) >= 1
+        assert int(getattr(pool, "_max_overflow", 0)) >= 0
+    finally:
+        eng.dispose()
 
 
 # ── 3. Nastavljivo število delavcev ──────────────────────────────────
