@@ -147,7 +147,9 @@
         <summary><h3>{{ t('set_razredi', 'Razredi') }}</h3><span class="toggle-hint">▾ manj</span></summary>
             <!-- RAZREDI: vsak razred v SVOJI vrstici (kot prostori in urnik),
                  da je urejanje pregledno in brez vejic. Ob shranjevanju se
-                 vrstice sestavijo nazaj v vejica-ločen seznam (ključ RAZREDI). -->
+                 vrstice sestavijo nazaj v vejica-ločen seznam (ključ RAZREDI).
+                 Kljukica »izbirni predmet« doda razred v RAZREDI_IP (posebna
+                 skupina IP/NIP — zelena značka v koledarju ocenjevanj). -->
             <div class="field">
                 <label>{{ t('set_razredi', 'Razredi') }}</label>
                 {% if is_main_admin %}<span class="key">RAZREDI</span>{% endif %}
@@ -155,6 +157,8 @@
                 <button type="button" class="btn" style="margin-top:8px;" onclick="addRazredRow(); return false;">{{ t('set_dodaj_razred', '＋ Dodaj razred') }}</button>
                 <div class="hint" style="margin-top:6px;">
                     {{ t('set_hint_razredi_1', 'V vsako vrstico vpišite en razred, npr.') }} <code>1.a</code>{{ t('set_hint_razredi_2', '. Vrstico odstranite z ✕. Razredi se uporabljajo pri ocenjevanjih in dnevih dejavnosti (pri rezervacijah prostorov se ne uporabljajo).') }}
+                    <br>
+                    {{ t('set_hint_razredi_izbirni_1', 'Kljukica') }} <strong>{{ t('set_hint_razredi_izbirni_2', '»izbirni predmet«') }}</strong> {{ t('set_hint_razredi_izbirni_3', 'pomeni: ta razred je posebna skupina (npr. IP/NIP) — v koledarju ocenjevanj se njeni zapisi prikažejo v zeleni znački zraven razredov 6.–9. in ne v filtru razredov.') }}
                 </div>
             </div>
     </details>
@@ -488,9 +492,12 @@
     // Ob shranjevanju se vrstice sestavijo v vejica-ločen seznam (RAZREDI).
     const RAZREDI_ROWS = {{ razredi_rows|tojson }};
 
-    function razredRowHtml(name) {
+    function razredRowHtml(name, ip) {
         return `<div class="razred-row" style="display:flex;gap:10px;align-items:center;margin-bottom:6px;">
             <input type="text" class="razred-name" value="${escAttr(name)}" placeholder="{{ t('set_ph_razred', 'npr. 1.a') }}" style="max-width:220px;">
+            <label style="display:flex;align-items:center;gap:5px;font-size:0.85rem;white-space:nowrap;cursor:pointer;">
+                <input type="checkbox" class="razred-ip" ${ip ? 'checked' : ''}> {{ t('set_lbl_izbirni_predmet', 'izbirni predmet') }}
+            </label>
             <button type="button" class="btn btn-cancel" style="padding:6px 10px;"
                     onclick="this.closest('.razred-row').remove(); return false;"
                     title="{{ t('title_odstrani_razred', 'Odstrani razred') }}">✕</button>
@@ -498,11 +505,11 @@
     }
 
     function renderRazrediRows(rows) {
-        document.getElementById('razredi-rows').innerHTML = (rows || []).map(razredRowHtml).join('');
+        document.getElementById('razredi-rows').innerHTML = (rows || []).map(r => razredRowHtml(r.ime, r.ip)).join('');
     }
 
     function addRazredRow() {
-        document.getElementById('razredi-rows').insertAdjacentHTML('beforeend', razredRowHtml(''));
+        document.getElementById('razredi-rows').insertAdjacentHTML('beforeend', razredRowHtml('', false));
     }
 
     // Vrne vejica-ločen seznam razredov (brez praznih in podvojenih).
@@ -511,6 +518,17 @@
         document.querySelectorAll('#razredi-rows .razred-row').forEach(function (row) {
             const name = (row.querySelector('.razred-name').value || '').trim();
             if (name && out.indexOf(name) === -1) out.push(name);
+        });
+        return out.join(',');
+    }
+
+    // Vrne vejica-ločen seznam razredov, označenih kot »izbirni predmet«.
+    function collectRazrediIp() {
+        const out = [];
+        document.querySelectorAll('#razredi-rows .razred-row').forEach(function (row) {
+            const cb = row.querySelector('.razred-ip');
+            const name = (row.querySelector('.razred-name').value || '').trim();
+            if (cb && cb.checked && name && out.indexOf(name) === -1) out.push(name);
         });
         return out.join(',');
     }
@@ -815,6 +833,7 @@
             return;
         }
         values['RAZREDI'] = razrediVal;
+        values['RAZREDI_IP'] = collectRazrediIp();
 
         // Števila pridejo iz vrstic (ime + vrednost) — sestavimo JSON objekt.
         const stevila = collectStevila();

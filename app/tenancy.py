@@ -76,6 +76,11 @@ SCHOOL_SETTING_KEYS = [
     # skalarni TABLICE_MAX, ki ostaja le še kot zgodovinska rezerva.
     "STEVILA",
     "RAZREDI",
+    # Razredi, označeni kot »izbirni predmet« (IP/NIP): vejica-ločen seznam
+    # imen iz RAZREDI. V koledarju ocenjevanj se njihova ocenjevanja izpišejo
+    # v zeleni znački zraven razredov 6.–9.; kljukico nastavi šolski admin
+    # v Nastavitvah (vsaka vrstica razreda).
+    "RAZREDI_IP",
     "PROSTORI",
     # Prostori, ki delujejo KOT TABLICE: v njih lahko več učiteljev hkrati
     # rezervira, vsak navede količino, skupna vsota na uro pa ne sme preseči
@@ -481,6 +486,8 @@ def env_default_settings() -> dict:
         "PROSTORI_POPOLDAN": "",
         "PROSTORI_VODSTVO": "",
         "RAZREDI": ",".join(settings.RAZREDI),
+        # Izbirni predmet (IP/NIP): privzeto noben razred; šola označi sama.
+        "RAZREDI_IP": "",
         "PROSTORI": ",".join(settings.PROSTORI),
         "INACTIVITY_TIMEOUT_MINUTES": str(settings.INACTIVITY_TIMEOUT_MINUTES),
         "INACTIVITY_TIMEOUT_ADMIN_MINUTES": str(settings.INACTIVITY_TIMEOUT_ADMIN_MINUTES),
@@ -570,6 +577,11 @@ class SchoolConfig:
     @property
     def RAZREDI(self) -> list[str]:
         return self.get_list("RAZREDI", settings.RAZREDI)
+
+    @property
+    def RAZREDI_IP(self) -> set[str]:
+        """Razredi, označeni kot »izbirni predmet« (IP/NIP)."""
+        return set(self.get_list("RAZREDI_IP", []))
 
     @property
     def PROSTORI(self) -> list[str]:

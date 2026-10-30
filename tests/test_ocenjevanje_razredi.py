@@ -53,8 +53,10 @@ def test_ip_nip_id_hidden_only_in_filter_dropdown(client, make_user):
     ocenjevanje, izvoz) pa ostane na voljo."""
     funkcija = _picker_js(_index_html(client, make_user))
 
-    # filtriranje velja izključno za filter (oc-razred)
-    assert "id === 'oc-razred' ? items.filter(jeObicajen) : items.slice()" in funkcija
+    # filtriranje velja izključno za filter (oc-razred); izbirni predmet
+    # (IP/NIP) se skrije prek nastavitvenega flag-a, ne več trde kode
+    assert "id === 'oc-razred'" in funkcija
+    assert "jeObicajen(r) && !ipRazrediSet.has(r)" in funkcija
     assert "jeObicajen" in funkcija
 
 
@@ -95,7 +97,7 @@ def test_group_shortcuts_still_exist(client, make_user):
 def test_load_includes_ip_for_grades_6_to_9(client, make_user):
     telo = _load_js(_index_html(client, make_user))
 
-    assert "POSEBNI_RAZRED" in telo          # 'IP/NIP/ID'
+    assert "ipRazrediSet" in telo            # flag iz /api/razredi-ip
     assert "jePosebni" in telo               # prepoznavanje posebne skupine
     assert "jeRazpon69" in telo              # le razredi/skupine 6.–9.
     assert "RAZREDI_69" in telo
@@ -149,7 +151,7 @@ def test_ip_assessment_badge_is_green(client, make_user):
 def test_badge_uses_ip_style_and_shows_class(client, make_user):
     telo = _render_js(_index_html(client, make_user))
 
-    assert "const jeIp = a.razred === POSEBNI_RAZRED;" in telo
+    assert "const jeIp = ipRazrediSet.has(a.razred);" in telo
     assert "jeIp ? 'assessment-ip'" in telo
     # oznaka razreda se pri IP/NIP/ID izpiše vedno (tudi ko gledamo en razred)
     assert "(jeIp || showAll)" in telo
@@ -158,7 +160,9 @@ def test_badge_uses_ip_style_and_shows_class(client, make_user):
 def test_legend_has_ip_colour(client, make_user):
     html = _index_html(client, make_user)
     assert "background:#dcfce7;border-radius:2px;" in html
-    assert "> IP/NIP/ID</span>" in html
+    # legenda je zdaj dinamična (flag iz nastavitev), ne več trdo IP/NIP/ID
+    assert "Izbirni predmet" in html
+    assert "ipRazredi.length ?" in html
 
 
 # ── 5. Skupinski izbiri 8./9. pri dejavnostih + obrazec ──────────────

@@ -59,6 +59,50 @@ def test_razredi_round_trip(client, make_user):
     assert data["values"]["RAZREDI"] == "3. a,3. b"
 
 
+# ── 1b. Razredi: »izbirni predmet« (IP/NIP) ──────────────────────────
+# Vsak razred v Nastavitvah dobi kljukico »izbirni predmet«; označeni se
+# shranijo v RAZREDI_IP in vrnejo prek /api/razredi-ip (koledar ocenjevanj
+# jih barva zeleno namesto trdo kodiranega POSEBNI_RAZRED).
+
+def test_razredi_ip_privzeto_prazen(client, make_user):
+    """Brez oznake noben razred ni izbirni predmet."""
+    sid = default_school_id()
+    _admin(client, make_user)
+    assert client.get("/api/razredi-ip").json() == []
+
+
+def test_razredi_ip_se_shrani_in_vrne(client, make_user):
+    sid = default_school_id()
+    _admin(client, make_user)
+    _set(client, sid, RAZREDI="IP/NIP,1. a,2. a", RAZREDI_IP="IP/NIP")
+
+    assert client.get("/api/razredi-ip").json() == ["IP/NIP"]
+
+    data = client.get(f"/api/schools/{sid}/settings").json()
+    assert data["values"]["RAZREDI_IP"] == "IP/NIP"
+
+
+def test_razredi_ip_se_ocisti_ce_razred_izbrisan(client, make_user):
+    """RAZREDI_IP ne sme kazati na razred, ki ga v RAZREDI ni več."""
+    sid = default_school_id()
+    _admin(client, make_user)
+    _set(client, sid, RAZREDI="1. a,2. a", RAZREDI_IP="2. a,9. z")
+    assert client.get("/api/razredi-ip").json() == ["2. a"]
+
+
+def test_settings_razredi_rows_nosijo_flag_ip(client, make_user):
+    """Vrstice razredov v /settings nosijo {ime, ip} — kljukica per razred."""
+    sid = default_school_id()
+    _admin(client, make_user)
+    _set(client, sid, RAZREDI="IP/NIP,1. a,2. a", RAZREDI_IP="IP/NIP")
+
+    html = client.get("/settings").text
+    assert '"ime": "IP/NIP", "ip": true' in html
+    assert '"ime": "1. a", "ip": false' in html
+    assert "razred-ip" in html                    # kljukica v vrstici
+    assert "function collectRazrediIp" in html
+
+
 # ── 2. Števila: ločen objekt + vezava prostor → spremenljivka ─────────
 
 def test_settings_renders_numbers_as_own_section(client, make_user):

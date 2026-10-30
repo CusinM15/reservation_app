@@ -531,6 +531,13 @@ async def update_school_settings(school_id: int, request: Request, db: Session =
         if field["type"] == "lang" and str(values[key]).strip().lower() not in ("sl", "en"):
             raise HTTPException(status_code=400, detail=f"'{key}' mora biti 'sl' ali 'en'")
 
+    # RAZREDI_IP (»izbirni predmet«) sme vsebovati le razrede iz RAZREDI:
+    # zastarele vnose (odstranjen razred) sproti počistimo.
+    if "RAZREDI_IP" in values and isinstance(values["RAZREDI_IP"], str):
+        _raz = {x.strip() for x in values.get("RAZREDI", "").split(",") if x.strip()}
+        _ip = [x.strip() for x in values["RAZREDI_IP"].split(",") if x.strip()]
+        values["RAZREDI_IP"] = ",".join(x for x in _ip if x in _raz)
+
     # Tekstovna obvestila zaslona: največ 5 (enako kot omejitev eAsistenta).
     if "ZASLON_OBVESTILA_TEKST" in values:
         try:
@@ -1119,7 +1126,9 @@ def school_settings_page(
             schedule_rows.append({"index": str(key), "value": str(parsed[key])})
 
     # RAZREDI: vsak razred v SVOJI vrstici (iz vejica-ločenega seznama).
-    razredi_rows = [r for r in cfg.RAZREDI if r]
+    # Vsak razred dobi še kljukico »izbirni predmet« (IP/NIP) iz RAZREDI_IP.
+    _ip_set = cfg.RAZREDI_IP
+    razredi_rows = [{"ime": r, "ip": r in _ip_set} for r in cfg.RAZREDI if r]
 
     # ŠTEVILA: imenovane številske spremenljivke v vrsticah (ime + vrednost).
     # Ločen objekt (kot urnik) — na imena se vežejo prostori spodaj.

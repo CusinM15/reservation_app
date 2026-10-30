@@ -803,10 +803,12 @@
     let popoldanSchedule = {};   // Popoldanski urnik (ure → oznake, npr. 15:00–21:00)
     let popoldanProstori = [];   // Prostori, ki uporabljajo popoldanski urnik
     let razredi = [];        // Seznam razredov
-    // Posebna skupina: ocenjevanja zanj se prikažejo ZRAVEN razredov od 6. do 9.
-    // razreda (v zeleni znački), ker te učence poučuje drug program — a njihova
-    // ocenjevanja zadevajo iste dni in iste učitelje.
-    const POSEBNI_RAZRED = 'IP/NIP/ID';
+    // Razredi, označeni v Nastavitvah kot »izbirni predmet« (IP/NIP): njihova
+    // ocenjevanja se prikažejo ZRAVEN razredov od 6. do 9. razreda (v zeleni
+    // znački), ker te učence poučuje drug program — a njihova ocenjevanja
+    // zadevajo iste dni in iste učitelje. Flag pride iz /api/razredi-ip.
+    let ipRazredi = [];      // Imena izbirnih predmetov (iz /api/razredi-ip)
+    let ipRazrediSet = new Set(ipRazredi);
     const RAZREDI_69 = ['6.', '7.', '8.', '9.'];
     let prostori = [];       // Seznam prostorov
     // Prostori, ki delujejo »kot Tablice« (količina + omejitev na uro).
@@ -1029,13 +1031,15 @@
     }
     // Napolni <select> z razredi, urejenimi po kategorijah.
     // Doda posebne moznosti za filtriranje vseh 8. ali 9. razredov.
-    // »IP/NIP/ID« je posebna skupina (IP program), zato je v izboru RAZREDA ZA
+    // »Izbirni predmet« (IP/NIP) je posebna skupina, zato je v izboru RAZREDA ZA
     // FILTRIRANJE (oc-razred) ne ponudimo — njena ocenjevanja se prikažejo zraven
     // razredov 6.–9. Drugje (obrazec za novo ocenjevanje, izvoz) pa ostane na voljo.
     function populateOcRazredi(id, items, addAll) {
       const sel = document.getElementById(id);
       const jeObicajen = r => /^\d+\.[A-Za-z0-9čšžČŠŽ]+$/.test(r);
-      const razredi = id === 'oc-razred' ? items.filter(jeObicajen) : items.slice();
+      const razredi = id === 'oc-razred'
+        ? items.filter(r => jeObicajen(r) && !ipRazrediSet.has(r))
+        : items.slice();
       const osmice = razredi.filter(r => r.startsWith('8.')).sort();
       const devetke = razredi.filter(r => r.startsWith('9.')).sort();
       const ostalo = razredi.filter(r => !r.startsWith('8.') && !r.startsWith('9.')).sort();
@@ -1912,7 +1916,7 @@
         const res = await fetch(url);
         if (!res.ok) { showMsg('Napaka pri nalaganju ocenjevanj.', 'error'); return; }
         let assessments = await res.json();
-        const jePosebni = a => a.razred === POSEBNI_RAZRED;
+        const jePosebni = a => ipRazrediSet.has(a.razred);
         if (filterPrefix.length) {
           assessments = assessments.filter(a => jePosebni(a)
             || (a.razred && filterPrefix.some(p => a.razred.startsWith(p))));
@@ -2003,7 +2007,7 @@
             title="Klikni za seznam dejavnosti"><span>📋 Dejavnost:${fieldRazredi.length ? ' ' + fieldRazredi.join(', ') : ''}</span></div>`;
         if (asmMap[day]) {
           asmMap[day].forEach(a => {
-            const jeIp = a.razred === POSEBNI_RAZRED;
+            const jeIp = ipRazrediSet.has(a.razred);
             const asmCls = jeIp ? 'assessment-ip' : (a.ponavljanje ? 'assessment-ponavljanje' : 'assessment-normal');
             // Pri IP/NIP/ID oznako razreda izpišemo VEDNO (ocena pripada drugi
             // skupini, kot je gledani razred), da je jasno, od kod je.
@@ -2023,7 +2027,7 @@
       html += `</div><div style="display:flex;gap:15px;justify-content:center;margin-top:10px;font-size:0.75rem;">
         <span><span style="display:inline-block;width:12px;height:12px;background:#cce5ff;border-radius:2px;"></span> {{ t('legenda_obicajno', 'Običajno ocenjevanje') }}</span>
         <span><span style="display:inline-block;width:12px;height:12px;background:#ffcccc;border-radius:2px;"></span> {{ t('label_ponavljanje', 'Ponavljanje') }}</span>
-        <span><span style="display:inline-block;width:12px;height:12px;background:#dcfce7;border-radius:2px;"></span> IP/NIP/ID</span>
+        ${ipRazredi.length ? `<span><span style="display:inline-block;width:12px;height:12px;background:#dcfce7;border-radius:2px;"></span> {{ t('legenda_izbirni', 'Izbirni predmet') }} (${ipRazredi.join(', ')})</span>` : ''}
         <span><span style="display:inline-block;width:12px;height:12px;background:#7c3aed;border-radius:2px;"></span> {{ t('legenda_dan_dejavnosti', 'Dan dejavnosti') }}</span>
       </div>`;
       document.getElementById('oc-calendar-container').innerHTML = html;
@@ -2113,8 +2117,8 @@
     // 7. Zažene začetno nalaganje: rezervacije, zasedeni datumi,
     //    ocenjevanja.
     document.addEventListener('DOMContentLoaded', async () => {
-      const [schedRes, popRes, razRes, proRes, qtyProRes, meRes] = await Promise.all([
-        fetch('/api/schedule'), fetch('/api/popoldan'), fetch('/api/razredi'), fetch('/api/prostori'),
+      const [schedRes, popRes, razRes, razIpRes, proRes, qtyProRes, meRes] = await Promise.all([
+        fetch('/api/schedule'), fetch('/api/popoldan'), fetch('/api/razredi'), fetch('/api/razredi-ip'), fetch('/api/prostori'),
         fetch('/api/prostori-qty'), fetch('/auth/me')
       ]);
       schedule = await schedRes.json();
@@ -2127,6 +2131,10 @@
         }
       } catch (e) { popoldanSchedule = {}; popoldanProstori = []; }
       razredi = await razRes.json();
+      // Izbirni predmet (IP/NIP): imena iz nastavitev šole → set za hitre poglede.
+      try { ipRazredi = await razIpRes.json(); } catch (e) { ipRazredi = []; }
+      if (!Array.isArray(ipRazredi)) ipRazredi = [];
+      ipRazrediSet = new Set(ipRazredi);
       prostori = await proRes.json();
       // Kateri prostori so »kot Tablice« + kapaciteta na uro — iz nastavitev šole.
       try {

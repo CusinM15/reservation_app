@@ -175,7 +175,7 @@ class AuthMiddleware(BaseHTTPMiddleware):
         # Sem spadajo: login, pozabljeno geslo, zdravstveni endpoint,
         # glavna stran, zgodovina (history), API za razrede/prostore/urnik,
         # ter statične datoteke in dokumentacija.
-        public = ["/auth/login", "/auth/forgot-password", "/auth/reset-password", "/health", "/", "/history", "/api/razredi", "/api/prostori", "/api/schedule", "/nakup", "/registracija"]
+        public = ["/auth/login", "/auth/forgot-password", "/auth/reset-password", "/health", "/", "/history", "/api/razredi", "/api/razredi-ip", "/api/prostori", "/api/schedule", "/nakup", "/registracija"]
         is_public = any(path == p for p in public) or path.startswith("/static") or path.startswith("/slike") or path.startswith("/docs/") or path.startswith("/zasloni") or path == "/zasloni" or path == "/govorilne" or path.startswith("/govorilne/api")
         # Per-šola alias za digitalni zaslon (npr. /nadomescanja_ostcj ali
         # goli /ostcj) je prav tako javen — prevedemo ga na kanonično /zasloni pot.
@@ -404,6 +404,12 @@ def admin_users_redirect(request: Request):
 @app.get("/api/razredi")
 def get_razredi(request: Request, db: Session = Depends(get_db)):
     return config_for_request(request, db).RAZREDI
+
+
+@app.get("/api/razredi-ip")
+def get_razredi_ip(request: Request, db: Session = Depends(get_db)):
+    """Razredi, označeni kot »izbirni predmet« (IP/NIP) — po šoli."""
+    return sorted(config_for_request(request, db).RAZREDI_IP)
 
 @app.get("/api/prostori")
 def get_prostori(request: Request, db: Session = Depends(get_db)):
