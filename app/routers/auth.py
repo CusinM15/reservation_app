@@ -637,6 +637,7 @@ def create_user(
     last_name: str = Form(""),
     password: str = Form(...),
     role: str = Form(...),
+    ima_govorilne: bool = Form(False),
     db: Session = Depends(get_db)
 ):
     """Ustvari novega uporabnika (šolski admin svoje šole, glavni admin poljubne).
@@ -681,6 +682,7 @@ def create_user(
         password_hash=hashed,
         role=role,
         is_active=True,
+        ima_govorilne=ima_govorilne,
         school_id=target_school_id,
     )
     db.add(new_user)
@@ -846,6 +848,29 @@ def activate_user(id: int, request: Request, db: Session = Depends(get_db)):
     return RedirectResponse(url="/auth/admin/users", status_code=303)
 
 
+@router.post("/admin/users/{id}/govorilne")
+def toggle_govorilne(id: int, request: Request, db: Session = Depends(get_db)):
+    """Vklopi/odklopi uporabniku GOVORILNE URE (ima_govorilne).
+
+    Od 30.10.2026 je članstvo na strani za govorilne ure vezano na to
+    kljukico pri uporabniku — označen uporabnik se samodejno pojavi na
+    javni strani za govorilne ure in v izbiri za starše.
+    """
+    current_user, school_id, error = _user_admin_scope(request, db)
+    if error is not None:
+        return error
+    user = _scoped_users(db, school_id).filter(User.id == id).first()
+    if not user:
+        return RedirectResponse(url="/auth/admin/users?error=Uporabnik ne obstaja", status_code=303)
+    user.ima_govorilne = not user.ima_govorilne
+    db.commit()
+    log_audit(db, user_id=current_user.id, username=current_user.username,
+              action="toggle_govorilne",
+              details=f"user_id={id}, username={user.username}, ima_govorilne={user.ima_govorilne}",
+              school_id=user.school_id)
+    return RedirectResponse(url="/auth/admin/users", status_code=303)
+
+
 @router.post("/admin/users/{id}/delete")
 def delete_user(id: int, request: Request, db: Session = Depends(get_db)):
     """Izbriši uporabnika in njegove rezervacije/ocenjevanja.
@@ -891,6 +916,7 @@ def update_user(
     first_name: str = Form(""),
     last_name: str = Form(""),
     role: str = Form(...),
+    ima_govorilne: bool = Form(False),
     new_password: str = Form(""),
     db: Session = Depends(get_db)
 ):
@@ -927,6 +953,7 @@ def update_user(
         user.email = email or None
     user.first_name = first_name
     user.last_name = last_name
+    user.ima_govorilne = ima_govorilne
     user.role = role
     db.commit()
     log_audit(db, user_id=current_user.id, username=current_user.username,

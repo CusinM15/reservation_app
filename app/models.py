@@ -113,6 +113,7 @@ class User(Base):
     password_hash = Column(String, nullable=False)
     role = Column(SAEnum(RoleEnum), default=RoleEnum.teacher, nullable=False)
     is_active = Column(Boolean, default=True, nullable=False)
+    ima_govorilne = Column(Boolean, default=False, nullable=False)
     reset_token = Column(String, nullable=True, default=None, index=True)
 
     # Relacije: uporabnik ima lahko več rezervacij in ocenjevanj

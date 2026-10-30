@@ -104,61 +104,22 @@
     </details>
     {% endif %}
 
-    <!-- Dodajanje novega učitelja (samo admin/vodstvo) -->
+    <!-- Članstvo govorilnih ur se ureja v Uporabniki (kljukica) — tu je le navodilo. -->
     {% if is_editor %}
-    <details class="card collapsible">
-        <summary class="card-header"><span class="name">Dodaj učitelja</span><span class="toggle-hint">▸ več</span></summary>
+    <details class="card collapsible" id="membership-card">
+        <summary class="card-header"><span class="name">Kako dodati / odstraniti učitelja?</span><span class="toggle-hint">▸ več</span></summary>
         <div class="card-body">
-            <form onsubmit="dodajUcitelja(event, this)">
-                <div class="form-row">
-                    <label>Polno ime *</label>
-                    <input type="text" name="ime" required placeholder="npr. Ime Priimek">
-                </div>
-                <div class="form-row">
-                    <label>Predmet</label>
-                    <input type="text" name="predmet" placeholder="npr. Matematika / razredni pouk">
-                </div>
-                <div class="form-row">
-                    <label>Prostor</label>
-                    <input type="text" name="prostor" placeholder="npr. učilnica MAT 3">
-                </div>
-                <div class="form-row">
-                    <label>Šolski zvončni urnik</label>
-                    <select name="urnik">
-                        {% for uid, urnik in urniki.items() %}
-                        <option value="{{ uid }}">{{ urnik.label }}</option>
-                        {% endfor %}
-                    </select>
-                    <a class="back" href="{{ zvonec_url }}" target="_blank" rel="noopener" style="font-size:.78rem;">🔔 urnik zvonjenja ↗</a>
-                </div>
-                <div class="form-row">
-                    <label>Dan (dopoldan)</label>
-                    <select name="dan">
-                        <option value="">Po dogovoru</option>
-                        <option value="0">Ponedeljek</option>
-                        <option value="1">Torek</option>
-                        <option value="2">Sreda</option>
-                        <option value="3">Četrtek</option>
-                        <option value="4">Petek</option>
-                    </select>
-                    <label>Šolska ura</label>
-                    <select name="ura">
-                        <option value="">Po dogovoru</option>
-                        {% for i in range(1, 9) %}
-                        <option value="{{ i }}">{{ i }}. ura</option>
-                        {% endfor %}
-                    </select>
-                </div>
-                <button class="btn" type="submit">+ Dodaj učitelja</button>
-                <div class="msg" style="display:none"></div>
-            </form>
+            <p>Član govorilnih ur postane vsak uporabnik, ki ima v
+            <a href="/auth/admin/users">Uporabniki</a> odklukano
+            <strong>Govorilne ure</strong>. Tu za vsakega nastaviš predmet,
+            razred, prostor in dopoldanski termin (<em>»Uredi …«</em> na kartici).</p>
         </div>
     </details>
     {% endif %}
 
     {% if not prikaz %}
     <div class="empty">
-        {% if is_teacher %}Za vas niso objavljene govorilne ure (vaše ime ni med objavljenimi termini).{% else %}Ni učiteljev z objavljenimi govorilnimi urami.{% endif %}
+        {% if is_teacher %}Za vas niso objavljene govorilne ure (niso vam označene govorilne ure v Uporabniki).{% else %}Ni uporabnikov z odklukano kljukico »Govorilne ure« (glej Uporabniki).{% endif %}
     </div>
     {% endif %}
 
@@ -171,9 +132,6 @@
             </span>
             <span>
                 {% if u.prostor %}<span class="subj">📍 {{ u.prostor }}</span>{% endif %}
-                {% if is_editor and u.ime %}
-                <button class="btn small ghost" type="button" onclick="odstraniUcitelja('{{ u.ime }}', this, event)" style="margin-left:.5rem; background:#fdeeee; color:#b02a2a;">Odstrani</button>
-                {% endif %}
                 <span class="toggle-hint">▸ več</span>
             </span>
         </summary>
@@ -276,7 +234,7 @@
     </details>
     {% endfor %}
 
-    <p class="note">Rezervacije so vidne samo učitelju (in šolski upravi). Samodejno se izbrišejo 24 ur po koncu govorilnih ur. {% if is_teacher %}Svoje podatke lahko urejate zgoraj (dopoldanski termin, predmet in razred, če ste razrednik).{% else %}Spremembe shranjene tukaj takoj veljajo na javni strani za starše.{% endif %}</p>
+    <p class="note">Rezervacije so vidne samo učitelju (in šolski upravi). Samodejno se izbrišejo 24 ur po koncu govorilnih ur. {% if is_teacher %}Svoje podatke lahko urejate zgoraj (dopoldanski termin, predmet in razred, če ste razrednik).{% else %}Člani govorilnih ur se dodajajo/odstranjujejo v <a href="/auth/admin/users">Uporabniki</a> — s kljukico »Govorilne ure« (tukaj se nastavi le urnik, predmet, razred in prostor). Spremembe takoj veljajo na javni strani za starše.{% endif %}</p>
 </div>
 
 <script>
@@ -348,37 +306,6 @@ async function saveUcitelj(event, form) {
     };
     if (fd.get('ime')) body['ime'] = fd.get('ime').trim();
     await _post('/govorilne/api/ure/ucitelj', body, msg);
-}
-
-// ── Dodaj novega učitelja (editor only) ──
-async function dodajUcitelja(event, form) {
-    event.preventDefault();
-    const msg = form.querySelector('.msg');
-    const fd = new FormData(form);
-    const body = {
-        ime: (fd.get('ime')||'').trim(),
-        predmet: (fd.get('predmet')||'').trim(),
-        prostor: (fd.get('prostor')||'').trim(),
-        dan: fd.get('dan') || '',
-        ura: fd.get('ura') || '',
-        urnik: (fd.get('urnik')||'').trim(),
-    };
-    const r = await _post('/govorilne/api/ure/ucitelj/dodaj', body, msg);
-    if (r && r.ok) setTimeout(() => location.reload(), 700);
-}
-
-// ── Odstrani učitelja (editor only) ──
-async function odstraniUcitelja(ime, btn, ev) {
-    if (ev) { ev.preventDefault(); ev.stopPropagation(); }  // klik na Odstrani ne sme zložiti kartice
-    const imeClean = ime.replace(/'/g, "\\'");
-    if (!confirm('Odstrani učitelja "' + imeClean + '" iz govorilnih ur (in njene prijave)?')) return;
-    const card = btn.closest('.card');
-    const msg = document.createElement('div');
-    msg.className = 'msg';
-    msg.style.marginTop = '.5rem';
-    card.querySelector('.card-body').appendChild(msg);
-    const r = await _post('/govorilne/api/ure/ucitelj/odstrani', { ime: ime }, msg);
-    if (r && r.ok) setTimeout(() => location.reload(), 700);
 }
 
 // ── Odstrani rezervacijo starša (samo šolski admin) ──

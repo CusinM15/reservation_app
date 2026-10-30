@@ -139,6 +139,9 @@ def _load_cfg(db: Session, school_id: int | None) -> dict:
         # ura_zacetki v JSON ima string ključe (JSON ne pozna int ključev);
         # nazaj v int, da u["ura"] (int) najde začetek ure.
         base["ura_zacetki"] = _int_keys(base.get("ura_zacetki") or {})
+        # ČLANSTVO = uporabniki z ima_govorilne (kljukica) — trdi seznam ni več vir,
+        # ampak samo shramba urnikov posameznih uporabnikov.
+        base["ucitelji"] = _ucitelji_iz_uporabnikov(db, school_id, base["ucitelji"])
         return base
     # Seed iz privzetkov in shrani (spravi v produkcijo za to šolo).
     # ⚠️ VARNO PRED CROSS-ŠOLO PRELIVOM: ucitelji iz modula (govorilne_podatki.py)
@@ -156,6 +159,8 @@ def _load_cfg(db: Session, school_id: int | None) -> dict:
         db.commit()
     except Exception:
         db.rollback()
+    # ČLANSTVO = uporabniki z ima_govorilne — seed zgoraj je surov; tu derivacija.
+    cfg["ucitelji"] = _ucitelji_iz_uporabnikov(db, school_id, cfg["ucitelji"])
     return cfg
 
 
@@ -191,6 +196,53 @@ def _ucitelj_by_ime(ime: str, ucitelji: list | None = None) -> dict | None:
         if re.sub(r"\s+", " ", u["ime"]).lower() == needle:
             return u
     return None
+
+
+def _privatni_zapis(ime: str) -> dict:
+    """Privzet zapis učitelja, ki še nima shranjenega urnika (»po dogovoru«)."""
+    return {
+        "ime": ime,
+        "razred": None,
+        "predmet": "",
+        "dan": None,
+        "ura": None,
+        "prostor": "",
+        "urnik": None,
+        "po_dogovoru": True,
+    }
+
+
+def _ucitelji_iz_uporabnikov(db: Session, school_id: int | None,
+                             shramba: list) -> list:
+    """Članstvo na govorilnih = uporabniki šole z ima_govorilne=True (in aktivni).
+
+    ``shramba`` — per-šola seznam URNIKOV (razred/predmet/dan/ura/prostor/urnik),
+    shranjen v GOVORILNE_KONFIG. Vsakemu uporabniku z odkljukano kljukico
+    poiščemo njegov urnik po polnem imenu; če ga še ni, mu ustvarimo privzet
+    (»po dogovoru«). Od 30.10.2026 je to EDI pogoj — trdi UCITELJI modula ni več
+    članski vir, ampak samo privzeti urnik za obstoječe uporabnike.
+    """
+    if school_id is None:
+        return shramba
+    from app.models import User
+    userji = db.query(User).filter(
+        User.school_id == school_id,
+        User.is_active.is_(True),
+        User.ima_govorilne.is_(True),
+    ).all()
+    izhod: list = []
+    for u in userji:
+        ime = f"{u.first_name} {u.last_name}".strip()
+        if not ime:
+            continue
+        obstojec = _ucitelj_by_ime(ime, shramba)
+        if obstojec is not None:
+            zapis = dict(obstojec)
+            zapis["ime"] = ime
+            izhod.append(zapis)
+        else:
+            izhod.append(_privatni_zapis(ime))
+    return izhod
 
 
 def _opis_ucitelja(u: dict) -> str:
@@ -1052,127 +1104,6 @@ async def ure_ucitelj(request: Request, db: Session = Depends(get_db)):
                        for u2 in cfg["ucitelji"]]
     _save_cfg(db, school_id, cfg)
     return {"ok": True, "ucitelj": _urnik_ucitelja(db, school_id, novi, cfg)}
-
-
-@router.post("/govorilne/api/ure/ucitelj/dodaj")
-async def ure_ucitelj_dodaj(request: Request, db: Session = Depends(get_db)):
-    """Admin/vodstvo/glavni admin DODA novega učitelja (ime + poljubne)."""
-    user = get_request_user(request, db)
-    if user is None:
-        raise HTTPException(status_code=401, detail="Ni prijave")
-    if not _lahko_ureja_vse(user):
-        raise HTTPException(status_code=403, detail="Nimate pravic za dodajanje učitelja")
-
-    try:
-        body = await request.json()
-    except Exception:
-        raise HTTPException(status_code=400, detail="Neveljaven JSON")
-
-    ime = (body.get("ime") or "").strip()
-    if not ime:
-        raise HTTPException(status_code=400, detail="Manjka 'ime' učitelja")
-
-    school_id = request_school_id(request) or _default_school_id(db)
-    if not is_main_admin(user):
-        school_id = user.school_id or school_id
-    cfg = _load_cfg(db, school_id)
-
-    if _ucitelj_by_ime(ime, cfg["ucitelji"]) is not None:
-        raise HTTPException(status_code=409, detail="Učitelj s tem imenom že obstaja")
-
-    novi = {
-        "ime": ime,
-        "predmet": (body.get("predmet") or "").strip(),
-        "razred": (str(body.get("razred") or "").strip() or None),
-        "prostor": (body.get("prostor") or "").strip(),
-        "dan": None,
-        "ura": None,
-        "urnik": None,
-        "po_dogovoru": True,
-    }
-
-    # Novo polje: izbrani šolski zvončni urnik (npr. '6-9'); veljaven id iz URNIKI.
-    urnik_raw = body.get("urnik")
-    urnik = str(urnik_raw or "").strip() or None
-    if urnik is not None and urnik not in (cfg.get("urniki") or URNIKI):
-        raise HTTPException(status_code=400,
-                            detail="Neveljaven urnik (izberite 1.-2., 3.-5. ali 6.-9. razred)")
-    novi["urnik"] = urnik
-
-    def _parsiraj_dan_v(v):
-        if v is None:
-            return None
-        s = str(v).strip()
-        if s in ("", "null", "None", "po_dogovoru"):
-            return None
-        try:
-            d = int(s)
-        except (TypeError, ValueError):
-            raise HTTPException(status_code=400, detail=f"Neveljaven dan: {s}")
-        if d < 0 or d > 4:
-            raise HTTPException(status_code=400, detail="Dan mora biti med 0 (pon) in 4 (pet)")
-        return d
-
-    def _parsiraj_uro_v(v):
-        if v is None:
-            return None
-        s = str(v).strip()
-        if s in ("", "null", "None", "po_dogovoru"):
-            return None
-        try:
-            u = int(s)
-        except (TypeError, ValueError):
-            raise HTTPException(status_code=400, detail=f"Neveljavna ura: {s}")
-        max_ura = _max_solska_ura(novi, cfg)
-        if u < 1 or u > max_ura:
-            raise HTTPException(status_code=400, detail=f"Ura mora biti med 1 in {max_ura}")
-        return u
-
-    dan = _parsiraj_dan_v(body.get("dan"))
-    ura = _parsiraj_uro_v(body.get("ura"))
-    novi["dan"] = dan
-    novi["ura"] = ura
-    novi["po_dogovoru"] = not (dan is not None and ura is not None)
-
-    cfg["ucitelji"].append(novi)
-    _save_cfg(db, school_id, cfg)
-    return {"ok": True, "ucitelj": _urnik_ucitelja(db, school_id, novi, cfg)}
-
-
-@router.post("/govorilne/api/ure/ucitelj/odstrani")
-async def ure_ucitelj_odstrani(request: Request, db: Session = Depends(get_db)):
-    """Admin/vodstvo/glavni admin ODSTRANI učitelja iz seznama."""
-    user = get_request_user(request, db)
-    if user is None:
-        raise HTTPException(status_code=401, detail="Ni prijave")
-    if not _lahko_ureja_vse(user):
-        raise HTTPException(status_code=403, detail="Nimate pravic za odstranjevanje učitelja")
-
-    try:
-        body = await request.json()
-    except Exception:
-        raise HTTPException(status_code=400, detail="Neveljaven JSON")
-
-    ime = (body.get("ime") or "").strip()
-    if not ime:
-        raise HTTPException(status_code=400, detail="Manjka 'ime' učitelja")
-
-    school_id = request_school_id(request) or _default_school_id(db)
-    if not is_main_admin(user):
-        school_id = user.school_id or school_id
-    cfg = _load_cfg(db, school_id)
-
-    ucitelj = _ucitelj_by_ime(ime, cfg["ucitelji"])
-    if ucitelj is None:
-        raise HTTPException(status_code=404, detail="Učitelj ni v konfiguraciji")
-
-    cfg["ucitelji"] = [u2 for u2 in cfg["ucitelji"]
-                       if u2.get("ime") != ucitelj["ime"]]
-    _save_cfg(db, school_id, cfg)
-    # Zbriši tudi obstoječe prijave tega učitelja (da ni nedoslednosti).
-    q = db.query(GovorilnaPrijava).filter(GovorilnaPrijava.ucitelj == ucitelj["ime"])
-    if school_id is not None:
-        q = q.filter(GovorilnaPrijava.school_id == school_id)
-    q.delete(synchronize_session=False)
-    db.commit()
-    return {"ok": True, "ime": ucitelj["ime"]}
+# Članstvo na govorilnih urejamo IZKLJUČNO s kljukico »Govorilne ure« pri
+# uporabniku (Uporabniki → /auth/admin/users → POST .../govorilne). Zato tukaj
+# ni več endpoint-ov /ure/ucitelj/dodaj in /ure/ucitelj/odstrani (30.10.2026).

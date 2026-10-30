@@ -12,6 +12,8 @@ os.environ.setdefault("SECRET_KEY", "test-secret-key")
 
 from fastapi.testclient import TestClient
 
+import pytest
+
 from app.main import app
 from app.database import SessionLocal
 from app.models import GovorilnaPrijava
@@ -213,7 +215,7 @@ def test_prijave_pregled_auth_in_vloge(make_user):
         assert "Matej Čušin" in r.text
 
 
-def _ucitelj_uporabnik(ime: str, priimek: str):
+def _ucitelj_uporabnik(ime: str, priimek: str, ima_govorilne: bool = True):
     """Učitelj (role=teacher) s polnim imenom iz podatkov, za test vidnosti prijav.
 
     Uporabi SVOJO sejo in jo zapre — klicateljeva je lahko že zaprta
@@ -238,6 +240,7 @@ def _ucitelj_uporabnik(ime: str, priimek: str):
             password_hash=pwd_context.hash(TEST_PASSWORD),
             role=RoleEnum.teacher,
             is_active=True,
+            ima_govorilne=ima_govorilne,
         )
         db.add(user)
         db.commit()
@@ -245,6 +248,25 @@ def _ucitelj_uporabnik(ime: str, priimek: str):
         return user
     finally:
         db.close()
+
+
+@pytest.fixture(autouse=True)
+def _gos_osnovni_ucitelji():
+    """Od 30.10.2026 je članstvo na govorilnih vezano na uporabnike (kljukica
+    »ima govorilne ure«), ne več na trdi UCITELJI seznam. Ta fixture ob bootstrapu
+    v privzeto šolo doda dva osnovna učitelja z odkljukano govorilno kljukico, da so
+    testi, ki pričakujejo Mateja Čušina / Đuretićevo na /govorilne, deterministični."""
+    # Bootstrap privzete šole (startup) — šele nato so uporabniki v pravi šoli.
+    with TestClient(app) as c:
+        pass
+    _ucitelj_uporabnik("Matej", "Čušin")
+    _ucitelj_uporabnik("Arijana", "Đuretić")
+    _ucitelj_uporabnik("Monika", "Pogačar")
+    _ucitelj_uporabnik("Neja", "Grohar")
+    # ⚠️ Startup zapusti 'idle in transaction' povezavo v engine poolu → TRUNCATE
+    # (clean_db) ob teardown-u bi deadlock-al. Pool dispose sprosti vse locke.
+    from app.database import engine
+    engine.dispose()
 
 
 def test_prijave_so_vidne_ucitelju_po_imenu():
@@ -336,9 +358,10 @@ def test_govorilne_ure_admin_vidi_vse_ucitelje(make_user):
         r = c.get("/govorilne/ure")
         assert r.status_code == 200
         assert "Čušin Matej" in r.text
-        # Nove admin zmoglivosti.
-        assert "Dodaj učitelja" in r.text
-        assert "Odstrani" in r.text
+        # Članstvo od 30.10.2026: dodaj/odstrani se ne dela tu, ampak v Uporabniki.
+        assert "Kako dodati / odstraniti učitelja?" in r.text
+        assert "Dodaj učitelja" not in r.text
+        # Nastavitve popoldanskih ur.
         assert "Začetek ur" in r.text
         assert "Največ ur" in r.text
 
@@ -813,65 +836,53 @@ def test_govorilne_stran_vsebuje_opis_in_prepis_potrdilo():
         assert "Prepisite ali slikajte" in r.text
 
 
-def test_admin_doda_novega_ucitelja(make_user):
-    """Admin/vodstvo lahko doda novega učitelja — pojavi se v javni strani."""
-    from app.routers.govorilne import _ucitelj_by_ime
-    admin = make_user(role="admin")
+def test_admin_kljukica_pojavi_uporabnika_na_govorilnih(make_user):
+    """Kljukica »Govorilne ure« pri uporabniku = EDI pogoj članstva.
+
+    Učitelj BREZ kljukice ni na /govorilne; ko jo admin odkluka (POST
+    /auth/admin/users/{id}/govorilne), se samodejno pojavi na javni strani
+    (in v izbiri za starše).
+    """
+    ucitelj = make_user(role="teacher", first_name="Tine", last_name="Novi")
+    # Brez kljukice → ni na javni strani.
     with TestClient(app) as c:
+        r = c.get("/govorilne")
+        assert r.status_code == 200
+        assert "Tine Novi" not in r.text
+        # Admin odkluka kljukico.
+        admin = make_user(role="admin")
         login(c, admin.username)
-        r = c.post("/govorilne/api/ure/ucitelj/dodaj", json={
-            "ime": "Testni Učitelj", "predmet": "Angleščina", "prostor": "učilnica ANG 2",
-            "dan": 1, "ura": 3,
-        })
-        assert r.status_code == 200, r.text
-        assert r.json()["ok"] is True
-        # Javna stran ga zdaj izpiše.
-        r2 = c.get("/govorilne")
-        assert r2.status_code == 200
-        assert "Testni Učitelj" in r2.text
+        r2 = c.post(f"/auth/admin/users/{ucitelj.id}/govorilne")
+        assert r2.status_code == 200, r2.text  # redirect na /auth/admin/users (kljukica preklaplja)
+        # Zdaj se pojavi na javni strani (priimek-ime: »Novi Tine«).
+        r3 = c.get("/govorilne")
+        assert r3.status_code == 200
+        assert "Tine Novi" in r3.text
 
 
-def test_admin_odstrani_ucitelja(make_user):
-    """Admin/vodstvo lahko odstrani učitelja — izgine iz javne strani."""
-    from app.routers.govorilne import _ucitelj_by_ime
-    admin = make_user(role="admin")
+def test_admin_kljukica_odklopi_uporabnika_z_govorilnih(make_user):
+    """Odkljukana kljukica → uporabnik izgine z /govorilne (za starše)."""
+    ucitelj = make_user(role="teacher", first_name="Maja", last_name="Zgodbič",
+                        ima_govorilne=True)
     with TestClient(app) as c:
+        # S kljukico je prisoten.
+        assert "Maja Zgodbič" in c.get("/govorilne").text
+        admin = make_user(role="admin")
         login(c, admin.username)
-        # dodaj
-        r = c.post("/govorilne/api/ure/ucitelj/dodaj", json={
-            "ime": "Za Odstrani", "predmet": "Zgodovina", "prostor": "učilnica ZGO 1",
-        })
-        assert r.status_code == 200, r.text
-        assert "Za Odstrani" in c.get("/govorilne").text
-        # odstrani
-        r2 = c.post("/govorilne/api/ure/ucitelj/odstrani", json={"ime": "Za Odstrani"})
-        assert r2.status_code == 200, r2.text
-        assert r2.json()["ok"] is True
-        assert "Za Odstrani" not in c.get("/govorilne").text
+        r = c.post(f"/auth/admin/users/{ucitelj.id}/govorilne")
+        assert r.status_code == 200, r.text  # redirect na /auth/admin/users
+        # Po odklikanju ga ni več.
+        assert "Maja Zgodbič" not in c.get("/govorilne").text
 
 
-def test_dodaj_ucitelja_duplikat_409(make_user):
-    """Dodajanje učitelja, ki že obstaja, vrne 409."""
-    from app.routers.govorilne import _ucitelj_by_ime
-    admin = make_user(role="admin")
+def test_kljukica_toggle_samo_admin():
+    """Uporabnikovo govorilno kljukico lahko preklaplja samo admin — učitelj 403."""
+    ucitelj = _ucitelj_uporabnik("Oseba", "Načelnik")
+    drugi = _ucitelj_uporabnik("Drugi", "Učenik")
     with TestClient(app) as c:
-        login(c, admin.username)
-        r = c.post("/govorilne/api/ure/ucitelj/dodaj", json={"ime": "Neja Grohar"})
-        assert r.status_code == 409
-
-
-def test_ucitelj_nima_pravic_dodajati(make_user):
-    """Navaden učitelj ne more dodajati/odstranjevati učiteljev."""
-    from app.govorilne_podatki import UCITELJI
-    prvi = next(u for u in UCITELJI if not u["po_dogovoru"])
-    ime, priimek = prvi["ime"].split(" ", 1)
-    user = _ucitelj_uporabnik(ime, priimek)
-    with TestClient(app) as c:
-        login(c, user.username)
-        r = c.post("/govorilne/api/ure/ucitelj/dodaj", json={"ime": "Nov Učitelj"})
+        login(c, drugi.username)
+        r = c.post(f"/auth/admin/users/{ucitelj.id}/govorilne")
         assert r.status_code == 403
-        r2 = c.post("/govorilne/api/ure/ucitelj/odstrani", json={"ime": prvi["ime"]})
-        assert r2.status_code == 403
 
 
 def test_popoldan_zacetek_spremeni_ure(make_user):

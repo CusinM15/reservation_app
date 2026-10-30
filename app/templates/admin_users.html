@@ -54,6 +54,9 @@
                 <option value="vodstvo">Vodstvo</option>
                 <option value="admin">Admin</option>
             </select>
+            <label style="display:inline-flex;align-items:center;gap:5px;margin:5px;">
+                <input type="checkbox" name="ima_govorilne"> Govorilne ure
+            </label>
             <button type="submit" class="btn">{{ t('btn_dodaj', 'Dodaj') }}</button>
                     </form>
 
@@ -100,6 +103,7 @@
                     <th onclick="sortTable(4)">Priimek <span class="sort-arrow"></span></th>
                     <th onclick="sortTable(5)">Vloga <span class="sort-arrow"></span></th>
                     <th onclick="sortTable(6)">Aktiven <span class="sort-arrow"></span></th>
+                    <th>Govorilne ure</th>
                     <th>Akcije</th>
                 </tr>
             </thead>
@@ -113,6 +117,14 @@
                     <td>{{ user.last_name }}</td>
                     <td>{{ user.role }}</td>
                     <td>{{ "Da" if user.is_active else "Ne" }}</td>
+                    <td>
+                        <form method="POST" action="/auth/admin/users/{{ user.id }}/govorilne" style="display:inline;">
+                            <label style="font-size:12px;">
+                                <input type="checkbox" {% if user.ima_govorilne %}checked{% endif %} onchange="this.form.submit()">
+                                {{ "Da" if user.ima_govorilne else "Ne" }}
+                            </label>
+                        </form>
+                    </td>
                     <td style="white-space:nowrap;">
                         <a href="#" class="btn btn-warning" onclick="toggleEdit({{ user.id }})">{{ t('btn_uredi', 'Uredi') }}</a>
                         {% if user.is_active %}
@@ -132,7 +144,7 @@
                     </td>
                 </tr>
                 <tr id="edit-row-{{ user.id }}" class="edit-form">
-                    <td colspan="8">
+                    <td colspan="9">
                         <form method="POST" action="/auth/admin/users/{{ user.id }}/update" style="display:flex;flex-wrap:wrap;gap:10px;align-items:end;">
                             <div>
                                 <label style="font-size:12px;">Upor. ime</label>
@@ -166,6 +178,11 @@
                                     <option value="vodstvo" {% if user.role == 'vodstvo' %}selected{% endif %}>Vodstvo</option>
                                     <option value="admin" {% if user.role == 'admin' %}selected{% endif %}>Admin</option>
                                 </select>
+                            </div>
+                            <div>
+                                <label style="font-size:12px;">
+                                    <input type="checkbox" name="ima_govorilne" {% if user.ima_govorilne %}checked{% endif %}> Ima govorilne ure
+                                </label>
                             </div>
                             <div>
                                 <label style="font-size:12px;">Novo geslo (pusti prazno za nespremenjeno)</label>

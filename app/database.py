@@ -129,6 +129,8 @@ def init_db():
     # ── Govorilne prijave ───────────────────────────────
     # opis: kratek opis starša (zakaj se prijavlja) ob najavi na govorilne.
     _migrate("ALTER TABLE govorilne_prijave ADD COLUMN IF NOT EXISTS opis VARCHAR DEFAULT ''")
+    # ima_govorilne: kljukica pri uporabniku — govorilne ure (članstvo od 30.10.2026)
+    _migrate("ALTER TABLE users ADD COLUMN IF NOT EXISTS ima_govorilne BOOLEAN NOT NULL DEFAULT FALSE")
 
     # ── Nova tabela: activity_days (UI "Vnos dejavnosti") ──────────────
     _migrate(

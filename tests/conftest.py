@@ -95,7 +95,9 @@ def make_user():
     poti kot produkcija (podatki so vezani na šolo).
     """
     def _make(role: str = "teacher", username: str | None = None, email: str | None = None,
-              password: str = TEST_PASSWORD, school_id: int | None = -1) -> User:
+              password: str = TEST_PASSWORD, school_id: int | None = -1,
+              ima_govorilne: bool = False, first_name: str = "Test",
+              last_name: str | None = None) -> User:
         suffix = uuid4().hex[:8]
         db = SessionLocal()
         try:
@@ -103,11 +105,12 @@ def make_user():
                 school_id=default_school_id() if school_id == -1 else school_id,
                 username=username or f"{role}_{suffix}",
                 email=email or f"{suffix}@test.si",
-                first_name="Test",
-                last_name=role.capitalize(),
+                first_name=first_name,
+                last_name=last_name or role.capitalize(),
                 password_hash=pwd_context.hash(password),
                 role=RoleEnum(role),
                 is_active=True,
+                ima_govorilne=ima_govorilne,
             )
             db.add(user)
             db.commit()
