@@ -4,7 +4,7 @@
 > v nekaj trenutkih in brez čakanja.
 
 > **Prijavno stran govorilnih ur vaše šole odprete tukaj:**
-> **[🌐 Najava na govorilne](https://reservationapp.site/govorilne_ostcj)**
+> **[🌐 Najava na govorilne]({{GOVORILNE_URL}})**
 
 ---
 

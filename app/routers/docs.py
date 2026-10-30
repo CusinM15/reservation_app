@@ -174,7 +174,7 @@ blockquote a:hover { background: #14608c; }
 
 
 
-def _doc_to_html(content: str, label: str) -> str:
+def _doc_to_html(content: str, label: str, govorilne_url: str | None = None) -> str:
     """Pretvori markdown v lep HTML (brez ovoja <html><body> — samo vsebina).
     
     Popravi relativne poti slik za browser/slike/ in zakodira @ za Cloudflare.
@@ -186,10 +186,12 @@ def _doc_to_html(content: str, label: str) -> str:
     # Zakodiraj @ kot HTML entiteto, da Cloudflare ne prepozna emaila in ga ne obfuscates
     # (Cloudflare email obfuscation pokvari email v popupu, ker innerHTML ne poganja JS)
     html = html.replace("@", "&#64;")
+    if govorilne_url:
+        html = html.replace("{{GOVORILNE_URL}}", govorilne_url)
     return html
 
 
-def _make_pdf(md_content: str, title: str, obvestilo: bool = False) -> bytes:
+def _make_pdf(md_content: str, title: str, obvestilo: bool = False, govorilne_url: str | None = None) -> bytes:
     """Pretvori markdown v lep PDF s pomočjo weasyprint (HTML+CSS → PDF).
     
     Odstrani morebitni YAML frontmatter (--- ... ---) in doda naslovno
@@ -207,6 +209,8 @@ def _make_pdf(md_content: str, title: str, obvestilo: bool = False) -> bytes:
 
     # Emojiji → <img> (weasyprint 69 ne izriše CBDT barvnih emoji — vidi app/emoji_pdf.py)
     body_html = replace_emojis(body_html)
+    if govorilne_url:
+        body_html = body_html.replace("{{GOVORILNE_URL}}", govorilne_url)
 
     full_html = f"""<!DOCTYPE html>
 <html>
@@ -305,6 +309,25 @@ def _read_docs(name: str, db: Session | None = None) -> tuple[str, str]:
 # ═══════════════════════════════════════════════════════════════════════
 
 
+def _govorilne_url(db: Session, request: Request) -> str:
+    """Javni URL govorilnih ur za šolo iz ?skola (kratica) — fallback privzeta.
+
+    Vrne absolutni URL (host iz zahtevka) + /govorilne_<kratica>. Kratica pride
+    iz query parametra ?skola= (npr. ostcj ali zgled); če manjka/napačna → privzeta
+    šola. Tako je obvestilo za starše per-šola, ne trdo na ostcj.
+    """
+    from app.config import settings
+    from app.models import School
+    slug = request.query_params.get("skola")
+    if slug:
+        sch = db.query(School).filter(School.slug == slug).first()
+        if sch is None:
+            slug = None
+    if not slug:
+        sch = db.query(School).filter(School.slug == settings.DEFAULT_SCHOOL_SLUG).first()
+        slug = sch.slug if sch else settings.DEFAULT_SCHOOL_SLUG
+    return str(request.base_url).rstrip("/") + f"/govorilne_{slug}"
+
 @router.get("/docs/{name}")
 async def get_doc(name: str, db: Session = Depends(get_db)):
     """JSON preview (za klice iz appa)."""
@@ -316,7 +339,7 @@ async def get_doc(name: str, db: Session = Depends(get_db)):
 
 
 @router.get("/docs/html/{name}", response_class=HTMLResponse)
-async def get_doc_html(name: str, db: Session = Depends(get_db)):
+async def get_doc_html(name: str, request: Request, db: Session = Depends(get_db)):
     """HTML preview s slikami (za hover popup v appu).
     
     Vključuje celoten HTML dokument s CSS oblikovanjem, primernim za
@@ -328,7 +351,8 @@ async def get_doc_html(name: str, db: Session = Depends(get_db)):
     except ValueError as e:
         return HTMLResponse(f"<p style='color:red;'>{e}</p>")
 
-    body_html = _doc_to_html(content, label)
+    gov_url = _govorilne_url(db, request)
+    body_html = _doc_to_html(content, label, gov_url)
 
     full_html = f"""<!DOCTYPE html>
 <html lang="sl">
@@ -369,7 +393,7 @@ async def get_doc_html(name: str, db: Session = Depends(get_db)):
 
 
 @router.get("/docs/download/{name}")
-async def download_doc(name: str, db: Session = Depends(get_db)):
+async def download_doc(name: str, request: Request, db: Session = Depends(get_db)):
     """PDF download z weasyprint.
     
     Generira PDF iz Markdown dokumentacije. Če weasyprint ni nameščen
@@ -381,7 +405,9 @@ async def download_doc(name: str, db: Session = Depends(get_db)):
         return JSONResponse({"error": str(e)}, status_code=404)
 
     try:
-        pdf_bytes = _make_pdf(content, title, obvestilo=name.startswith("obvestilo"))
+        gov_url = _govorilne_url(db, request)
+        pdf_bytes = _make_pdf(content, title, obvestilo=name.startswith("obvestilo"), govorilne_url=gov_url)
+
     except Exception as e:
         return JSONResponse({"error": f"Napaka: {str(e)}"}, status_code=500)
 
@@ -409,7 +435,13 @@ def obrazci_stran(request: Request, db: Session = Depends(get_db)):
     role = role_value(user)
     if role not in ("admin", "vodstvo", "main_admin"):
         raise HTTPException(status_code=403, detail="Ni dostopa")
-    return tmpl.TemplateResponse(request, "obrazci.html", {"role": role})
+    skola = None
+    if user and user.school_id:
+        from app.models import School
+        sch = db.query(School).filter(School.id == user.school_id).first()
+        skola = sch.slug if sch else None
+    return tmpl.TemplateResponse(request, "obrazci.html", {"role": role, "skola": skola})
+
 
 # ═══════════════════════════════════════════════════════════════
 # Navodila (glavni admin) — sitemap UI strani + urejanje .md

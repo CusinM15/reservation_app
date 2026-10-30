@@ -51,8 +51,8 @@
         <h2>👨‍👩‍👧 Obvestilo za starše — najava na govorilne ure <span class="tag">za starše</span></h2>
         <p>Staršem namenjeno obvestilo s 3 koraki najave (izberi učitelja → prosti termin → podatki) in pojasnilom o varstvu podatkov (24 h hrambe).</p>
         <div class="row">
-            <a class="btn read" href="/docs/html/obvestilo-starsi" target="_blank">👁 Prikaži</a>
-            <a class="btn pdf" href="/docs/download/obvestilo-starsi">📥 Prenesi PDF</a>
+            <a class="btn read" href="/docs/html/obvestilo-starsi{% if skola %}?skola={{ skola }}{% endif %}" target="_blank">👁 Prikaži</a>
+            <a class="btn pdf" href="/docs/download/obvestilo-starsi{% if skola %}?skola={{ skola }}{% endif %}">📥 Prenesi PDF</a>
         </div>
     </div>
 

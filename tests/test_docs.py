@@ -85,7 +85,7 @@ def test_obvestili_vsebujeta_link(client):
 
     r = client.get("/docs/html/obvestilo-starsi")
     assert r.status_code == 200
-    assert "https://reservationapp.site/govorilne_ostcj" in r.text
+    assert "/govorilne_ostcj" in r.text
     assert "Najava na govorilne" in r.text
 
 
@@ -96,3 +96,35 @@ def test_obvestila_imajo_cta_izgled(client):
     assert "blockquote a, blockquote a:visited" in r.text
     r = client.get("/docs/html/obvestilo-starsi")
     assert "linear-gradient(135deg, #0b3b5c" in r.text
+
+def test_obvestilo_starsi_link_per_sola(client):
+    """Obvestilo za starše uporabi kratico (slug) šole iz ?skola — ne trdo ostcj.
+
+    Ustvarimo šolo z kratico 'zgled' in preverimo, da /docs/html/obvestilo-starsi
+    z ?skola=zgled substituira URL na /govorilne_zgled, privzeto (brez parama)
+    pa /govorilne_ostcj.
+    """
+    from app.database import SessionLocal
+    from app.models import School
+    db = SessionLocal()
+    try:
+        s = School(slug="zgled", name="OŠ Zgled", is_active=True)
+        db.add(s); db.commit()
+    finally:
+        db.close()
+
+    # privzeto (brez ?skola) → ostcj
+    r = client.get("/docs/html/obvestilo-starsi")
+    assert r.status_code == 200
+    assert "govorilne_ostcj" in r.text
+    assert "govorilne_zgled" not in r.text
+
+    # ?skola=zgled → zgled
+    r2 = client.get("/docs/html/obvestilo-starsi?skola=zgled")
+    assert r2.status_code == 200
+    assert "govorilne_zgled" in r2.text
+    assert "govorilne_ostcj" not in r2.text
+    # PDF prav tako upošteva šolo
+    r3 = client.get("/docs/download/obvestilo-starsi?skola=zgled")
+    assert r3.status_code == 200
+    assert r3.headers["content-type"].startswith("application/pdf")
