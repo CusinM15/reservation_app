@@ -1252,3 +1252,38 @@ def test_govorilne_onemogocene_poti_ugasnjene(make_user):
         # Pregled prijav — ugasnjen (404).
         r = c.get("/govorilne/prijave")
         assert r.status_code == 404
+
+
+def _nav_govorilne_js(html: str) -> str:
+    """Vrednost, ki jo JS dobi za govorilne v pogoju nav linka (true|false)."""
+    import re
+    m = re.search(r"currentUser\.role !== 'main_admin' && (true|false)", html)
+    assert m, f"'&& true/false' ni v HTML-ju:\n{html[:800]}"
+    return m.group(1)
+
+
+def test_govorilne_onemogocene_nav_link_skrit(make_user):
+    """GOVORILNE_OMOGOCENE=false → nav gumb »🗓️ Moje govorilne ure« se NE pokaže
+    (JS pogoj v index.html dobi `false`, gumb ostane display:none)."""
+    with TestClient(app) as c:
+        db = SessionLocal()
+        try:
+            _govorilne_off(db)  # po startup bootstrapu (tabele obstajajo)
+        finally:
+            db.close()
+        u = make_user(role="teacher", ima_govorilne=True)
+        login(c, u.username)
+        r = c.get("/rezervacije")
+        assert r.status_code == 200, r.status_code
+        assert _nav_govorilne_js(r.text) == "false", "gumb mora biti SKRIT (false)"
+        assert 'id="govorilne-nav"' in r.text
+
+
+def test_govorilne_vklopljene_nav_link_viden(make_user):
+    """Privzeto (GOVORILNE_OMOGOCENE=true) → nav gumb »🗓️ Moje govorilne ure« se pokaže."""
+    with TestClient(app) as c:
+        u = make_user(role="teacher", ima_govorilne=True)
+        login(c, u.username)
+        r = c.get("/rezervacije")
+        assert r.status_code == 200, r.status_code
+        assert _nav_govorilne_js(r.text) == "true", "gumb mora biti VIDEN (true)"
