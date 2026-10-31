@@ -360,6 +360,19 @@
                         </div>
             </details>
 
+            <details class="collapsible">
+                <summary><h3>{{ t('set_govorilne', 'Govorilne ure') }}</h3><span class="toggle-hint">▸ več</span></summary>
+                        <div class="field">
+                            <label>{{ t('setf_GOVORILNE_OMOGOCENE', 'Govorilne ure — so omogočene') }}</label>
+                            {% if is_main_admin %}<span class="key">GOVORILNE_OMOGOCENE</span>{% endif %}
+                            <label style="display:flex;align-items:center;gap:8px;font-weight:normal;">
+                                <input type="checkbox" name="GOVORILNE_OMOGOCENE" value="true"
+                                       {% if values.get('GOVORILNE_OMOGOCENE', 'true').lower() in ('1','true','yes','on') %}checked{% endif %}>
+                                <span>{{ t('set_govorilne_lbl', 'Starši se lahko naročijo na govorilne ure') }}</span>
+                            </label>
+                        </div>
+            </details>
+
             <div class="sticky">
                 <button type="submit" class="btn btn-success">{{ t('btn_shrani_nastavitve', 'Shrani nastavitve') }}</button>
             </div>
@@ -808,6 +821,9 @@
         // normaliziraj na true/false tudi za neoznačen checkbox.
         const cb = document.querySelector('input[name="ZASLON_POKAZI_NADOMESCANJA"]');
         if (cb) values['ZASLON_POKAZI_NADOMESCANJA'] = cb.checked ? 'true' : 'false';
+        // Govorilne ure: bool stikalo — neoznačen checkbox se mora shraniti kot false.
+        const gocb = document.querySelector('input[name="GOVORILNE_OMOGOCENE"]');
+        if (gocb) values['GOVORILNE_OMOGOCENE'] = gocb.checked ? 'true' : 'false';
 
         // Obvestila zaslona: označena (v vrstnem redu kljukic) → ZASLON_OBVESTILA.
         const obvSel = [];

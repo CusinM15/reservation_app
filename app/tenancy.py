@@ -129,6 +129,9 @@ SCHOOL_SETTING_KEYS = [
     # Tekstovna obvestila zaslona: JSON seznam besedil (največ 5), ki jih
     # šolski admin doda v UI. Vrtijo se skupaj s slikovnimi obvestili.
     "ZASLON_OBVESTILA_TEKST",
+    # Govorilne ure: ali so za to šolo sploh omogočene (vklop/izklop
+    # v Nastavitvah šole). Privzeto omogočene (obstoječe šole se ne izklopijo).
+    "GOVORILNE_OMOGOCENE",
 ]
 
 
@@ -200,6 +203,8 @@ SCHOOL_SETTING_FIELDS = [
     {"key": "ZASLON_TIME_ZONE", "label": "Zaslon — časovni pas ure (npr. Europe/Ljubljana)", "type": "text"},
     {"key": "ZASLON_OBVESTILA", "label": "Zaslon — aktivna obvestila (JSON seznam)", "type": "json"},
     {"key": "ZASLON_OBVESTILA_TEKST", "label": "Zaslon — tekstovna obvestila (JSON seznam, največ 5)", "type": "json"},
+    # Govorilne ure (modul): ali so za šolo omogočene.
+    {"key": "GOVORILNE_OMOGOCENE", "label": "Govorilne ure — so omogočene", "type": "bool"},
 ]
 
 
@@ -507,6 +512,8 @@ def env_default_settings() -> dict:
         # Prazno → uporabijo se VSA obvestila iz vec_obvestil/ po vrsti.
         "ZASLON_OBVESTILA": "",
         "ZASLON_OBVESTILA_TEKST": "[]",
+        # Govorilne ure privzeto omogočene (obstoječe šole se ne izklopijo).
+        "GOVORILNE_OMOGOCENE": "true",
     }
 
 

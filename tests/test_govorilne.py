@@ -20,6 +20,13 @@ from app.models import GovorilnaPrijava
 from tests.conftest import login, make_user  # noqa: F401 (make_user je fixture)
 
 
+def _govorilne_off(db) -> None:
+    """Izklopi govorilne ure za privzeto šolo (kot šolski admin v Nastavitvah)."""
+    from app.tenancy import _default_school_id, set_school_setting
+    set_school_setting(db, _default_school_id(db), "GOVORILNE_OMOGOCENE", "false")
+    db.commit()
+
+
 def _termin(ucitelj: str):
     """Prvi prosti termin izbirega učitelja (dopoldan ali popoldan)."""
     db = SessionLocal()
@@ -1208,3 +1215,40 @@ def test_druga_sola_ne_podeduje_uciteljev_ostc(make_user):
         r3 = c.get("/govorilne/ure")
         assert r3.status_code == 200
         assert "Đuretić" in r3.text
+
+
+def test_govorilne_onemogocene_poti_ugasnjene(make_user):
+    """GOVORILNE_OMOGOCENE=false (Nastavitve šole) → javna stran, termini,
+    prijava, /govorilne/ure in /govorilne/prijave so ugasnjene.
+
+    Stikalo je per-šola (school_settings ključ GOVORILNE_OMOGOCENE, privzeto
+    omogočene). Ko šola govorilnih ne uporablja, se celotna površina zapre.
+    """
+    db = SessionLocal()
+    try:
+        _govorilne_off(db)
+    finally:
+        db.close()
+
+    with TestClient(app) as c:
+        _admin_login(c, make_user)
+        # Javna stran za starše — ugasnjena (404).
+        r = c.get("/govorilne")
+        assert r.status_code == 404
+        # Termini API — ugasnjen (404).
+        r = c.get("/govorilne/api/termini", params={"ucitelj": "Matej Čušin"})
+        assert r.status_code == 404
+        # Prijava — zavrnjena (400).
+        r = c.post("/govorilne/api/prijava", json={
+            "ucitelj": "Matej Čušin",
+            "datum": "2030-01-10", "ura_od": "17:30", "ura_do": "17:45",
+            "ime_starsa": "Janez Novak", "email": "janez@example.si",
+            "otrok": "Miha Novak",
+        })
+        assert r.status_code == 400
+        # Urejevalna stran /govorilne/ure — ugasnjena (404).
+        r = c.get("/govorilne/ure")
+        assert r.status_code == 404
+        # Pregled prijav — ugasnjen (404).
+        r = c.get("/govorilne/prijave")
+        assert r.status_code == 404

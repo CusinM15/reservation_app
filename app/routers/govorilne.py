@@ -164,6 +164,17 @@ def _load_cfg(db: Session, school_id: int | None) -> dict:
     return cfg
 
 
+def _govorilne_omogocene(db: Session, school_id: int | None) -> bool:
+    """Ali so govorilne ure za to šolo omogočene (GOVORILNE_OMOGOCENE).
+
+    Vrednost iz school_settings; privzeto omogočene (obstoječe šole se ob
+    posodobitvi ne izklopijo). Stikalo je v Nastavitvah šole.
+    """
+    from app.tenancy import get_school_config
+    cfg = get_school_config(db, school_id)
+    return str(cfg.get_str("GOVORILNE_OMOGOCENE", "true")).strip().lower() in ("1", "true", "yes", "on")
+
+
 def _save_cfg(db: Session, school_id: int | None, cfg: dict) -> None:
     """Shrani govorilno konfiguracijo šole nazaj v bazo."""
     if school_id is None:
@@ -578,6 +589,8 @@ def govorilne_stran(request: Request, db: Session = Depends(get_db)):
     if not is_school_admin(user):
         return RedirectResponse(url="/auth/login" if user is None else "/")
     school_id = request_school_id(request) or _default_school_id(db)
+    if not _govorilne_omogocene(db, school_id):
+        raise HTTPException(status_code=404, detail="Govorilne ure trenutno niso objavljene.")
     cfg = _load_cfg(db, school_id)
     ucitelji = sorted(
         [{"ime": u["ime"], "ime_priimek": _ime_priimek(u["ime"]),
@@ -606,6 +619,8 @@ def govorilne_termini(
     if not is_school_admin(user):
         raise HTTPException(status_code=403, detail="Dostop samo za šolskega administratorja")
     school_id = request_school_id(request) or _default_school_id(db)
+    if not _govorilne_omogocene(db, school_id):
+        raise HTTPException(status_code=404, detail="Govorilne ure trenutno niso objavljene.")
     cfg = _load_cfg(db, school_id)
     u = _ucitelj_by_ime(ucitelj, cfg["ucitelji"])
     if u is None:
@@ -640,6 +655,8 @@ async def govorilne_prijava(
     opis = (body.get("opis") or "").strip()
 
     school_id = request_school_id(request) or _default_school_id(db) or 1
+    if not _govorilne_omogocene(db, school_id):
+        raise HTTPException(status_code=400, detail="Govorilne ure trenutno niso omogočene.")
     cfg = _load_cfg(db, school_id)
     u = _ucitelj_by_ime(ucitelj_ime, cfg["ucitelji"])
     if u is None:
@@ -703,6 +720,9 @@ def govorilne_prijave_stran(request: Request, db: Session = Depends(get_db)):
     if not is_school_admin(user):
         return RedirectResponse(url="/auth/login" if user is None else "/")
 
+    school_id = user.school_id or request_school_id(request) or _default_school_id(db)
+    if not _govorilne_omogocene(db, school_id):
+        raise HTTPException(status_code=404, detail="Govorilne ure trenutno niso omogočene.")
     role = role_value(user)
     q = db.query(GovorilnaPrijava).filter(
         GovorilnaPrijava.school_id == (user.school_id or _default_school_id(db)))
@@ -858,6 +878,8 @@ def govorilne_ure_stran(request: Request, db: Session = Depends(get_db)):
 
     role = role_value(user)
     school_id = user.school_id or request_school_id(request) or _default_school_id(db)
+    if not _govorilne_omogocene(db, school_id):
+        raise HTTPException(status_code=404, detail="Govorilne ure trenutno niso omogočene.")
     cfg = _load_cfg(db, school_id)
 
     # Seznam razredov za spustni seznam (razrednik). Iz nastavitev šole.

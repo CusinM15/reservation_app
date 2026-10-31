@@ -366,6 +366,9 @@ def _render_index(request: Request, active_tab: str):
         "nav_ocenjevanje": nav.get("ocenjevanje", "/ocenjevanje"),
         "nav_schools": nav_schools,
         "current_school_id": ctx_school_id,
+        # Govorilne ure so za šolo omogočene? (stikalo v Nastavitvah šole)
+        "govorilne_omogocene": str(config.get_str("GOVORILNE_OMOGOCENE", "true")).strip().lower()
+            in ("1", "true", "yes", "on"),
     })
 
 
