@@ -82,6 +82,34 @@
     </form>
   </div>
 
+  <div class="card">
+    <h2>Podpisni certifikat (p12) — za fazo 2 (QES)</h2>
+    <p class="muted">
+      Tu shraniš datoteko .p12 (zasebni ključ + digitalno potrdilo), s katero
+      se bo e-račun v fazi 2 digitalno podpisal. Vrednosti (datoteka + geslo) se
+      nikoli ne prikažejo nazaj — viden je le status.
+    </p>
+    {% if p12.has_p12 %}
+      <div class="ok">P12 datoteka je naložena. ✔</div>
+    {% else %}
+      <div class="info">P12 datoteka še ni naložena.</div>
+    {% endif %}
+    {% if p12.has_password %}
+      <div class="ok">Geslo p12 je nastavljeno.</div>
+    {% else %}
+      <div class="info">Geslo p12 še ni nastavljeno — brez njega podpis ni mogoč.</div>
+    {% endif %}
+    <form method="POST" action="/narocnina/izdajatelj/p12" enctype="multipart/form-data">
+      <label>p12 datoteka (.p12)</label>
+      <input type="file" name="p12_file" accept=".p12">
+      <label>Geslo p12 datoteke (ni prikazano)</label>
+      <input type="password" name="p12_geslo" placeholder="Geslo za .p12" autocomplete="new-password">
+      <p style="margin-top:14px;">
+        <button class="btn" type="submit">Naloži p12 certifikat</button>
+      </p>
+    </form>
+  </div>
+
   <p class="muted">
     <a href="/schools">← Pregled šol</a> · <a href="/narocnina">Naročnina</a>
     · <a href="/auth/logout">Odjava</a>

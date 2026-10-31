@@ -367,6 +367,8 @@ KEY_ISSUER_IBAN = "ERACUN_IZDAJATELJ_IBAN"
 KEY_ISSUER_BANK = "ERACUN_IZDAJATELJ_BANKA"
 KEY_ISSUER_EMAIL = "ERACUN_IZDAJATELJ_EMAIL"
 KEY_ISSUER_SIGN = "ERACUN_IZDAJATELJ_PODPIS"
+KEY_ISSUER_P12 = "ERACUN_IZDAJATELJ_P12"          # .p12 (PKCS#12): podpisni cert za fazo 2 (QES)
+KEY_ISSUER_P12_GESLO = "ERACUN_IZDAJATELJ_P12_GESLO"
 
 def issuer_config(db: Session) -> dict:
     """Vrni vse podatke izdajatelja (bratove firme) iz app_settings."""
@@ -405,3 +407,20 @@ def save_issuer_config(db: Session, data: dict) -> None:
     for field, key in mapping.items():
         value = data.get(field) if isinstance(data.get(field), str) else ""
         set_app_setting(db, key, value.strip() if value else "")
+
+
+def p12_config(db) -> dict:
+    """Stanje p12 podpisnega certifikata — SAMO status, NIKOLI vrednost."""
+    return {
+        "has_p12": bool(get_app_setting(db, KEY_ISSUER_P12)),
+        "has_password": bool(get_app_setting(db, KEY_ISSUER_P12_GESLO)),
+    }
+
+def set_p12(db, raw_b64: str, password: str) -> None:
+    """Shrani p12 datoteko (base64) + njeno geslo v app_settings.
+
+    VARNOST: te vrednosti se nikoli ne smejo prikazati nazaj v HTML/JSON —
+    vi so izključno za podpisovanje (faza 2 / QES). Status bereš prek p12_config().
+    """
+    set_app_setting(db, KEY_ISSUER_P12, (raw_b64 or "").strip())
+    set_app_setting(db, KEY_ISSUER_P12_GESLO, (password or "").strip())

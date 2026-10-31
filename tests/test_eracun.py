@@ -22,6 +22,10 @@ from app.app_settings import (
     KEY_ISSUER_EMAIL,
     KEY_ISSUER_SIGN,
     KEY_PRICE,
+    KEY_ISSUER_P12,
+    KEY_ISSUER_P12_GESLO,
+    get_app_setting,
+    p12_config,
     set_app_setting,
 )
 from app.database import SessionLocal
@@ -163,3 +167,93 @@ def test_build_invoice_xml_vsebuje_podpis():
     assert "<cbc:ID>2026-001</cbc:ID>" in xml
     assert "SI56 1234" in xml
     assert "<cbc:PayableAmount>122.00</cbc:PayableAmount>" in xml
+
+
+# ── p12 podpisni certifikat (faza 2 / QES): upload na /narocnina/izdajatelj/p12 ──
+def _p12_bytes() -> bytes:
+    # Nekaj bajtov, ki se zache z ASN.1 SEQUENCE (0x30) kot pravi PKCS#12.
+    return b"\x30\x82\x05\x00\x10\x04\x08FAKE_P12_BYTES_ZZZZ"
+
+
+def test_p12_upload_shrani_cert_in_geslo(client, make_user):
+    admin = make_user(role="main_admin")
+    login(client, admin.username)
+    r = client.post(
+        "/narocnina/izdajatelj/p12",
+        data={"p12_geslo": "super-sekret"},
+        files={"p12_file": ("cert.p12", _p12_bytes(), "application/x-pkcs12")},
+        follow_redirects=False,
+    )
+    assert r.status_code == 303
+    db = SessionLocal()
+    try:
+        raw = get_app_setting(db, KEY_ISSUER_P12)
+        geslo = get_app_setting(db, KEY_ISSUER_P12_GESLO)
+        assert raw  # base64 shranjen (neprazen)
+        assert geslo == "super-sekret"
+        assert p12_config(db)["has_p12"] is True
+        assert p12_config(db)["has_password"] is True
+    finally:
+        db.close()
+
+
+def test_p12_odstrani_geslo_ce_se_napolni_prazno(client, make_user):
+    admin = make_user(role="main_admin")
+    login(client, admin.username)
+    client.post("/narocnina/izdajatelj/p12",
+                data={"p12_geslo": "prvo"},
+                files={"p12_file": ("a.p12", _p12_bytes(), "application/x-pkcs12")})
+    client.post("/narocnina/izdajatelj/p12",
+                data={"p12_geslo": ""},
+                files={"p12_file": ("a.p12", _p12_bytes(), "application/x-pkcs12")})
+    db = SessionLocal()
+    try:
+        assert get_app_setting(db, KEY_ISSUER_P12_GESLO) == ""
+        assert p12_config(db)["has_password"] is False
+    finally:
+        db.close()
+
+
+def test_p12_neveljavna_datoteka_zavrnjena(client, make_user):
+    admin = make_user(role="main_admin")
+    login(client, admin.username)
+    r = client.post(
+        "/narocnina/izdajatelj/p12",
+        data={"p12_geslo": "x"},
+        files={"p12_file": ("not.p12", b"clearly-not-p12", "text/plain")},
+        follow_redirects=False,
+    )
+    assert r.status_code == 303
+    db = SessionLocal()
+    try:
+        assert get_app_setting(db, KEY_ISSUER_P12) == ""
+    finally:
+        db.close()
+
+
+def test_p12_nedovoljen_za_solskega_admina(client, make_user):
+    admin = make_user(role="admin")
+    login(client, admin.username)
+    r = client.post(
+        "/narocnina/izdajatelj/p12",
+        data={"p12_geslo": "x"},
+        files={"p12_file": ("c.p12", _p12_bytes(), "application/x-pkcs12")},
+        follow_redirects=False,
+    )
+    assert r.status_code == 403
+
+
+def test_p12_stran_ne_vraca_vrednosti(client, make_user):
+    admin = make_user(role="main_admin")
+    login(client, admin.username)
+    client.post("/narocnina/izdajatelj/p12",
+                data={"p12_geslo": "skrivno-geslo-xyz"},
+                files={"p12_file": ("c.p12", _p12_bytes(), "application/x-pkcs12")})
+    r = client.get("/narocnina/izdajatelj")
+    assert r.status_code == 200
+    body = r.text
+    # Status viden, vrednosti ne smejo pricurljati v HTML.
+    assert "P12 datoteka je naložena" in body
+    assert "skrivno-geslo-xyz" not in body
+    # base64 vsebine datoteke ne sme biti v odgovoru.
+    assert _p12_bytes().hex() not in body

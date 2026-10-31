@@ -9,6 +9,7 @@
 # v bazi je le evidenca (znesek, sklic, opomba, kdo je potrdil).
 # ─────────────────────────────────────────────────────────────────────────
 
+import base64
 import json
 import secrets
 import smtplib
@@ -16,7 +17,7 @@ import ssl
 from datetime import date, datetime, timedelta
 from email.mime.text import MIMEText
 
-from fastapi import APIRouter, Depends, Form, HTTPException, Request
+from fastapi import (APIRouter, Depends, File, Form, HTTPException, Request, UploadFile)
 from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.templating import Jinja2Templates
 
@@ -28,10 +29,12 @@ from app.app_settings import (
     global_mail_config,
     issuer_complete,
     issuer_config,
+    p12_config,
     plan_by_id,
     price_eur,
     prorated_price_eur,
     save_issuer_config,
+    set_p12,
     save_selling_config,
     selling_config,
     subscription_period_end,
@@ -867,6 +870,7 @@ def eracun_issuer_page(
         "inactivity_timeout_ms": inactivity_timeout_ms(user, config_for_request(request, db)),
         "issuer": issuer,
         "complete": issuer_complete(issuer),
+        "p12": p12_config(db),
         "lang": current_lang() or "sl",
         "info": info,
         "error": error,
@@ -905,4 +909,43 @@ def eracun_issuer_save(
         url="/narocnina/izdajatelj?info="
             "Podatki izdajatelja so shranjeni. Zdaj lahko /narocnina izda e-račun.",
         status_code=303)
+
+@router.post("/narocnina/izdajatelj/p12")
+def eracun_issuer_p12_upload(
+    request: Request,
+    p12_file: UploadFile | None = File(None),
+    p12_geslo: str = Form(""),
+    db: Session = Depends(get_db),
+):
+    """Glavni admin naloži podpisni certifikat (.p12) za fazo 2 (QES).
+
+    Shrani base64 datoteke + geslo v app_settings. Vrednosti se NIKOLI ne
+    vračajo v HTML/JSON — le status (prisotno/prazno), kar bralec rabi.
+    """
+    user = get_request_user(request, db)
+    if user is None or not is_main_admin(user):
+        raise HTTPException(status_code=403,
+                            detail="Podatke e-racuna lahko ureja le glavni admin.")
+    if p12_file is None or not p12_file.filename:
+        return RedirectResponse(
+            url="/narocnina/izdajatelj?error=Nobena p12 datoteka ni izbrana.",
+            status_code=303)
+    raw = p12_file.file.read()
+    if not raw:
+        return RedirectResponse(
+            url="/narocnina/izdajatelj?error=P12 datoteka je prazna.",
+            status_code=303)
+    if not raw.startswith(b"\x30"):
+        return RedirectResponse(
+            url="/narocnina/izdajatelj?error=To ni veljavna p12 (PKCS#12) datoteka.",
+            status_code=303)
+    set_p12(db, base64.b64encode(raw).decode("ascii"), p12_geslo)
+    db.commit()
+    log_audit(db, user.id, user.username, "save_eracun_p12",
+              "p12 certifikat nalozen",
+              school_id=None if user.school_id is None else user.school_id)
+    return RedirectResponse(
+        url="/narocnina/izdajatelj?info=P12 certifikat je shranjen.",
+        status_code=303)
+
 
