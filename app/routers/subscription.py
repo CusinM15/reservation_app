@@ -9,6 +9,7 @@
 # v bazi je le evidenca (znesek, sklic, opomba, kdo je potrdil).
 # ─────────────────────────────────────────────────────────────────────────
 
+import json
 import secrets
 import smtplib
 import ssl
@@ -24,8 +25,13 @@ from app.i18n import current_lang
 from sqlalchemy.orm import Session
 
 from app.app_settings import (
+    global_mail_config,
+    issuer_complete,
+    issuer_config,
     plan_by_id,
+    price_eur,
     prorated_price_eur,
+    save_issuer_config,
     save_selling_config,
     selling_config,
     subscription_period_end,
@@ -33,7 +39,7 @@ from app.app_settings import (
 from app.audit import log_audit
 from app.config import validate_password_strength, settings
 from app.database import get_db
-from app.models import Payment, RoleEnum, School, User
+from app.models import Invoice, Payment, RoleEnum, School, User
 from app.routers.auth import get_password_hash
 from app.routers.schools import _manageable_school
 from app.security import sign_user_id
@@ -48,6 +54,13 @@ from app.subscriptions import (
     set_auto_renew,
     set_valid_until,
     subscription_state,
+)
+from app.eracun import (
+    DDV_RATE_PCT,
+    build_invoice_pdf,
+    build_invoice_xml,
+    send_e_racun_email,
+    si_sklic,
 )
 from app.security import inactivity_timeout_ms
 from app.tenancy import (
@@ -393,6 +406,16 @@ def narocnina_page(
             "main_admin_email": settings.MAIN_ADMIN_EMAIL,
             # E-pošta administratorja TE šole (kamor gre »Pošlji e-pošto«).
             "school_admin_email": get_school_config(db, school.id).ADMIN_EMAIL,
+            # E-račun: izdajatelj izpolnjen? + e-računi te šole
+            "eracun_complete": issuer_complete(issuer_config(db)),
+            "eracun_price": price_eur(db),
+            "invoices": (
+                db.query(Invoice)
+                .filter(Invoice.school_id == school.id)
+                .order_by(Invoice.id.desc())
+                .limit(20)
+                .all()
+            ),
         },
     )
 
@@ -719,3 +742,166 @@ def send_school_admin_email(
         url=_back_url(next, school.id, message, key=key),
         status_code=303,
     )
+
+
+# ─────────────────────────────────────────────────────────────────────────
+# E-račun (e-SLOG 2.0) — izdaja + pošiljanje na e-pošto šole
+# ─────────────────────────────────────────────────────────────────────────
+@router.post("/narocnina/e-racun")
+def izdaj_e_racun(
+    request: Request,
+    school_id: int | None = Form(None),
+    db: Session = Depends(get_db),
+):
+    """Šolski/glavni admin klikne »Naroči račun« → izdamo e-račun (e-SLOG 2.0
+    XML + PDF) za LETNO naročnino, ga pošljemo na e-pošto šole IN shranimo v
+    tabelo invoices (podatkovni prostor za račune)."""
+    from types import SimpleNamespace
+    from app.tenancy import set_school_setting
+
+    school = _manageable_school(db, request, school_id)
+    user = get_request_user(request, db)
+
+    issuer = issuer_config(db)
+    if not issuer_complete(issuer):
+        return RedirectResponse(url=f"/narocnina?school_id={school.id}&error="
+            "E-računa ni mogoče izdati: v »Podatkih e-računa« (gumb na /schools) "
+            "ni izdajatelja (naziv, naslov, pošta, davčna, IBAN, e-pošta).",
+            status_code=303)
+
+    gross = float(price_eur(db))
+    if gross <= 0:
+        return RedirectResponse(url=f"/narocnina?school_id={school.id}&error="
+            "Cena naročnine je 0 € — e-račun ni potreben.", status_code=303)
+
+    school_cfg = get_school_config(db, school.id)
+    try:
+        zap = int((school_cfg.get_str("ERACUN_ZAP", "0") or "0").strip() or "0")
+    except ValueError:
+        zap = 0
+    zap += 1
+    set_school_setting(db, school.id, "ERACUN_ZAP", str(zap))
+
+    to_email = (school_cfg.get_str("ADMIN_EMAIL", "") or "").strip() or (settings.ADMIN_EMAIL or "")
+    if not to_email:
+        return RedirectResponse(url=f"/narocnina?school_id={school.id}&error="
+            "E-pošta šole (ADMIN_EMAIL) ni nastavljena — kam naj pošlje e-račun?",
+            status_code=303)
+
+    issue = date.today()
+    due = issue + timedelta(days=15)
+    number = f"{issue.year}-{zap:03d}"
+    net = round(gross / (1 + DDV_RATE_PCT / 100.0), 2)
+    ddv = round(gross - net, 2)
+    period_end = subscription_period_end().strftime("%d. %m. %Y")
+
+    inv = {
+        "number": number, "issue_date": issue, "due_date": due,
+        "currency": "EUR", "sklic": si_sklic(zap),
+        "net": net, "ddv": ddv, "gross": gross,
+        "unit_net": net, "qty": 1,
+        "item_name": "Letna naročnina Šolski App",
+        "item_desc": f"Uporaba aplikacije Šolski App za šolo »{school.name}« — "
+                     f"šolsko leto do {period_end}.",
+        "issuer": issuer,
+        "buyer": {"name": school.name, "address": "", "post": "",
+                  "tax": school_cfg.get_str("DAVCMA", ""), "email": to_email},
+    }
+
+    xml = ""
+    try:
+        xml = build_invoice_xml(inv)
+        pdf = build_invoice_pdf(inv)
+        gm = global_mail_config(db)
+        mail_cfg = SimpleNamespace(
+            MAIL_SERVER=gm.get("server") or settings.MAIL_SERVER,
+            MAIL_PORT=int(gm.get("port") or settings.MAIL_PORT),
+            MAIL_USERNAME=gm.get("username") or settings.MAIL_USERNAME,
+            MAIL_PASSWORD=gm.get("password") or settings.MAIL_PASSWORD,
+            MAIL_FROM=gm.get("from") or settings.MAIL_FROM,
+        )
+        ok, msg = send_e_racun_email(mail_cfg, to_email, inv, xml, pdf)
+    except Exception as exc:
+        ok, msg = False, f"Napaka pri izdaji e-računa: {exc}"
+
+    db.add(Invoice(
+        school_id=school.id, number=number, issue_date=issue, due_date=due,
+        sklic=str(inv["sklic"]), currency="EUR",
+        amount_net=net, amount_ddv=ddv, amount_gross=gross,
+        item_name=str(inv["item_name"]), item_desc=str(inv["item_desc"]),
+        buyer_name=school.name, buyer_tax=school_cfg.get_str("DAVCMA", ""),
+        buyer_email=to_email,
+        issuer=json.dumps(issuer, ensure_ascii=False),
+        xml=xml, status="sent" if ok else "error",
+        email_to=to_email, error=None if ok else msg,
+        created_by_id=user.id if user else None,
+    ))
+    db.commit()
+    log_audit(db, user.id if user else None, user.username if user else "?",
+              "izdaj_e_racun",
+              f"school_id={school.id}, st={number}, bruto={gross:.2f} EUR, "
+              f"to={to_email}, poslano={ok}, shranjeno=invoices",
+              school_id=school.id)
+    return RedirectResponse(
+        url=f"/narocnina?school_id={school.id}&{'info' if ok else 'error'}="
+            + ("e-račun poslan na " + to_email if ok else f"napaka: {msg}"),
+        status_code=303)
+
+
+@router.get("/narocnina/izdajatelj", response_class=HTMLResponse)
+def eracun_issuer_page(
+    request: Request,
+    info: str | None = None,
+    error: str | None = None,
+    db: Session = Depends(get_db),
+):
+    """Glavni admin vodi podatke izdajatelja e-računa (bratova firma/s.p.)."""
+    user = get_request_user(request, db)
+    if user is None or not is_main_admin(user):
+        raise HTTPException(status_code=403,
+                            detail="Podatke e-računa lahko ureja le glavni admin.")
+    issuer = issuer_config(db)
+    return templates.TemplateResponse("eracun_izdajatelj.html", {
+        "request": request,
+        "inactivity_timeout_ms": inactivity_timeout_ms(user, config_for_request(request, db)),
+        "issuer": issuer,
+        "complete": issuer_complete(issuer),
+        "lang": current_lang() or "sl",
+        "info": info,
+        "error": error,
+    })
+
+
+@router.post("/narocnina/izdajatelj")
+def eracun_issuer_save(
+    request: Request,
+    name: str = Form(""),
+    address: str = Form(""),
+    post: str = Form(""),
+    tax: str = Form(""),
+    maticna: str = Form(""),
+    iban: str = Form(""),
+    bank: str = Form(""),
+    email: str = Form(""),
+    sign: str = Form(""),
+    db: Session = Depends(get_db),
+):
+    """Glavni admin shrani podatke izdajatelja e-računa."""
+    user = get_request_user(request, db)
+    if user is None or not is_main_admin(user):
+        raise HTTPException(status_code=403,
+                            detail="Podatke e-računa lahko ureja le glavni admin.")
+    save_issuer_config(db, {
+        "name": name, "address": address, "post": post,
+        "tax": tax, "maticna": maticna, "iban": iban,
+        "bank": bank, "email": email, "sign": sign,
+    })
+    db.commit()
+    log_audit(db, user.id, user.username, "save_eracun_issuer",
+              f"izdajatelj={name}, email={email}",
+              school_id=None if user.school_id is None else user.school_id)
+    return RedirectResponse(
+        url="/narocnina/izdajatelj?info="
+            "Podatki izdajatelja so shranjeni. Zdaj lahko /narocnina izda e-račun.",
+        status_code=303)
+

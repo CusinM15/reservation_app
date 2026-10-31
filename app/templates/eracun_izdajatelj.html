@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="sl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Podatki e-računa — Šolski App</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 0; background: #f5f5f5; color: #222; }
+        .wrap { max-width: 720px; margin: 30px auto; padding: 0 16px 40px; }
+        .card { background: #fff; padding: 22px 26px; border-radius: 10px;
+                box-shadow: 0 0 10px rgba(0,0,0,0.08); margin-bottom: 18px; }
+        h1 { font-size: 1.4rem; margin: 0 0 4px; }
+        h2 { font-size: 1.05rem; margin: 0 0 10px; }
+        .muted { color: #666; font-size: 0.9rem; }
+        .ok { background: #d1fae5; color: #065f46; padding: 10px 12px; border-radius: 6px; margin-bottom: 14px; }
+        .bad { background: #fee2e2; color: #991b1b; padding: 10px 12px; border-radius: 6px; margin-bottom: 14px; }
+        .info { background: #e0f2fe; color: #075985; padding: 10px 12px; border-radius: 6px; margin-bottom: 14px; }
+        .btn { display: inline-block; padding: 10px 16px; background: #007bff; color: #fff;
+               border: none; border-radius: 6px; cursor: pointer; text-decoration: none; font-size: 0.95rem; }
+        .btn:hover { background: #0056b3; }
+        .btn-ok { background: #16a34a; } .btn-ok:hover { background: #12813b; }
+        label { display: block; font-size: 0.85rem; margin: 10px 0 4px; color: #333; }
+        input[type=text] { width: 100%; padding: 8px 10px;
+               border: 1px solid #ddd; border-radius: 5px; box-sizing: border-box; }
+        .grid { display: grid; gap: 14px; grid-template-columns: 1fr 1fr; }
+        @media (max-width: 640px) { .grid { grid-template-columns: 1fr; } }
+    </style>
+</head>
+<body>
+<div class="wrap">
+  <div class="card">
+    <h1>Podatki izdajatelja e-računa</h1>
+    <p class="muted">
+      Sem glavni admin vnese podatke (bratova firma / s.p.) za e-račune, ki jih
+      šole naročijo na strani naročnine. Brez teh podatkov e-računa ni mogoče izdati.
+    </p>
+    {% if info %}<div class="ok">{{ info }}</div>{% endif %}
+    {% if error %}<div class="bad">{{ error }}</div>{% endif %}
+    {% if complete %}
+      <div class="ok">Izdajatelj je izpolnjen — e-račune je mogoče izdati. ✔</div>
+    {% else %}
+      <div class="info">Izdajatelj še ni popolnoma izpolnjen (manjkajo obvezna polja).</div>
+    {% endif %}
+  </div>
+
+  <div class="card">
+    <h2>Izdajatelj</h2>
+    <form method="POST" action="/narocnina/izdajatelj">
+      <label>Naziv (npr. ime, priimek s.p.) *</label>
+      <input type="text" name="name" value="{{ issuer.name }}" placeholder="Ime, priimek s.p.">
+      <label>Naslov (ulica, hišna številka) *</label>
+      <input type="text" name="address" value="{{ issuer.address }}" placeholder="Cesta 1">
+      <div class="grid">
+        <div>
+          <label>Pošta in kraj *</label>
+          <input type="text" name="post" value="{{ issuer.post }}" placeholder="4000 Kranj">
+        </div>
+        <div>
+          <label>Davčna številka *</label>
+          <input type="text" name="tax" value="{{ issuer.tax }}" placeholder="SI12345678">
+        </div>
+      </div>
+      <div class="grid">
+        <div>
+          <label>Matična številka</label>
+          <input type="text" name="maticna" value="{{ issuer.maticna }}" placeholder="1234567">
+        </div>
+        <div>
+          <label>IBAN *</label>
+          <input type="text" name="iban" value="{{ issuer.iban }}" placeholder="SI56 1234 0000 0000 0000">
+        </div>
+      </div>
+      <label>Banka</label>
+      <input type="text" name="bank" value="{{ issuer.bank }}" placeholder="Npr. NLB d.d.">
+      <label>E-pošta izdajatelja *</label>
+      <input type="text" name="email" value="{{ issuer.email }}" placeholder="racuni@firma.si">
+      <label>Podpisnik (ime podpisnika, za XML + PDF)</label>
+      <input type="text" name="sign" value="{{ issuer.sign }}" placeholder="Npr. Ime Priimek">
+      <p style="margin-top:14px;">
+        <button class="btn btn-ok" type="submit">Shrani podatke izdajatelja</button>
+      </p>
+    </form>
+  </div>
+
+  <p class="muted">
+    <a href="/schools">← Pregled šol</a> · <a href="/narocnina">Naročnina</a>
+    · <a href="/auth/logout">Odjava</a>
+  </p>
+</div>
+{% if inactivity_timeout_ms %}
+<script>
+(function(){const t={{ inactivity_timeout_ms }};let i=null;function r(){i&&clearTimeout(i);i=setTimeout(function(){window.location.href='/auth/logout'},t)}['click','mousemove','keydown','scroll','touchstart'].forEach(function(e){document.addEventListener(e,r)});r()})();
+</script>
+{% endif %}
+</body>
+</html>

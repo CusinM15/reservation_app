@@ -203,6 +203,43 @@
   {% endif %}
 
   {% if is_admin and not view_only %}
+  <!-- E-RAČUN: administrator šole izda in prejme e-račun za naročnino
+       (XML e-SLOG 2.0 + PDF, poslan na e-pošto šole). -->
+  <div class="card">
+    <h2>{{ t('eracun_naslov', 'E-račun') }}</h2>
+    {% if not eracun_complete %}
+      <div class="info">
+        E-računa še ni mogoče izdati — glavni admin mora najprej izpolniti
+        podatke izdajatelja (gumb »Podatki e-računa« na /schools).
+      </div>
+    {% else %}
+      <p class="muted">
+        Izdaj e-račun za letno naročnino (<strong>{{ eracun_price | eur }} €</strong>)
+        in poslali ga bomo na e-pošto šole kot XML (e-SLOG 2.0) + PDF povzetek.
+      </p>
+      <form method="POST" action="/narocnina/e-racun" style="margin-top:10px;">
+        <input type="hidden" name="school_id" value="{{ school.id }}">
+        <button class="btn btn-pay" type="submit">{{ t('eracun_naroci', 'Naroči in pošlji e-račun') }}</button>
+      </form>
+      {% if invoices %}
+        <table style="margin-top:14px;">
+          <tr><th>Številka</th><th>Izdan</th><th>Bruto</th><th>Stanje</th></tr>
+          {% for inv in invoices %}
+          <tr>
+            <td>{{ inv.number }}</td>
+            <td>{{ inv.issue_date.strftime('%d. %m. %Y') }}</td>
+            <td>{{ inv.amount_gross }} €</td>
+            <td>{% if inv.status == 'sent' %}<span class="pill p-ok">poslan</span>
+                {% else %}<span class="pill p-no" title="{{ inv.error }}">napaka</span>{% endif %}</td>
+          </tr>
+          {% endfor %}
+        </table>
+      {% endif %}
+    {% endif %}
+  </div>
+  {% endif %}
+
+  {% if is_admin and not view_only %}
   <!-- SAMOPOSTREŽNO PODALJŠANJE: administrator šole podaljša naročnino sam,
        brez čakanja na glavnega admina. Veljavnost se nastavi na 1. 9. naslednje
        leto; gumb je aktiven od 15. 8. dalje. -->

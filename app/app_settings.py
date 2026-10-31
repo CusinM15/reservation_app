@@ -354,3 +354,54 @@ def save_global_mail(
         set_app_setting(db, KEY_MAIL_FROM, from_addr.strip())
     if backup_email:
         set_app_setting(db, KEY_BACKUP_EMAIL, backup_email.strip())
+
+# ── Izdajatelj e-računa (bratova firma / s.p.) ─────────────────────────
+# Podatke vnese glavni admin (stran »Podatki e-računa«, gumb iz /schools);
+# obvezen predpogoj za izdajo e-računa (gumb »Naroči račun« na /narocnina).
+KEY_ISSUER_NAME = "ERACUN_IZDAJATELJ_NAZIV"
+KEY_ISSUER_ADDRESS = "ERACUN_IZDAJATELJ_NASLOV"
+KEY_ISSUER_POST = "ERACUN_IZDAJATELJ_POSTA"
+KEY_ISSUER_TAX = "ERACUN_IZDAJATELJ_DAVCMA"
+KEY_ISSUER_MATICNA = "ERACUN_IZDAJATELJ_MATICNA"
+KEY_ISSUER_IBAN = "ERACUN_IZDAJATELJ_IBAN"
+KEY_ISSUER_BANK = "ERACUN_IZDAJATELJ_BANKA"
+KEY_ISSUER_EMAIL = "ERACUN_IZDAJATELJ_EMAIL"
+KEY_ISSUER_SIGN = "ERACUN_IZDAJATELJ_PODPIS"
+
+def issuer_config(db: Session) -> dict:
+    """Vrni vse podatke izdajatelja (bratove firme) iz app_settings."""
+    return {
+        "name": get_app_setting(db, KEY_ISSUER_NAME),
+        "address": get_app_setting(db, KEY_ISSUER_ADDRESS),
+        "post": get_app_setting(db, KEY_ISSUER_POST),
+        "tax": get_app_setting(db, KEY_ISSUER_TAX),
+        "maticna": get_app_setting(db, KEY_ISSUER_MATICNA),
+        "iban": get_app_setting(db, KEY_ISSUER_IBAN),
+        "bank": get_app_setting(db, KEY_ISSUER_BANK),
+        "email": get_app_setting(db, KEY_ISSUER_EMAIL),
+        "sign": get_app_setting(db, KEY_ISSUER_SIGN),
+    }
+
+def issuer_complete(cfg: dict) -> bool:
+    """Ali je izdajatelj dovolj izpolnjen za izdajo e-računa?"""
+    for key in ("name", "address", "post", "tax", "iban", "email"):
+        if not str(cfg.get(key, "")).strip():
+            return False
+    return True
+
+def save_issuer_config(db: Session, data: dict) -> None:
+    """Shrani podatke izdajatelja iz obrazca (stran »Podatki e-računa«)."""
+    mapping = {
+        "name": KEY_ISSUER_NAME,
+        "address": KEY_ISSUER_ADDRESS,
+        "post": KEY_ISSUER_POST,
+        "tax": KEY_ISSUER_TAX,
+        "maticna": KEY_ISSUER_MATICNA,
+        "iban": KEY_ISSUER_IBAN,
+        "bank": KEY_ISSUER_BANK,
+        "email": KEY_ISSUER_EMAIL,
+        "sign": KEY_ISSUER_SIGN,
+    }
+    for field, key in mapping.items():
+        value = data.get(field) if isinstance(data.get(field), str) else ""
+        set_app_setting(db, key, value.strip() if value else "")

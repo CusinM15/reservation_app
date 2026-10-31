@@ -113,6 +113,11 @@ SCHOOL_SETTING_KEYS = [
     # ni v SCHOOL_SETTING_FIELDS.
     "NAROCNINA_DO",
     "NAROCNINA_AVTO",
+    # E-račun: zaporedna številka e-računa (ERACUN_ZAP) in davčna številka
+    # kupca (DAVCMA). Urejata ju šolski/glavni admin s postopkom izdaje
+    # e-računa, zato ju ni v SCHOOL_SETTING_FIELDS.
+    "ERACUN_ZAP",
+    "DAVCMA",
     # Digitalni zaslon (nadomeščanja + obvestila) — nastavi šolski admin
     "ZASLON_URL",
     "ZASLON_POKAZI_NADOMESCANJA",

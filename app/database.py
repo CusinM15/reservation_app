@@ -217,6 +217,39 @@ def init_db():
     _migrate("DROP INDEX IF EXISTS ix_users_email")
     _migrate("CREATE INDEX IF NOT EXISTS ix_users_email ON users (email)")
 
+    # ── E-računi (invoices) ─────────────────────────────────────────────
+    _migrate(
+        "CREATE TABLE IF NOT EXISTS invoices ("
+        "id SERIAL PRIMARY KEY,"
+        "school_id INTEGER REFERENCES schools(id),"
+        "number VARCHAR NOT NULL,"
+        "issue_date DATE,"
+        "due_date DATE,"
+        "sklic VARCHAR DEFAULT '',"
+        "currency VARCHAR NOT NULL DEFAULT 'EUR',"
+        "amount_net DOUBLE PRECISION NOT NULL DEFAULT 0,"
+        "amount_ddv DOUBLE PRECISION NOT NULL DEFAULT 0,"
+        "amount_gross DOUBLE PRECISION NOT NULL DEFAULT 0,"
+        "item_name VARCHAR NOT NULL DEFAULT '',"
+        "item_desc TEXT DEFAULT '',"
+        "buyer_name VARCHAR NOT NULL DEFAULT '',"
+        "buyer_tax VARCHAR DEFAULT '',"
+        "buyer_address VARCHAR DEFAULT '',"
+        "buyer_email VARCHAR DEFAULT '',"
+        "issuer TEXT DEFAULT '',"
+        "xml TEXT DEFAULT '',"
+        "status VARCHAR NOT NULL DEFAULT 'sent',"
+        "email_to VARCHAR DEFAULT '',"
+        "error TEXT DEFAULT '',"
+        "created_by_id INTEGER REFERENCES users(id),"
+        "created_at TIMESTAMP WITHOUT TIME ZONE NOT NULL DEFAULT now()"
+        ")"
+    )
+    _migrate("CREATE INDEX IF NOT EXISTS ix_invoices_school_id ON invoices (school_id)")
+    _migrate("CREATE INDEX IF NOT EXISTS ix_invoices_number ON invoices (number)")
+    _migrate("CREATE INDEX IF NOT EXISTS ix_invoices_status ON invoices (status)")
+
+
 
 def log_audit(db: Session, user_id: int, user_name: str, action: str,
               entity_type: str, entity_id: int | None = None,

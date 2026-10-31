@@ -296,6 +296,46 @@ class Payment(Base):
     confirmed_by = Column(String, nullable=True, default="")     # uporabniško ime potrjevalca
 
 
+# ── E-računi (invoices) ─────────────────────────────────────────────
+# Vsaka izdani e-račun se shrani (izdajatelj, kupec, zneski, sklic, XML),
+# da ga je mogoče ponovno poslati in pregledovati. Podatkov o kartici NI.
+class Invoice(Base):
+    __tablename__ = "invoices"
+
+    id = Column(Integer, primary_key=True, index=True)
+    school_id = Column(Integer, ForeignKey("schools.id"), nullable=True, index=True)
+    number = Column(String, nullable=False, index=True)            # npr. "2026-003"
+    issue_date = Column(Date, nullable=False)
+    due_date = Column(Date, nullable=False)
+    sklic = Column(String, nullable=False, default="")
+    currency = Column(String, nullable=False, default="EUR")
+
+    amount_net = Column(Float, nullable=False, default=0)
+    amount_ddv = Column(Float, nullable=False, default=0)
+    amount_gross = Column(Float, nullable=False, default=0)
+
+    item_name = Column(String, nullable=False, default="")
+    item_desc = Column(Text, nullable=True, default="")
+
+    # Kupec (iz nastavitev šole):
+    buyer_name = Column(String, nullable=False, default="")
+    buyer_tax = Column(String, nullable=True, default="")
+    buyer_address = Column(String, nullable=True, default="")
+    buyer_email = Column(String, nullable=True, default="")
+
+    # Izdajatelj (iz globalnih nastavitev) — posnetek ob izdaji, JSON text.
+    issuer = Column(Text, nullable=True, default="")
+    # Celoten e-račun XML (e-SLOG 2.0) — shranjen, da ga je mogoče slati ponovno.
+    xml = Column(Text, nullable=True, default="")
+
+    status = Column(String, nullable=False, default="sent", index=True)  # sent | error
+    email_to = Column(String, nullable=True, default="")
+    error = Column(Text, nullable=True, default="")
+
+    created_by_id = Column(Integer, ForeignKey("users.id"), nullable=True)
+    created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
+
+
 # ── Napisi vmesnika (večjezičnost SL/EN) ──────────────────────────────
 # Zakaj tabela? Vsi napisi na gumbih in v pogovornih oknih naj bodo na enem
 # mestu, v obeh jezikih, tako da jih lahko admin šole preklaplja (nastavitev
