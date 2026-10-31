@@ -2149,9 +2149,10 @@
       if (meRes.ok) currentUser = await meRes.json();
 
       if (currentUser) {
-        // 🗓️ Moje govorilne ure: VSI uporabniki prijavljeni, a NIKOLI ne glavni admin;
-        // prikaže se le, če so govorilne ure za šolo omogočene (GOVORILNE_OMOGOCENE).
-        if (currentUser.role !== 'main_admin' && {{ 'true' if govorilne_omogocene else 'false' }}) {
+        // 🗓️ Moje govorilne ure: gumb vidi SAMO šolski admin
+        // (učitelji in vodstvo ga NE vidijo); prikaže se le, če so govorilne
+        // ure za šolo omogočene (GOVORILNE_OMOGOCENE).
+        if (currentUser.role === 'admin' && {{ 'true' if govorilne_omogocene else 'false' }}) {
             document.getElementById('govorilne-nav').style.display = 'inline';
         }
         document.getElementById('userInfo').textContent = `${currentUser.full_name || currentUser.username} (${currentUser.role === 'admin' ? '{{ t('role_admin', 'admin') }}' : currentUser.role === 'vodstvo' ? '{{ t('role_vodstvo', 'vodstvo') }}' : '{{ t('role_ucitelj', 'učitelj') }}'})`;

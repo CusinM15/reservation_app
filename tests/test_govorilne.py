@@ -6,6 +6,7 @@
 # ─────────────────────────────────────────────────────────────────────────
 
 import os
+import re
 
 os.environ.setdefault("DATABASE_URL", "postgresql://postgres@localhost:5432/testdb")
 os.environ.setdefault("SECRET_KEY", "test-secret-key")
@@ -1257,7 +1258,7 @@ def test_govorilne_onemogocene_poti_ugasnjene(make_user):
 def _nav_govorilne_js(html: str) -> str:
     """Vrednost, ki jo JS dobi za govorilne v pogoju nav linka (true|false)."""
     import re
-    m = re.search(r"currentUser\.role !== 'main_admin' && (true|false)", html)
+    m = re.search(r"currentUser\.role === 'admin' && (true|false)", html)
     assert m, f"'&& true/false' ni v HTML-ju:\n{html[:800]}"
     return m.group(1)
 
@@ -1280,10 +1281,30 @@ def test_govorilne_onemogocene_nav_link_skrit(make_user):
 
 
 def test_govorilne_vklopljene_nav_link_viden(make_user):
-    """Privzeto (GOVORILNE_OMOGOCENE=true) → nav gumb »🗓️ Moje govorilne ure« se pokaže."""
+    """Privzeto (GOVORILNE_OMOGOCENE=true) + šolski admin → nav gumb »🗓️ Moje govorilne ure« se pokaže."""
     with TestClient(app) as c:
-        u = make_user(role="teacher", ima_govorilne=True)
+        u = make_user(role="admin", ima_govorilne=True)
         login(c, u.username)
         r = c.get("/rezervacije")
         assert r.status_code == 200, r.status_code
         assert _nav_govorilne_js(r.text) == "true", "gumb mora biti VIDEN (true)"
+
+
+def test_govorilne_nav_link_samo_za_skolskega_admina(make_user):
+    """Učitelj in vodstvo NIKOLI ne vidita gumba »🗓️ Moje govorilne ure« — JS pogoj je
+    zaklenjen na `role === 'admin'` (šolski admin), ne glede na GOVORILNE_OMOGOCENE."""
+    with TestClient(app) as c:
+        for role in ("teacher", "vodstvo"):
+            u = make_user(role=role, ima_govorilne=True)
+            login(c, u.username)
+            r = c.get("/rezervacije")
+            assert r.status_code == 200, r.status_code
+            html = r.text
+            # JS pogoj: gumb se izpiše samo za role === 'admin' (ne več za vsakogar razen main_admina)
+            m = re.search(r"currentUser\.role === 'admin' && (true|false)", html)
+            assert m, f"admin-only pogoj ni v HTML-ju:\n{html[:800]}"
+            assert "currentUser.role !== 'main_admin'" not in html, (
+                "stari široki pogoj (vsi razen main_admin) mora biti odstranjen"
+            )
+            # za učitelja/vodstvo je pogoj z also-display:none dejansko mrtev
+            assert 'id="govorilne-nav"' in html
