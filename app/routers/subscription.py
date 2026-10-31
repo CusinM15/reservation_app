@@ -771,9 +771,9 @@ def izdaj_e_racun(
             status_code=303)
 
     gross = float(price_eur(db))
-    if gross <= 0:
+    if gross < 0:
         return RedirectResponse(url=f"/narocnina?school_id={school.id}&error="
-            "Cena naročnine je 0 € — e-račun ni potreben.", status_code=303)
+            "Cena naročnine ne sme biti negativna.", status_code=303)
 
     school_cfg = get_school_config(db, school.id)
     try:

@@ -86,6 +86,29 @@ def test_izdaj_e_racun_shrani_invoice(client, make_user):
     assert inv.sklic                    # slovenska referenca (sklic)
 
 
+def test_izdaj_e_racun_za_0_eur_shrani_invoice(client, make_user):
+    # Cena 0 € NI več blokirana — e-račun za 0 € se izda in shrani (31.10.).
+    _set_issuer(price="0")
+    admin = make_user(role="admin")
+    login(client, admin.username)
+    school_id = default_school_id()
+
+    r = client.post(
+        "/narocnina/e-racun",
+        data={"school_id": str(school_id)},
+        follow_redirects=False,
+    )
+    assert r.status_code == 303
+
+    rows = _invoice_rows(school_id)
+    assert len(rows) == 1
+    inv = rows[0]
+    assert inv.amount_gross == 0
+    assert inv.amount_net == 0
+    assert inv.amount_ddv == 0
+    assert inv.xml                      # e-SLOG XML obstaja tudi za 0 €
+
+
 def test_eracun_potrebuje_izdajatelja(client, make_user):
     # Ni izdajatelja → 303 redirect z error, brez invoice.
     admin = make_user(role="admin")
