@@ -369,6 +369,9 @@ def _render_index(request: Request, active_tab: str):
         # Govorilne ure so za šolo omogočene? (stikalo v Nastavitvah šole)
         "govorilne_omogocene": str(config.get_str("GOVORILNE_OMOGOCENE", "true")).strip().lower()
             in ("1", "true", "yes", "on"),
+        # Katere vloge (grupe) vidijo /govorilne — iz Nastavitev šole. V JS v
+        # index.html pogoj prikaza nav gumba primerja user.role s tem seznamom.
+        "govorilne_vloge": config.GOVORILNE_VLOGAROLE,
     })
 
 

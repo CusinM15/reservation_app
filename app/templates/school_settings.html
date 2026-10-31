@@ -97,8 +97,8 @@
         <form id="settings-form">
             <input type="hidden" name="school_id" value="{{ school.id }}">
 
-    <details class="collapsible" open>
-                <summary><h3>{{ t('set_osnovno', 'Osnovno') }}</h3><span class="toggle-hint">▾ manj</span></summary>
+    <details class="collapsible">
+                <summary><h3>{{ t('set_osnovno', 'Osnovno') }}</h3><span class="toggle-hint">▸ več</span></summary>
 
             <!-- JEZIK VMESNIKA: izbira jezika (SL/EN) za napise gumbov in oken.
                  Napisi se berejo iz tabele ui_strings (glej app/i18n.py). -->
@@ -131,8 +131,8 @@
     <!-- KRATICA ŠOLE: kratka oznaka (slug), iz katere se generirajo URL-poti.
          Urejata jo lahko šolski admin; mora biti UNIKATNA — ne sme biti enaka
          kot pri drugi šoli. Ob spremembi se generirajo novi URL-aliasi. -->
-    <details class="collapsible" open>
-        <summary><h3>{{ t('set_kratica', 'Kratica šole') }}</h3><span class="toggle-hint">▾ manj</span></summary>
+    <details class="collapsible">
+        <summary><h3>{{ t('set_kratica', 'Kratica šole') }}</h3><span class="toggle-hint">▸ več</span></summary>
             <!-- KRATICA (slug): iz nje se generirajo URL-aliasi (npr.
                  /rezervacije_ostcj). Le male črke, številke, - in _. -->
             <div class="field">
@@ -143,8 +143,8 @@
                 </div>
             </div>
     </details>
-    <details class="collapsible" open>
-        <summary><h3>{{ t('set_razredi', 'Razredi') }}</h3><span class="toggle-hint">▾ manj</span></summary>
+    <details class="collapsible">
+        <summary><h3>{{ t('set_razredi', 'Razredi') }}</h3><span class="toggle-hint">▸ več</span></summary>
             <!-- RAZREDI: vsak razred v SVOJI vrstici (kot prostori in urnik),
                  da je urejanje pregledno in brez vejic. Ob shranjevanju se
                  vrstice sestavijo nazaj v vejica-ločen seznam (ključ RAZREDI).
@@ -162,8 +162,8 @@
                 </div>
             </div>
     </details>
-    <details class="collapsible" open>
-        <summary><h3>{{ t('set_prostori', 'Prostori') }}</h3><span class="toggle-hint">▾ manj</span></summary>
+    <details class="collapsible">
+        <summary><h3>{{ t('set_prostori', 'Prostori') }}</h3><span class="toggle-hint">▸ več</span></summary>
             <!-- PROSTORI: vsak prostor v SVOJI vrstici + kljukica »število«.
                  Ob kljukici se odpre spustni seznam z vsemi številskimi
                  spremenljivkami (STEVILA) — prostor se veže na izbrano. -->
@@ -183,8 +183,8 @@
                 </div>
             </div>
             <!-- ŠTEVILA (podrazdelek Prostorov) -->
-            <details class="collapsible" open>
-                <summary><h3>{{ t('set_stevila', 'Števila') }}</h3><span class="toggle-hint">▾ manj</span></summary>
+            <details class="collapsible">
+                <summary><h3>{{ t('set_stevila', 'Števila') }}</h3><span class="toggle-hint">▸ več</span></summary>
             <!-- ŠTEVILA: imenovane številske spremenljivke (npr. »Število tablic«),
                  vsaka v SVOJI vrstici — enako kot urnik. Ob shranjevanju se
                  vrstice sestavijo v JSON objekt (ključ STEVILA). Na ta imena se
@@ -202,8 +202,8 @@
             </div>
             </details>
     </details>
-    <details class="collapsible" open>
-        <summary><h3>{{ t('set_urnik_sklop', 'Urnik') }}</h3><span class="toggle-hint">▾ manj</span></summary>
+    <details class="collapsible">
+        <summary><h3>{{ t('set_urnik_sklop', 'Urnik') }}</h3><span class="toggle-hint">▸ več</span></summary>
                     <!-- URNIK: vsaka ura v SVOJI vrstici (ne surov JSON), da je urejanje
                  preprosto in pregledno. Ob shranjevanju se vrstice sestavijo
                  nazaj v JSON (ključ SCHEDULE). -->
@@ -370,6 +370,29 @@
                                        {% if values.get('GOVORILNE_OMOGOCENE', 'true').lower() in ('1','true','yes','on') %}checked{% endif %}>
                                 <span>{{ t('set_govorilne_lbl', 'Starši se lahko naročijo na govorilne ure') }}</span>
                             </label>
+                        </div>
+                        <div class="field">
+                            <label>{{ t('setf_GOVORILNE_VLOGAROLE', 'Govorilne ure — katere grupe jih vidijo') }}</label>
+                            {% if is_main_admin %}<span class="key">GOVORILNE_VLOGAROLE</span>{% endif %}
+                            {% set gov_vloge = (values.get('GOVORILNE_VLOGAROLE') or 'admin').split(',') %}
+                            <label style="display:flex;align-items:center;gap:8px;font-weight:normal;">
+                                <input type="checkbox" name="GOVORILNE_VLOGAROLE" value="admin"
+                                       {% if 'admin' in gov_vloge %}checked{% endif %}>
+                                <span>{{ t('set_govorilne_vloga_admin', 'Šolski admin') }}</span>
+                            </label>
+                            <label style="display:flex;align-items:center;gap:8px;font-weight:normal;">
+                                <input type="checkbox" name="GOVORILNE_VLOGAROLE" value="vodstvo"
+                                       {% if 'vodstvo' in gov_vloge %}checked{% endif %}>
+                                <span>{{ t('set_govorilne_vloga_vodstvo', 'Vodstvo') }}</span>
+                            </label>
+                            <label style="display:flex;align-items:center;gap:8px;font-weight:normal;">
+                                <input type="checkbox" name="GOVORILNE_VLOGAROLE" value="teacher"
+                                       {% if 'teacher' in gov_vloge %}checked{% endif %}>
+                                <span>{{ t('set_govorilne_vloga_ucitelj', 'Učitelji') }}</span>
+                            </label>
+                            <div class="hint" style="margin-top:6px;">
+                                {{ t('set_govorilne_vloge_hint', 'Izberite, katere vloge (grupe) lahko vidijo in urejajo govorilne ure. Glavni admin jih nikoli ne vidi.') }}
+                            </div>
                         </div>
             </details>
 
@@ -824,6 +847,14 @@
         // Govorilne ure: bool stikalo — neoznačen checkbox se mora shraniti kot false.
         const gocb = document.querySelector('input[name="GOVORILNE_OMOGOCENE"]');
         if (gocb) values['GOVORILNE_OMOGOCENE'] = gocb.checked ? 'true' : 'false';
+        // Govorilne ure: katere grupe (vloge) jih vidijo — zberi označene kljukice.
+        // FormData z enim imenom več checkboxov vrne le zadnjega, zato sestavimo
+        // vejica-ločen seznam označenih vlog sami.
+        const govVloge = [];
+        document.querySelectorAll('input[name="GOVORILNE_VLOGAROLE"]').forEach(function (el) {
+            if (el.checked) govVloge.push(el.value);
+        });
+        values['GOVORILNE_VLOGAROLE'] = govVloge.join(',');
 
         // Obvestila zaslona: označena (v vrstnem redu kljukic) → ZASLON_OBVESTILA.
         const obvSel = [];

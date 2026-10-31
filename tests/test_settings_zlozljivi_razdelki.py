@@ -35,10 +35,11 @@ def test_settings_razdelki_so_zlozljivi(client):
     assert html.count("details class=\"collapsible\"") >= 7
 
 
-def test_settings_osnovno_odprto_ostali_zaprti(client):
-    """'Osnovno' ostane privzeto odprto (open), ostali razdelki zaprti."""
+def test_settings_vsi_razdelki_privzeto_zaprti(client):
+    """31.10.2026: VSI razdelki so privzeto zloženi (minimizirani) —
+    nobeden ni odprt; uporabnik jih odpre ročno z ▸ več."""
     html = _get_settings_html(client)
-    assert '<details class="collapsible" open>' in html
+    assert '<details class="collapsible" open>' not in html
 
 
 def test_settings_brez_surove_kode_na_dnu(client):

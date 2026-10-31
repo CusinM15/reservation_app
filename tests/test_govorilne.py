@@ -335,6 +335,48 @@ def test_prijave_ucitelj_zaenkrat_ne_vidi(make_user):
         assert r.headers.get("location", "") == "/"
 
 
+def test_govorilne_vloge_admin_doloci_katera_grupa_vidi(make_user):
+    """GOVORILNE_VLOGAROLE: admin v Nastavitvah šole določi, katere grupe
+    (vloge) vidijo govorilne ure. Privzeto samo 'admin' — učitelj je
+    preusmerjen. Ko admin doda 'teacher', učitelj dobi dostop do /govorilne
+    in /govorilne/prijave. main_admin se nikoli ne šteje sem."""
+    from app.tenancy import _default_school_id, set_school_setting
+
+    def _nastavi_vloge(vloge: str) -> None:
+        db = SessionLocal()
+        try:
+            set_school_setting(db, _default_school_id(db),
+                               "GOVORILNE_VLOGAROLE", vloge)
+            db.commit()
+        finally:
+            db.close()
+
+    # Privzeto (samo admin): učitelj NE vidi /govorilne/prijave.
+    with TestClient(app) as c:
+        teacher = make_user(role="teacher")
+        login(c, teacher.username)
+        r = c.get("/govorilne/prijave", follow_redirects=False)
+        assert r.status_code in (302, 307)
+
+    # Admin v Nastavitvah doda učitelje → učitelj zdaj vidi /govorilne in prijave.
+    _nastavi_vloge("admin,teacher")
+    with TestClient(app) as c:
+        teacher = make_user(role="teacher")
+        login(c, teacher.username)
+        r = c.get("/govorilne", follow_redirects=False)
+        assert r.status_code == 200
+        r = c.get("/govorilne/prijave", follow_redirects=False)
+        assert r.status_code == 200
+
+    # Nazaj na privzeto (samo admin): učitelj spet nima dostopa.
+    _nastavi_vloge("admin")
+    with TestClient(app) as c:
+        teacher = make_user(role="teacher")
+        login(c, teacher.username)
+        r = c.get("/govorilne", follow_redirects=False)
+        assert r.status_code in (302, 307)
+
+
 # ─────────────────────────────────────────────────────────────────────────
 # »Moje govorilne ure« — /govorilne/ure (objavljeni urnik za učitelja)
 # ─────────────────────────────────────────────────────────────────────────
@@ -1256,11 +1298,30 @@ def test_govorilne_onemogocene_poti_ugasnjene(make_user):
 
 
 def _nav_govorilne_js(html: str) -> str:
-    """Vrednost, ki jo JS dobi za govorilne v pogoju nav linka (true|false)."""
+    """Vrednost, ki jo JS dobi za GOVORILNE_OMOGOCENE v pogoju nav linka (true|false)."""
     import re
-    m = re.search(r"currentUser\.role === 'admin' && (true|false)", html)
+    m = re.search(r"govorilneVloge\.includes\(currentUser\.role\)[\s\S]*?&& (true|false)\)", html)
     assert m, f"'&& true/false' ni v HTML-ju:\n{html[:800]}"
     return m.group(1)
+
+
+def _nav_govorilne_vloge(html: str) -> list:
+    """Seznam vlog iz GOVORILNE_VLOGAROLE, ki ga JS dobi za nav gumb (npr. ['admin'])."""
+    import re
+    m = re.search(r"const govorilneVloge = (\[[^\]]*\]);", html)
+    assert m, f"'const govorilneVloge' ni v HTML-ju:\n{html[:800]}"
+    return re.findall(r'"([^"]+)"', m.group(1))
+
+
+def _set_govorilne_vloge(vrednost: str) -> None:
+    """Nastavi GOVORILNE_VLOGAROLE privzete šole (kot admin v Nastavitvah)."""
+    db = SessionLocal()
+    try:
+        from app.tenancy import _default_school_id, set_school_setting
+        set_school_setting(db, _default_school_id(db), "GOVORILNE_VLOGAROLE", vrednost)
+        db.commit()
+    finally:
+        db.close()
 
 
 def test_govorilne_onemogocene_nav_link_skrit(make_user):
@@ -1290,9 +1351,10 @@ def test_govorilne_vklopljene_nav_link_viden(make_user):
         assert _nav_govorilne_js(r.text) == "true", "gumb mora biti VIDEN (true)"
 
 
-def test_govorilne_nav_link_samo_za_skolskega_admina(make_user):
-    """Učitelj in vodstvo NIKOLI ne vidita gumba »🗓️ Moje govorilne ure« — JS pogoj je
-    zaklenjen na `role === 'admin'` (šolski admin), ne glede na GOVORILNE_OMOGOCENE."""
+def test_govorilne_nav_link_privzeto_samo_admin(make_user):
+    """Privzeto (GOVORILNE_VLOGAROLE=['admin']) gumb »🗓️ Moje govorilne ure« vidi SAMO
+    šolski admin; učitelj in vodstvo ga ne vidita, ker njune vloge ni v seznamu.
+    main_admin je izključen s trdim guardom (`role !== 'main_admin'`)."""
     with TestClient(app) as c:
         for role in ("teacher", "vodstvo"):
             u = make_user(role=role, ima_govorilne=True)
@@ -1300,11 +1362,76 @@ def test_govorilne_nav_link_samo_za_skolskega_admina(make_user):
             r = c.get("/rezervacije")
             assert r.status_code == 200, r.status_code
             html = r.text
-            # JS pogoj: gumb se izpiše samo za role === 'admin' (ne več za vsakogar razen main_admina)
-            m = re.search(r"currentUser\.role === 'admin' && (true|false)", html)
-            assert m, f"admin-only pogoj ni v HTML-ju:\n{html[:800]}"
-            assert "currentUser.role !== 'main_admin'" not in html, (
-                "stari široki pogoj (vsi razen main_admin) mora biti odstranjen"
-            )
-            # za učitelja/vodstvo je pogoj z also-display:none dejansko mrtev
+            # seznam vlog je privzeto samo ['admin'] → učitelj/vodstvo ne zadanejo pogoja
+            assert _nav_govorilne_vloge(html) == ["admin"], "privzeto samo admin"
+            # guard, da main_admin (nima svoje šole) gumba nikoli ne vidi
+            assert "currentUser.role !== 'main_admin'" in html
             assert 'id="govorilne-nav"' in html
+        # šolski admin — gumb dejansko viden
+        admin = make_user(role="admin", ima_govorilne=True)
+        login(c, admin.username)
+        r = c.get("/rezervacije")
+        assert _nav_govorilne_js(r.text) == "true"
+
+
+def test_govorilne_vlogarole_vodstvo_dodan_vidi_nav_gumb(make_user):
+    """GOVORILNE_VLOGAROLE='admin,vodstvo' → vodstvo dobi nav gumb (njegova vloga je v
+    seznamu); učitelj ga še vedno nima (njegove vloge ni v seznamu)."""
+    with TestClient(app) as c:
+        _set_govorilne_vloge("admin,vodstvo")
+        u = make_user(role="vodstvo", ima_govorilne=True)
+        login(c, u.username)
+        r = c.get("/rezervacije")
+        assert r.status_code == 200, r.status_code
+        assert _nav_govorilne_vloge(r.text) == ["admin", "vodstvo"]
+        assert _nav_govorilne_js(r.text) == "true"
+        # učitelj — pogoj je true, a njegove vloge ni v seznamu → gumb mrtev
+        t = make_user(role="teacher", ima_govorilne=True)
+        login(c, t.username)
+        r = c.get("/rezervacije")
+        assert _nav_govorilne_vloge(r.text) == ["admin", "vodstvo"]
+
+
+def test_govorilne_vlogarole_vodstvo_dostopa_do_urejanja(make_user):
+    """Privzeto vodstvo nima dostopa do /govorilne/ure (preusmerjen domov); ko admin
+    doda vodstvo v GOVORILNE_VLOGAROLE, vodstvo dobi dostop (200)."""
+    with TestClient(app) as c:
+        u = make_user(role="vodstvo", ima_govorilne=True)
+        login(c, u.username)
+        r = c.get("/govorilne/ure", follow_redirects=False)
+        assert r.status_code in (302, 307)
+        assert r.headers.get("location", "") == "/"
+
+        _set_govorilne_vloge("admin,vodstvo")
+        r = c.get("/govorilne/ure")
+        assert r.status_code == 200, r.status_code
+        assert "Objavljeni termin" in r.text
+
+
+def test_govorilne_vlogarole_teacher_vidi_samo_svoj_zapis(make_user):
+    """GOVORILNE_VLOGAROLE vključuje 'teacher' → učitelj dostopa na /govorilne/ure,
+    a sme urejati LE svoj zapis; urejanje drugega učitelja → 403."""
+    with TestClient(app) as c:
+        _set_govorilne_vloge("admin,teacher")
+        u = _ucitelj_uporabnik("Matej", "Čušin")
+        login(c, u.username)
+        r = c.get("/govorilne/ure")
+        assert r.status_code == 200, r.status_code
+        # poskus urejanja drugega učitelja (Arijana Đuretić iz autouse fixtureja) → 403
+        r2 = c.post("/govorilne/api/ure/ucitelj", json={"ime": "Arijana Đuretić"})
+        assert r2.status_code == 403, r2.text
+
+
+def test_govorilne_vlogarole_kljukice_v_nastavitvah(make_user):
+    """/settings (Nastavitve šole — razdelek Govorilne ure) izpiše 3 kljukice
+    (šolski admin / vodstvo / učitelji); privzeto je označen samo admin."""
+    with TestClient(app) as c:
+        _admin_login(c, make_user)
+        r = c.get("/settings")
+        assert r.status_code == 200, r.status_code
+        assert r.text.count('name="GOVORILNE_VLOGAROLE" value="') == 3
+        for v in ("admin", "vodstvo", "teacher"):
+            m = re.search(r'name="GOVORILNE_VLOGAROLE" value="' + v + r'"([^>]*)>', r.text)
+            assert m, f"kljukica {v} ni v nastavitvah"
+            oznacena = "checked" in m.group(1)
+            assert oznacena == (v == "admin"), f"kljukica {v}: označena={oznacena}, pričakovano={v=='admin'}"

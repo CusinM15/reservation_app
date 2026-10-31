@@ -132,6 +132,12 @@ SCHOOL_SETTING_KEYS = [
     # Govorilne ure: ali so za to šolo sploh omogočene (vklop/izklop
     # v Nastavitvah šole). Privzeto omogočene (obstoječe šole se ne izklopijo).
     "GOVORILNE_OMOGOCENE",
+    # Govorilne ure: KATERE VLOGE (grupe) jih vidijo in urejajo — vejica-ločen
+    # seznam vrednosti RoleEnum ("admin", "vodstvo", "teacher"). Privzeto samo
+    # "admin" (kot doslej — obstoječe šole se ne spremenijo); admin v
+    # Nastavitvah šole lahko doda vodstvo/učitelje. main_admin se NIKOLI ne
+    # šteje (nima svoje šole; govorilnih ne sme videti niti urejati).
+    "GOVORILNE_VLOGAROLE",
 ]
 
 
@@ -205,6 +211,8 @@ SCHOOL_SETTING_FIELDS = [
     {"key": "ZASLON_OBVESTILA_TEKST", "label": "Zaslon — tekstovna obvestila (JSON seznam, največ 5)", "type": "json"},
     # Govorilne ure (modul): ali so za šolo omogočene.
     {"key": "GOVORILNE_OMOGOCENE", "label": "Govorilne ure — so omogočene", "type": "bool"},
+    # Govorilne ure: katere vloge (grupe) jih vidijo (vejica-ločen seznam).
+    {"key": "GOVORILNE_VLOGAROLE", "label": "Govorilne ure — katere grupe jih vidijo", "type": "csv"},
 ]
 
 
@@ -514,6 +522,8 @@ def env_default_settings() -> dict:
         "ZASLON_OBVESTILA_TEKST": "[]",
         # Govorilne ure privzeto omogočene (obstoječe šole se ne izklopijo).
         "GOVORILNE_OMOGOCENE": "true",
+        # Govorilne ure privzeto vidi samo šolski admin (kot doslej).
+        "GOVORILNE_VLOGAROLE": "admin",
     }
 
 
@@ -717,6 +727,15 @@ class SchoolConfig:
     def PROSTORI_POPOLDAN(self) -> list[str]:
         """Prostori, ki uporabljajo POPOLDANSKI urnik (ne šolskega dopoldanskega)."""
         return self.get_list("PROSTORI_POPOLDAN", [])
+
+    @property
+    def GOVORILNE_VLOGAROLE(self) -> list[str]:
+        """Vloge (grupe), ki vidijo in urejajo govorilne ure — vejica-ločen seznam.
+
+        Vsebuje vrednosti RoleEnum ("admin", "vodstvo", "teacher"); privzeto samo
+        "admin" (kot doslej). main_admin se nikoli ne šteje sem — nima svoje šole.
+        """
+        return self.get_list("GOVORILNE_VLOGAROLE", ["admin"])
 
     def je_popoldan(self, prostor: str | None) -> bool:
         """Ali prostor uporablja popoldanski urnik."""
