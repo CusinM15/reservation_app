@@ -1044,14 +1044,24 @@ def test_prijava_brisanje_ucitelj_svojo_403(make_user):
             db.close()
 
 
-def test_prijava_brisanje_vodstvo_403(make_user):
-    """Vodstvo NE more brisati rezervacij — samo šolski admin."""
+def test_prijava_brisanje_vodstvo_200(make_user):
+    """Vodstvo lahko briše rezervacije (skupaj s šolskim adminom) — 200.
+
+    Vodstvo mora biti v GOVORILNE_VLOGAROLE (Nastavitve šole), da sploh
+    dostopa do govorilnih ur; takrat lahko tudi briše rezervacije.
+    """
+    _set_govorilne_vloge("admin,vodstvo")
     with TestClient(app) as c:
         pid = _naredi_prijavo()
         vodstvo = make_user(role="vodstvo")
         login(c, vodstvo.username)
         r = c.post("/govorilne/api/prijava/odstrani", json={"id": pid})
-        assert r.status_code == 403
+        assert r.status_code == 200, r.text
+        db = SessionLocal()
+        try:
+            assert db.query(GovorilnaPrijava).filter(GovorilnaPrijava.id == pid).first() is None
+        finally:
+            db.close()
 
 
 def test_prijava_brisanje_main_admin_403(make_user):
@@ -1088,6 +1098,30 @@ def test_prijava_brisanje_neobstojece_404(make_user):
         login(c, admin.username)
         r = c.post("/govorilne/api/prijava/odstrani", json={"id": 999999})
         assert r.status_code == 404
+
+
+def test_ure_ucitelj_samo_vidi_admin_briše_in_manj_vec_fix(make_user):
+    """Učitelj na /govorilne/ure rezervacije LE VIDI (ni gumba »Briši«);
+    admin jih vidi in briše. Poleg tega je zložljiva oznaka »▸ več/▾ manj«
+    scoped (`:scope > summary`), da odprtje zunanje kartice ne pokvari
+    oznake notranjega, še vedno zloženega edit-bloka."""
+    _set_govorilne_vloge("admin,teacher")
+    with TestClient(app) as c:
+        _naredi_prijavo()  # rezervacija za »Matej Čušin«
+        # Učitelj → samo vidi, gumba ni.
+        teacher = _ucitelj_uporabnik("Matej", "Čušin")
+        login(c, teacher.username)
+        r = c.get("/govorilne/ure")
+        assert r.status_code == 200
+        assert "Rezervacije staršev" in r.text
+        assert "Briši" not in r.text
+        # Admin → vidi gumb Briši + scoped JS fix.
+        _admin_login(c, make_user)
+        r2 = c.get("/govorilne/ure")
+        assert r2.status_code == 200
+        assert "Briši" in r2.text
+        assert ":scope > summary .toggle-hint" in r2.text
+        assert "querySelectorAll('.toggle-hint')" not in r2.text
 
 
 def test_prijava_brisanje_manjka_id_400(make_user):

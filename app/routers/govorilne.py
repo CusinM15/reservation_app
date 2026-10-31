@@ -774,9 +774,9 @@ async def govorilne_prijava_odstrani(
 ):
     """Brisanje rezervacije.
 
-    Šolski admin (role=admin) lahko izbriše katerokoli rezervacijo svoje šole.
-    Učitelj lahko izbriše samo lastno rezervacijo (tisto na svoje ime).
-    Vodstvo in glavni admin lahko rezervacijo le vidijo, ne brišejo je.
+    BRIŠEJO LE vodstvo in šolski admin (role∈{admin,vodstvo}) — lahko katerokoli
+    rezervacijo svoje šole. Učitelj rezervacij NE SME brisati (neravnopravno:
+    samo vidi). Glavni admin rezervacije le vidi, ne briše jih.
     """
     user = get_request_user(request, db)
     if user is None:
@@ -803,9 +803,9 @@ async def govorilne_prijava_odstrani(
     if prijava is None:
         raise HTTPException(status_code=404, detail="Prijava ne obstaja")
 
-    if not school_admin and prijava.ucitelj != _polno_ime_user(user):
+    if not school_admin:
         raise HTTPException(status_code=403,
-                            detail="Učitelj lahko izbriše samo svojo rezervacijo")
+                            detail="Rezervacije lahko briše samo vodstvo ali šolski administrator")
 
     db.delete(prijava)
     db.commit()
