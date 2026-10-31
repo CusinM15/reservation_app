@@ -65,7 +65,7 @@
     {% endif %}
   </div>
 
-  {% if cfg.enabled and not view_only %}
+  {% if is_main_admin and cfg.enabled and not view_only %}
   <div class="card">
     {% if cfg.free %}
       <h2>{{ t('narocnina_brezplacno', 'Brezplačno (0 €)') }}</h2>
@@ -180,7 +180,7 @@
   </div>
   {% endif %}
 
-  {% if payments and not view_only %}
+  {% if is_main_admin and payments and not view_only %}
   <div class="card">
     <h2>{{ t('narocnina_sporocena_placila', 'Sporočena plačila') }}</h2>
     <table>
@@ -239,7 +239,7 @@
   </div>
   {% endif %}
 
-  {% if is_admin and not view_only %}
+  {% if is_main_admin and not view_only %}
   <!-- SAMOPOSTREŽNO PODALJŠANJE: administrator šole podaljša naročnino sam,
        brez čakanja na glavnega admina. Veljavnost se nastavi na 1. 9. naslednje
        leto; gumb je aktiven od 15. 8. dalje. -->
@@ -271,6 +271,27 @@
       Za vprašanja glede naročnine se obrnite na glavnega admina:
       <a href="mailto:{{ main_admin_email }}">{{ main_admin_email }}</a>
     </p>
+  </div>
+  {% endif %}
+
+  {% if is_main_admin %}
+  <div class="card">
+    <h2>🧾 Podatki izdajatelja e-računa (podpis)</h2>
+    <p class="muted">
+      Naziv, naslov, davčna, IBAN in <strong>podpis (signatura)</strong> — podatki,
+      ki gredo na e-račun, ko ga šola naroči. Brez njih e-računa ni mogoče izdati.
+    </p>
+    {% if eracun_complete %}
+      <p class="ok" style="margin-top:0;">Izdajatelj je izpolnjen — e-račune je mogoče izdati. ✔</p>
+    {% else %}
+      <p class="bad" style="margin-top:0;">Izdajatelj še ni izpolnjen — e-računa ni mogoče izdati.</p>
+    {% endif %}
+    {% if issuer.sign %}
+      <p class="muted" style="margin-bottom:0;">Trenutni podpis (signatura): <strong>{{ issuer.sign }}</strong></p>
+    {% endif %}
+    <a class="btn" href="/narocnina/izdajatelj" style="text-decoration:none;display:inline-block;">
+      Uredi podatke in podpis
+    </a>
   </div>
   {% endif %}
 

@@ -408,6 +408,7 @@ def narocnina_page(
             "school_admin_email": get_school_config(db, school.id).ADMIN_EMAIL,
             # E-račun: izdajatelj izpolnjen? + e-računi te šole
             "eracun_complete": issuer_complete(issuer_config(db)),
+            "issuer": issuer_config(db),
             "eracun_price": price_eur(db),
             "invoices": (
                 db.query(Invoice)

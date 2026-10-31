@@ -183,7 +183,8 @@ def test_school_admin_can_always_log_in(client, make_user):
     r = _login(client, admin.username)
     assert r.status_code == 303                     # admin se prijavi
     assert client.get("/narocnina").status_code == 200
-    assert "Nakup naročnine" in client.get("/narocnina").text
+    assert "E-račun" in client.get("/narocnina").text        # šolski admin vidi samo e-račun
+    assert "Nakup naročnine" not in client.get("/narocnina").text  # stari nakup je samo za mainadmina
 
 
 def test_main_admin_can_always_log_in(client):
@@ -590,8 +591,8 @@ def test_registracija_slug_collision_gets_suffix(client):
 def test_auto_renew_toggle(client, make_user):
     _set_selling(True)
     _set_until(date.today() + timedelta(days=5))
-    admin = make_user(role="admin")
-    login(client, admin.username)
+    # Samodejno plačilo (stari PayPal flow) upravlja zdaj glavni admin.
+    login(client, app_config.MAIN_ADMIN_USERNAME, app_config.MAIN_ADMIN_PASSWORD)
 
     r = client.post("/narocnina/avto", data={"auto": "1"}, follow_redirects=False)
     assert r.status_code in (303, 307)
