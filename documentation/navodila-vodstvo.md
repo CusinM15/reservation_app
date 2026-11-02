@@ -1,11 +1,10 @@
 # 👑 Navodila za vodstvo
 
 > Namenjeno **ravnatelju in pomočnikom ravnatelja**.  
-> Vodstvo ima več moči kot učitelji — lahko brišete tudi tuje rezervacije, upravljate dneve dejavnosti in
-> nadzorujete ocenjevanje. S tem pride tudi **odgovornost**.
+> Vodstvo ima več moči kot učitelji — lahko briše tudi tuje rezervacije, upravlja dneve dejavnosti in
+> nadzoruje ocenjevanje. S tem pride tudi **odgovornost**.
 >
-> ⚡ **Hitri začetek:** Prijavite se s svojim šolskim računom. **Večino svojega dela opravljate na strani
-> »Vnos dejavnosti« (`/dejavnosti`)** — tam nastavite dneve dejavnosti in tedenske serije. Vse, kar ni
+> ⚡ **Hitri začetek:** Prijavite se v [aplikacijo](https://reservationapp.site). **Večino svojega dela opravljate na strani [Dejavnosti](https://reservationapp.site/dejavnosti) (`/dejavnosti`)** — tam nastavite dneve dejavnosti, tedenske serije in večdnevne dejavnosti. Vse, kar ni
 > omenjeno spodaj, je enako kot za učitelje.
 
 ---
@@ -28,11 +27,11 @@ Tam nastavite:
 
 Dejavnosti so urejene **po razredih (generacijah) od 1. do 9. razreda** — vsak razred ima svoj zavihek
 (poleg njih je še zavihek **IP/POUK** za posebne skupine). V vsaki vrstici termina izberete, za katere
-**razrede (skupine)** dejavnost velja: posamezne oddelke (npr. `3. a`, `3. b`) ali kar
+**razrede (skupine)** dejavnost velja: posamezne oddelke (npr. `3.a`, `3.b`) ali kar
 **»Vsi razredi generacije«**.
 
-> ℹ️ Za **8. in 9. razred** se pogosto uporabljajo skupinsko-razredne oznake (npr. `8. a` in `8. 1`),
-> kjer številka pomeni skupino.
+> ℹ️ Za **8. in 9. razred** se pogosto uporabljajo skupinsko-razredne oznake (npr. `8.a` in `8.1`),
+> kjer številka pomeni skupino. Pri dnevih dejavnosti pa so na voljo zgolj »črkovni« razredi.
 
 ### Kako dodate dejavnost (koraki)
 
@@ -48,14 +47,14 @@ Dejavnosti so urejene **po razredih (generacijah) od 1. do 9. razreda** — vsak
 | Polje | Kaj pomeni |
 |---|---|
 | **Sekcija** | Vrsta dneva (KULTURNI / NARAVOSLOVNI / TEHNIŠKI / ŠPORTNI / DRUGO) |
-| **Glavni naslov** | Ime dejavnosti (npr. »Športni dan«); če ga pustite prazno, se uporabi naziv sekcije |
-| **Pod dejavnost** | Neobvezno — npr. »Oblak 365«, »Powerpoint« (za več pod-dejavnosti pod istim dnem) |
+| **Glavni naslov** | Ime dejavnosti (npr. »Zimski športni dan«); če ga pustite prazno, se uporabi naziv sekcije |
+| **Pod dejavnost** | Neobvezno — npr. „Smučanje Vogel, pohod Tamar“ |
 | **Celoten dan** | Ali dejavnost traja ves dan (glej spodaj) |
 | **Tedensko ponavljanje** | Za redne tedenske rezervacije (serija) |
 | **Datum ni še določen** | Če datuma še ne veste — vpišete le oceno termina (npr. »oktober–november«) |
 | **Datumi** | Od (+ **Več dni** → **Do**), izbira razredov ali »Vsi razredi generacije« |
-| **Dodaj datum** | Npr. vsak razred v generaciji ima drug dan isto dejavnost, torej lahko enkrat ustvarimo za več razredov, pri vsakem datumu lahko izbereš do datum  možnost in za kateri razred velja. |
-| **Prostori** | Kateri prostori se rezervirajo (npr. telovadnica, računalnica), aplikacija v primeru, da je dejavnost označena `Celoten dan` rezervira izbrani prostor od 1. do 5. ure. |
+| **Dodaj datum** | Kadar ima vsak razred v generaciji isto dejavnost na drug dan: dodate več datumov in za vsakega izberete, za katere razrede velja. Pri vsakem datumu lahko izberete tudi **Do** (večdnevnost) |
+| **Prostori** | Kateri prostori se rezervirajo (npr. telovadnica, računalnica). Če je dejavnost označena kot **Celoten dan**, aplikacija izbrani prostor rezervira za ure 1–5 |
 | **Cena (€)** | Neobvezno (npr. okvirni strošek dejavnosti) |
 | **Vodja** | Neobvezno (kdo vodi dejavnost) |
 | **Opomba** | Neobvezno |
@@ -64,30 +63,29 @@ Dejavnosti so urejene **po razredih (generacijah) od 1. do 9. razreda** — vsak
 
 ### Večdnevna dejavnost (npr. šola v naravi)
 
-1. V razdelku **Datumi**: 
-2. Vpišite **Od** (prvi dan).
-3. Obkljukajte **»Več dni«** in v polje **Do** vpišite **zadnji dan**.
-4. Shranite — dejavnost velja za **vsak zaporedni dan v tem obsegu**; vsak dan se zablokira
+1. V razdelku **Datumi** vpišite **Od** (prvi dan).
+2. Obkljukajte **»Več dni«** in v polje **Do** vpišite **zadnji dan**.
+3. Shranite — dejavnost velja za **vsak zaporedni dan v tem obsegu**; vsak dan se zablokira
    za ocenjevanja in (ob izbranih prostorih) rezervira ure 1–5.
-5. Če imamo več izvedb iste dejavnosti **+ Dodaj datum`** za vsak datum (oz za vsako obdobje Od, Do) določite za katere razrede ta dejavnost velja.
+4. Če imate več izvedb iste dejavnosti, s gumbom **+ Dodaj datum** dodajte vsak datum (oziroma vsako obdobje Od–Do) in za vsakega določite, za katere razrede velja.
 
-### Celi dan ali krajša dejavnost
+### Cel dan ali krajša dejavnost
 
-- **»Celoten dan«** (obkljukano): dan se **zablokira za ocenjevanja**, obstoječa napovedi ocenjevanj se izbrišejo
-  (učitelji dobijo e-pošto); ob izbranih prostorih se **rezervirajo ure 1–5**, prav tako v primeru da rezervacije obstajajo, za termin ko poteka dejavnost jih aplikacija prekliče in prizadeti učitelj, ki je ustvaril rezervacijo dobi e-pošto.
-- **Brez kljukice**: **krajša** dejavnost — ocenjevanja **niso** blokirana in dan se v koledarju
-  ne prikaže kot blokada, mora pa učitelj sam preveriti, da dogodek ne poteka ravno med njegovo uro.
+- **»Celoten dan« (obkljukano):** dan se **zablokira za ocenjevanja** in obstoječa napovedana ocenjevanja se izbrišejo
+  (učitelji dobijo e-pošto). Ob izbranih prostorih se **rezervirajo ure 1–5**; če za te termine že obstajajo rezervacije, jih aplikacija prekliče in prizadeti učitelji dobijo e-pošto.
+- **Brez kljukice:** **krajša** dejavnost — ocenjevanja **niso** blokirana in dan se v koledarju
+  ne prikaže kot blokada. Učitelj mora sam preveriti, da dogodek ne poteka ravno med njegovo uro.
 
 ### Tedensko ponavljanje (serija)
 
 Obkljukajte **»Tedensko ponavljanje«**, da se dejavnost/rezervacija ponovi vsak teden na isti dan v
-izbranem obdobju (npr. vsak ponedeljek 1. uro v računalnici). To je priročno za reden pouk. 
+izbranem obdobju (npr. vsak ponedeljek 1. uro v računalnici). To je priročno za reden pouk.
 
 ### Kaj se zgodi, ko shranite
 
 1. Sistem **samodejno izbriše** vsa obstoječa ocenjevanja izbranih razredov v tem obdobju.
 2. Prizadeti učitelji **avtomatsko prejmejo e-poštno obvestilo**.
-3. Ob izbranih prostorih se **rezervirajo ure 1–5**, v primeru obstoječih rezervacij se le te tudi odpovedo, če jih rabijo v dejavnosti.
+3. Ob izbranih prostorih se **rezervirajo ure 1–5**; če za te termine že obstajajo rezervacije, ki jih dejavnost potrebuje, so odpovedane.
 4. Vse se zabeleži v dnevniku sprememb.
 
 Ni vam treba ničesar najavljati posebej — sistem obvesti namesto vas.
@@ -111,15 +109,15 @@ na glavni strani (enako kot učitelji), a z dodatnimi pravicami:
 | Gumb | Kaj naredi |
 |---|---|
 | **`+`** v celici koledarja | Hitro ustvari rezervacijo za ta datum |
-| **Novo rezervacija** | Odpre okno za rezervacijo (prostor, datum, ura, količina) |
+| **Nova rezervacija** | Odpre okno za rezervacijo (prostor, datum, ura, količina) |
 | **✕** na rezervaciji | Izbriše rezervacijo (svojo ali — kot vodstvo — tujo) |
 | **Osveži** | Ponovno naloži prikazane podatke |
 
-Na posnetku spodaj vodstvo vidi rezervacije vseh učiteljev (ne le svojih):
+Na posnetku spodaj vodstvo vidi rezervacije vseh učiteljev:
 
 ![Rezervacije za vodstvo](slike/navodila_vodstvo_rezervacije.png)
 
-**Vodstvo ima več moči — lahko brišete tudi tuje rezervacije. S tem pride odgovornost.**
+**Vodstvo ima več moči — lahko briše tudi tuje rezervacije. S tem pride odgovornost.**
 Preden zbrišete učiteljevo rezervacijo, premislite.
 
 ### Obvestila po e-pošti
@@ -128,7 +126,7 @@ Sistem **samodejno pošilja e-poštna obvestila** vedno, ko vodstvo:
 
 | Akcija | Kdo dobi e-pošto | Zakaj? |
 |--------|------------------|--------|
-| Označi datum kot **dan dejavnosti**  in `Celoten dan`| Vsi učitelji, katerih ocenjevanje se je izbrisalo | Da vedo, da morajo najti drug datum |
+| Označi datum kot **dan dejavnosti** (cel dan) | Vsi učitelji, katerih ocenjevanje se je izbrisalo | Da vedo, da morajo najti drug datum |
 | Ustvari **tedensko serijo** | Učitelji s konfliktnimi rezervacijami | Dobijo obvestilo, da je njihova rezervacija odpovedana |
 
 > ⚠️ **Pomembno:** Če posamezno rezervacijo izbrišete kar z `✕`, **nihče ne dobi obvestila**. Za
@@ -138,7 +136,7 @@ Sistem **samodejno pošilja e-poštna obvestila** vedno, ko vodstvo:
 
 ## 📥 Izvoz podatkov v CSV
 
-> **Kaj je to?** Izvoz v CSV (Excelu prijazna oblika) — podatke prenesete na svoj računalnik in jih
+> **Kaj je to?** Izvoz v CSV (oblika, prijazna Excelu) — podatke prenesete na svoj računalnik in jih
 > odprete v Excelu, Google Sheets ali podobnem programu.
 
 | Vrsta izvoza | Kam kliknete | Kateri podatki |
@@ -151,8 +149,8 @@ Sistem **samodejno pošilja e-poštna obvestila** vedno, ko vodstvo:
 3. Pri rezervacijah lahko izberete tudi **prostor** (ali pustite »Vsi prostori«).
 4. Kliknite **📥 Prenesi CSV**.
 
-> **Namig:** CSV uporablja podpičje (`;`) kot ločilo, kar Excel v slovenščini samodejno prepozna.
-> Če se vam zdi zmešano v en stolpec, pri uvozu izberite **ločilo: podpičje**.
+> **Namig:** CSV uporablja podpičje (`;`) kot ločilo, kar Excel v slovenski različici samodejno prepozna.
+> Če se podatki uvozijo v en sam stolpec, pri uvozu izberite **ločilo: podpičje**.
 
 ---
 
@@ -167,6 +165,3 @@ Sistem **samodejno pošilja e-poštna obvestila** vedno, ko vodstvo:
 
 **Z eno besedo:** vodstvo skrbi za urnik in dneve dejavnosti, učitelji skrbijo za pouk.
 
----
-
-> **Avtor:** Matej Čušin
