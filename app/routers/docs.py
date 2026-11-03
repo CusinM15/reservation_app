@@ -21,6 +21,7 @@
 
 from fastapi import APIRouter, Request, Depends, HTTPException
 from fastapi.responses import RedirectResponse
+from app.templating import make_templates
 from fastapi.templating import Jinja2Templates
 from app.database import get_db
 from app.tenancy import role_value, get_request_user, is_main_admin
@@ -38,7 +39,7 @@ from app.models import User, AppSetting
 
 router = APIRouter(tags=["docs"])
 
-OBRAZCI_TEMPLATES = Jinja2Templates(directory=str(Path(__file__).resolve().parent.parent / "templates"))
+OBRAZCI_TEMPLATES = make_templates(str(Path(__file__).resolve().parent.parent / "templates"))
 
 DOCS_DIR = Path(__file__).resolve().parent.parent.parent / "documentation"
 
@@ -547,3 +548,93 @@ def navodila_reset_doc(name: str, request: Request, db: Session = Depends(get_db
     _clear_override(db, name)
     log_audit(db, user.id, user.username, "reset_doc", name)
     return {"ok": True, "name": name, "overridden": False}
+
+# ═══════════════════════════════════════════════════════════════════════
+# Urejanje strani (predloge HTML/CSS/JS) — univerzalni editor
+# Glavni admin prek /navodila preglasi HTML predlogo poljubne strani.
+# Override = AppSetting "TEMPLATE_OVERRIDE:<ime>"; uporablja ga
+# app/template_override.OverrideLoader ob vsakem renderju. Backend .py
+# se tu NE ureja.
+# ═══════════════════════════════════════════════════════════════════════
+
+TEMPLATE_FILES = sorted([
+    "index.html", "login.html", "registracija.html", "registracija_uspeh.html",
+    "admin_users.html", "audit_log.html", "global_settings.html", "schools.html",
+    "school_settings.html", "nastavitev.html", "narocnina.html", "nakup.html",
+    "obrazci.html", "dejavnosti.html", "govorilne.html", "govorilne_ure.html",
+    "govorilne_prijave.html", "zasloni.html", "eracun_izdajatelj.html", "navodila_main.html",
+])
+
+
+def _page_label(name: str) -> str:
+    base = name[:-5] if name.endswith(".html") else name
+    return base.replace("_", " ").strip().title()
+
+
+@router.get("/api/pages/list")
+def pages_list(request: Request, db: Session = Depends(get_db)):
+    _require_main_admin(request, db)
+    from app import template_override as tov
+    return {"templates": [
+        {"name": n, "label": _page_label(n), "overridden": bool(tov.read_override(db, n))}
+        for n in TEMPLATE_FILES
+    ]}
+
+
+@router.get("/api/pages/{name}")
+def pages_get(name: str, request: Request, db: Session = Depends(get_db)):
+    _require_main_admin(request, db)
+    if name not in TEMPLATE_FILES:
+        raise HTTPException(status_code=404, detail="Predloga ne obstaja")
+    from app import template_override as tov
+    ov = tov.read_override(db, name)
+    content = ov if ov is not None else tov.read_builtin(name)
+    if content is None:
+        raise HTTPException(status_code=404, detail="Predloge ni mogoče prebrati")
+    return {
+        "name": name,
+        "label": _page_label(name),
+        "content": content,
+        "overridden": ov is not None,
+        "history": len(tov.list_history(db, name)),
+    }
+
+
+@router.post("/api/pages/{name}", status_code=200)
+async def pages_save(name: str, request: Request, db: Session = Depends(get_db)):
+    user = _require_main_admin(request, db)
+    if name not in TEMPLATE_FILES:
+        raise HTTPException(status_code=400, detail="Predloga ne obstaja")
+    try:
+        body = await request.json()
+    except Exception:
+        raise HTTPException(status_code=400, detail="Neveljaven JSON")
+    content = str(body.get("content", "")) or ""
+    from app import template_override as tov
+    tov.save_override(db, name, content)
+    log_audit(db, user.id, user.username, "edit_page", name)
+    return {"ok": True, "name": name, "overridden": True}
+
+
+@router.post("/api/pages/{name}/reset", status_code=200)
+def pages_reset(name: str, request: Request, db: Session = Depends(get_db)):
+    user = _require_main_admin(request, db)
+    if name not in TEMPLATE_FILES:
+        raise HTTPException(status_code=400, detail="Predloga ne obstaja")
+    from app import template_override as tov
+    tov.clear_override(db, name)
+    log_audit(db, user.id, user.username, "reset_page", name)
+    return {"ok": True, "name": name, "overridden": False}
+
+
+@router.post("/api/pages/{name}/revert", status_code=200)
+def pages_revert(name: str, request: Request, db: Session = Depends(get_db)):
+    user = _require_main_admin(request, db)
+    if name not in TEMPLATE_FILES:
+        raise HTTPException(status_code=400, detail="Predloga ne obstaja")
+    from app import template_override as tov
+    prev = tov.revert_override(db, name)
+    if prev is None:
+        return {"ok": False, "name": name, "reason": "Ni prejšnje verzije v zgodovini."}
+    log_audit(db, user.id, user.username, "revert_page", name)
+    return {"ok": True, "name": name, "reverted": True}

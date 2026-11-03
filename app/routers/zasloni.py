@@ -29,6 +29,7 @@ from zoneinfo import ZoneInfo
 
 from fastapi import APIRouter, Request, Depends, HTTPException
 from fastapi.responses import HTMLResponse, JSONResponse, PlainTextResponse, FileResponse, Response
+from app.templating import make_templates
 from fastapi.templating import Jinja2Templates
 from sqlalchemy.orm import Session
 
@@ -45,7 +46,7 @@ router = APIRouter(tags=["zasloni"])
 
 # ── Predloge ─────────────────────────────────────────────────────────
 TEMPLATES_DIR = Path(__file__).resolve().parent.parent / "templates"
-templates = Jinja2Templates(directory=str(TEMPLATES_DIR))
+templates = make_templates(str(TEMPLATES_DIR))
 templates.env.globals["t"] = _ui_t
 
 

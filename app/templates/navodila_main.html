@@ -188,6 +188,25 @@
                 </p>
                 <div class="hint" style="margin-top:.8rem;">Shranjena .md se uporabi na VSEH teh mestih (predogled + PDF + obrazci) in za vse šole.</div>
             </div>
+
+            <div class="card">
+                <h2>✏️ Urejanje strani (predloge HTML)</h2>
+                <p class="hint">Preglej in preglasši HTML predlogo poljubne strani appa (izgled in vsebina). Override se shrani v bazo in velja ob naslednjem prikazu te strani — brez ponovne gradnje. Backend Python logika se tukaj ne ureja.</p>
+                <div class="editor">
+                    <div class="editor-head">
+                        <select id="pageSelect" onchange="loadPage()"><option value="">— izberi stran —</option></select>
+                        <span id="pageStateBadge" class="badge-file">vgrajen</span>
+                        <span id="pageHistBadge" class="badge-file">0 verzij</span>
+                    </div>
+                    <textarea id="pageEditor" spellcheck="false" placeholder="Izberi stran zgoraj …"></textarea>
+                    <div class="actions">
+                        <button class="btn primary" onclick="savePage()">💾 Shrani stran</button>
+                        <button class="btn ghost" onclick="resetPage()">↩️ Vgrajena</button>
+                        <button class="btn ghost" onclick="revertPage()">⏪ Prejšnja verzija</button>
+                    </div>
+                    <div id="pageMsg" class="msg"></div>
+                </div>
+            </div>
         </div>
     </div>
 </div>
@@ -259,6 +278,66 @@ function wrapMd(b, a) {
 }
 
 document.addEventListener('DOMContentLoaded', loadDoc);
+<script>
+let CURRENT_PAGE = null;
+async function apiP(url, opts) {
+    const r = await fetch(url, opts);
+    if (!r.ok) { let m = (r.statusText || r.status); try { const j = await r.json(); m = j.detail || m; } catch(e){} throw new Error(m); }
+    return r;
+}
+async function loadPagesList() {
+    const s = document.getElementById('pageSelect');
+    try {
+        const j = await (await apiP('/api/pages/list')).json();
+        s.innerHTML = '<option value="">— izberi stran —</option>' + j.templates.map(t =>
+            '<option value="' + t.name + '">' + t.label + (t.overridden ? ' ⚠' : '') + '</option>').join('');
+    } catch (e) { document.getElementById('pageMsg').className='msg err'; document.getElementById('pageMsg').textContent = 'Napaka: ' + e.message; }
+}
+async function loadPage() {
+    const name = document.getElementById('pageSelect').value;
+    const msg = document.getElementById('pageMsg');
+    if (!name) { document.getElementById('pageEditor').value = ''; return; }
+    msg.className = 'msg'; msg.textContent = 'Nalagam ...';
+    try {
+        const j = await (await apiP('/api/pages/' + encodeURIComponent(name))).json();
+        CURRENT_PAGE = name;
+        document.getElementById('pageEditor').value = j.content;
+        const b = document.getElementById('pageStateBadge');
+        b.textContent = j.overridden ? 'urejanje (shranjeno)' : 'vgrajen';
+        b.className = j.overridden ? 'badge-ov' : 'badge-file';
+        document.getElementById('pageHistBadge').textContent = (j.history || 0) + ' verzij';
+        msg.textContent = '';
+    } catch (e) { msg.className='msg err'; msg.textContent = 'Napaka: ' + e.message; }
+}
+async function savePage() {
+    if (!CURRENT_PAGE) return;
+    const msg = document.getElementById('pageMsg');
+    msg.className = 'msg'; msg.textContent = 'Shranjujem ...';
+    try {
+        await apiP('/api/pages/' + encodeURIComponent(CURRENT_PAGE), { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({content: document.getElementById('pageEditor').value}) });
+        const b = document.getElementById('pageStateBadge'); b.textContent = 'urejanje (shranjeno)'; b.className = 'badge-ov';
+        msg.className = 'msg ok'; msg.textContent = '✅ Stran shranjena — ob naslednjem obisku bo prikazana tvoja verzija.'; setTimeout(() => { msg.textContent = ''; }, 4500);
+    } catch (e) { msg.className='msg err'; msg.textContent = 'Napaka: ' + e.message; }
+}
+async function resetPage() {
+    if (!CURRENT_PAGE) return;
+    if (!confirm('Ponastavim to stran na vgrajeno predlogo?')) return;
+    try {
+        await apiP('/api/pages/' + encodeURIComponent(CURRENT_PAGE) + '/reset', { method: 'POST' });
+        await loadPage();
+        const m = document.getElementById('pageMsg'); m.className = 'msg ok'; m.textContent = '✅ Ponastavljeno na vgrajeno.'; setTimeout(() => { m.textContent=''; }, 2500);
+    } catch (e) { document.getElementById('pageMsg').className='msg err'; document.getElementById('pageMsg').textContent = 'Napaka: ' + e.message; }
+}
+async function revertPage() {
+    if (!CURRENT_PAGE) return;
+    try {
+        const j = await (await apiP('/api/pages/' + encodeURIComponent(CURRENT_PAGE) + '/revert', { method: 'POST' })).json();
+        const m = document.getElementById('pageMsg');
+        if (j.reverted) { await loadPage(); m.className = 'msg ok'; m.textContent = '✅ Vrnjena prejšnja verzija.'; setTimeout(() => { m.textContent=''; }, 2500); }
+        else { m.className = 'msg err'; m.textContent = 'Ni prejšnje verzije v zgodovini.'; }
+    } catch (e) { document.getElementById('pageMsg').className='msg err'; document.getElementById('pageMsg').textContent = 'Napaka: ' + e.message; }
+}
+document.addEventListener('DOMContentLoaded', loadPagesList);
 </script>
 </body>
 </html>

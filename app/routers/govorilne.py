@@ -30,6 +30,7 @@ from pathlib import Path
 
 from fastapi import APIRouter, Request, Depends, HTTPException
 from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse
+from app.templating import make_templates
 from fastapi.templating import Jinja2Templates
 from sqlalchemy.orm import Session
 
@@ -56,7 +57,7 @@ from app.govorilne_podatki import (
 router = APIRouter(tags=["govorilne"])
 
 TEMPLATES_DIR = Path(__file__).resolve().parent.parent / "templates"
-templates = Jinja2Templates(directory=str(TEMPLATES_DIR))
+templates = make_templates(str(TEMPLATES_DIR))
 
 # Koliko minut traja en termin (privzeto 15; šola lahko nastavi v /govorilne/ure).
 TERMIN_MINUT = 15

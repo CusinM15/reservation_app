@@ -31,4 +31,7 @@ def make_templates(directory: str = "app/templates") -> Jinja2Templates:
     # app/main.py, zato so predloge drugih routerjev (narocnina.html,
     # nakup.html) padale z TemplateAssertionError: No filter named 'eur'.
     tpl.env.filters["eur"] = _eur
+    from app.template_override import install, set_templates_dir
+    set_templates_dir(directory)
+    install(tpl, directory)
     return tpl
