@@ -213,7 +213,13 @@ class OverrideLoader(BaseLoader):
         content = get_override_cached(template)
         if content is None:
             raise TemplateNotFound(template)
-        return content, template, True
+        # Tretji element mora biti CALLABLE za is_up_to_date (Jinja ga kliče
+        # s template kot argumentom) — ne bool! Bool bi ob 2. renderju
+        # sprožil TypeError: 'bool' object is not callable → HTTP 500.
+        # Vedi: ob setTimeout spremembo override-a pokliče save_override()
+        # -> invalidate() -> env.cache.clear(), zato je `lambda _: True` OK
+        # (tovarne ne naloži podatek, ampak cache-clear prisili ponovni load).
+        return content, template, lambda: True
 
 
 def install(tpl, directory: str):

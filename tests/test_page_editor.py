@@ -2,7 +2,8 @@
 #
 # Preveri, da override HTML predloge (AppSetting TEMPLATE_OVERRIDE:<ime>)
 # dejansko pride skozi jinja loader na prikaz strani, in da brez override-a
-# stran ostane vgrajena.
+# stran ostane vgrajena. Dvakrat zapored izriše stran, da ujame regresijo
+# 'bool object is not callable' (tretji element get_source mora biti CALLABLE).
 
 def test_login_brez_override_ostane_vgrajena(client):
     r = client.get("/auth/login")
@@ -25,6 +26,11 @@ def test_override_login_spreminja_prikaz(client):
     r = client.get("/auth/login")
     assert r.status_code == 200
     assert "PAGE_OVERRIDE_MARKER_ABC" in r.text
+    # DRUGI render — ob ponovnem prikazu mora override še vedno delovati
+    # (regresija: tretji element loaderja je moral biti callable, ne bool).
+    r2 = client.get("/auth/login")
+    assert r2.status_code == 200, f"drugi render padel: {r2.status_code}"
+    assert "PAGE_OVERRIDE_MARKER_ABC" in r2.text
 
 
 def test_reset_override_vrne_vgrajeno(client):
