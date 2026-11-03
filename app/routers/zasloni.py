@@ -606,6 +606,13 @@ def zasloni_praznos(request: Request, db: Session = Depends(get_db)):
     _log_ip(request)
     _clear_cache_if_new_day()
 
+    # Javno dostopna je LE per-sola pot /nadomescanja_<kratica> (middleware
+    # jo prepise v /zasloni in nastavi request.state.school_alias). Goli
+    # /zasloni (brez aliasa sole) smo odstranili — dostop samo prek kratice.
+    if getattr(request.state, 'school_alias', None) is None:
+        raise HTTPException(status_code=404,
+                            detail='Nadomescanja so dostopna le prek /nadomescanja_<kratica>')
+
     settings = _zasloni_settings(request, db)
     if not settings.get("omogocen", True):
         # Javna stran nadomeščanj je zaprta (ZASLON_OMOGOCEN=false) —

@@ -281,8 +281,9 @@ preddverju/shrambi vrti **nadomeščanja iz eAsistenta** + obvestila šole.
 | Časovni pas in hitrost drsenja | Prilagodite prikazu |
 | **Osveži vse naprave** | Pošlje vsem zaslonom predlogo (reload) — sprememba se pokaže v ≤10 s |
 
-> Zaslon je javen na **`/zasloni`** (ali goli poti šole). Za nadomeščanja iz
-> eAsistenta se uporabi javni URL, ki ga admin vnese v nastavitvah.
+> Zaslon je javno dostopen le prek poti šole **`/nadomescanja_<kratica>`**
+> (vsaka šola ima svojo; gola pot `/zasloni` ni več v uporabi). Za nadomeščanja
+> iz eAsistenta se uporabi javni URL, ki ga admin vnese v nastavitvah.
 >
 > **Zapiranje/odpiranje javne strani.** Zaslon (pot `/nadomeščanja_<kratica>`) lahko
 > **začasno zaprete** v **Nastavitve → Digitalni zaslon (nadomeščanja)** — odkljukate

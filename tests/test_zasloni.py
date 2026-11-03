@@ -18,6 +18,9 @@ from app.config import settings
 from app.tenancy import default_school_admin_username
 from tests.conftest import login
 
+# Javna stran nadomeščanj = per-šola alias; gola /zasloni je odstranjena.
+ZASLON_POT = f"/nadomescanja_{settings.DEFAULT_SCHOOL_SLUG}"
+
 
 def _default_school_id() -> int | None:
     db = SessionLocal()
@@ -30,7 +33,7 @@ def _default_school_id() -> int | None:
 
 def test_zasloni_javen_in_vraca_html():
     with TestClient(app) as c:
-        r = c.get("/zasloni")
+        r = c.get(ZASLON_POT)
         assert r.status_code == 200
         assert "text/html" in r.headers["content-type"]
         assert "fullscreen-mode" in r.text
@@ -186,7 +189,7 @@ def test_zasloni_time_zone_nastavitev_registrirana():
     assert "ZASLON_TIME_ZONE" in labels
     # HTML /zasloni vključi časovni pas v JS ure.
     with TestClient(app) as c:
-        r = c.get("/zasloni")
+        r = c.get(ZASLON_POT)
         assert r.status_code == 200
         assert "CASOVNI_PAS" in r.text
         assert "Europe/Ljubljana" in r.text
@@ -222,7 +225,7 @@ def test_zasloni_rotacija_obvestil_tudi_brez_nadomescanj(client, make_user):
     })
     assert r.status_code == 200, r.text
 
-    r = client.get("/zasloni")
+    r = client.get(ZASLON_POT)
     assert r.status_code == 200
     # JS rotacija je prisotna tudi brez tabele nadomeščanj.
     assert "IMA_TABELO = false" in r.text
@@ -240,7 +243,7 @@ def test_zasloni_osvezi_at_registrirana_in_endpoint():
         r = c.get("/zasloni/osvezi_at")
         assert r.status_code == 200
         assert r.json() == {"osvezi_at": ""}
-        page = c.get("/zasloni")
+        page = c.get(ZASLON_POT)
         assert "OSNOVNI_OSVEZI_AT" in page.text
         assert "preveriOsvezi" in page.text
 
@@ -448,7 +451,7 @@ def test_per_sola_school_name_v_naslovu():
         assert "Toneta Čufarja" not in r.text
     # Svež client (brez school_ctx piškotka) → privzeta šola pokaže SVOJE ime.
     with TestClient(app) as c2:
-        r2 = c2.get("/zasloni")
+        r2 = c2.get(ZASLON_POT)
         assert r2.status_code == 200
         assert settings.SCHOOL_NAME in r2.text
 
@@ -531,7 +534,7 @@ def test_zasloni_omogocen_registrirana():
 def test_zasloni_privzeto_odprta():
     """Privzeto je javna stran nadomeščanj ODPRTA (normalen zaslon)."""
     with TestClient(app) as c:
-        r = c.get("/zasloni")
+        r = c.get(ZASLON_POT)
         assert r.status_code == 200
         assert "fullscreen-mode" in r.text
         assert "zaprta" not in r.text.lower()
@@ -547,7 +550,7 @@ def test_zasloni_zaprta_ko_ugasnjeno(client, make_user):
         "values": {"ZASLON_OMOGOCEN": False}
     })
     assert r.status_code == 200, r.text
-    rr = client.get("/zasloni")
+    rr = client.get(ZASLON_POT)
     assert rr.status_code == 200
     assert "Nadomeščanja so trenutno zaprta" in rr.text
     assert "fullscreen-mode" not in rr.text
@@ -556,5 +559,13 @@ def test_zasloni_zaprta_ko_ugasnjeno(client, make_user):
         "values": {"ZASLON_OMOGOCEN": True}
     })
     assert r2.status_code == 200
-    assert "fullscreen-mode" in client.get("/zasloni").text
+    assert "fullscreen-mode" in client.get(ZASLON_POT).text
+
+
+def test_zasloni_gola_pot_je_odstranjena():
+    """Gola pot /zasloni (brez kratice) je odstranjena -> 404; deluje le /nadomescanja_<kratica>."""
+    with TestClient(app) as c:
+        assert c.get("/zasloni").status_code == 404
+        assert c.get(ZASLON_POT).status_code == 200
+        assert "fullscreen-mode" in c.get(ZASLON_POT).text
 
