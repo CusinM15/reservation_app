@@ -149,8 +149,8 @@ def test_public_lang_param_translates_registration(client):
     assert "Polno ime šole" in r2.text
 
 
-def test_login_links_to_english_setup_and_registration(client):
-    """Prijavna stran ponuja angleška navodila za nastavitev in preklop na EN pri Novi šoli."""
+def test_login_page_has_no_english(client):
+    """Prijavna stran ne kaže angleških napisov niti EN povezav (odstranjena angleščina)."""
     db = SessionLocal()
     try:
         save_selling_config(db, enabled=True, price=50, paypal="https://x", note="y")
@@ -159,8 +159,9 @@ def test_login_links_to_english_setup_and_registration(client):
         db.close()
     r = client.get("/auth/login")
     assert r.status_code == 200
-    assert "navodila-admin-en" in r.text          # English setup instructions (admin guide)
-    assert "registracija?lang=en" in r.text       # New school in English
+    for en in ("(Login", "Login page", "Forgotten password", "Send link",
+               "Back to login", "Teacher Instructions", "New school", "registracija?lang=en"):
+        assert en not in r.text, f"na login strani je angleški napis: {en}"
 
 
 def test_new_school_language_follows_registration_link(client):

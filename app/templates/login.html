@@ -70,7 +70,7 @@
              povezavo na pozabljeno geslo.
              ============================================================ -->
         <div id="section-login" class="section {% if not show_forgot and not show_reset %}active{% endif %}">
-            <h2>Prijavna stran (Login page)</h2>
+            <h2>Prijavna stran</h2>
             {% if error and not show_forgot and not show_reset %}
             <div class="error">{{ error }}</div>
             {% endif %}
@@ -95,7 +95,7 @@
                         </svg>
                     </span>
                 </div>
-                <button type="submit">Prijava (Login)</button>
+                <button type="submit">Prijava</button>
             </form>
 
             <!-- JAVASCRIPT: PREKLOP PRIKAZA GESLA (togglePw)
@@ -126,13 +126,10 @@
             </script>
 
             <div style="text-align:center;margin-top:15px;">
-                <a href="/auth/forgot-password" style="color:#007bff;text-decoration:none;font-size:0.85rem;">Pozabljeno geslo (Forgotten password)?</a>
+                <a href="/auth/forgot-password" style="color:#007bff;text-decoration:none;font-size:0.85rem;">Pozabljeno geslo?</a>
                 {% if selling and selling.enabled %}
                 <div style="margin-top:8px;">
                     <a href="/registracija" style="color:#007bff;text-decoration:none;font-size:0.85rem;">🏫 {{ t('link_nova_sola', 'Nova šola') }}</a>
-                </div>
-                <div style="margin-top:3px;">
-                    <a href="/registracija?lang=en" style="color:#007bff;text-decoration:none;font-size:0.85rem;">🏫 New school</a>
                 </div>
                 {% endif %}
             </div>
@@ -146,7 +143,7 @@
              show_forgot=True).
              ============================================================ -->
         <div id="section-forgot" class="section {% if show_forgot %}active{% endif %}">
-            <h2>Pozabljeno geslo (Forgotten password)</h2>
+            <h2>Pozabljeno geslo</h2>
             {% if error and show_forgot %}
             <div class="error">{{ error }}</div>
             {% endif %}
@@ -155,10 +152,10 @@
             {% endif %}
             <form method="POST" action="/auth/forgot-password">
                 <input type="email" name="email" placeholder="Vnesite vaš službeni email" required>
-                <button type="submit">Pošlji povezavo (Send link)</button>
+                <button type="submit">Pošlji povezavo</button>
             </form>
             <div class="back-link">
-                <a href="/auth/login">← Nazaj na prijavo (Back to login)</a>
+                <a href="/auth/login">← Nazaj na prijavo</a>
             </div>
         </div>
 
@@ -229,7 +226,6 @@
         <a href="/nastavitev?demo=1" style="color:#007bff;text-decoration:none;font-size:0.85rem;display:block;margin-bottom:4px;">⚙️ Navodila za nastavitev šole</a>
         <a href="/docs/download/navodila-admin-en" style="color:#007bff;text-decoration:none;font-size:0.85rem;display:block;margin-bottom:4px;">🛠️ Navodila za nastavitev šole</a>
         <a href="/docs/download/navodila-ucitelji" style="color:#007bff;text-decoration:none;font-size:0.85rem;display:block;margin-bottom:4px;">📖 Navodila za učitelje</a>
-        <a href="/docs/download/navodila-ucitelji-en" style="color:#007bff;text-decoration:none;font-size:0.85rem;display:block;">👩‍🏫 Teacher Instructions</a>
     </div>
 </body>
 </html>
