@@ -18,7 +18,7 @@
 
 | What | Where |
 |---|---|
-| 👥 **Users** (teacher and management accounts) | Top menu → **Admin panel** (or <code>/auth/admin/users</code>) |
+| 👥 **Users** (teacher and management accounts) | Top menu → **Users** (or <code>/auth/admin/users</code>) |
 | ⚙️ **School settings** (classes, rooms, numbers, schedule, email) | Top menu → **⚙️ School settings** (or <code>/settings</code>) |
 | 🧭 **School setup guide** (what is still to be done) | <code>/nastavitev</code> |
 | 💶 **School subscription** | ⚙️ School settings → *School subscription* (or <code>/narocnina</code>) |
@@ -74,7 +74,7 @@ python3 scripts/import_teachers.py --base-url https://ostc-app.org --include-all
 
 ### Managing users
 
-**Access:** In the top navigation click **Admin panel**.
+**Access:** In the top navigation click **Users**.
 
 | Function | Description |
 |---|---|
@@ -254,7 +254,7 @@ who did what and when. Useful for traceability and troubleshooting.
 
 | Role | Who should have it | Permissions |
 |---|---|---|
-| **Admin** | The system administrator only | Everything — admin panel, users, settings, subscription, backups |
+| **Admin** | The system administrator only | Everything — Users, settings, subscription, backups |
 | **Management** | Headteacher, assistants | Series reservations, deleting others' reservations, activity days |
 | **Teacher** | All teaching staff | Basic reservations and assessments |
 

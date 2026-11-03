@@ -36,7 +36,7 @@ STRINGS: list[tuple[str, str, str, str]] = [
     ("nav_ocenjevanje_dejavnosti", "meni", "Ocenjevanje in dnevi dejavnosti", "Assessment and activity days"),
     ("nav_nastavitve_sole", "meni", "⚙️ Nastavitve šole", "⚙️ School settings"),
     ("nav_sole", "meni", "🏫 Šole", "🏫 Schools"),
-    ("nav_admin_panel", "meni", "🛠️ Admin panel", "🛠️ Admin panel"),
+    ("nav_admin_panel", "meni", "👥 Uporabniki", "👥 Users"),
     ("nav_audit_log", "meni", "📋 Audit log", "📋 Audit log"),
     ("nav_izbrana_sola", "meni", "Izbrana šola:", "Selected school:"),
     ("opt_vsi_razredi", "meni", "Vsi razredi", "All classes"),

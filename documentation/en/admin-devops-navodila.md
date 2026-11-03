@@ -50,7 +50,7 @@ rooms — you can't physically fit two classes in one room at the same time.
 - **🚫 Blocked dates** — Management/Admin mark days when nothing is happening
   (field trips, sports days...). **Why?** So nobody wastes time trying to reserve
   a room on a day when there's no school.
-- **👥 Admin panel** — Add/remove teachers, set roles. **Why?** Someone has to
+- **👥 Users** — Add/remove teachers, set roles. **Why?** Someone has to
   hold the keys to the building.
 - **🔑 Forgot password** — Sends a password reset email. **Why?** Because
   everyone forgets their password.

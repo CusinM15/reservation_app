@@ -384,7 +384,7 @@ Uredi datoteko `scripts/import_teachers.py` v beležnici ali urejevalniku:
 3. Vnesejo svoj email naslov.
 4. Dobijo email s povezavo za nastavitev gesla.
 
-> ⚠️ **Če nimaš email strežnika (SMTP):** Funkcija "Pozabljeno geslo" ne bo delovala, ker aplikacija ne more pošiljati emailov. V tem primeru lahko gesla nastaviš **ročno prek admin panela** — prijaviš se kot `admin` in urediš vsakega uporabnika posebej.
+> ⚠️ **Če nimaš email strežnika (SMTP):** Funkcija "Pozabljeno geslo" ne bo delovala, ker aplikacija ne more pošiljati emailov. V tem primeru lahko gesla nastaviš **ročno na strani Uporabniki** — prijaviš se kot `admin` in urediš vsakega uporabnika posebej.
 
 ---
 

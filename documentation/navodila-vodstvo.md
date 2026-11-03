@@ -11,7 +11,7 @@
 
 ## 📝 Dnevi dejavnosti in serije — stran »Dejavnosti«
 
-To je **glavna stran za vaše delo**. Do nje pridete prek zavihka **»Ocenjevanje in dnevi dejavnosti«**
+To je **glavna stran za vaše delo** — **»Vnos dejavnosti«**. Do nje pridete prek zavihka **»Ocenjevanje in dnevi dejavnosti«**
 oziroma neposredno na poti **`/dejavnosti`**. Ureja jo vodstvo in admin; učitelji jo vidijo samo za branje.
 
 Spodaj je stran **»Dejavnosti«** z dnevi dejavnosti po razredih:

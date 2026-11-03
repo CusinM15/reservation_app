@@ -305,18 +305,18 @@ The report includes:
 
 > **ELI5:** Imagine you have a **sign-in book** at school. Every time someone changes something (adds a reservation, deletes an assessment, creates a user), it gets written in the book — with the time and name. You can go back anytime and check what happened. No guessing, no "who deleted this."
 
-**Access:** Only **admin** — in the Admin panel, click **"Dnevnik dogodkov"** (links to `/history`). Management does not have direct access.
+**Access:** Only **admin** — in the top menu click **"📋 Audit log"** (links to `/history`). Management does not have direct access.
 
 > **Tip:** The audit log is **append-only** — entries can only be added, never deleted. Even if admin deletes a user, the audit trail remains. This is intentional — the audit trail must be immutable.
 
 ### How do I access the audit log?
 
 1. Log in as **admin**
-2. Click **Admin panel** in the top menu
-3. In the Admin panel, click **"Dnevnik dogodkov"**
+2. Click **📋 Audit log** in the top menu
+3. On the **📋 Audit log** page you see the change log
 
 **Who can see the audit log?**
-- **Admin** — yes (via Admin panel → Dnevnik dogodkov)
+- **Admin** — yes (top menu → **📋 Audit log**)
 - **Management** — **no**
 - **Teachers** — **no**
 

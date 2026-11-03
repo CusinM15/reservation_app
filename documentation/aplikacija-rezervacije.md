@@ -125,7 +125,7 @@ Ko vodstvo označi zasedeno obdobje:
 
 Ni več potrebe, da ravnatelj pošilja okrožnice in prosi učitelje, naj ročno brišejo termine. Vse naredi aplikacija.
 
-### ⚙️ Admin panel
+### 👥 Uporabniki
 
 **Samo za administratorja.** Tu se upravljajo uporabniki:
 
@@ -134,7 +134,7 @@ Ni več potrebe, da ravnatelj pošilja okrožnice in prosi učitelje, naj ročno
 - **Brisanje** uporabnikov (ko odidejo iz šole)
 - **Deaktivacija** (začasno onemogoči dostop, ne da bi izbrisali podatke)
 
-Admin panel je preprost in pregleden — nobenih skritih menijev ali zapletenih nastavitev.
+Uporabniki so preprosti in pregledni — nobenih skritih menijev ali zapletenih nastavitev.
 
 ---
 
@@ -150,7 +150,7 @@ Admin panel je preprost in pregleden — nobenih skritih menijev ali zapletenih 
 | **Napoved ocenjevanja** | ✅ Da | ✅ Da | ✅ Da |
 | **Upravljanje zasedenih datumov** | ❌ Ne | ✅ Da | ✅ Da |
 | **Serijske rezervacije** | ❌ Ne | ✅ Da | ✅ Da |
-| **Admin panel (uporabniki)** | ❌ Ne | ❌ Ne | ✅ Da |
+| **Uporabniki** | ❌ Ne | ❌ Ne | ✅ Da |
 
 **Učitelj** — lahko rezervira prostore, napoveduje ocenjevanja in briše samo svoje vnose. Ne more posegati v delo drugih.
 

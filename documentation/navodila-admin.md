@@ -17,7 +17,7 @@
 
 | Kaj | Kje |
 |---|---|
-| 👥 **Uporabniki** (računi učiteljev, vodstva) | Zgornji meni → **Admin panel**  |
+| 👥 **Uporabniki** (računi učiteljev, vodstva) | Zgornji meni → **Uporabniki**  |
 | ⚙️ **Nastavitve šole** (razredi, prostori, števila, urnik, e-pošta) | Zgornji meni → **⚙️ Nastavitve šole**  |
 | 🧭 **Navodila za nastavitev šole** (kaj še urediti) | <code>/nastavitev</code> |
 | 💶 **Naročnina šole** | ⚙️ Nastavitve šole → razdelek *Naročnina šole* (ali <code>/narocnina</code>) |
@@ -46,7 +46,7 @@ je treba dodati sproti). Na začetku šolskega leta je bolje uporabiti uvoz
 
 Na strani **Uporabniki** izberete CSV datoteko in kliknete **📥 Uvozi CSV**.
 Glava stolpcev ni obvezna; privzeti vrstni red je `e-pošta, ime, priimek, vloga`
-(npr. `ana.novak@guest.arnes.si,Ana,Novak,učitelj`). **E-pošta je hkrati
+(npr. `ime.priimek@primer.si,Ime,Priimek,učitelj`). **E-pošta je hkrati
 uporabniško ime**, zato jo zapišete samo enkrat. Vloga je lahko `učitelj`,
 `vodstvo` ali `admin` (če je ni, dobi uporabnik `učitelj`). Gesla ne pišete —
 aplikacija si ga izmisli in ga **ne pokaže**; uporabnik si ga nastavi sam prek
@@ -74,9 +74,9 @@ python3 scripts/import_teachers.py --base-url https://ostc-app.org --include-all
 
 ### Upravljanje uporabnikov
 
-**Dostop:** V zgornji navigaciji kliknite **Admin panel**.
+**Dostop:** V zgornji navigaciji kliknite **Uporabniki**.
 
-![Admin panel — uporabniki](slike/navodila_admin_uporabniki.png)
+![Uporabniki — seznam računov](slike/navodila_admin_uporabniki.png)
 
 | Funkcija | Opis |
 |---|---|
@@ -310,7 +310,7 @@ naredil in kdaj. Uporabno za sledljivost in odpravljanje napak.
 
 | Vloga | Kdo naj jo ima | Pravice |
 |---|---|---|
-| **Admin** | Samo administrator sistema | Vse — skrbniška plošča, uporabniki, nastavitve, naročnina, kopije |
+| **Admin** | Samo administrator sistema | Vse — Uporabniki, nastavitve, naročnina, varnostne kopije |
 | **Vodstvo** | Ravnatelj, pomočniki | Rezervacije serij, brisanje tujih rezervacij, dnevi dejavnosti |
 | **Učitelj** | Vsi pedagoški delavci | Osnovne rezervacije in ocenjevanja |
 
@@ -324,3 +324,4 @@ naredil in kdaj. Uporabno za sledljivost in odpravljanje napak.
 > zamenjajte s svojimi. Gesla se v aplikaciji nikjer ne izpisujejo.
 >
 > **Avtor:** Matej Čušin
+

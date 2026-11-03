@@ -384,7 +384,7 @@ Edit the file `scripts/import_teachers.py` in Notepad or your editor:
 3. They enter their email address.
 4. They receive an email with a link to set their password.
 
-> ⚠️ **If you don't have an email server (SMTP):** The "Forgot password" feature won't work, because the application can't send emails. In that case, you can set passwords **manually via the admin panel** — log in as `admin` and edit each user individually.
+> ⚠️ **If you don't have an email server (SMTP):** The "Forgot password" feature won't work, because the application can't send emails. In that case, you can set passwords **manually via Users** — log in as `admin` and edit each user individually.
 
 ---
 

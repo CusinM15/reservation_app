@@ -161,7 +161,7 @@ When management blocks a period:
 No more need for the principal to send memos asking teachers to manually delete
 dates. The app does it all.
 
-### ⚙️ Admin Panel
+### 👥 Users
 
 **Admin only.** This is where users are managed:
 
@@ -170,7 +170,7 @@ dates. The app does it all.
 - **Deleting** users (when they leave the school)
 - **Deactivation** (temporarily disable access without deleting data)
 
-The admin panel is straightforward and transparent — no hidden menus or complicated
+Users are straightforward and transparent — no hidden menus or complicated
 settings.
 
 ---
@@ -189,7 +189,7 @@ cabinets.
 | **Schedule assessment** | ✅ Yes | ✅ Yes | ✅ Yes |
 | **Manage blocked dates** | ❌ No | ✅ Yes | ✅ Yes |
 | **Serial reservation** | ❌ No | ✅ Yes | ✅ Yes |
-| **Admin panel (users)** | ❌ No | ❌ No | ✅ Yes |
+| **Users** | ❌ No | ❌ No | ✅ Yes |
 
 **Teacher** — can reserve rooms, schedule assessments, and delete only their own
 entries. Cannot interfere with others' work.
