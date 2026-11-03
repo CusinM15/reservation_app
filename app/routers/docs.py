@@ -482,6 +482,26 @@ def _editable_docs() -> list[str]:
     return list(ALLOWED.keys())
 
 
+def _shown_docs() -> list[str]:
+    """Dokumenti, ki se pokažejo na /navodila strani.
+
+    Ostanejo SAMO tisti, ki so v produkciji na reservationapp.site dejansko
+    prikazani: navodila za učitelje/vodstvo/admin (dropdown v aplikaciji +
+    login link) in obvestila učitelji/starši (stran Obrazci). Ostale kopije
+    (EN) in notranji/dev dokumenti (main, postavi-lokalni-app, admin-devops,
+    aplikacija-rezervacije, govorilne-ure, pogoji, reklama-sola) se tu NE
+    prikažejo in NE urejajo — backend /docs/html{...} pa ostane nedotaknjen.
+    """
+    SHOWN = {
+        "navodila-ucitelji",
+        "navodila-vodstvo",
+        "navodila-admin",
+        "obvestilo-ucitelji",
+        "obvestilo-starsi",
+    }
+    return [k for k in _editable_docs() if k in SHOWN]
+
+
 @router.get("/navodila", response_class=HTMLResponse)
 def navodila_main_page(request: Request, db: Session = Depends(get_db)):
     """Stran 'Navodila' — samo glavni admin.
@@ -492,13 +512,13 @@ def navodila_main_page(request: Request, db: Session = Depends(get_db)):
     user = _require_main_admin(request, db)
     docs = [
         {"name": k, "label": DOC_LABELS.get(k, k), "overridden": bool(_get_override(db, k))}
-        for k in _editable_docs()
+        for k in _shown_docs()
     ]
     return OBRAZCI_TEMPLATES.TemplateResponse("navodila_main.html", {
         "request": request,
         "user": user,
         "docs": docs,
-        "all_preview": [{"name": k, "label": DOC_LABELS.get(k, k)} for k in _editable_docs()],
+        "all_preview": [{"name": k, "label": DOC_LABELS.get(k, k)} for k in _shown_docs()],
     })
 
 
@@ -507,7 +527,7 @@ def navodila_list_docs(request: Request, db: Session = Depends(get_db)):
     _require_main_admin(request, db)
     return {"docs": [
         {"name": k, "label": DOC_LABELS.get(k, k), "overridden": bool(_get_override(db, k))}
-        for k in _editable_docs()
+        for k in _shown_docs()
     ]}
 
 
@@ -528,7 +548,7 @@ def navodila_get_doc(name: str, request: Request, db: Session = Depends(get_db))
 @router.post("/api/navodila/docs/{name}", status_code=200)
 async def navodila_save_doc(name: str, request: Request, db: Session = Depends(get_db)):
     user = _require_main_admin(request, db)
-    if name not in _editable_docs():
+    if name not in _shown_docs():
         raise HTTPException(status_code=400, detail="Ta dokument ni urejevalen")
     try:
         body = await request.json()
@@ -543,7 +563,7 @@ async def navodila_save_doc(name: str, request: Request, db: Session = Depends(g
 @router.post("/api/navodila/docs/{name}/reset", status_code=200)
 def navodila_reset_doc(name: str, request: Request, db: Session = Depends(get_db)):
     user = _require_main_admin(request, db)
-    if name not in _editable_docs():
+    if name not in _shown_docs():
         raise HTTPException(status_code=400, detail="Ta dokument ni urejevalen")
     _clear_override(db, name)
     log_audit(db, user.id, user.username, "reset_doc", name)
