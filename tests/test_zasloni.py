@@ -1,10 +1,19 @@
 # ─────────────────────────────────────────────────────────────────────────
-# tests/test_zasloni.py — Testi digitalnega zaslona (/zasloni)
+# tests/test_zasloni.py — Testi digitalnega zaslona (nadomeščanja)
+#
+# PRAVILA (od 2026-11-03):
+#  - Javna stran nadomeščanj je dostopna LE prek per-šola poti
+#    /nadomescanja_<kratica> (middleware jo prepiše na /zasloni).
+#  - Gola /zasloni in VSE /zasloni/* poti (status, random_image, obvestila,
+#    osvezi_at, media) so ODSTRANJENE → 404.
+#  - Zaslon kaže: ura + tabela nadomeščanj (server-side) oz. »Danes ni
+#    nadomeščanj«; brez rotacije obvestil in brez fetch-ev na /zasloni/*.
+#  - Admin API za nalaganje/brisanje obvestil (/api/schools/{id}/zasloni/...)
+#    ostane (shranjevanje v bazo), a javnih /zasloni/* poti ni več.
 # ─────────────────────────────────────────────────────────────────────────
 
 import json
 import os
-import re
 
 os.environ.setdefault("DATABASE_URL", "postgresql://postgres@localhost:5432/testdb")
 os.environ.setdefault("SECRET_KEY", "test-secret-key")
@@ -18,8 +27,17 @@ from app.config import settings
 from app.tenancy import default_school_admin_username
 from tests.conftest import login
 
-# Javna stran nadomeščanj = per-šola alias; gola /zasloni je odstranjena.
+# Javna stran nadomeščanj = per-šola alias; gola /zasloni in /zasloni/* so odstranjeni.
 ZASLON_POT = f"/nadomescanja_{settings.DEFAULT_SCHOOL_SLUG}"
+
+ODSTRANJENE_POTI = [
+    "/zasloni",
+    "/zasloni/status",
+    "/zasloni/random_image",
+    "/zasloni/obvestila",
+    "/zasloni/osvezi_at",
+    "/zasloni/media/vec_obvestil/karkoli.png",
+]
 
 
 def _default_school_id() -> int | None:
@@ -31,8 +49,36 @@ def _default_school_id() -> int | None:
         db.close()
 
 
-def test_zasloni_javen_in_vraca_html():
+def _ustvari_solo(slug: str, ime: str):
+    """Ustvari (ali prečisti in ponovno ustvari) šolo — vzorec test_govorilne."""
+    from app.tenancy import create_school
+    from app.models import SchoolSetting
+    db = SessionLocal()
+    try:
+        old = db.query(School).filter(School.slug == slug).first()
+        if old:
+            db.query(SchoolSetting).filter(
+                SchoolSetting.school_id == old.id,
+            ).delete(synchronize_session=False)
+            db.query(School).filter(School.id == old.id).delete(synchronize_session=False)
+        db.commit()
+        create_school(db, ime, slug=slug)
+        db.commit()
+        return db.query(School).filter(School.slug == slug).first().id
+    finally:
+        db.close()
+
+
+# ═══════════════════════════════════════════════════════════════════════
+# 1. Dostop: vedno prek /nadomescanja_<kratica>; gola /zasloni → 404
+# ═══════════════════════════════════════════════════════════════════════
+
+def test_zasloni_gola_in_vse_poti_odstranjene():
+    """Gola /zasloni in VSE /zasloni/* poti → 404; deluje le /nadomescanja_<kratica>."""
     with TestClient(app) as c:
+        for pot in ODSTRANJENE_POTI:
+            r = c.get(pot)
+            assert r.status_code == 404, f"{pot} → {r.status_code}"
         r = c.get(ZASLON_POT)
         assert r.status_code == 200
         assert "text/html" in r.headers["content-type"]
@@ -40,28 +86,124 @@ def test_zasloni_javen_in_vraca_html():
         assert "fs-header" in r.text
 
 
-def test_zasloni_status_javen():
+def test_zasloni_stran_nima_fetchev_na_odstranjene_poti():
+    """Poenostavljen zaslon: v HTML-ju ni nobene sklicevanja na /zasloni/* poti."""
     with TestClient(app) as c:
-        r = c.get("/zasloni/status")
+        r = c.get(ZASLON_POT)
         assert r.status_code == 200
-        assert "AKTIVNI IP-ji" in r.text
-        assert "NADOMEŠČANJA" in r.text
+        assert "/zasloni/" not in r.text
+        assert "updateTime" in r.text
+        assert "CASOVNI_PAS" in r.text
 
 
-def test_zasloni_random_image_json():
+def test_per_sola_alias_zasloni_javen():
+    """Vsaka šola dobi svojo kratko /nadomescanja_<slug> pot, javno brez prijave."""
+    from app.tenancy import ALIAS_KINDS, _ALIAS_RE, generate_aliases
+    assert ALIAS_KINDS.get("nadomescanja") == "/zasloni"
+    assert _ALIAS_RE.match("nadomescanja_ostcj") is not None
+    pairs = generate_aliases(settings.DEFAULT_SCHOOL_SLUG)
+    alias = next((a for a, k in pairs if k == "nadomescanja" and "_" in a), None)
+    assert alias, f"manjka generirani nadomescanja_<slug>: {dict(pairs)}"
     with TestClient(app) as c:
-        r = c.get("/zasloni/random_image")
-        assert r.status_code == 200
-        assert "application/json" in r.headers["content-type"]
-        data = r.json()
-        assert "slika" in data
-        assert data["slika"].startswith(("vec_obvestil/", "obvestila/"))
+        r = c.get(f"/{alias}", follow_redirects=False)
+        assert r.status_code == 200, f"/{alias} → {r.status_code}"
+        assert "fullscreen-mode" in r.text
 
+
+def test_per_sola_school_name_v_naslovu():
+    """/nadomescanja_<slug> pokaže ime TE šole, ne hardkodirane OŠ Toneta Čufarja."""
+    _ustvari_solo("zgled", "OŠ Zgled")
+    with TestClient(app) as c:
+        r = c.get("/nadomescanja_zgled")
+        assert r.status_code == 200
+        assert "OŠ Zgled" in r.text
+        assert "Toneta Čufarja" not in r.text
+    # Svež client (brez school_ctx piškotka) → privzeta šola pokaže SVOJE ime.
+    with TestClient(app) as c2:
+        r2 = c2.get(ZASLON_POT)
+        assert r2.status_code == 200
+        assert settings.SCHOOL_NAME in r2.text
+
+
+def test_zasloni_odprt_zaprt_toggle(client, make_user):
+    """ZASLON_OMOGOCEN: privzeto odprt; ko admin izklopi → 'trenutno zaprta'."""
+    with TestClient(app) as c:
+        r = c.get(ZASLON_POT)
+        assert r.status_code == 200
+        assert "fullscreen-mode" in r.text
+        assert "trenutno zaprta" not in r.text
+
+    admin = make_user(role="admin")
+    login(client, admin.username)
+    sid = _default_school_id()
+    r = client.put(f"/api/schools/{sid}/settings", json={"values": {"ZASLON_OMOGOCEN": False}})
+    assert r.status_code == 200, r.text
+
+    with TestClient(app) as c:
+        r = c.get(ZASLON_POT)
+        assert r.status_code == 200
+        assert "Nadomeščanja so trenutno zaprta" in r.text
+        assert "fullscreen-mode" not in r.text
+
+
+# ═══════════════════════════════════════════════════════════════════════
+# 2. Vsebina zaslona (server-side): tabela ali sporočilo + ura
+# ═══════════════════════════════════════════════════════════════════════
+
+def test_zasloni_brez_tabele_pokaze_sporocilo():
+    """Brez tabele (testno okolje: eAsistent ni dosegljiv) → 'Danes ni nadomeščanj'."""
+    with TestClient(app) as c:
+        r = c.get(ZASLON_POT)
+        assert r.status_code == 200
+        if "Danes ni nadomeščanj" in r.text:
+            assert "table-view" not in r.text
+        else:
+            assert "table-view" in r.text  # če je tabela na voljo, se pokaže
+
+
+def test_zasloni_time_zone_v_strani():
+    """Zaslon vključi časovni pas (Europe/Ljubljana) v JS ure."""
+    from app.tenancy import SCHOOL_SETTING_FIELDS, SCHOOL_SETTING_KEYS, env_default_settings
+    assert "ZASLON_TIME_ZONE" in SCHOOL_SETTING_KEYS
+    assert "ZASLON_TIME_ZONE" in env_default_settings()
+    assert env_default_settings()["ZASLON_TIME_ZONE"] == "Europe/Ljubljana"
+    labels = {f["key"] for f in SCHOOL_SETTING_FIELDS}
+    assert "ZASLON_TIME_ZONE" in labels
+    with TestClient(app) as c:
+        r = c.get(ZASLON_POT)
+        assert r.status_code == 200
+        assert "CASOVNI_PAS" in r.text
+        assert "Europe/Ljubljana" in r.text
+
+
+def test_zasloni_time_zone_validacija(client, make_user):
+    """Napačen časovni pas → 400; veljaven → shranjen."""
+    admin = make_user(role="admin")
+    login(client, admin.username)
+    sid = _default_school_id()
+    assert sid is not None
+
+    r = client.put(f"/api/schools/{sid}/settings", json={
+        "values": {"ZASLON_TIME_ZONE": "Napačen/Pas"}
+    })
+    assert r.status_code == 400, r.text
+
+    r = client.put(f"/api/schools/{sid}/settings", json={
+        "values": {"ZASLON_TIME_ZONE": "Europe/Ljubljana"}
+    })
+    assert r.status_code == 200, r.text
+
+
+# ═══════════════════════════════════════════════════════════════════════
+# 3. Nastavitve (ključi, privzete vrednosti, PUT sprejme bool/float)
+# ═══════════════════════════════════════════════════════════════════════
 
 def test_zasloni_nastavitve_so_v_school_settings():
     from app.tenancy import SCHOOL_SETTING_KEYS, SchoolConfig, env_default_settings
     for k in ("ZASLON_URL", "ZASLON_POKAZI_NADOMESCANJA", "ZASLON_CAS_OBVESTILA",
-              "ZASLON_MIN_CAS_TABELE", "ZASLON_HITROST_DRSENJA", "ZASLON_TIME_ZONE"):
+              "ZASLON_MIN_CAS_TABELE", "ZASLON_HITROST_DRSENJA", "ZASLON_TIME_ZONE",
+              "ZASLON_OMOGOCEN", "ZASLON_OBVESTILA", "ZASLON_OBVESTILA_TEKST",
+              "ZASLON_OSVEZI_AT"):
         assert k in SCHOOL_SETTING_KEYS, f"{k} manjka v SCHOOL_SETTING_KEYS"
         assert k in env_default_settings(), f"{k} manjka v env_default_settings"
     cfg = SchoolConfig(None, {})
@@ -95,70 +237,6 @@ def test_school_settings_put_sprejme_bool_in_float():
         assert m.get("ZASLON_HITROST_DRSENJA") == "1.5"
 
 
-def test_per_sola_alias_zasloni_javen():
-    """Vsaka šola dobi svojo kratko /nadomescanja_<slug> pot, javno brez prijave."""
-    from app.tenancy import ALIAS_KINDS, _ALIAS_RE, generate_aliases
-    assert ALIAS_KINDS.get("nadomescanja") == "/zasloni"
-    assert _ALIAS_RE.match("nadomescanja_ostcj") is not None
-    pairs = generate_aliases(settings.DEFAULT_SCHOOL_SLUG)
-    alias = next((a for a, k in pairs if k == "nadomescanja" and "_" in a), None)
-    assert alias, f"manjka generirani nadomescanja_<slug>: {dict(pairs)}"
-    with TestClient(app) as c:
-        r = c.get(f"/{alias}", follow_redirects=False)
-        assert r.status_code == 200, f"/{alias} → {r.status_code}"
-        assert "text/html" in r.headers["content-type"]
-        assert "fullscreen-mode" in r.text
-
-
-def test_zasloni_obvestila_vrni_urejen_seznam():
-    """/zasloni/obvestila vrne seznam aktivnih obvestil po vrsti (JSON)."""
-    with TestClient(app) as c:
-        r = c.get("/zasloni/obvestila")
-        assert r.status_code == 200
-        assert "application/json" in r.headers["content-type"]
-        data = r.json()
-        assert "obvestila" in data
-        assert isinstance(data["obvestila"], list)
-        for u in data["obvestila"]:
-            assert isinstance(u, dict)
-            assert u["type"] in ("image", "text")
-            if u["type"] == "image":
-                assert isinstance(u.get("src"), str)
-                assert u["src"].startswith(("vec_obvestil/", "obvestila/"))
-            else:
-                assert isinstance(u.get("text"), str)
-
-
-def test_zasloni_obvestila_vrni_tekst_in_slike(client, make_user):
-    """/zasloni/obvestila vrne tudi tekstovna obvestila (iz ZASLON_OBVESTILA_TEKST),
-    zaporedena za slikovnimi, v rotacijskem vrstnem redu."""
-    from app.tenancy import SCHOOL_SETTING_KEYS, env_default_settings
-    assert "ZASLON_OBVESTILA_TEKST" in SCHOOL_SETTING_KEYS
-    assert "ZASLON_OBVESTILA_TEKST" in env_default_settings()
-
-    admin = make_user(role="admin")
-    login(client, admin.username)
-    sid = _default_school_id()
-
-    r = client.put(f"/api/schools/{sid}/settings", json={
-        "values": {"ZASLON_OBVESTILA_TEKST": json.dumps(["Prvo obvestilo", "Drugo obvestilo"], ensure_ascii=False)}
-    })
-    assert r.status_code == 200, r.text
-
-    resp = client.get("/zasloni/obvestila")
-    assert resp.status_code == 200
-    data = resp.json()
-    texts = [x["text"] for x in data["obvestila"] if x["type"] == "text"]
-    assert "Prvo obvestilo" in texts
-    assert "Drugo obvestilo" in texts
-    # Tekstovna pridejo PO slikovnih (če obstajajo slike).
-    imgs = [x for x in data["obvestila"] if x["type"] == "image"]
-    if imgs:
-        idx_first_img = data["obvestila"].index(imgs[0])
-        first_text_i = next(i for i, x in enumerate(data["obvestila"]) if x["type"] == "text")
-        assert idx_first_img < first_text_i
-
-
 def test_zasloni_obvestila_tekst_najvec_5(client, make_user):
     """Strežnik zavrne 400, če bi šola shranila več kot 5 tekstovnih obvestil."""
     admin = make_user(role="admin")
@@ -172,95 +250,9 @@ def test_zasloni_obvestila_tekst_najvec_5(client, make_user):
     assert "5" in r.text
 
 
-def test_zasloni_obvestila_nastavitev_je_v_kljucih():
-    """ZASLON_OBVESTILA je registriran v school settings (ključ + default)."""
-    from app.tenancy import SCHOOL_SETTING_KEYS, env_default_settings
-    assert "ZASLON_OBVESTILA" in SCHOOL_SETTING_KEYS
-    assert "ZASLON_OBVESTILA" in env_default_settings()
-
-
-def test_zasloni_time_zone_nastavitev_registrirana():
-    """ZASLON_TIME_ZONE: šolski admin določi časovni pas ure na zaslonu."""
-    from app.tenancy import SCHOOL_SETTING_FIELDS, SCHOOL_SETTING_KEYS, env_default_settings
-    assert "ZASLON_TIME_ZONE" in SCHOOL_SETTING_KEYS
-    assert "ZASLON_TIME_ZONE" in env_default_settings()
-    assert env_default_settings()["ZASLON_TIME_ZONE"] == "Europe/Ljubljana"
-    labels = {f["key"] for f in SCHOOL_SETTING_FIELDS}
-    assert "ZASLON_TIME_ZONE" in labels
-    # HTML /zasloni vključi časovni pas v JS ure.
-    with TestClient(app) as c:
-        r = c.get(ZASLON_POT)
-        assert r.status_code == 200
-        assert "CASOVNI_PAS" in r.text
-        assert "Europe/Ljubljana" in r.text
-
-
-def test_zasloni_time_zone_validacija(client, make_user):
-    """Napačen časovni pas → 400; veljaven → shranjen."""
-    admin = make_user(role="admin")
-    login(client, admin.username)
-    sid = _default_school_id()
-    assert sid is not None
-
-    r = client.put(f"/api/schools/{sid}/settings", json={
-        "values": {"ZASLON_TIME_ZONE": "Napačen/Pas"}
-    })
-    assert r.status_code == 400, r.text
-
-    r = client.put(f"/api/schools/{sid}/settings", json={
-        "values": {"ZASLON_TIME_ZONE": "Europe/Ljubljana"}
-    })
-    assert r.status_code == 200, r.text
-
-
-def test_zasloni_rotacija_obvestil_tudi_brez_nadomescanj(client, make_user):
-    """Ob izklopljenih nadomeščanjih se obvestila ŠE VEDNO vrtijo (ne samo slika)."""
-    admin = make_user(role="admin")
-    login(client, admin.username)
-    sid = _default_school_id()
-    assert sid is not None
-
-    r = client.put(f"/api/schools/{sid}/settings", json={
-        "values": {"ZASLON_POKAZI_NADOMESCANJA": False}
-    })
-    assert r.status_code == 200, r.text
-
-    r = client.get(ZASLON_POT)
-    assert r.status_code == 200
-    # JS rotacija je prisotna tudi brez tabele nadomeščanj.
-    assert "IMA_TABELO = false" in r.text
-    assert "showImage" in r.text
-    assert "/zasloni/obvestila" in r.text
-
-
-def test_zasloni_osvezi_at_registrirana_in_endpoint():
-    """ZASLON_OSVEZI_AT: oznaka za »osveži vse naprave« (ključ + javni endpoint)."""
-    from app.tenancy import SCHOOL_SETTING_KEYS, env_default_settings
-    assert "ZASLON_OSVEZI_AT" in SCHOOL_SETTING_KEYS
-    assert "ZASLON_OSVEZI_AT" in env_default_settings()
-    assert env_default_settings()["ZASLON_OSVEZI_AT"] == ""
-    with TestClient(app) as c:
-        r = c.get("/zasloni/osvezi_at")
-        assert r.status_code == 200
-        assert r.json() == {"osvezi_at": ""}
-        page = c.get(ZASLON_POT)
-        assert "OSNOVNI_OSVEZI_AT" in page.text
-        assert "preveriOsvezi" in page.text
-
-
-def test_zasloni_osvezi_gumb_spremeni_marker(client, make_user):
-    """Gumb »Osveži vse naprave« spremeni ZASLON_OSVEZI_AT → zasloni reloadajo."""
-    admin = make_user(role="admin")
-    login(client, admin.username)
-    sid = _default_school_id()
-    assert sid is not None
-
-    before = client.get("/zasloni/osvezi_at").json()["osvezi_at"]
-    r = client.post(f"/api/schools/{sid}/zasloni/osvezi")
-    assert r.status_code == 200, r.text
-    after = client.get("/zasloni/osvezi_at").json()["osvezi_at"]
-    assert after and after != before
-
+# ═══════════════════════════════════════════════════════════════════════
+# 4. Admin API za nalaganje/brisanje ostane; javne /zasloni/* poti so 404
+# ═══════════════════════════════════════════════════════════════════════
 
 def _tiny_png() -> bytes:
     import io
@@ -270,8 +262,8 @@ def _tiny_png() -> bytes:
     return buf.getvalue()
 
 
-def test_zasloni_upload_png_in_prikaz(client, make_user):
-    """Nalaganje obvestila (png) → pojavi se v /zasloni/obvestila in se servira."""
+def test_zasloni_admin_upload_delete_api_dela(client, make_user):
+    """Nalaganje/brisanje prek /api/schools/{id}/zasloni/... še dela; javnih poti ni."""
     admin = make_user(role="admin")
     login(client, admin.username)
     sid = _default_school_id()
@@ -286,45 +278,24 @@ def test_zasloni_upload_png_in_prikaz(client, make_user):
     fname = r.json()["filename"]
     assert fname == "moje_obvestilo.png"
 
-    data = client.get("/zasloni/obvestila").json()["obvestila"]
-    srcs = [x["src"] for x in data if x["type"] == "image"]
-    assert f"vec_obvestil/{fname}" in srcs
+    # javna pot /zasloni/media ne obstaja več
+    with TestClient(app) as c:
+        assert c.get(f"/zasloni/media/vec_obvestil/{fname}").status_code == 404
 
-    media = client.get(f"/zasloni/media/vec_obvestil/{fname}")
-    assert media.status_code == 200
-    assert media.headers["content-type"].startswith("image/png")
-    assert media.content == png
+    r = client.post(f"/api/schools/{sid}/zasloni/delete", json={"filename": fname})
+    assert r.status_code == 200, r.text
+    r = client.post(f"/api/schools/{sid}/zasloni/delete", json={"filename": fname})
+    assert r.status_code == 404, r.text
 
 
-def test_zasloni_upload_pdf_se_pretvori_v_jpg(client, make_user):
-    """PDF se ob nalaganju pretvori v JPG; v sistem gre samo slika (1 polje)."""
-    import io
-    from weasyprint import HTML
+def test_zasloni_admin_osvezi_gumb_dela(client, make_user):
+    """Gumb »Osveži vse naprave« (admin API) še deluje."""
     admin = make_user(role="admin")
     login(client, admin.username)
     sid = _default_school_id()
     assert sid is not None
-
-    buf = io.BytesIO()
-    HTML(string="<p>Obvestilo PDF</p>").write_pdf(buf)
-    pdf = buf.getvalue()
-    r = client.post(
-        f"/api/schools/{sid}/zasloni/upload",
-        files={"file": ("plakat.pdf", pdf, "application/pdf")},
-    )
+    r = client.post(f"/api/schools/{sid}/zasloni/osvezi")
     assert r.status_code == 200, r.text
-    fname = r.json()["filename"]
-    assert fname.endswith(".jpg"), fname
-    assert "plakat" in fname
-
-    data = client.get("/zasloni/obvestila").json()["obvestila"]
-    srcs = [x["src"] for x in data if x["type"] == "image"]
-    assert f"vec_obvestil/{fname}" in srcs
-
-    media = client.get(f"/zasloni/media/vec_obvestil/{fname}")
-    assert media.status_code == 200
-    assert media.headers["content-type"].startswith("image/jpeg")
-    assert media.content.startswith(b"\xff\xd8\xff")
 
 
 def test_zasloni_upload_zavrne_neveljavno(client, make_user):
@@ -347,36 +318,14 @@ def test_zasloni_upload_zavrne_neveljavno(client, make_user):
     assert r.status_code == 400, r.text
 
 
-def test_zasloni_delete_obvestila(client, make_user):
-    """Brisanje obvestila (✕) → izgine iz /zasloni/obvestila."""
-    admin = make_user(role="admin")
-    login(client, admin.username)
-    sid = _default_school_id()
-    assert sid is not None
-
-    r = client.post(
-        f"/api/schools/{sid}/zasloni/upload",
-        files={"file": ("za_brisat.png", _tiny_png(), "image/png")},
-    )
-    assert r.status_code == 200, r.text
-    fname = r.json()["filename"]
-
-    r = client.post(f"/api/schools/{sid}/zasloni/delete", json={"filename": fname})
-    assert r.status_code == 200, r.text
-
-    data = client.get("/zasloni/obvestila").json()["obvestila"]
-    srcs = [x["src"] for x in data if x["type"] == "image"]
-    assert f"vec_obvestil/{fname}" not in srcs
-
-    r = client.post(f"/api/schools/{sid}/zasloni/delete", json={"filename": fname})
-    assert r.status_code == 404, r.text
-
+# ═══════════════════════════════════════════════════════════════════════
+# 5. Parsanje tabele iz eAsistenta (server-side)
+# ═══════════════════════════════════════════════════════════════════════
 
 def test_izrezi_tabelo_iz_ajax_data():
     """eAsistent (10/2026) tabelo naloži prek AJAX /seznam → JSON {data}; ta data
     mora _izrezi_prvo_tabelo sparsati v tabelo, tudi ko inicialni HTML tabele nima."""
     from app.routers.zasloni import _izrezi_prvo_tabelo
-    # Četrtek 23.10.2026 z nadomeščanji (realna AJAX data iz eAsistenta).
     ajax_data = (
         '<div class="card"><div class=card-title>Nadomeščanja po razredih</div>\r\n'
         '<div class=card-content>\r\n'
@@ -405,167 +354,7 @@ def test_tabela_iz_ajax_brez_nadomescanj_vrne_none():
         def raise_for_status(self):
             return None
         def json(self):
-            # realni eAsistent: data je 'Za ta dan ni nadomeščanj.'
             return {"data": "        Za ta dan ni nadomeščanj."}
     import unittest.mock as mock
     with mock.patch("requests.get", return_value=Resp()):
         assert _tabela_iz_ajax("https://urniki.easistent.com/nadomescanja/hash", "Europe/Ljubljana") is None
-
-
-# ─────────────────────────────────────────────────────────────────────────
-# Per-šola zaslon (30.10.2026): ime šole + obvestila + rotacija
-# ─────────────────────────────────────────────────────────────────────────
-
-def _ustvari_solo(slug: str, ime: str):
-    """Ustvari (ali prečisti in ponovno ustvari) šolo — vzorec test_govorilne."""
-    from app.tenancy import create_school
-    from app.models import School, SchoolSetting
-    db = SessionLocal()
-    try:
-        old = db.query(School).filter(School.slug == slug).first()
-        if old:
-            db.query(SchoolSetting).filter(
-                SchoolSetting.school_id == old.id,
-            ).delete(synchronize_session=False)
-            db.query(School).filter(School.id == old.id).delete(synchronize_session=False)
-        db.commit()
-        create_school(db, ime, slug=slug)
-        db.commit()
-        return db.query(School).filter(School.slug == slug).first().id
-    finally:
-        db.close()
-
-
-def test_per_sola_school_name_v_naslovu():
-    """/nadomescanja_<slug> pokaže ime TE šole, ne hardkodirane OŠ Toneta Čufarja.
-
-    Pred popravkom je _zasloni_settings za VSE šole vračal trdi fallback
-    'OŠ Toneta Čufarja' (SCHOOL_NAME ni v šolskih nastavitvah) → zgled je v
-    naslovu kazal Tone Čufar. Zdaj pride ime iz School.name.
-    """
-    _ustvari_solo("zgled", "OŠ Zgled")
-    with TestClient(app) as c:
-        r = c.get("/nadomescanja_zgled")
-        assert r.status_code == 200
-        assert "OŠ Zgled" in r.text
-        assert "Toneta Čufarja" not in r.text
-    # Svež client (brez school_ctx piškotka) → privzeta šola pokaže SVOJE ime.
-    with TestClient(app) as c2:
-        r2 = c2.get(ZASLON_POT)
-        assert r2.status_code == 200
-        assert settings.SCHOOL_NAME in r2.text
-
-
-def test_zasloni_obvestila_uposteva_skola_query(make_user):
-    """?skola=<slug> na /zasloni/obvestila vrne obvestila TE šole.
-
-    JS na /nadomescanja_<slug> fetch-a kanonično pot /zasloni/obvestila; brez
-    ?skola= bi zahtevek brez school_ctx piškotka padel na PRIVZETO šolo
-    (cross-šola preliv: zgled bi vrtel ostcj obvestila).
-    """
-    sid = _ustvari_solo("zgled", "OŠ Zgled")
-    assert sid is not None
-    admin = make_user(role="admin", school_id=sid)
-    with TestClient(app) as c:
-        login(c, admin.username)
-        r = c.put(f"/api/schools/{sid}/settings", json={"values": {
-            "ZASLON_OBVESTILA_TEKST": json.dumps(["Zgledovo obvestilo"]),
-        }})
-        assert r.status_code == 200, r.text[:300]
-
-        r = c.get("/zasloni/obvestila?skola=zgled")
-        assert r.status_code == 200
-        data = r.json()
-        assert any(x.get("type") == "text" and x.get("text") == "Zgledovo obvestilo"
-                   for x in data["obvestila"])
-
-        # Brez ?skola= (in brez piškotka — nov client) → obvestila privzete
-        # šole, zgledovega sporočila ni.
-        with TestClient(app) as c2:
-            r2 = c2.get("/zasloni/obvestila")
-            assert r2.status_code == 200
-            assert "Zgledovo obvestilo" not in json.dumps(r2.json())
-
-
-def test_zasloni_stran_skola_v_fetchih_in_rotacijski_index(make_user):
-    """Stran /nadomescanja_<slug> vgradi ?skola= v vse fetch-e in pravilen
-    začetni rotacijski indeks: -1 (nadomeščanja vklopljena — začetna HTML
-    slika je skrita, prvi JS klic pokaže obvestilo[0]) oziroma 0 (izklopljena —
-    začetna slika je vidna, prvi klic napreduje na obvestilo[1], da se ne
-    podvoji). Pred popravkom je bil indeks vedno 0 → obvestilo[0] se je ob
-    vklopljenih nadomeščanjih na prvem prehodu PRESKOČILO.
-    """
-    sid = _ustvari_solo("zgled", "OŠ Zgled")
-    assert sid is not None
-    admin = make_user(role="admin", school_id=sid)
-    with TestClient(app) as c:
-        login(c, admin.username)
-        r = c.get("/nadomescanja_zgled")
-        assert r.status_code == 200
-        assert 'const SKOLA = "zgled";' in r.text
-        assert "let obvestilaIndex = -1;" in r.text
-        assert "encodeURIComponent(SKOLA)" in r.text
-        # Začetna slika (karkoli že je) mora nositi ?skola= TE šole.
-        img_m = re.search(r'<img src="([^"]+)"', r.text)
-        assert img_m, "ni <img> na strani"
-        assert img_m.group(1).startswith("/zasloni/media/")
-        assert img_m.group(1).endswith("?skola=zgled"), img_m.group(1)
-
-        # Izklop nadomeščanj → začetna slika vidna → indeks 0.
-        r2 = c.put(f"/api/schools/{sid}/settings", json={"values": {
-            "ZASLON_POKAZI_NADOMESCANJA": False,
-        }})
-        assert r2.status_code == 200, r2.text[:300]
-        r3 = c.get("/nadomescanja_zgled")
-        assert r3.status_code == 200
-        assert "let obvestilaIndex = 0;" in r3.text
-        assert 'const SKOLA = "zgled";' in r3.text
-
-
-def test_zasloni_omogocen_registrirana():
-    """ZASLON_OMOGOCEN (javna stran nadomeščanj odprta/zaprta) je registriran."""
-    from app.tenancy import SCHOOL_SETTING_FIELDS, SCHOOL_SETTING_KEYS, env_default_settings
-    assert "ZASLON_OMOGOCEN" in SCHOOL_SETTING_KEYS
-    assert "ZASLON_OMOGOCEN" in env_default_settings()
-    assert env_default_settings()["ZASLON_OMOGOCEN"] == "true"
-    assert "ZASLON_OMOGOCEN" in {f["key"] for f in SCHOOL_SETTING_FIELDS}
-
-
-def test_zasloni_privzeto_odprta():
-    """Privzeto je javna stran nadomeščanj ODPRTA (normalen zaslon)."""
-    with TestClient(app) as c:
-        r = c.get(ZASLON_POT)
-        assert r.status_code == 200
-        assert "fullscreen-mode" in r.text
-        assert "zaprta" not in r.text.lower()
-
-
-def test_zasloni_zaprta_ko_ugasnjeno(client, make_user):
-    """ZASLON_OMOGOCEN=false → /zasloni pokaže »zaprta«, ne celega zaslona."""
-    admin = make_user(role="admin")
-    login(client, admin.username)
-    sid = _default_school_id()
-    assert sid is not None
-    r = client.put(f"/api/schools/{sid}/settings", json={
-        "values": {"ZASLON_OMOGOCEN": False}
-    })
-    assert r.status_code == 200, r.text
-    rr = client.get(ZASLON_POT)
-    assert rr.status_code == 200
-    assert "Nadomeščanja so trenutno zaprta" in rr.text
-    assert "fullscreen-mode" not in rr.text
-    # nazaj na odprto
-    r2 = client.put(f"/api/schools/{sid}/settings", json={
-        "values": {"ZASLON_OMOGOCEN": True}
-    })
-    assert r2.status_code == 200
-    assert "fullscreen-mode" in client.get(ZASLON_POT).text
-
-
-def test_zasloni_gola_pot_je_odstranjena():
-    """Gola pot /zasloni (brez kratice) je odstranjena -> 404; deluje le /nadomescanja_<kratica>."""
-    with TestClient(app) as c:
-        assert c.get("/zasloni").status_code == 404
-        assert c.get(ZASLON_POT).status_code == 200
-        assert "fullscreen-mode" in c.get(ZASLON_POT).text
-

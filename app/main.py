@@ -564,9 +564,3 @@ if os.path.exists(slike_dir):
 
 # Digitalni zaslon: obvestila/slike (vec_obvestil/, obvestila/). Mapa je
 # gitignorirana (zasloni_media/) — od datumov naprej se shranjuje tja.
-from app.routers.zasloni import _default_media_dir
-_zmedia = _default_media_dir()
-_zmedia.mkdir(parents=True, exist_ok=True)
-(_zmedia / "vec_obvestil").mkdir(parents=True, exist_ok=True)
-(_zmedia / "obvestila").mkdir(parents=True, exist_ok=True)
-app.mount("/zasloni/media", StaticFiles(directory=str(_zmedia)), name="zasloni_media")
