@@ -141,6 +141,7 @@ def _zasloni_settings(request: Request, db: Session) -> dict:
     return {
         "url": config.get_str("ZASLON_URL", DEFAULT_ZASLON_URL),
         "pokazi_nadomescanja": b("ZASLON_POKAZI_NADOMESCANJA", True),
+        "omogocen": b("ZASLON_OMOGOCEN", True),
         "cas_obvestila": i("ZASLON_CAS_OBVESTILA", 5),
         "min_cas_tabele": i("ZASLON_MIN_CAS_TABELE", 2),
         "hitrost_drsenja": f("ZASLON_HITROST_DRSENJA", 1.2),
@@ -164,6 +165,24 @@ def _zasloni_settings(request: Request, db: Session) -> dict:
         # vrnejo podatke TE šole, ne privzete.
         "skola": config.school.slug if config.school else "",
     }
+
+
+_CLOSED_HTML = """<!DOCTYPE html>
+<html lang='sl'>
+<head>
+<meta charset='utf-8'>
+<title>Nadomeščanja — zaprta</title>
+<style>
+body{font-family:Segoe UI,Arial,sans-serif;background:#0b3b5c;color:#fff;display:flex;align-items:center;justify-content:center;height:100vh;margin:0;text-align:center;font-size:3rem}
+</style>
+</head>
+<body>
+<div>Nadomeščanja so trenutno zaprta.<br>
+<small style='font-size:1.2rem;opacity:.8'>Skrbnik spletne strani nadomeščanj je ni odprl.</small>
+</div>
+</body>
+</html>
+"""
 
 
 # ═══════════════════════════════════════════════════════════════════════
@@ -588,6 +607,10 @@ def zasloni_praznos(request: Request, db: Session = Depends(get_db)):
     _clear_cache_if_new_day()
 
     settings = _zasloni_settings(request, db)
+    if not settings.get("omogocen", True):
+        # Javna stran nadomeščanj je zaprta (ZASLON_OMOGOCEN=false) —
+        # skrbnik je ni pripravljen v tem trenutku pustiti odprto.
+        return HTMLResponse(_CLOSED_HTML, status_code=200)
     tabela = None
 
     if settings["pokazi_nadomescanja"]:

@@ -517,3 +517,44 @@ def test_zasloni_stran_skola_v_fetchih_in_rotacijski_index(make_user):
         assert r3.status_code == 200
         assert "let obvestilaIndex = 0;" in r3.text
         assert 'const SKOLA = "zgled";' in r3.text
+
+
+def test_zasloni_omogocen_registrirana():
+    """ZASLON_OMOGOCEN (javna stran nadomeščanj odprta/zaprta) je registriran."""
+    from app.tenancy import SCHOOL_SETTING_FIELDS, SCHOOL_SETTING_KEYS, env_default_settings
+    assert "ZASLON_OMOGOCEN" in SCHOOL_SETTING_KEYS
+    assert "ZASLON_OMOGOCEN" in env_default_settings()
+    assert env_default_settings()["ZASLON_OMOGOCEN"] == "true"
+    assert "ZASLON_OMOGOCEN" in {f["key"] for f in SCHOOL_SETTING_FIELDS}
+
+
+def test_zasloni_privzeto_odprta():
+    """Privzeto je javna stran nadomeščanj ODPRTA (normalen zaslon)."""
+    with TestClient(app) as c:
+        r = c.get("/zasloni")
+        assert r.status_code == 200
+        assert "fullscreen-mode" in r.text
+        assert "zaprta" not in r.text.lower()
+
+
+def test_zasloni_zaprta_ko_ugasnjeno(client, make_user):
+    """ZASLON_OMOGOCEN=false → /zasloni pokaže »zaprta«, ne celega zaslona."""
+    admin = make_user(role="admin")
+    login(client, admin.username)
+    sid = _default_school_id()
+    assert sid is not None
+    r = client.put(f"/api/schools/{sid}/settings", json={
+        "values": {"ZASLON_OMOGOCEN": False}
+    })
+    assert r.status_code == 200, r.text
+    rr = client.get("/zasloni")
+    assert rr.status_code == 200
+    assert "Nadomeščanja so trenutno zaprta" in rr.text
+    assert "fullscreen-mode" not in rr.text
+    # nazaj na odprto
+    r2 = client.put(f"/api/schools/{sid}/settings", json={
+        "values": {"ZASLON_OMOGOCEN": True}
+    })
+    assert r2.status_code == 200
+    assert "fullscreen-mode" in client.get("/zasloni").text
+

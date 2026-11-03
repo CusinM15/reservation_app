@@ -121,6 +121,7 @@ SCHOOL_SETTING_KEYS = [
     # Digitalni zaslon (nadomeščanja + obvestila) — nastavi šolski admin
     "ZASLON_URL",
     "ZASLON_POKAZI_NADOMESCANJA",
+    "ZASLON_OMOGOCEN",  # javna stran nadomescanj: odprta/zaprta (privzeto odprta)
     "ZASLON_CAS_OBVESTILA",
     "ZASLON_MIN_CAS_TABELE",
     "ZASLON_HITROST_DRSENJA",
@@ -210,6 +211,7 @@ SCHOOL_SETTING_FIELDS = [
     # ── Digitalni zaslon ─────────────────────────────────────────
     {"key": "ZASLON_URL", "label": "Zaslon — eAsistent URL nadomeščanj", "type": "text"},
     {"key": "ZASLON_POKAZI_NADOMESCANJA", "label": "Zaslon — prikaži nadomeščanja", "type": "bool"},
+    {"key": "ZASLON_OMOGOCEN", "label": "Nadomeščanja — javna spletna stran je odprta", "type": "bool"},
     {"key": "ZASLON_CAS_OBVESTILA", "label": "Zaslon — sekund: vidna slika/obvestilo", "type": "int"},
     {"key": "ZASLON_MIN_CAS_TABELE", "label": "Zaslon — sekund: minimalni čas tabele", "type": "int"},
     {"key": "ZASLON_HITROST_DRSENJA", "label": "Zaslon — hitrost drsenja tabele", "type": "float"},
@@ -467,6 +469,7 @@ def env_default_settings() -> dict:
         # Digitalni zaslon
         "ZASLON_URL": "https://urniki.easistent.com/nadomescanja/d960638bb866d19b58f4e2de616db8eb56e73cfe",
         "ZASLON_POKAZI_NADOMESCANJA": "true",
+        "ZASLON_OMOGOCEN": "true",
         "ZASLON_CAS_OBVESTILA": "5",
         "ZASLON_MIN_CAS_TABELE": "2",
         "ZASLON_HITROST_DRSENJA": "1.2",
