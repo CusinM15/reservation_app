@@ -818,7 +818,7 @@
         const safeT = (tm || '').replace(/"/g, '&quot;');
         return `<div class="urnik-row" style="display:flex;gap:8px;align-items:center;margin-bottom:6px;">
             <input type="text" class="urnik-tid" value="${(tid||'').replace(/"/g,'&quot;')}" placeholder="1" style="max-width:60px;" title="Številka ure">
-            <input type="time" class="urnik-time" value="${safeT}" style="max-width:130px;">
+            <input type="text" class="urnik-time" value="${safeT}" placeholder="HH:MM (24 h)" style="max-width:130px;">
             <button type="button" class="btn btn-cancel" style="padding:6px 10px;" onclick="this.closest('.urnik-row').remove(); return false;" title="{{ t('title_odstrani_uro', 'Odstrani uro') }}">✕</button>
         </div>`;
     }
