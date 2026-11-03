@@ -509,8 +509,8 @@ STRINGS: list[tuple[str, str, str, str]] = [
 
     # ── Registracija (javna stran) ────────────────────────────────────
     ("reg_title", "registracija", "Nova šola — Šolski app", "New school — School app"),
-    ("reg_intro", "registracija", '<span class="brand">Šolski app</span> — rezervacije prostorov, dnevi dejavnosti in ocenjevanja za vašo šolo.',
-     '<span class="brand">School app</span> — room reservations, activity days and assessments for your school.'),
+    ("reg_intro", "registracija", '<span class="brand">Šolski app</span> — rezervacije prostorov, dnevi dejavnosti, govorilne ure, zasloni z nadomeščanji in ocenjevanja za vašo šolo.',
+     '<span class="brand">School app</span> — room reservations, activity days, parent-teacher times, substitute-display notices and assessments for your school.'),
     ("reg_item_rez", "registracija", "<strong>rezervacije prostorov in opreme</strong> — učitelji rezervirajo tablice, računalnice, posebne prostore; aplikacija sama pazi na zasedenost in omejitve,",
      "<strong>room and equipment reservations</strong> — teachers reserve tablets, computer rooms and special rooms; the app keeps track of occupancy and limits,"),
     ("reg_item_dej", "registracija", "<strong>dnevi dejavnosti</strong> — termini po razredih, prostori, cene, urnik,",
