@@ -29,6 +29,12 @@
         .page .pd { color:#7a8b99; font-size:.82rem; }
         .page .plink { font-size:.78rem; font-family:ui-monospace, Menlo, monospace; color:#0b5ed7; background:#eef5fb; padding:.15rem .5rem; border-radius:20px; white-space:nowrap; }
         .tag { display:inline-block; font-size:.72rem; font-weight:700; background:#dde9f4; color:#0b3b5c; border-radius:20px; padding:.12rem .6rem; }
+        details.grp { margin:.5rem 0 .2rem; border:1px solid #e3ecf4; border-radius:10px; padding:.3rem .8rem; background:#fbfdff; }
+        details.grp summary { cursor:pointer; font-weight:700; font-size:.95rem; color:#14608c; padding:.35rem 0; user-select:none; list-style:none; display:flex; align-items:center; gap:.45rem; }
+        details.grp summary::-webkit-details-marker { display:none; }
+        details.grp summary::before { content:"▸ "; color:#0b5ed7; font-size:.85rem; transition:transform .15s; }
+        details.grp[open] summary::before { transform:rotate(90deg); }
+        details.grp .pages { padding-top:.15rem; }
         /* ------------------------------------------------ editor ---- */
         .editor { display:flex; flex-direction:column; gap:.6rem; }
         .editor-head { display:flex; align-items:center; gap:.8rem; flex-wrap:wrap; }
@@ -36,8 +42,6 @@
         .btn { display:inline-flex; align-items:center; gap:.4rem; padding:.55rem 1rem; font-size:.88rem; font-weight:700; border-radius:8px; border:none; cursor:pointer; text-decoration:none; }
         .btn.primary { background:#0b3b5c; color:#fff; }
         .btn.primary:hover { background:#14608c; }
-        .btn.reset { background:#fff; color:#b02a37; border:1px solid #e2a6ae; }
-        .btn.reset:hover { background:#fdeef0; }
         .btn.small { padding:.35rem .7rem; font-size:.8rem; }
         .btn.ghost { background:#eef5fb; color:#0b3b5c; border:1px solid #c4d9ea; }
         .badge-ov { display:inline-block; font-size:.72rem; font-weight:700; background:#d1fae5; color:#065f46; border-radius:20px; padding:.12rem .6rem; }
@@ -65,7 +69,7 @@
         <a class="back" href="/schools">← Šole</a>
     </header>
 
-    <blockquote class="note">Urejanje .md shrani tvojo različico v bazo. Pokaže se učiteljem/vodstvu/adminu (predogled in PDF), namesto vgrajene datoteke. Gumb <b>Ponastavi</b> vrne vgrajeno tovarniško različico.</blockquote>
+    <blockquote class="note">Urejanje .md shrani tvojo različico v bazo. Pokaže se učiteljem/vodstvu/adminu (predogled in PDF), namesto vgrajene datoteke.</blockquote>
 
     <div class="grid">
         <div>
@@ -74,48 +78,67 @@
                 <h2>🗺️ Pregled vseh strani aplikacije</h2>
                 <p>Dejanske naslove strani šole dobiš iz spustnega seznama na vrhu glavnega zaslona (ali iz <code>/schools</code> → poti šole). Spodaj so kanonične poti.</p>
 
-                <h3>🔓 Javno (brez prijave)</h3>
-                <div class="pages">
+                <details class="grp" open>
+<summary>🔓 Javno (brez prijave)</summary>
+<div class="pages">
+                    <a class="page" href="/registracija"><span class="pl"><span class="ico">📝</span><span><span class="pt">Registracija šole</span><br><span class="pd">Ustvari nov šolski račun</span></span></span><span class="plink">/registracija</span></a>
+                    <a class="page" href="/nakup"><span class="pl"><span class="ico">💳</span><span><span class="pt">Nakup / naročnina</span><br><span class="pd">Cene in nakup naročnine</span></span></span><span class="plink">/nakup</span></a>
                     <a class="page" href="/govorilne"><span class="pl"><span class="ico">🗓️</span><span><span class="pt">Najava na govorilne ure</span><br><span class="pd">Javna prijavna stran za starše</span></span></span><span class="plink">/govorilne</span></a>
                     <a class="page" href="/zasloni"><span class="pl"><span class="ico">🖥️</span><span><span class="pt">Digitalni zaslon (nadomeščanja)</span><br><span class="pd">Nadomeščanja + obvestila zašolski zaslon</span></span></span><span class="plink">/zasloni</span></a>
-                    <a class="page" href="/rezervacije"><span class="pl"><span class="ico">📅</span><span><span class="pt">Rezervacije (pregled)</span><br><span class="pd">Prijavljenim uporabnikom</span></span></span><span class="plink">/rezervacije</span></a>
                 </div>
+</details>
 
-                <h3>👨‍🏫 Učitelji (prijavljeni)</h3>
-                <div class="pages">
+
+                <details class="grp" open>
+<summary>👨‍🏫 Učitelji (prijavljeni)</summary>
+<div class="pages">
                     <a class="page" href="/rezervacije"><span class="pl"><span class="ico">📅</span><span><span class="pt">Rezervacije prostorov</span><br><span class="pd">Rezerviraj prostore/tablice, ogled tedenskega koledarja</span></span></span><span class="plink">/rezervacije</span></a>
                     <a class="page" href="/ocenjevanje"><span class="pl"><span class="ico">📝</span><span><span class="pt">Ocenjevanje in dnevi dejavnosti</span><br><span class="pd">Napovej ocenjevanja, koledar + dejavnosti</span></span></span><span class="plink">/ocenjevanje</span></a>
                     <a class="page" href="/govorilne/ure"><span class="pl"><span class="ico">🗓️</span><span><span class="pt">Moje govorilne ure</span><br><span class="pd">Urnik in najave staršev</span></span></span><span class="plink">/govorilne/ure</span></a>
                 </div>
+</details>
 
-                <h3>🧭 Vodstvo (prijavljeni + vodstvo)</h3>
-                <div class="pages">
+
+                <details class="grp" open>
+<summary>🧭 Vodstvo (prijavljeni + vodstvo)</summary>
+<div class="pages">
                     <a class="page" href="/ocenjevanje/dejavnosti"><span class="pl"><span class="ico">🎒</span><span><span class="pt">Vnos dejavnosti</span><br><span class="pd">Dnevi dejavnosti, celodnevne/krajše</span></span></span><span class="plink">/ocenjevanje/dejavnosti</span></a>
                     <a class="page" href="/obrazci"><span class="pl"><span class="ico">📄</span><span><span class="pt">Obrazci in obvestila</span><br><span class="pd">Obvestila za učitelje/starše + PDF</span></span></span><span class="plink">/obrazci</span></a>
                     <a class="page" href="/settings"><span class="pl"><span class="ico">⚙️</span><span><span class="pt">Nastavitve šole</span><br><span class="pd">admin/vodstvo</span></span></span><span class="plink">/settings</span></a>
                 </div>
+</details>
 
-                <h3>🛠️ Šolski admin</h3>
-                <div class="pages">
+
+                <details class="grp" open>
+<summary>🛠️ Šolski admin</summary>
+<div class="pages">
                     <a class="page" href="/auth/admin/users"><span class="pl"><span class="ico">👥</span><span><span class="pt">Upravljanje uporabnikov</span><br><span class="pd">Dodajaj/urejaj učitelje, vodstvo, admine</span></span></span><span class="plink">/auth/admin/users</span></a>
                     <a class="page" href="/history"><span class="pl"><span class="ico">📋</span><span><span class="pt">Dnevnik dogodkov</span><br><span class="pd">Audit log svoje šole</span></span></span><span class="plink">/history</span></a>
                     <a class="page" href="/narocnina"><span class="pl"><span class="ico">💳</span><span><span class="pt">Naročnina</span><br><span class="pd">Stanje naročnine šole</span></span></span><span class="plink">/narocnina</span></a>
                 </div>
+</details>
 
-                <h3>🌐 Glavni admin</h3>
-                <div class="pages">
+
+                <details class="grp" open>
+<summary>🌐 Glavni admin</summary>
+<div class="pages">
                     <a class="page" href="/schools"><span class="pl"><span class="ico">🏫</span><span><span class="pt">Šole</span><br><span class="pd">Vse šole, poti, naročnine, brisanje</span></span></span><span class="plink">/schools</span></a>
                     <a class="page" href="/global-settings"><span class="pl"><span class="ico">🌐</span><span><span class="pt">Globalne nastavitve</span><br><span class="pd">SMTP, backup, cene</span></span></span><span class="plink">/global-settings</span></a>
                     <a class="page" href="/history"><span class="pl"><span class="ico">📋</span><span><span class="pt">Dnevnik dogodkov (vse šole)</span><br><span class="pd">Audit log celotne namestitve</span></span></span><span class="plink">/history</span></a>
                     <a class="page" href="/navodila"><span class="pl"><span class="ico">🧭</span><span><span class="pt">Navodila (ta stran)</span><br><span class="pd">Pregled + urejanje .md</span></span></span><span class="plink">/navodila</span></a>
                 </div>
+</details>
 
-                <h3>📚 Navodila / dokumenti (dosegljivi)</h3>
-                <div class="pages">
+
+                <details class="grp" open>
+<summary>📚 Navodila / dokumenti (dosegljivi)</summary>
+<div class="pages">
                     {% for d in all_preview %}
                     <a class="page" href="/docs/html/{{ d.name }}" target="_blank"><span class="pl"><span class="ico">📄</span><span><span class="pt">{{ d.label }}</span><br><span class="pd">Predogled HTML · PDF</span></span></span><span class="plink">/docs/{{ d.name }}</span></a>
                     {% endfor %}
                 </div>
+</details>
+
             </div>
         </div>
 
@@ -149,7 +172,6 @@
 
                     <div class="actions">
                         <button class="btn primary" onclick="saveDoc()">💾 Shrani spremembe</button>
-                        <button class="btn reset" onclick="resetDoc()">↩️ Ponastavi na vgrajeno</button>
                     </div>
                     <div id="docMsg" class="msg"></div>
                     <div class="hint">Velja: markdown (naslovi #, poudarki **, seznami -, tabele |, citati &gt;, koda ```). Shranjene spremembe so VIDNE takoj (predogled in PDF), brez ponovnega zagona.</div>
@@ -213,21 +235,6 @@ async function saveDoc() {
         badge.textContent = 'urejanje (shranjeno)';
         badge.className = 'badge-ov';
         msg.className = 'msg ok'; msg.textContent = '✅ Shranjeno.';
-        setTimeout(() => { msg.textContent = ''; }, 2500);
-    } catch (e) {
-        msg.className = 'msg err'; msg.textContent = 'Napaka: ' + e.message;
-    }
-}
-
-async function resetDoc() {
-    if (!CURRENT_DOC) return;
-    if (!confirm('Ponastavim to navodilo na vgrajeno tovarniško različico?')) return;
-    const msg = document.getElementById('docMsg');
-    msg.className = 'msg'; msg.textContent = 'Ponastavljam ...';
-    try {
-        await api0('/api/navodila/docs/' + encodeURIComponent(CURRENT_DOC) + '/reset', { method: 'POST' });
-        await loadDoc();
-        msg.className = 'msg ok'; msg.textContent = '✅ Ponastavljeno na vgrajeno.';
         setTimeout(() => { msg.textContent = ''; }, 2500);
     } catch (e) {
         msg.className = 'msg err'; msg.textContent = 'Napaka: ' + e.message;
