@@ -102,8 +102,14 @@ Na strani **⚙️ Nastavitve šole** uredite vse, kar določa delovanje za vaš
 | **Števila** | Imenovane številske spremenljivke (npr. `Število tablic = 28`) |
 | **Prostori** | Prostori za rezervacijo. Kljukica **»število«** poveže prostor s številsko spremenljivko — tak prostor si lahko izposodi več učiteljev hkrati (vsak navede količino) |
 | **Urnik** | Ure pouka (npr. `07:30-08:15`) |
+| **Kratica šole** | Posebna oznaka šole (npr. `ostcj`) — iz nje nastanejo spletne poti; nastavi jo šolski admin |
 | **Pravila ocenjevanja** | Največ ocenjevanj na teden / dan / z ponavljanjem / zaporednih dni |
 | **E-pošta (SMTP)** | Naslov admina, naslov pošiljatelja (From), naslov za varnostne kopije, SMTP strežnik, uporabniško ime in geslo |
+
+> **Javno dostopne strani (brez prijave).** Na javnem spletu (brez prijave) so le:
+> prijavna stran, **naročilo na govorilne ure**, javna stran **nadomeščanj** (če jo odprete)
+> in **nakup/naročnina**. Vse ostalo (rezervacije, ocenjevanja, dnevi dejavnosti, dnevnik …)
+> je samo za prijavljene učitelje in vodstvo.
 
 ### Razredi = skupine od 1. do 9. razreda
 
@@ -277,6 +283,12 @@ preddverju/shrambi vrti **nadomeščanja iz eAsistenta** + obvestila šole.
 
 > Zaslon je javen na **`/zasloni`** (ali goli poti šole). Za nadomeščanja iz
 > eAsistenta se uporabi javni URL, ki ga admin vnese v nastavitvah.
+>
+> **Zapiranje/odpiranje javne strani.** Zaslon (pot `/nadomeščanja_<kratica>`) lahko
+> **začasno zaprete** v **Nastavitve → Digitalni zaslon (nadomeščanja)** — odkljukate
+> (odstranite kljukico) polje **»Javna stran nadomeščanj je odprta«**. Ko je zaprt,
+> obiskovalec namesto nadomeščanj vidi **»Nadomeščanja so trenutno zaprta«**; javna
+> stran tisti trenutek ni dostopna.
 
 ---
 
