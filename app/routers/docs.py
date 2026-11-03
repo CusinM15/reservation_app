@@ -55,6 +55,15 @@ ALLOWED = {
     "obvestilo-ucitelji": ["obvestilo-ucitelji.md"],
     "obvestilo-starsi": ["obvestilo-starsi.md"],
     "reklama-sola": ["reklama-sola.md"],
+    "main": ["main.md"],
+    "main-en": ["en/main.md"],
+    "aplikacija-rezervacije": ["aplikacija-rezervacije.md"],
+    "aplikacija-rezervacije-en": ["en/aplikacija-rezervacije.md"],
+    "govorilne-ure": ["govorilne-ure.md"],
+    "admin-devops-navodila": ["admin-devops-navodila.md"],
+    "admin-devops-navodila-en": ["en/admin-devops-navodila.md"],
+    "postavi-lokalni-app": ["postavi-lokalni-app.md"],
+    "postavi-lokalni-app-en": ["en/postavi-lokalni-app.md"],
 }
 
 DOC_LABELS = {
@@ -68,6 +77,15 @@ DOC_LABELS = {
     "obvestilo-ucitelji": "Obvestilo za učitelje — govorilne ure",
     "obvestilo-starsi": "Obvestilo za starše — najava na govorilne ure",
     "reklama-sola": "Predstavitev aplikacije (reklama)",
+    "main": "Glavna dokumentacija",
+    "main-en": "Main Documentation",
+    "aplikacija-rezervacije": "Aplikacija — rezervacije in ocenjevanja",
+    "aplikacija-rezervacije-en": "Application Guide",
+    "govorilne-ure": "Govorilne ure",
+    "admin-devops-navodila": "Administrator / DevOps — tehnična navodila",
+    "admin-devops-navodila-en": "Admin / DevOps Guide",
+    "postavi-lokalni-app": "Postavitev lokalnega okolja",
+    "postavi-lokalni-app-en": "Setting up a local environment",
 }
 
 
@@ -459,8 +477,8 @@ def _require_main_admin(request: Request, db: Session) -> User:
 
 
 def _editable_docs() -> list[str]:
-    """Urejevalni dokumenti = slovenske različice navodil/obvestil (brez -en)."""
-    return [k for k in ALLOWED if not k.endswith("-en")]
+    """Urejevalni dokumenti = VSE dokumentacijske strani (vključno EN različice)."""
+    return list(ALLOWED.keys())
 
 
 @router.get("/navodila", response_class=HTMLResponse)
