@@ -143,6 +143,8 @@ SCHOOL_SETTING_KEYS = [
     # Nastavitvah šole lahko doda vodstvo/učitelje. main_admin se NIKOLI ne
     # šteje (nima svoje šole; govorilnih ne sme videti niti urejati).
     "GOVORILNE_VLOGAROLE",
+    # Koledarji govorilnih ur: poimenovani urniki (id → {label, zacetki}).
+    "URNIKI",
 ]
 
 
@@ -218,6 +220,8 @@ SCHOOL_SETTING_FIELDS = [
     {"key": "GOVORILNE_OMOGOCENE", "label": "Govorilne ure — so omogočene", "type": "bool"},
     # Govorilne ure: katere vloge (grupe) jih vidijo (vejica-ločen seznam).
     {"key": "GOVORILNE_VLOGAROLE", "label": "Govorilne ure — katere grupe jih vidijo", "type": "csv"},
+    # Koledarji govorilnih ur: poimenovani urniki (id → {label, zacetki}).
+    {"key": "URNIKI", "label": "Urnik — govorilne ure (koledarji: ime + začetki ur)", "type": "json"},
 ]
 
 

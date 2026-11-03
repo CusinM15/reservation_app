@@ -1156,6 +1156,23 @@ def school_settings_page(
         for key in sorted(parsed_pop.keys(), key=_sort_key):
             popoldan_rows.append({"index": str(key), "value": str(parsed_pop[key])})
 
+    # KOLEDARJI GOVORILNIH UR (URNIKI): poimenovani urniki (id → {label, zacetki}).
+    # Če šola še nima shranjenih, pokažemo vgrajene privzetke (da jih admin vidi).
+    try:
+        _u = _json.loads(values.get("URNIKI") or "{}")
+    except (TypeError, ValueError):
+        _u = {}
+    if not isinstance(_u, dict) or not _u:
+        from app.govorilne_podatki import URNIKI as _BUILTIN_URNIKI
+        _u = _BUILTIN_URNIKI
+    urniki_data = []
+    for _uid in _u:
+        _obj = _u[_uid]
+        _label = _obj.get("label", str(_uid)) if isinstance(_obj, dict) else str(_uid)
+        _z = _obj.get("zacetki") if isinstance(_obj, dict) else {}
+        _zlist = [{"ura": str(k), "time": v} for k, v in (_z or {}).items()]
+        urniki_data.append({"id": str(_uid), "label": _label, "zacetki": _zlist})
+
     # OBVESTILA ZASLONA: vsako obvestilo (datoteka v vec_obvestil/) dobi
     # kljukico. Označena se na zaslonu prikazujejo PO VRSTI, v tem vrstnem
     # redu. Tu pripravimo vrstni red iz shranjene vrednosti ZASLON_OBVESTILA.
@@ -1203,6 +1220,7 @@ def school_settings_page(
         "values": values,
         "schedule_rows": schedule_rows,
         "popoldan_rows": popoldan_rows,
+        "urniki_data": urniki_data,
         "prostori_rows": prostori_rows,
         "razredi_rows": razredi_rows,
         "stevila_rows": stevila_rows,

@@ -98,6 +98,30 @@ def _default_cfg() -> dict:
     }
 
 
+def _merge_sole_urniki(db: Session, school_id: int | None, cfg_dict: dict) -> dict:
+    """Per-šola koledarji govorilnih ur (razdelek Urnik v nastavitvah šole).
+
+    Če ima šola shranjeno nastavitev URNIKI, jo uporabimo namesto vgrajenih
+    (URNIKI iz govorilne_podatki.py). Vgrajeni ostanejo fallback, dokler jih
+    admin ne uredi.
+    """
+    if school_id is None:
+        return cfg_dict
+    from app.models import SchoolSetting
+    urow = db.query(SchoolSetting).filter(
+        SchoolSetting.school_id == school_id,
+        SchoolSetting.key == "URNIKI",
+    ).first()
+    if urow is not None and urow.value:
+        try:
+            u = json.loads(urow.value)
+            if isinstance(u, dict) and u:
+                cfg_dict["urniki"] = u
+        except Exception:
+            pass
+    return cfg_dict
+
+
 def _cfgs_iz_sklada(raw: str | None) -> dict | None:
     if not raw or not str(raw).strip():
         return None
@@ -143,7 +167,7 @@ def _load_cfg(db: Session, school_id: int | None) -> dict:
         # ČLANSTVO = uporabniki z ima_govorilne (kljukica) — trdi seznam ni več vir,
         # ampak samo shramba urnikov posameznih uporabnikov.
         base["ucitelji"] = _ucitelji_iz_uporabnikov(db, school_id, base["ucitelji"])
-        return base
+        return _merge_sole_urniki(db, school_id, base)
     # Seed iz privzetkov in shrani (spravi v produkcijo za to šolo).
     # ⚠️ VARNO PRED CROSS-ŠOLO PRELIVOM: ucitelji iz modula (govorilne_podatki.py)
     # pripadajo SAMO privzeti (OSTC) šoli. Vsaka DRUGA šola, ki še nima svoje
@@ -162,7 +186,7 @@ def _load_cfg(db: Session, school_id: int | None) -> dict:
         db.rollback()
     # ČLANSTVO = uporabniki z ima_govorilne — seed zgoraj je surov; tu derivacija.
     cfg["ucitelji"] = _ucitelji_iz_uporabnikov(db, school_id, cfg["ucitelji"])
-    return cfg
+    return _merge_sole_urniki(db, school_id, cfg)
 
 
 def _govorilne_omogocene(db: Session, school_id: int | None) -> bool:

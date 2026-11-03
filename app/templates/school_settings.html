@@ -227,6 +227,18 @@
                     {{ t('set_hint_popoldan_1', 'Termini za prostore s kljukico »popoldanski urnik« (privzeto po 1 uro od 15:00 do 21:00). Npr.') }} <code>15:00-16:00</code>{{ t('set_hint_popoldan_2', '. Vrstico odstranite z ✕.') }}
                 </div>
             </div>
+
+            <!-- KOLEDARJI GOVORILNIH UR (URNIKI): poimenovani urniki, ki jih
+                 učitelji izberejo pri govorilnih urah. Vsak ima ime + začetke ur. -->
+            <div class="field">
+                <label>{{ t('set_urniki_govorilne', 'Urnik — govorilne ure (koledarji)') }}</label>
+                {% if is_main_admin %}<span class="key">URNIKI</span>{% endif %}
+                <div id="urniki-rows"></div>
+                <button type="button" class="btn" style="margin-top:8px;" onclick="addUrnik(); return false;">{{ t('set_dodaj_koledar', '＋ Dodaj koledar') }}</button>
+                <div class="hint" style="margin-top:6px;">
+                    {{ t('set_hint_urniki', 'Poimenovani urniki za govorilne ure (npr. „1. in 2. razred“, „6. do 9. razred“). Učitelji izberejo svojega; pri vsakem navedete ime in začetke šolskih ur. Ime vidijo učitelji.') }}
+                </div>
+            </div>
     </details>
 
             <details class="collapsible">
@@ -799,6 +811,61 @@
     }
     renderPopoldanRows(POPOLDAN_ROWS);
 
+    // ── Koledarji govorilnih ur (URNIKI) ───────────────────────────
+    const URNIKI_DATA = {{ urniki_data|tojson }};
+    let URNIKI_COUNTER = 1;
+    function urnikRowHtml(tid, tm) {
+        const safeT = (tm || '').replace(/"/g, '&quot;');
+        return `<div class="urnik-row" style="display:flex;gap:8px;align-items:center;margin-bottom:6px;">
+            <input type="text" class="urnik-tid" value="${(tid||'').replace(/"/g,'&quot;')}" placeholder="1" style="max-width:60px;" title="Številka ure">
+            <input type="time" class="urnik-time" value="${safeT}" style="max-width:130px;">
+            <button type="button" class="btn btn-cancel" style="padding:6px 10px;" onclick="this.closest('.urnik-row').remove(); return false;" title="{{ t('title_odstrani_uro', 'Odstrani uro') }}">✕</button>
+        </div>`;
+    }
+    function urnikBlockHtml(id, label, zacetki) {
+        const rows = (zacetki || []).map(z => urnikRowHtml(z.ura, z.time)).join('');
+        return `<div class="urnik-block" data-id="${id}" style="border:1px solid #e3ecf4;border-radius:8px;padding:10px;margin-bottom:10px;">
+            <div style="display:flex;gap:8px;align-items:center;margin-bottom:6px;">
+                <label style="margin:0;font-weight:600;">{{ t('set_koledar_ime', 'Ime koledarja') }}</label>
+                <input type="text" class="urnik-label" value="${(label||'').replace(/"/g,'&quot;')}" placeholder="{{ t('set_ph_koledar', 'npr. 6. do 9. razred') }}" style="flex:1;min-width:120px;">
+                <button type="button" class="btn btn-cancel" style="padding:6px 10px;" onclick="this.closest('.urnik-block').remove(); return false;" title="{{ t('btn_izbrisi_koledar', 'Izbriši koledar') }}">🗑</button>
+            </div>
+            <div class="urnik-zacetki">${rows}</div>
+            <button type="button" class="btn" style="padding:4px 8px;margin-top:4px;" onclick="addUrnikUro(this); return false;">{{ t('set_koledar_dodaj_uro', '＋ ura') }}</button>
+        </div>`;
+    }
+    function addUrnikUro(btn) {
+        const container = btn.closest('.urnik-block').querySelector('.urnik-zacetki');
+        const used = Array.from(container.querySelectorAll('.urnik-tid')).map(i => parseInt(i.value, 10)).filter(n => !isNaN(n));
+        const next = used.length ? Math.max.apply(null, used) + 1 : 1;
+        container.insertAdjacentHTML('beforeend', urnikRowHtml(next, ''));
+    }
+    function addUrnik() {
+        const rows = document.getElementById('urniki-rows');
+        rows.insertAdjacentHTML('beforeend', urnikBlockHtml('koledar_' + (URNIKI_COUNTER++), '', [{ 'ura': '1', 'time': '' }]));
+    }
+    function renderUrniki(data) {
+        document.getElementById('urniki-rows').innerHTML =
+            (data || []).map(u => urnikBlockHtml(u.id, u.label, u.zacetki)).join('');
+    }
+    function collectUrniki() {
+        const out = {};
+        document.querySelectorAll('#urniki-rows .urnik-block').forEach(function (block) {
+            const id = (block.dataset.id || '').trim();
+            const label = (block.querySelector('.urnik-label').value || '').trim();
+            if (!id || !label) return;
+            const z = {};
+            block.querySelectorAll('.urnik-zacetki .urnik-row').forEach(function (row) {
+                const tid = (row.querySelector('.urnik-tid').value || '').trim();
+                const time = (row.querySelector('.urnik-time').value || '').trim();
+                if (tid !== '' && time !== '') z[tid] = time;
+            });
+            out[id] = { 'label': label, 'zacetki': z };
+        });
+        return out;
+    }
+    renderUrniki(URNIKI_DATA);
+
     function openModal(id) { document.getElementById(id).classList.add('active'); }
     function closeModal(id) { document.getElementById(id).classList.remove('active'); }
 
@@ -938,6 +1005,9 @@
         values['PROSTORI_VODSTVO'] = pr.vodstvo.join(',');
         // Popoldanski urnik (sme biti prazen, če šola ne uporablja popoldanskih terminov).
         values['POPOLDAN_SCHEDULE'] = JSON.stringify(collectPopoldanSchedule());
+
+        // Koledarji govorilnih ur (URNIKI) — smejo biti prazen objekt (fallback).
+        values['URNIKI'] = JSON.stringify(collectUrniki());
 
         const res = await fetch('/api/schools/' + SCHOOL_ID + '/settings', {
             method: 'PUT',
