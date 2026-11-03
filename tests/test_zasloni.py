@@ -1,15 +1,16 @@
 # ─────────────────────────────────────────────────────────────────────────
 # tests/test_zasloni.py — Testi digitalnega zaslona (nadomeščanja)
 #
-# PRAVILA (od 2026-11-03):
+# PRAVILA (od 2026-11-03, posodobljeno za obnovitev obvestil+osveži):
 #  - Javna stran nadomeščanj je dostopna LE prek per-šola poti
 #    /nadomescanja_<kratica> (middleware jo prepiše na /zasloni).
-#  - Gola /zasloni in VSE /zasloni/* poti (status, random_image, obvestila,
-#    osvezi_at, media) so ODSTRANJENE → 404.
-#  - Zaslon kaže: ura + tabela nadomeščanj (server-side) oz. »Danes ni
-#    nadomeščanj«; brez rotacije obvestil in brez fetch-ev na /zasloni/*.
+#  - Gola /zasloni je 404; /zasloni/status in /zasloni/random_image (po
+#    refaktorju) ostajata 404, ker nista več v uporabi.
+#  - Obvestila + osveži so VRJENI: /zasloni/obvestila, /zasloni/osvezi_at
+#    in /zasloni/media/{ime} delujejo (serviranje slik iz DB zasloni_files);
+#    zaslon spet rotira slike/tekst in polla osvezi_at.
 #  - Admin API za nalaganje/brisanje obvestil (/api/schools/{id}/zasloni/...)
-#    ostane (shranjevanje v bazo), a javnih /zasloni/* poti ni več.
+#    ostane (shranjevanje v bazo).
 # ─────────────────────────────────────────────────────────────────────────
 
 import json
@@ -27,16 +28,13 @@ from app.config import settings
 from app.tenancy import default_school_admin_username
 from tests.conftest import login
 
-# Javna stran nadomeščanj = per-šola alias; gola /zasloni in /zasloni/* so odstranjeni.
+# Javna stran nadomeščanj = per-šola alias; gola /zasloni je odstranjena.
 ZASLON_POT = f"/nadomescanja_{settings.DEFAULT_SCHOOL_SLUG}"
 
 ODSTRANJENE_POTI = [
     "/zasloni",
     "/zasloni/status",
     "/zasloni/random_image",
-    "/zasloni/obvestila",
-    "/zasloni/osvezi_at",
-    "/zasloni/media/vec_obvestil/karkoli.png",
 ]
 
 
@@ -86,14 +84,17 @@ def test_zasloni_gola_in_vse_poti_odstranjene():
         assert "fs-header" in r.text
 
 
-def test_zasloni_stran_nima_fetchev_na_odstranjene_poti():
-    """Poenostavljen zaslon: v HTML-ju ni nobene sklicevanja na /zasloni/* poti."""
+def test_zasloni_stran_vkljuci_obvestila_in_osvezi():
+    """Zaslon v HTML-ju vključi rotacijo obvestil (/zasloni/obvestila, /zasloni/media/) in polling osveži_at."""
     with TestClient(app) as c:
         r = c.get(ZASLON_POT)
         assert r.status_code == 200
-        assert "/zasloni/" not in r.text
+        assert "/zasloni/obvestila" in r.text
+        assert "/zasloni/osvezi_at" in r.text
+        assert "/zasloni/media/" in r.text
+        assert "preveriOsvezi" in r.text
+        assert "obvestiloImg" in r.text
         assert "updateTime" in r.text
-        assert "CASOVNI_PAS" in r.text
 
 
 def test_per_sola_alias_zasloni_javen():
@@ -278,9 +279,11 @@ def test_zasloni_admin_upload_delete_api_dela(client, make_user):
     fname = r.json()["filename"]
     assert fname == "moje_obvestilo.png"
 
-    # javna pot /zasloni/media ne obstaja več
+    # naloženo obvestilo je javno dostopno prek /zasloni/media (servirano iz DB)
     with TestClient(app) as c:
-        assert c.get(f"/zasloni/media/vec_obvestil/{fname}").status_code == 404
+        r = c.get(f"/zasloni/media/vec_obvestil/{fname}")
+        assert r.status_code == 200, r.text
+        assert r.headers.get("content-type", "").startswith("image/")
 
     r = client.post(f"/api/schools/{sid}/zasloni/delete", json={"filename": fname})
     assert r.status_code == 200, r.text

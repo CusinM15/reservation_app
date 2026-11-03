@@ -546,3 +546,57 @@ def zasloni_praznos(request: Request, db: Session = Depends(get_db)):
         "school_name": settings["school_name"],
         "skola": settings["skola"],
     })
+
+
+# ═══════════════════════════════════════════════════════════════════════
+# 6. Obvestila / osveži / media — prikaz in serviranje na zaslonu
+# ═══════════════════════════════════════════════════════════════════════
+
+_MIME = {
+    ".png": "image/png",
+    ".jpg": "image/jpeg",
+    ".jpeg": "image/jpeg",
+    ".gif": "image/gif",
+    ".webp": "image/webp",
+    ".pdf": "application/pdf",
+}
+
+
+def _mime_for(filename: str) -> str:
+    return _MIME.get(Path(filename).suffix.lower(), "application/octet-stream")
+
+
+@router.get("/zasloni/obvestila", response_class=JSONResponse)
+def zasloni_obvestila(request: Request, db: Session = Depends(get_db)):
+    """Urejen seznam aktivnih obvestil (slike + tekstovna) za rotacijo na zaslonu."""
+    settings = _zasloni_settings(request, db)
+    items = [{"src": url, "type": "image"} for url in _aktivna_obvestila(settings, db)]
+    for txt in settings.get("obvestila_tekst", [])[:5]:
+        items.append({"src": None, "text": txt, "type": "text"})
+    return {"obvestila": items}
+
+
+@router.get("/zasloni/osvezi_at", response_class=JSONResponse)
+def zasloni_osvezi_at(request: Request, db: Session = Depends(get_db)):
+    """Trenutna oznaka ZASLON_OSVEZI_AT — zasloni pollajo in ob spremembi reloadajo."""
+    settings = _zasloni_settings(request, db)
+    return {"osvezi_at": settings.get("osvezi_at", "")}
+
+
+@router.get("/zasloni/media/{filename:path}")
+def zasloni_media(filename: str, request: Request, db: Session = Depends(get_db)):
+    """Servira obvestilno sliko: najprej iz DB (zasloni_files), sicer z diska."""
+    sid = _zasloni_school_id(request, db)
+    base = Path(filename).name  # samo ime datoteke (varnost)
+    if sid is not None:
+        row = db.query(ZaslonFile).filter(
+            ZaslonFile.school_id == sid, ZaslonFile.filename == base
+        ).first()
+        if row is not None and row.data:
+            return Response(content=bytes(row.data), media_type=_mime_for(base))
+    media_dir = _default_media_dir()
+    for subdir in ("vec_obvestil", "obvestila"):
+        p = media_dir / subdir / base
+        if p.is_file():
+            return FileResponse(p, media_type=_mime_for(base))
+    raise HTTPException(status_code=404, detail="Obvestilo ni najdeno")

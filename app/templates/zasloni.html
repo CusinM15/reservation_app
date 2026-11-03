@@ -1,77 +1,212 @@
 <!DOCTYPE html>
 <html lang="sl">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>{{ school_name }} - {% if pokazi_nadomescanja %}Nadomeščanja{% else %}Dobrodošli{% endif %}</title>
-<style>
-*{margin:0;padding:0;box-sizing:border-box}
-body{font-family:'Segoe UI',Tahoma,Geneva,Verdana,sans-serif;height:100vh;overflow:hidden;background:#fff}
-.fullscreen-mode{height:100vh;display:flex;flex-direction:column}
-.fs-header{background:#0b3b5c;color:#fff;padding:0.5rem 1rem;display:flex;justify-content:space-between;align-items:center;flex-shrink:0}
-.fs-time{font-size:0.95rem;background:rgba(255,255,255,0.15);padding:0.3rem 1rem;border-radius:20px}
-.fs-content-wrapper{flex:1;position:relative;overflow:hidden;background:#fff}
-.view{position:absolute;top:0;left:0;width:100%;height:100%;overflow:auto}
-.table-view{padding:15px 20px 20px;background:#fff}
-.table-view table{width:100%;border-collapse:collapse;table-layout:fixed}
-.table-view thead tr{position:sticky;top:0;z-index:10}
-.table-view th,.table-view td{padding:18px 12px;border-bottom:1px solid #dee2e6;vertical-align:top;font-size:1.05rem;text-align:left}
-.table-view th{background:#1b6b8f;color:#fff}
-.table-view tr:nth-child(even){background:#f8f9fc}
-.msg-view{background:#0b3b5c;display:flex;align-items:center;justify-content:center}
-.msg-view .msg-text{color:#fff;font-size:4rem;font-weight:bold;text-align:center;padding:40px 60px;text-shadow:0 2px 8px rgba(0,0,0,0.4)}
-.welcome-view{background:#0b3b5c;display:flex;align-items:center;justify-content:center}
-.welcome-view .welcome-text{color:#fff;font-size:3rem;font-weight:bold;text-align:center;padding:40px 60px}
-</style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ school_name }} - {% if pokazi_nadomescanja %}Nadomeščanja{% else %}Dobrodošli{% endif %}</title>
+    <style>
+        * { margin:0; padding:0; box-sizing:border-box; }
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; height:100vh; overflow:hidden; background:#fff; }
+        .fullscreen-mode { height:100vh; display:flex; flex-direction:column; }
+        .fs-header { background:#0b3b5c; color:white; padding:0.5rem 1rem; display:flex; justify-content:space-between; align-items:center; flex-shrink:0; }
+        .fs-time { font-size:0.95rem; background:rgba(255,255,255,0.15); padding:0.3rem 1rem; border-radius:20px; }
+        .fs-content-wrapper { flex:1; position:relative; overflow:hidden; background:white; }
+        .view { position:absolute; top:0; left:0; width:100%; height:100%; transition: opacity 0.8s ease; overflow:auto; }
+        .table-view { padding:15px 20px 20px; background:white; z-index:2; }
+        .table-view table { width:100%; border-collapse:collapse; table-layout:fixed; }
+        .table-view thead tr { position: sticky; top: 0; z-index: 10; background: #1b6b8f; }
+        .table-view th, .table-view td { padding:18px 12px; border-bottom:1px solid #dee2e6; vertical-align:top; font-size:1.05rem; text-align:left; }
+        .table-view th { background:#1b6b8f; color:white; }
+        .table-view tr:nth-child(even) { background:#f8f9fc; }
+        .text-danger { color:#dc3545; font-weight:bold; text-decoration:line-through; }
+        .image-view { background:#0b3b5c; display:flex; align-items:center; justify-content:center; z-index:1; }
+        .image-view img { max-width:96%; max-height:96%; object-fit:contain; box-shadow:0 10px 30px rgba(0,0,0,0.5); }
+    </style>
 </head>
 <body>
 <div class="fullscreen-mode">
-  <div class="fs-header">
-    <h2>{{ school_name }}{% if pokazi_nadomescanja %} - Nadomeščanja{% else %} - Dobrodošli nazaj!{% endif %}</h2>
-    <div class="fs-time"><span class="fs-datum"></span> <span class="fs-cas"></span></div>
-  </div>
-  <div class="fs-content-wrapper">
-    {% if pokazi_nadomescanja and tabela %}
-    <div class="view table-view" id="tableView">{{ tabela | safe }}</div>
-    {% elif pokazi_nadomescanja %}
-    <div class="view msg-view"><div class="msg-text">Danes ni nadomeščanj</div></div>
-    {% else %}
-    <div class="view welcome-view"><div class="welcome-text">Dobrodošli nazaj!</div></div>
-    {% endif %}
-  </div>
+    <div class="fs-header">
+        <h2>{{ school_name }}{% if pokazi_nadomescanja %} - Nadomeščanja{% else %} - Dobrodošli nazaj!{% endif %}</h2>
+        <div class="fs-time"><span class="fs-datum"></span> <span class="fs-cas"></span></div>
+    </div>
+    <div class="fs-content-wrapper">
+        <!-- SLIKA (vedno pripravljena) -->
+        <div class="view image-view" id="imageView" style="opacity:{{ '0' if pokazi_nadomescanja else '1' }};">
+            <img src="/zasloni/media/{{ obvestilo_path }}" alt="Obvestilo" id="obvestiloImg">
+            <div id="obvestiloTxt" style="display:none;align-items:center;justify-content:center;height:100%;padding:40px 60px;color:#fff;text-align:center;font-size:3.5rem;line-height:1.25;text-shadow:0 2px 8px rgba(0,0,0,0.4);"></div>
+        </div>
+        <!-- TABELA (samo če so nadomeščanja vklopljena) -->
+        {% if pokazi_nadomescanja and tabela %}
+        <div class="view table-view" id="tableView" style="opacity:1;">
+            {{ tabela | safe }}
+        </div>
+        {% endif %}
+    </div>
 </div>
-<script>
-const IMA_TABELO = {{ 'true' if pokazi_nadomescanja and tabela else 'false' }};
-const HITROST = {{ hitrost_drsenja }};
-const MIN_CAS_TABELE = {{ min_cas_tabele }} * 1000;
-const CASOVNI_PAS = {{ time_zone | tojson }};
 
+<script>
+// ROTACIJA OBVESTIL — teče VEDNO (tudi če so nadomeščanja izklopljena).
+// Ko so nadomeščanja vklopljena, se izmenjujeta tabela ↔ slika/tekst; sicer
+// se vrtijo SAMO slike/tekstovna obvestila (vseeno napredujejo).
+const IMA_TABELO = {{ 'true' if pokazi_nadomescanja and tabela else 'false' }};
+const CAS_OBV = {{ cas_obvestila }} * 1000;
+const MIN_CAS_TABELE = {{ min_cas_tabele }} * 1000;
+const HITROST_DRSENJA = {{ hitrost_drsenja }};
+
+const tableView = document.getElementById('tableView');
+const imageView = document.getElementById('imageView');
+const obvestiloImg = document.getElementById('obvestiloImg');
+const obvestiloTxt = document.getElementById('obvestiloTxt');
+let scrollInterval = null;
+let showingTable = false;
+
+const imaVsebino = IMA_TABELO && tableView !== null && tableView.querySelector('table') !== null;
+
+function izracunajCasTabele() {
+    if (!imaVsebino) return 10000;
+    const visinaTabele = tableView.scrollHeight;
+    const visinaOkna = tableView.clientHeight;
+    if (visinaTabele <= visinaOkna) return MIN_CAS_TABELE;
+    const razdaljaZaDrsenje = visinaTabele - visinaOkna;
+    const casDrsenja = (razdaljaZaDrsenje / HITROST_DRSENJA) * 16;
+    return Math.max(MIN_CAS_TABELE, casDrsenja + 3000);
+}
+
+function startAutoScroll() {
+    if (!imaVsebino) return;
+    if (scrollInterval) clearInterval(scrollInterval);
+    let direction = 1, paused = false;
+    scrollInterval = setInterval(() => {
+        if (!showingTable || paused) return;
+        const max = tableView.scrollHeight - tableView.clientHeight;
+        if (max <= 0) return;
+        let next = tableView.scrollTop + direction * HITROST_DRSENJA;
+        if (next >= max) {
+            tableView.scrollTop = max;
+            paused = true;
+            setTimeout(() => { direction = -1; paused = false; }, 800);
+        } else if (next <= 0) {
+            tableView.scrollTop = 0;
+            paused = true;
+            setTimeout(() => { direction = 1; paused = false; }, 800);
+        } else {
+            tableView.scrollTop = next;
+        }
+    }, 16);
+}
+
+function showTable() {
+    if (timerShowImage) clearTimeout(timerShowImage);
+    if (timerShowTable) clearTimeout(timerShowTable);
+    tableView.style.opacity = '1';
+    imageView.style.opacity = '0';
+    showingTable = true;
+    tableView.scrollTop = 0;
+    startAutoScroll();
+    timerShowImage = setTimeout(showImage, izracunajCasTabele());
+}
+
+async function showImage() {
+    if (timerShowImage) clearTimeout(timerShowImage);
+    if (scrollInterval) clearInterval(scrollInterval);
+
+    // Obvestila se vrtijo PO VRSTI (ne naključno): preberemo urejen seznam
+    // in pokažemo naslednjega v nizu. Ko pridemo do konca, začnemo znova.
+    try {
+        if (!obvestilaSeznam || obvestilaSeznam.length === 0) {
+            const r = await fetch('/zasloni/obvestila?t=' + Date.now());
+            const d = await r.json();
+            obvestilaSeznam = (d.obvestila || []);
+        }
+        if (obvestilaSeznam.length > 0) {
+            obvestilaIndex = (obvestilaIndex + 1) % obvestilaSeznam.length;
+            const item = obvestilaSeznam[obvestilaIndex];
+            if (item && item.type === 'text') {
+                obvestiloTxt.textContent = item.text || '';
+                obvestiloTxt.style.display = 'flex';
+                obvestiloImg.style.display = 'none';
+            } else {
+                obvestiloImg.style.display = 'block';
+                obvestiloTxt.style.display = 'none';
+                obvestiloImg.src = '/zasloni/media/' + (item ? item.src : obvestiloImg.src);
+            }
+        }
+    } catch (e) {
+        console.log('Napaka pri pridobivanju obvestil:', e);
+    }
+
+    if (tableView) tableView.style.opacity = '0';
+    imageView.style.opacity = '1';
+    showingTable = false;
+    if (IMA_TABELO) {
+        // Po CAS_OBV se vrnemo na tabelo nadomeščanj.
+        timerShowTable = setTimeout(showTable, CAS_OBV);
+    } else {
+        // Brez tabele: čez CAS_OBV se pokaže naslednje obvestilo.
+        timerShowImage = setTimeout(showImage, CAS_OBV);
+    }
+}
+
+let timerShowImage, timerShowTable;
+let obvestilaSeznam = [];
+let obvestilaIndex = 0;
+if (IMA_TABELO) {
+    showTable();
+} else {
+    // Začetna slika je že v HTML-ju; po CAS_OBV rotiramo na naslednje obvestilo.
+    timerShowImage = setTimeout(showImage, CAS_OBV);
+}
+
+// Seznam obvestil občasno osvežimo v ozadju (brez osvežitve strani),
+// da se novo dodana obvestila pojavijo čim prej.
+setInterval(async () => {
+    try {
+        const r = await fetch('/zasloni/obvestila?t=' + Date.now());
+        const d = await r.json();
+        const nov = d.obvestila || [];
+        if (nov.length > 0) obvestilaSeznam = nov;
+    } catch (e) { /* obdržimo stari seznam */ }
+}, 2 * 60 * 1000);
+
+// Občasna polna osvežitev: pobere spremembe nastavitev (npr. vklop
+// nadomeščanj) in svežo tabelo. V načinu s tabelo počakamo na sliko,
+// da flash ne zmoti branja tabele; brez tabele redkeje (30 min).
+const INTERVAL_OSVEZITVE = IMA_TABELO ? 5 * 60 * 1000 : 30 * 60 * 1000;
+function osveziStranMedLogotipom() {
+    if (!showingTable) location.reload();
+    else setTimeout(osveziStranMedLogotipom, 1000);
+}
+setTimeout(osveziStranMedLogotipom, INTERVAL_OSVEZITVE);
+
+// Osveži vse naprave: šolski admin pritisne gumb v nastavitvah →
+// ZASLON_OSVEZI_AT se spremeni; vsi zasloni tu pollajo in ob spremembi reloadajo.
+const OSNOVNI_OSVEZI_AT = {{ osvezi_at | tojson }};
+async function preveriOsvezi() {
+    try {
+        const r = await fetch('/zasloni/osvezi_at?t=' + Date.now());
+        const d = await r.json();
+        if (d.osvezi_at && d.osvezi_at !== OSNOVNI_OSVEZI_AT) location.reload();
+    } catch (e) { /* prezremo */ }
+}
+setInterval(preveriOsvezi, 10000);
+
+// Ura na zaslonu: časovni pas določi šolski admin (ZASLON_TIME_ZONE).
+const CASOVNI_PAS = {{ time_zone | tojson }};
 function updateTime() {
-  const now = new Date();
-  try {
-    document.querySelector('.fs-datum').textContent =
-      new Intl.DateTimeFormat('sl-SI', { timeZone: CASOVNI_PAS, day:'2-digit', month:'2-digit', year:'numeric' }).format(now);
-    document.querySelector('.fs-cas').textContent =
-      new Intl.DateTimeFormat('sl-SI', { timeZone: CASOVNI_PAS, hour:'2-digit', minute:'2-digit' }).format(now);
-  } catch (e) {
-    document.querySelector('.fs-datum').textContent = now.toLocaleDateString('sl-SI');
-    document.querySelector('.fs-cas').textContent = now.toLocaleTimeString('sl-SI', {hour:'2-digit', minute:'2-digit'});
-  }
+    const now = new Date();
+    try {
+        document.querySelector('.fs-datum').textContent =
+            new Intl.DateTimeFormat('sl-SI', { timeZone: CASOVNI_PAS, day: '2-digit', month: '2-digit', year: 'numeric' }).format(now);
+        document.querySelector('.fs-cas').textContent =
+            new Intl.DateTimeFormat('sl-SI', { timeZone: CASOVNI_PAS, hour: '2-digit', minute: '2-digit' }).format(now);
+    } catch (e) {
+        // Neveljaven časovni pas → padec na lokalno uro naprave.
+        document.querySelector('.fs-datum').textContent = now.toLocaleDateString('sl-SI');
+        document.querySelector('.fs-cas').textContent = now.toLocaleTimeString('sl-SI', {hour:'2-digit', minute:'2-digit'});
+    }
 }
 updateTime();
 setInterval(updateTime, 1000);
-
-// Samodejno drsenje tabele nadomeščanj (če je višja od ekrana)
-const tableView = document.getElementById('tableView');
-if (IMA_TABELO && tableView && tableView.querySelector('table')) {
-  const max = () => tableView.scrollHeight - tableView.clientHeight;
-  setInterval(() => {
-    if (max() > 0) {
-      if (tableView.scrollTop >= max()) { tableView.scrollTop = 0; }
-      else { tableView.scrollTop += HITROST; }
-    }
-  }, 16);
-}
 </script>
 </body>
 </html>
