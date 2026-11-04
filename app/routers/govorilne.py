@@ -1,4 +1,4 @@
-# ─────────────────────────────────────────────────────────────────────────
+﻿# ─────────────────────────────────────────────────────────────────────────
 # app/routers/govorilne.py — Prijave staršev na govorilne ure
 #
 # Namen: Javna stran /govorilne, kjer starš izbere učitelja in 15-minutni
@@ -628,10 +628,8 @@ def govorilne_stran(request: Request, db: Session = Depends(get_db)):
     ZAENKRAT jo vidi ZGOLJ šolski admin (dodatek še ni predstavljen drugemu
     vodstvu) — neprijavljen → login, prijavljen ne-admin → domov.
     """
-    user = get_request_user(request, db)
+    # Javna prijava staršev — stran je odprta tudi neprijavljenim.
     school_id = request_school_id(request) or _default_school_id(db)
-    if not _govorilne_vidi(user, db, school_id):
-        return RedirectResponse(url="/auth/login" if user is None else "/")
     if not _govorilne_omogocene(db, school_id):
         raise HTTPException(status_code=404, detail="Govorilne ure trenutno niso objavljene.")
     cfg = _load_cfg(db, school_id)
@@ -655,10 +653,7 @@ def govorilne_termini(
     db: Session = Depends(get_db),
 ):
     """Prosti termini izbranega učitelja (JSON) — za dinamični UI."""
-    user = get_request_user(request, db)
     school_id = request_school_id(request) or _default_school_id(db)
-    if not _govorilne_vidi(user, db, school_id):
-        raise HTTPException(status_code=403, detail="Dostop ni dovoljen za vašo vlogo")
     if not _govorilne_omogocene(db, school_id):
         raise HTTPException(status_code=404, detail="Govorilne ure trenutno niso objavljene.")
     cfg = _load_cfg(db, school_id)
@@ -674,10 +669,7 @@ async def govorilne_prijava(
     db: Session = Depends(get_db),
 ):
     """Shrani prijavo starša. Termin mora biti veljaven in prost (409 sicer)."""
-    user = get_request_user(request, db)
     school_id = request_school_id(request) or _default_school_id(db) or 1
-    if not _govorilne_vidi(user, db, school_id):
-        raise HTTPException(status_code=403, detail="Dostop ni dovoljen za vašo vlogo")
     try:
         body = await request.json()
     except Exception:
@@ -829,8 +821,11 @@ async def govorilne_prijava_odstrani(
         raise HTTPException(status_code=404, detail="Prijava ne obstaja")
 
     if not school_admin:
-        raise HTTPException(status_code=403,
-                            detail="Rezervacije lahko briše samo vodstvo ali šolski administrator")
+        # Učitelj sme brisati samo najave SVOJIH govorilnih ur; vodstvo/admin
+        # brišejo poljubno (school_admin=True zgoraj). main_admin ne briše.
+        if _polno_ime_user(user) != prijava.ucitelj:
+            raise HTTPException(status_code=403,
+                                detail="Brišete lahko samo najave svojih govorilnih ur")
 
     db.delete(prijava)
     db.commit()

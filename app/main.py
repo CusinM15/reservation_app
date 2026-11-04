@@ -1,4 +1,4 @@
-# ─────────────────────────────────────────────────────────────────────────
+﻿# ─────────────────────────────────────────────────────────────────────────
 # app/main.py — Vstopna točka aplikacije Šolski App za OŠ Toneta Čufarja
 #
 # Namen: Definira FastAPI aplikacijo, vključuje middleware za avtentikacijo,
@@ -176,12 +176,24 @@ class AuthMiddleware(BaseHTTPMiddleware):
         # glavna stran, zgodovina (history), API za razrede/prostore/urnik,
         # ter statične datoteke in dokumentacija.
         public = ["/auth/login", "/auth/forgot-password", "/auth/reset-password", "/health", "/", "/history", "/api/razredi", "/api/razredi-ip", "/api/prostori", "/api/schedule", "/registracija"]
-        is_public = any(path == p for p in public) or path.startswith("/static") or path.startswith("/slike") or path.startswith("/docs/") or path.startswith("/zasloni") or path == "/zasloni"
-        # Per-šola alias za digitalni zaslon (npr. /nadomescanja_ostcj) je
-        # prav tako javen — prevedemo ga na kanonično /zasloni pot.
+        # Javna prijava staršev na govorilne ure: stran + iskanje terminov + prijava.
+        # Poti /govorilne/ure, /govorilne/prijave in /govorilne/api/ure|prijava/odstrani
+        # so varovane na ravni routerja (login/vloge) — tu jih ne javimo.
+        _public_gov = ("/govorilne", "/govorilne/api/termini", "/govorilne/api/prijava")
+        is_public = (
+            any(path == p for p in public)
+            or path in _public_gov
+            or path.startswith("/static")
+            or path.startswith("/slike")
+            or path.startswith("/docs/")
+            or path.startswith("/zasloni")
+            or path == "/zasloni"
+        )
+        # Per-šola aliasi govorilnih (npr. /govorilne_ostcj) in digitalnega
+        # zaslona (/nadomescanja_ostcj) so prav tako javni.
         if not is_public:
             _alias_canon = resolve_alias_path(path)[1]
-            if _alias_canon and _alias_canon.startswith("/zasloni"):
+            if _alias_canon in _public_gov or (_alias_canon and _alias_canon.startswith("/zasloni")):
                 is_public = True
         # Javni predogled navodil za neprijavljene: /nastavitev?demo=1 prikaže
         # psevdo (demo) podatke brez prijave (povezava je na prijavni strani).

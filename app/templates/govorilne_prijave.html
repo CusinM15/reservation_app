@@ -32,7 +32,7 @@
     {% if prijave %}
     <table>
         <tr>
-            <th>Datum</th><th>Ura</th><th>Učitelj</th><th>Starš</th><th>Otrok</th><th>Kratek opis</th><th>E-naslov</th>{% if is_admin %}<th></th>{% endif %}
+            <th>Datum</th><th>Ura</th><th>Učitelj</th><th>Starš</th><th>Otrok</th><th>Kratek opis</th><th>E-naslov</th>{% if is_admin or is_teacher %}<th></th>{% endif %}
         </tr>
         {% for p in prijave %}
         <tr>
@@ -43,7 +43,7 @@
             <td>{{ p.otrok }}</td>
             <td>{{ p.opis or '' }}</td>
             <td>{{ p.email }}</td>
-            {% if is_admin %}<td><button type="button" class="btn small ghost del" onclick="odstraniPrijavo({{ p.id }}, this)" title="Izbriši rezervacijo" style="background:#fdeeee; color:#b02a2a;">Briši</button></td>{% endif %}
+            {% if is_admin or is_teacher %}<td><button type="button" class="btn small ghost del" onclick="odstraniPrijavo({{ p.id }}, this)" title="Izbriši rezervacijo" style="background:#fdeeee; color:#b02a2a;">Briši</button></td>{% endif %}
         </tr>
         {% endfor %}
     </table>

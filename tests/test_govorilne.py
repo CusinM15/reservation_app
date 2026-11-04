@@ -1,4 +1,4 @@
-# ─────────────────────────────────────────────────────────────────────────
+﻿# ─────────────────────────────────────────────────────────────────────────
 # tests/test_govorilne.py — Testi prijav na govorilne ure (/govorilne)
 #
 # Podatki o učiteljih prihajajo iz app/govorilne_podatki.py (vir: spletna
@@ -54,15 +54,39 @@ def test_govorilne_stran_vidi_zgolj_skolski_admin_in_vsebuje_ucitelje(make_user)
         assert "Matej Čušin" in r.text
         assert "Arijana Đuretić" in r.text
 
-def test_govorilne_anon_preusmerjen_na_login():
-    """Zaenkrat /govorilne NI več javno — neprijavljen → login (307)."""
+def test_govorilne_anon_vidi_javno_stran_za_starse():
+    """Javna prijava staršev: /govorilne + /govorilne/api/termini + prijava so
+    prosto dostopni (brez logina); varovana ostaneta /govorilne/ure in
+    /govorilne/prijave (login)."""
     with TestClient(app) as c:
         r = c.get("/govorilne", follow_redirects=False)
-        assert r.status_code in (302, 307)
-        assert r.headers.get("location", "").startswith("/auth/login")
+        assert r.status_code == 200, r.status_code
         r2 = c.get("/govorilne/api/termini", params={"ucitelj": "Matej Čušin"},
                    follow_redirects=False)
-        assert r2.status_code in (302, 307)
+        assert r2.status_code == 200, (r2.status_code, r2.text[:150])
+        assert r2.json()["ucitelj"] == "Matej Čušin"
+        # Pregled prijav in urejanje urnika še zahtevata prijavo.
+        for path in ("/govorilne/prijave", "/govorilne/ure"):
+            r3 = c.get(path, follow_redirects=False)
+            assert r3.status_code in (302, 307), f"{path} -> {r3.status_code}"
+
+
+def test_govorilne_anon_prijavi_starsa():
+    """Neprijavljen starš se lahko prijavi na prost termin (javna prijava)."""
+    t = _termin("Matej Čušin")
+    with TestClient(app) as c:
+        r = c.post("/govorilne/api/prijava", json={
+            "ucitelj": "Matej Čušin", "datum": t["datum"], "ura_od": t["ura_od"],
+            "ura_do": t["ura_do"], "ime_starsa": "Tina Starš",
+            "email": "tina.starš@example.si", "otrok": "Luka Starš",
+        })
+        assert r.status_code == 200, r.text[:200]
+        # Dvakrat na isti termin → 409 (zaseden)
+        r2 = c.post("/govorilne/api/prijava", json={
+            "ucitelj": "Matej Čušin", "datum": t["datum"], "ura_od": t["ura_od"],
+            "ura_do": t["ura_do"], "ime_starsa": "Druga", "email": "d@x.si",
+            "otrok": "A", })
+        assert r2.status_code == 409, (r2.status_code, r2.text[:150])
 
 
 
@@ -368,12 +392,15 @@ def test_govorilne_vloge_admin_doloci_katera_grupa_vidi(make_user):
         r = c.get("/govorilne/prijave", follow_redirects=False)
         assert r.status_code == 200
 
-    # Nazaj na privzeto (samo admin): učitelj spet nima dostopa.
+    # Nazaj na privzeto (samo admin): javna stran za starše /govorilne ostane
+    # odprta (se ne logirajo), pregled prijav /govorilne/prijave pa spet ne.
     _nastavi_vloge("admin")
     with TestClient(app) as c:
         teacher = make_user(role="teacher")
         login(c, teacher.username)
         r = c.get("/govorilne", follow_redirects=False)
+        assert r.status_code == 200, r.status_code
+        r = c.get("/govorilne/prijave", follow_redirects=False)
         assert r.status_code in (302, 307)
 
 
@@ -1114,7 +1141,8 @@ def test_ure_ucitelj_samo_vidi_admin_briše_in_manj_vec_fix(make_user):
         r = c.get("/govorilne/ure")
         assert r.status_code == 200
         assert "Rezervacije staršev" in r.text
-        assert "Briši" not in r.text
+        # Učitelj zdaj sme brisati NAJAVE SVOJIH govorilnih ur → vidi gumb Briši.
+        assert "Briši" in r.text
         # Admin → vidi gumb Briši + scoped JS fix.
         _admin_login(c, make_user)
         r2 = c.get("/govorilne/ure")
