@@ -55,6 +55,20 @@
         .msg.err { color:#991b1b; }
         .hint { color:#7a8b99; font-size:.84rem; margin-top:.6rem; }
         .actions { display:flex; gap:.6rem; flex-wrap:wrap; margin-top:.6rem; }
+
+        .strings-bar { display:flex; gap:.5rem; flex-wrap:wrap; margin-bottom:.6rem; }
+        .strings-bar input, .strings-bar select { padding:.45rem .6rem; border-radius:8px; border:1px solid #ccc; font-size:.86rem; }
+        .strings-box { max-height:520px; overflow:auto; border:1px solid #e3ecf4; border-radius:10px; }
+        .string-row { border-bottom:1px solid #eef2f7; padding:.6rem .7rem; display:flex; flex-direction:column; gap:.35rem; }
+        .string-row:hover { background:#f7fafd; }
+        .string-key { display:flex; gap:.5rem; align-items:center; flex-wrap:wrap; }
+        .string-key .k { font-family:ui-monospace,Menlo,monospace; font-size:.78rem; color:#0b5ed7; font-weight:600; }
+        .string-key .pg { font-size:.72rem; color:#7a8b99; background:#eef1f5; border-radius:20px; padding:.08rem .5rem; }
+        .string-fields { display:flex; gap:.6rem; align-items:center; flex-wrap:wrap; }
+        .string-fields input { flex:1; min-width:200px; padding:.4rem .6rem; border-radius:8px; border:1px solid #ccc; font-size:.86rem; }
+        .string-fields input:focus { outline:none; border-color:#14608c; }
+        .string-fields .lbl { font-size:.7rem; color:#7a8b99; width:20px; }
+        .strings-empty { color:#7a8b99; padding:.6rem; }
         blockquote.note { border-left:4px solid #14608c; background:#f0f6fc; padding:.6rem 1rem; border-radius:8px; color:#344c5c; font-size:.9rem; margin:.6rem 0; }
         @media (max-width:700px){ .page{flex-direction:column;align-items:flex-start;} }
     </style>
@@ -197,6 +211,7 @@
                         <select id="pageSelect" onchange="loadPage()"><option value="">— izberi stran —</option></select>
                         <span id="pageStateBadge" class="badge-file">vgrajen</span>
                         <span id="pageHistBadge" class="badge-file">0 verzij</span>
+                        <button class="btn ghost small" onclick="openPagePreview()">🖥 Predogled</button>
                     </div>
                     <textarea id="pageEditor" spellcheck="false" placeholder="Izberi stran zgoraj …"></textarea>
                     <div class="actions">
@@ -205,8 +220,23 @@
                         <button class="btn ghost" onclick="revertPage()">⏪ Prejšnja verzija</button>
                     </div>
                     <div id="pageMsg" class="msg"></div>
+                    <div id="pagePreviewBox" style="display:none;margin-top:.7rem;">
+                      <iframe id="pagePreviewFrame" style="width:100%;height:420px;border:1px solid #ccc;border-radius:10px;background:#fff;"></iframe>
+                      <div class="hint">Predogled najbolje deluje za javne strani (login, registracija, nakup, govorilne, nastavitev). Strani, ki potrebujejo prijavo ali podatke šole, se v oknu morda ne bodo pravilno pokazale.</div>
+                    </div>
                 </div>
             </div>
+            <div class="card">
+                <h2>✏️ Urejevalnik besedil (slovenščina / angleščina)</h2>
+                <p class="hint">Spremeni napis in pritisni 💾 Shrani. Ker aplikacija napise bere iz baze, se sprememba pokaže v produkciji na vseh straneh (do ~30 s) — brez spreminjanja kode. V vsakega od polj (SL / EN) vpiši želeno besedilo.</p>
+                <div class="strings-bar">
+                    <input id="strSearch" placeholder="Išči po besedilu ali ključu …" oninput="renderStrings()" style="flex:1;min-width:200px;">
+                    <select id="strPage" onchange="renderStrings()"><option value="">— vsa stran —</option></select>
+                    <span id="strCount" class="badge-file">0 / 0</span>
+                </div>
+                <div id="strList" class="strings-box"></div>
+            </div>
+
         </div>
     </div>
 </div>
@@ -340,5 +370,71 @@ async function revertPage() {
 }
 document.addEventListener('DOMContentLoaded', loadPagesList);
 </script>
+<script>
+// ── Urejevalnik besedil (ui_strings) + predogled strani ──
+function escHtml(t){ return String(t==null?'':t).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+let STR_ALL = [];
+async function loadStrings(){
+    try {
+        const j = await (await apiP('/api/strings')).json();
+        STR_ALL = j.strings || [];
+        const sel = document.getElementById('strPage');
+        sel.innerHTML = '<option value="">— vsa stran —</option>' + (j.pages||[]).map(p=>'<option value="'+p+'">'+p+'</option>').join('');
+        renderStrings();
+    } catch(e){ const b=document.getElementById('strList'); if(b) b.innerHTML='<div class="strings-empty">Napaka: '+escHtml(e.message)+'</div>'; }
+}
+function renderStrings(){
+    if(!document.getElementById('strList')) return;
+    const q=(document.getElementById('strSearch').value||'').toLowerCase();
+    const pg=document.getElementById('strPage').value;
+    const list = STR_ALL.filter(s=>{
+        if(pg && !(s.pages||[]).includes(pg)) return false;
+        if(q && s.key.toLowerCase().indexOf(q)<0 && (s.sl||'').toLowerCase().indexOf(q)<0 && (s.en||'').toLowerCase().indexOf(q)<0) return false;
+        return true;
+    });
+    document.getElementById('strCount').textContent = list.length + ' / ' + STR_ALL.length;
+    const box = document.getElementById('strList');
+    if(!list.length){ box.innerHTML='<div class="strings-empty">Ni napisov za to izbiro.</div>'; return; }
+    box.innerHTML = list.map(s=>{ const k=s.key;
+        return '<div class="string-row">'
+            + '<div class="string-key"><span class="k">'+escHtml(k)+'</span>'
+            + (s.pages&&s.pages.length?s.pages.map(p=>'<span class="pg">'+escHtml(p)+'</span>').join(''):'')
+            + '<button class="btn ghost small" onclick="saveString(\''+k+'\')">💾 Shrani</button>'
+            + '<span id="msg-'+k+'" class="msg" style="display:none;font-size:.8rem;"></span>'
+            + '</div>'
+            + '<div class="string-fields">'
+            + '<span class="lbl" title="Slovenščina">SL</span><input data-k="'+k+'" data-lang="sl" value="'+escHtml(s.sl)+'" oninput="markDirty(\''+k+'\')">'
+            + '<span class="lbl" title="Angleščina">EN</span><input data-k="'+k+'" data-lang="en" value="'+escHtml(s.en)+'" oninput="markDirty(\''+k+'\')">'
+            + '</div></div>';
+    }).join('');
+}
+function markDirty(k){ const m=document.getElementById('msg-'+k); if(m){ m.style.display='inline'; m.className='msg'; m.textContent='(neshranjeno)'; } }
+async function saveString(k){
+    const sl = document.querySelector('input[data-k="'+k+'"][data-lang="sl"]').value;
+    const en = document.querySelector('input[data-k="'+k+'"][data-lang="en"]').value;
+    const m = document.getElementById('msg-'+k);
+    m.style.display='inline'; m.className='msg'; m.textContent='Shranjujem ...';
+    try {
+        await apiP('/api/strings/'+encodeURIComponent(k),{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({sl,en})});
+        const row = STR_ALL.find(x=>x.key===k); if(row){ row.sl=sl; row.en=en; }
+        m.className='msg ok'; m.textContent='✅ Shranjeno — vidno v produkciji v ~30 s.';
+        setTimeout(()=>{ m.style.display='none'; },3500);
+    } catch(e){ m.className='msg err'; m.textContent='Napaka: '+e.message; }
+}
+// ── Predogled strani ──
+function pageURL(name){
+    const map = {'login.html':'/auth/login','registracija.html':'/registracija','nakup.html':'/nakup','govorilne.html':'/govorilne','nastavitev.html':'/nastavitev?demo=1','admin_users.html':'/auth/admin/users','schools.html':'/schools','index.html':'/rezervacije','navodila_main.html':'/navodila','narocnina.html':'/narocnina'};
+    if(map[name]) return map[name];
+    return '/' + (name||'').replace('.html','').replace(/_/g,'-');
+}
+function openPagePreview(){
+    if(!CURRENT_PAGE){ alert('Najprej izberi stran zgoraj.'); return; }
+    const box = document.getElementById('pagePreviewBox'); box.style.display='block';
+    const f = document.getElementById('pagePreviewFrame');
+    f.src = pageURL(CURRENT_PAGE);
+}
+document.addEventListener('DOMContentLoaded', loadStrings);
+</script>
+
 </body>
 </html>

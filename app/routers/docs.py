@@ -35,7 +35,7 @@ import html as html_mod
 
 from app.emoji_pdf import replace_emojis
 from app.audit import log_audit
-from app.models import User, AppSetting
+from app.models import User, AppSetting, UIString
 
 router = APIRouter(tags=["docs"])
 
@@ -658,3 +658,72 @@ def pages_revert(name: str, request: Request, db: Session = Depends(get_db)):
         return {"ok": False, "name": name, "reason": "Ni prejšnje verzije v zgodovini."}
     log_audit(db, user.id, user.username, "revert_page", name)
     return {"ok": True, "name": name, "reverted": True}
+
+# ═══════════════════════════════════════════════════════════════════════
+# Urejevalnik besedil (ui_strings SL/EN) — za /navodila
+# ═══════════════════════════════════════════════════════════════════════
+
+_PAGE_TEMPLATE_DIR = Path(__file__).resolve().parent.parent / "templates"
+
+
+def _string_pages_map() -> dict[str, list[str]]:
+    """Kljuc napisa -> strani (.html), kjer nastopa kot t('kljuc', ...)."""
+    m: dict[str, list[str]] = {}
+    try:
+        import re as _re
+        for p in _PAGE_TEMPLATE_DIR.glob("*.html"):
+            txt = p.read_text(encoding="utf-8")
+            keys = set(_re.findall(r"\bt\('([^']+)'", txt)).union(
+                    set(_re.findall(r'\bt\("([^"]+)"', txt)))
+            for key in keys:
+                m.setdefault(key, []).append(p.name)
+        for k in m:
+            m[k] = sorted(set(m[k]))
+    except Exception:
+        m = {}
+    return m
+
+
+@router.get("/api/strings")
+def strings_list(request: Request, db: Session = Depends(get_db)):
+    """Seznam vseh napisov (SL/EN) + na katerih straneh se pojavi."""
+    _require_main_admin(request, db)
+    pages = _string_pages_map()
+    rows = db.query(UIString).order_by(UIString.key).all()
+    q = (request.query_params.get("q") or "").strip().lower()
+    page_filter = (request.query_params.get("page") or "").strip()
+
+    items = []
+    for r in rows:
+        sl = r.sl or ""
+        en = r.en or ""
+        rpages = pages.get(r.key, [])
+        if page_filter and page_filter not in rpages:
+            continue
+        if q and (q not in r.key.lower()) and (q not in sl.lower()) and (q not in en.lower()):
+            continue
+        items.append({"key": r.key, "sl": sl, "en": en, "pages": rpages})
+    all_pages = sorted({p for ps in pages.values() for p in ps})
+    return {"strings": items, "pages": all_pages, "total": len(items)}
+
+
+@router.post("/api/strings/{key}", status_code=200)
+async def strings_save(key: str, request: Request, db: Session = Depends(get_db)):
+    """Shrani napis (SL in/ali EN) v bazo; takoj velja (i18n cache se izprazni)."""
+    user = _require_main_admin(request, db)
+    try:
+        body = await request.json()
+    except Exception:
+        raise HTTPException(status_code=400, detail="Neveljaven JSON")
+    row = db.query(UIString).filter(UIString.key == key).first()
+    if row is None:
+        raise HTTPException(status_code=404, detail="Napisa ni v bazi")
+    if "sl" in body:
+        row.sl = str(body.get("sl") or "")
+    if "en" in body:
+        row.en = str(body.get("en") or "")
+    db.commit()
+    from app.i18n import invalidate_cache
+    invalidate_cache()
+    log_audit(db, user.id, user.username, "edit_string", key)
+    return {"ok": True, "key": key, "sl": row.sl, "en": row.en}
