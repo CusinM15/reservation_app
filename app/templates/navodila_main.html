@@ -68,6 +68,14 @@
         .string-fields input { flex:1; min-width:200px; padding:.4rem .6rem; border-radius:8px; border:1px solid #ccc; font-size:.86rem; }
         .string-fields input:focus { outline:none; border-color:#14608c; }
         .string-fields .lbl { font-size:.7rem; color:#7a8b99; width:20px; }
+
+        .text-editor { border:1px solid #ccc; border-radius:10px; padding:.6rem .7rem; background:#fbfdff; max-height:520px; overflow:auto; }
+        .frag-row { margin:.35rem 0; }
+        .frag { background:#fff; border:1px solid #dbe6f0; border-radius:8px; padding:.45rem .6rem; min-height:1.7em; outline:none; font-size:.93rem; line-height:1.5; }
+        .frag:focus { border-color:#14608c; box-shadow:0 0 0 3px rgba(20,96,140,.12); }
+        .frag-tag { font-size:.7rem; color:#7a8b99; display:block; margin-bottom:2px; }
+        .codechip { font-family:ui-monospace,Menlo,monospace; font-size:.72rem; color:#8a949e; background:#eef1f5; border-radius:6px; padding:.1rem .45rem; margin:.25rem 0; display:inline-block; max-width:100%; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; vertical-align:middle; }
+        .codechip .kind { color:#b0b9c2; }
         .strings-empty { color:#7a8b99; padding:.6rem; }
         blockquote.note { border-left:4px solid #14608c; background:#f0f6fc; padding:.6rem 1rem; border-radius:8px; color:#344c5c; font-size:.9rem; margin:.6rem 0; }
         @media (max-width:700px){ .page{flex-direction:column;align-items:flex-start;} }
@@ -204,8 +212,8 @@
             </div>
 
             <div class="card">
-                <h2>✏️ Urejanje strani (predloge HTML)</h2>
-                <p class="hint">Preglej in preglasši HTML predlogo poljubne strani appa (izgled in vsebina). Override se shrani v bazo in velja ob naslednjem prikazu te strani — brez ponovne gradnje. Backend Python logika se tukaj ne ureja.</p>
+                <h2>✏️ Urejanje besedila strani (brez kode)</h2>
+                <p class="hint">Spremeni besedilo naravnost v poljih (v vrstnem redu strani). Koda (HTML/Jinja) je prikazana sivo in se je ne da urejati. Gumbi <b>B</b> / 🔗 / • pod oknom oblikujejo izbrano besedilo. Ob shranitvi se besedilo samodejno vstavi nazaj v stran — v produkciji vidno takoj (do ~30 s).</p>
                 <div class="editor">
                     <div class="editor-head">
                         <select id="pageSelect" onchange="loadPage()"><option value="">— izberi stran —</option></select>
@@ -213,9 +221,15 @@
                         <span id="pageHistBadge" class="badge-file">0 verzij</span>
                         <button class="btn ghost small" onclick="openPagePreview()">🖥 Predogled</button>
                     </div>
-                    <textarea id="pageEditor" spellcheck="false" placeholder="Izberi stran zgoraj …"></textarea>
+                    <div id="pageTextEditor" class="text-editor"><div class="hint">Izberi stran zgoraj …</div></div>
+                    <div class="mtoolbar" id="textToolbar" style="display:none;">
+                        <button class="btn ghost small" title="Krepko" onclick="fmtCmd('bold')"><b>B</b></button>
+                        <button class="btn ghost small" title="Povezava (link)" onclick="fmtLink()">🔗 Link</button>
+                        <button class="btn ghost small" title="Seznam" onclick="fmtCmd('insertUnorderedList')">• Seznam</button>
+                        <span class="hint" style="margin-left:.5rem;">Klikni v besedilo, nato gumb.</span>
+                    </div>
                     <div class="actions">
-                        <button class="btn primary" onclick="savePage()">💾 Shrani stran</button>
+                        <button class="btn primary" onclick="saveText()">💾 Shrani besedilo</button>
                         <button class="btn ghost" onclick="resetPage()">↩️ Vgrajena</button>
                         <button class="btn ghost" onclick="revertPage()">⏪ Prejšnja verzija</button>
                     </div>
@@ -324,30 +338,70 @@ async function loadPagesList() {
             '<option value="' + t.name + '">' + t.label + (t.overridden ? ' ⚠' : '') + '</option>').join('');
     } catch (e) { document.getElementById('pageMsg').className='msg err'; document.getElementById('pageMsg').textContent = 'Napaka: ' + e.message; }
 }
+let ACTIVE_FRAG = null;
 async function loadPage() {
     const name = document.getElementById('pageSelect').value;
     const msg = document.getElementById('pageMsg');
-    if (!name) { document.getElementById('pageEditor').value = ''; return; }
-    msg.className = 'msg'; msg.textContent = 'Nalagam ...';
+    const box = document.getElementById('pageTextEditor');
+    const tb = document.getElementById('textToolbar');
+    ACTIVE_FRAG = null;
+    if (!name) { box.innerHTML = '<div class="hint">Izberi stran zgoraj …</div>'; tb.style.display='none'; return; }
+    box.innerHTML = '<div class="hint">Nalagam besedilo ...</div>';
+    tb.style.display='none';
+    msg.className = 'msg'; msg.textContent = '';
     try {
-        const j = await (await apiP('/api/pages/' + encodeURIComponent(name))).json();
+        const j = await (await apiP('/api/pages/' + encodeURIComponent(name) + '/text')).json();
         CURRENT_PAGE = name;
-        document.getElementById('pageEditor').value = j.content;
         const b = document.getElementById('pageStateBadge');
         b.textContent = j.overridden ? 'urejanje (shranjeno)' : 'vgrajen';
         b.className = j.overridden ? 'badge-ov' : 'badge-file';
         document.getElementById('pageHistBadge').textContent = (j.history || 0) + ' verzij';
+        renderTextItems(j.items || []);
+        tb.style.display='';
         msg.textContent = '';
-    } catch (e) { msg.className='msg err'; msg.textContent = 'Napaka: ' + e.message; }
+    } catch (e) {
+        box.innerHTML = '<div class="hint">Napaka: ' + escHtml(e.message) + '</div>';
+        msg.className='msg err'; msg.textContent = 'Napaka: ' + e.message;
+    }
 }
-async function savePage() {
+function renderTextItems(items){
+    const box = document.getElementById('pageTextEditor');
+    if (!items.length) { box.innerHTML = '<div class="hint">Na tej strani ni vidnega besedila za urejanje.</div>'; return; }
+    let html = '';
+    for (const it of items) {
+        if (it.type === 'code') {
+            html += '<div><span class="codechip"><span class="kind">'+escHtml(it.kind)+'</span> '+escHtml(it.preview||'')+'</span></div>';
+        } else {
+            html += '<div class="frag-row"><span class="frag-tag">' + (it.tag ? escHtml(it.tag) : 'besedilo') + '</span>'
+                 + '<div class="frag" contenteditable="true" data-id="' + it.id + '" onfocus="ACTIVE_FRAG=this">' + escHtml(it.text) + '</div></div>';
+        }
+    }
+    box.innerHTML = html;
+}
+function fmtCmd(cmd) {
+    if (!ACTIVE_FRAG) { alert('Najprej klikni v besedilo, ki ga želiš oblikovati.'); return; }
+    ACTIVE_FRAG.focus();
+    document.execCommand(cmd, false, null);
+}
+function fmtLink() {
+    if (!ACTIVE_FRAG) { alert('Najprej klikni v besedilo.'); return; }
+    const url = prompt('Vnesi URL povezave (npr. https://...):');
+    if (!url) return;
+    ACTIVE_FRAG.focus();
+    document.execCommand('createLink', false, url);
+}
+async function saveText() {
     if (!CURRENT_PAGE) return;
     const msg = document.getElementById('pageMsg');
+    const frags = {};
+    document.querySelectorAll('#pageTextEditor .frag').forEach(d => { frags[String(d.getAttribute('data-id'))] = d.innerHTML; });
     msg.className = 'msg'; msg.textContent = 'Shranjujem ...';
     try {
-        await apiP('/api/pages/' + encodeURIComponent(CURRENT_PAGE), { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({content: document.getElementById('pageEditor').value}) });
+        await apiP('/api/pages/' + encodeURIComponent(CURRENT_PAGE) + '/text', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({fragments: frags}) });
         const b = document.getElementById('pageStateBadge'); b.textContent = 'urejanje (shranjeno)'; b.className = 'badge-ov';
-        msg.className = 'msg ok'; msg.textContent = '✅ Stran shranjena — ob naslednjem obisku bo prikazana tvoja verzija.'; setTimeout(() => { msg.textContent = ''; }, 4500);
+        msg.className = 'msg ok'; msg.textContent = '✅ Shranjeno — v produkciji vidno takoj (do ~30 s).'; setTimeout(() => { msg.textContent = ''; }, 4000);
+        const pb = document.getElementById('pagePreviewBox');
+        if (pb && pb.style.display === 'block') { const f = document.getElementById('pagePreviewFrame'); f.src = f.src.split('?')[0] + '?_=' + Date.now(); }
     } catch (e) { msg.className='msg err'; msg.textContent = 'Napaka: ' + e.message; }
 }
 async function resetPage() {
