@@ -228,7 +228,7 @@
                         <button class="btn ghost small" title="Krepko" onclick="fmtCmd('bold')"><b>B</b></button>
                         <button class="btn ghost small" title="Povezava (link)" onclick="fmtLink()">🔗 Link</button>
                         <button class="btn ghost small" title="Seznam" onclick="fmtCmd('insertUnorderedList')">• Seznam</button>
-                        <span class="hint" style="margin-left:.5rem;">Klikni v besedilo, nato gumb. Rumena polja = večjezični napis/gumb (uredi v Urejevalniku besedil).</span>
+                        <span class="hint" style="margin-left:.5rem;">Klikni v besedilo, nato gumb. Vse je urejevalno; ob shranitvi postane navadno besedilo. Siva/rumena polja = vrednost iz nastavitev (ni za urejati tukaj).</span>
                     </div>
                     <div class="actions">
                         <button class="btn primary" onclick="saveText()">💾 Shrani besedilo</button>
@@ -371,11 +371,11 @@ function renderTextItems(items){
     if (!items.length) { box.innerHTML = '<div class="hint">Na tej strani ni besedila za urejanje.</div>'; return; }
     let html = '';
     for (const it of items) {
-        if (it.jinja) {
-            html += '<div class="i18n-chip"><span class="kindi">🔤 večjezični</span> <span>'+escHtml(it.tag)+'</span><span class="hint">— ureja se v Urejevalniku besedil</span></div>';
+        if (it.dynamic) {
+            html += '<div class="i18n-chip"><span class="kindi">⚙️ iz nastavitev</span> <span>'+escHtml(it.tag)+'</span><span class="hint">— ni za urejati tukaj (vrednost pride iz nastavitev)</span></div>';
         } else {
             html += '<div class="frag-row"><span class="frag-tag">' + (it.tag ? escHtml(it.tag) : 'besedilo') + '</span>'
-                 + '<div class="frag" contenteditable="true" data-id="' + it.id + '" onfocus="ACTIVE_FRAG=this">' + it.text + '</div></div>';
+                 + '<div class="frag" contenteditable="true" data-id="' + it.id + '" onfocus="ACTIVE_FRAG=this">' + escHtml(it.text) + '</div></div>';
         }
     }
     box.innerHTML = html;

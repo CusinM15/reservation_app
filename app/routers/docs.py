@@ -868,7 +868,9 @@ def _extract_passages(tpl: str):
         finalize(n)
 
     for p in passages:
-        p["text"] = html_mod.unescape(tpl[p["start"]:p["end"]])
+        inner = tpl[p["start"]:p["end"]]
+        p["text"] = _resolve_edit_text(inner)
+        p["dynamic"] = _is_dynamic(inner)
     codes = [c for c in codes if "end" in c]
     return passages, codes
 
@@ -926,6 +928,26 @@ def _sanitize_fragment(markup: str) -> str:
     return "".join(out)
 
 
+def _is_dynamic(inner: str) -> bool:
+    """Dinamično (bere iz nastavitev/kode) — ni za urejati tukaj."""
+    if "{%" in inner:
+        return True
+    for m in re.finditer(r"\{\{(.*?)\}\}", inner, re.DOTALL):
+        expr = " ".join(m.group(1).split())
+        if not expr.startswith("t(") and not expr.startswith("t ("):
+            return True
+    return False
+
+
+def _resolve_edit_text(inner: str) -> str:
+    """Vidno besedilo za urejanje: default iz t('key','default'), Jinja oskubljena,
+    oznake odstranjene — uporabnik vidi čist tekst (ne {{ }}/<tags>)."""
+    txt = re.sub(r"\{\{\s*t\('[^']*'\s*,\s*'([^']*)'[^}]*?\}\}", r"\1", inner, flags=re.DOTALL)
+    txt = re.sub(r"\{[{%][\s\S]*?[}%]\}", "", txt)
+    txt = re.sub(r"<[^>]+>", "", txt)
+    return " ".join(html_mod.unescape(txt).split())
+
+
 def _visible_text(markup: str) -> str:
     """Vidna besedila (brez oznak), normalizirano — za primerjavo 'ali se je spremenilo'."""
     txt = re.sub(r"<[^>]+>", "", markup or "")
@@ -944,11 +966,13 @@ def _rebuild_passages(tpl: str, passages: list[dict], edits: dict) -> str:
         if p["start"] > pos:
             out.append(tpl[pos:p["start"]])
         orig = tpl[p["start"]:p["end"]]
-        new = edits.get(str(idx)) if not p["jinja"] else None
-        if new is None or _visible_text(new) == _visible_text(orig):
+        new = edits.get(str(idx))
+        if p["dynamic"] or new is None:
             out.append(orig)
+        elif _visible_text(new) == _resolve_edit_text(orig):
+            out.append(orig)          # nič spremenil -> ohrani vse (tudi Jinja)
         else:
-            out.append(_sanitize_fragment(new))
+            out.append(_sanitize_fragment(new))  # spremenil -> postane navadno besedilo
         pos = p["end"]
     out.append(tpl[pos:])
     return "".join(out)
@@ -969,7 +993,7 @@ def pages_text(name: str, request: Request, db: Session = Depends(get_db)):
     items = []
     for idx, p in enumerate(passages):
         items.append({"type": "text", "id": idx, "tag": p["name"],
-                      "jinja": p["jinja"], "text": p["text"]})
+                      "dynamic": p["dynamic"], "text": p["text"]})
     return {"name": name, "items": items, "overridden": ov is not None,
             "history": len(tov.list_history(db, name))}
 
