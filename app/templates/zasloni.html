@@ -107,20 +107,32 @@ function prikaziSliko(src) {
     if (tableView) tableView.style.opacity = '0';
 }
 
-// Vrti VSE slike po vrsti, vsako za CAS_OBV; potem pokliče 'nadaljuj'.
+// Obvestila se vrtijo ZAPOREDOMA (vsako za CAS_OBV) brez tabele med njimi;
+// tabela nadomeščanj se pokaže le občasno — po ~90 s neprekinjenih obvestil.
 function vrtiVsaObvestila(nadaljuj) {
     if (timer) clearTimeout(timer);
     if (!obvestilaSeznam.length) {
         naloziObvestila();
-        timer = setTimeout(nadaljuj, CAS_OBV);
+        timer = setTimeout(function(){ vrtiVsaObvestila(nadaljuj); }, CAS_OBV);
         return;
     }
     let i = 0;
     (function korak() {
         prikaziSliko(obvestilaSeznam[i] && obvestilaSeznam[i].src);
         i++;
-        timer = setTimeout(i < obvestilaSeznam.length ? korak : nadaljuj, CAS_OBV);
+        timer = setTimeout(i < obvestilaSeznam.length ? korak : function(){ poObhodu(nadaljuj); }, CAS_OBV);
     })();
+}
+
+// Po enem polnem obhodu vseh obvestil: tabela samo, če je od zadnje tabele
+// minilo precej časa (obvestila niso prekinjana po vsakem).
+function poObhodu(nadaljuj) {
+    if (!imaVsebino) { vrtiVsaObvestila(nadaljuj); return; }
+    if (Date.now() - zadnjeSlikeTabela >= KOLIKO_CASA_SLIK_PRED_TABELO) {
+        pokaziTabelo();
+    } else {
+        vrtiVsaObvestila(nadaljuj);
+    }
 }
 
 function pokaziTabelo() {
@@ -130,6 +142,7 @@ function pokaziTabelo() {
     imageView.style.opacity = '0';
     tableView.scrollTop = 0;
     startAutoScroll();
+    zadnjeSlikeTabela = Date.now();   // od tu naprej štejemo 90 s obvestil
     timer = setTimeout(function () {
         if (scrollInterval) clearInterval(scrollInterval);
         vrtiVsaObvestila(pokaziTabelo);
@@ -146,6 +159,9 @@ function vrtiVesCas() {
     }
     vrtiVsaObvestila(vrtiVesCas);
 }
+
+const KOLIKO_CASA_SLIK_PRED_TABELO = 90000;   // ~90 s neprekinjenih obvestil → tabela
+let zadnjeSlikeTabela = 0;
 
 naloziObvestila();
 if (imaVsebino) { pokaziTabelo(); } else { vrtiVesCas(); }
