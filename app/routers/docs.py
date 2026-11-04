@@ -730,91 +730,125 @@ async def strings_save(key: str, request: Request, db: Session = Depends(get_db)
     return {"ok": True, "key": key, "sl": row.sl, "en": row.en}
 
 # ═══════════════════════════════════════════════════════════════════════
-# Urejanje strani BREZ kode — besedilni fragmenti (GET/POST /api/pages/.../text)
+# Urejanje strani BREZ kode — BLOKI besedila (GET/POST /api/pages/.../text)
 # ═══════════════════════════════════════════════════════════════════════
-# Predlogo razbijemo na VRIDNE besedilne dele (fragmente). Jinja ({{ }}, {% %}),
-# HTML oznake, komentarji in script/style so KODA — ostanejo nedotaknjeni.
-# Uporabnik ureja le besedilo; ob shranitvi backend vstavi novo besedilo
-# nazaj v predlogo (z dovoljenim formatiranjem: krepko/link/seznam).
+# Predlogo razrežemo na BLOKE vidnega besedila: en_blok = odstavek / naslov /
+# seznam-postavka / celica / gumb/label — kot CELOTA (za urejanje velikega
+# besedila v enem kosu). Blok, ki vsebuje Jinja ({{ }} / {% %} / {# #}) ali
+# script/style, NIJE urejevan tukaj — označen kot 'jinja' (večjezični napis
+# / gumb), ki se ureja v Urejevalniku besedil. Ostala koda (HTML oznake) ostane
+# nedotaknjena; ob shranitvi se v blok vstavi zgoj novo besedilo.
 
 _VOID_TAGS = {"area", "base", "br", "col", "embed", "hr", "img", "input",
               "link", "meta", "param", "source", "track", "wbr"}
+
+# Elementi, katerih BESEDILO je ena urejevalna enota (blok).
+_BLOCK_TAGS = {
+    "P", "H1", "H2", "H3", "H4", "H5", "H6", "LI", "TD", "TH", "DT", "DD",
+    "CAPTION", "SUMMARY", "FIGCAPTION", "BLOCKQUOTE", "LABEL", "LEGEND",
+    "BUTTON", "TITLE", "OPTION", "ADDRESS", "PRE",
+}
+
 _ALLOWED_TAGS = {"b", "strong", "i", "em", "u", "a", "ul", "ol", "li", "br",
                  "code", "span", "del", "sub", "sup"}
 _ALLOWED_ATTRS = {"a": {"href", "target"}}
 
 
-def _extract_text_fragments(tpl: str):
-    """Predlogo razbij na urejevalne besedilne fragmente + kodne regije.
+def _extract_passages(tpl: str):
+    """Predlogo razreže na bloke besedila.
 
-    Vrne (fragments, code_regions):
-      fragment: {"start","end","text","tag"} (text je HTML-unescapan)
-      code: {"start","end","kind"}  kind: tag|jinja|comment|script|style
-    Fragmenti s praznim/whitespace tekstom so izpuščeni (niso urejevanji).
+    Vrne (passages, code_regions):
+      passage: {"start","end","name","text","jinja"}   (jinja=True => neurejevan,
+               ureja se prek Urejevalnika besedil)
+      code:    {"start","end","kind"}  (za prikaz strukture, po potrebi)
+    Prazen/nepomeneben blok (le whitespace) se izpusti.
     """
-    frags: list[dict] = []
-    codes: list[dict] = []
     n = len(tpl)
     i = 0
     state = "text"
     buf_start = 0
     tag_start = -1
-    stack: list[str] = []
+    passages: list[dict] = []
+    codes: list[dict] = []
+    elem_stack: list[str] = []
+    pass_stack: list[dict] = []   # open block frames {"name","start","jinja"}
 
-    def flush_text(s: int, e: int) -> None:
-        t = tpl[s:e]
-        if not t.strip():
+    def finalize(end: int) -> None:
+        if not pass_stack:
             return
-        frags.append({"start": s, "end": e, "text": html_mod.unescape(t),
-                      "tag": stack[-1] if stack else ""})
+        fr = pass_stack[-1]
+        if end > fr["start"] and tpl[fr["start"]:end].strip():
+            passages.append({
+                "start": fr["start"], "end": end,
+                "name": fr["name"].lower(),
+                "jinja": fr["jinja"],
+            })
+        pass_stack.pop()
+
+    def handle_tag_close(gt: int) -> None:
+        nonlocal state
+        raw = tpl[tag_start:gt + 1]
+        m = re.match(r"<\s*(/?)([A-Za-z][A-Za-z0-9]*)", raw)
+        if m:
+            closing = m.group(1) == "/"
+            name = m.group(2).upper()
+            if closing:
+                if elem_stack and elem_stack[-1] == name:
+                    elem_stack.pop()
+                    if name in _BLOCK_TAGS:
+                        finalize(tag_start)
+            else:
+                if name not in _VOID_TAGS:
+                    elem_stack.append(name)
+                    if name in _BLOCK_TAGS:
+                        finalize(tag_start)  # končaj trenutni blok pred gnezdenim
+                        pass_stack.append({"name": name, "start": gt + 1, "jinja": False})
+        state = "text"
 
     while i < n:
         c = tpl[i]
         if state == "text":
             if c == "<":
-                flush_text(buf_start, i)
                 if tpl.startswith("<!--", i):
+                    if pass_stack:
+                        pass_stack[-1]["jinja"] = True
                     state = "comment"; tag_start = i; i += 4
-                elif tpl[i:i + 8].lower().startswith("<script"):
+                elif tpl[i:i+8].lower().startswith("<script"):
+                    if pass_stack:
+                        pass_stack[-1]["jinja"] = True
                     state = "script"; tag_start = i; i += 1
-                elif tpl[i:i + 7].lower().startswith("<style"):
+                elif tpl[i:i+7].lower().startswith("<style"):
+                    if pass_stack:
+                        pass_stack[-1]["jinja"] = True
                     state = "style"; tag_start = i; i += 1
                 else:
                     state = "tag"; tag_start = i; i += 1
             elif tpl.startswith("{{", i) or tpl.startswith("{%", i) or tpl.startswith("{#", i):
-                flush_text(buf_start, i)
-                state = "jinja"; tag_start = i; i += 2
+                if pass_stack:
+                    pass_stack[-1]["jinja"] = True
+                codes.append({"start": i, "kind": "jinja"})
+                state = "jinja_end"; i += 2
             else:
                 i += 1
         elif state == "tag":
             if c == ">":
-                raw = tpl[tag_start:i + 1]
-                m = re.match(r"<\s*(/?)([A-Za-z][A-Za-z0-9]*)", raw)
-                if m:
-                    closing = m.group(1) == "/"
-                    name = m.group(2).lower()
-                    if closing:
-                        if stack and stack[-1] == name:
-                            stack.pop()
-                    elif name not in _VOID_TAGS:
-                        stack.append(name)
-                codes.append({"start": tag_start, "end": i + 1, "kind": "tag"})
-                state = "text"; buf_start = i + 1; i += 1
+                handle_tag_close(i)
+                buf_start = i + 1
+                i += 1
             elif c in "\"'":
                 q = c
                 j = tpl.find(q, i + 1)
                 i = (j + 1) if j != -1 else n
             else:
                 i += 1
-        elif state == "jinja":
+        elif state == "jinja_end":
             if tpl.startswith("}}", i) or tpl.startswith("%}", i) or tpl.startswith("#}", i):
-                codes.append({"start": tag_start, "end": i + 2, "kind": "jinja"})
+                codes[-1]["end"] = i + 2
                 state = "text"; buf_start = i + 2; i += 2
             else:
                 i += 1
         elif state == "comment":
             if tpl.startswith("-->", i):
-                codes.append({"start": tag_start, "end": i + 3, "kind": "comment"})
                 state = "text"; buf_start = i + 3; i += 3
             else:
                 i += 1
@@ -822,16 +856,21 @@ def _extract_text_fragments(tpl: str):
             end_marker = "</script" if state == "script" else "</style"
             j = tpl.find(end_marker, i)
             if j == -1:
-                codes.append({"start": tag_start, "end": n, "kind": state})
-                buf_start = n; i = n
+                i = n
             else:
                 gt = tpl.find(">", j)
                 end = (gt + 1) if gt != -1 else j + len(end_marker) + 1
-                codes.append({"start": tag_start, "end": end, "kind": state})
+                # odstrani script/style s sklada (bil dodan kot element)
+                if elem_stack and elem_stack[-1].lower() == ("script" if state == "script" else "style"):
+                    elem_stack.pop()
                 state = "text"; buf_start = end; i = end
-    if state == "text" and buf_start < n:
-        flush_text(buf_start, n)
-    return frags, codes
+    if state == "text" and pass_stack:
+        finalize(n)
+
+    for p in passages:
+        p["text"] = html_mod.unescape(tpl[p["start"]:p["end"]])
+    codes = [c for c in codes if "end" in c]
+    return passages, codes
 
 
 def _sanitize_fragment(markup: str) -> str:
@@ -865,8 +904,7 @@ def _sanitize_fragment(markup: str) -> str:
                             a += f' target="{v}"'
             out.append(f"<{tag}{a}>")
         def handle_startendtag(self, tag, attrs):
-            tag = tag.lower()
-            if tag == "br":
+            if tag.lower() == "br":
                 out.append("<br>")
         def handle_endtag(self, tag):
             tag = tag.lower()
@@ -888,26 +926,37 @@ def _sanitize_fragment(markup: str) -> str:
     return "".join(out)
 
 
-def _rebuild_fragments(tpl: str, frags: list[dict], edits: dict) -> str:
-    """Nova predloga: urejene fragmente nadomesti z (sanitiziranim) novo besedilom."""
+def _visible_text(markup: str) -> str:
+    """Vidna besedila (brez oznak), normalizirano — za primerjavo 'ali se je spremenilo'."""
+    txt = re.sub(r"<[^>]+>", "", markup or "")
+    return " ".join(html_mod.unescape(txt).split())
+
+
+def _rebuild_passages(tpl: str, passages: list[dict], edits: dict) -> str:
+    """Nova predloga: urejene (ne-jinja) bloke nadomesti z novim besedilom.
+
+    Nespremenjen blok (enako vidno besedilo) ostane POVSEM nedotaknjen, da se
+    ohranijo npr. class="brand" in druge oznake; spremenjen se sanitizira."""
+
     out: list[str] = []
     pos = 0
-    for idx, f in enumerate(frags):
-        if f["start"] > pos:
-            out.append(tpl[pos:f["start"]])
-        new = edits.get(str(idx))  # ključ = indeks fragmenta (kot v API/frontendu)
-        if new is None:
-            out.append(tpl[f["start"]:f["end"]])
+    for idx, p in enumerate(passages):
+        if p["start"] > pos:
+            out.append(tpl[pos:p["start"]])
+        orig = tpl[p["start"]:p["end"]]
+        new = edits.get(str(idx)) if not p["jinja"] else None
+        if new is None or _visible_text(new) == _visible_text(orig):
+            out.append(orig)
         else:
             out.append(_sanitize_fragment(new))
-        pos = f["end"]
+        pos = p["end"]
     out.append(tpl[pos:])
     return "".join(out)
 
 
 @router.get("/api/pages/{name}/text")
 def pages_text(name: str, request: Request, db: Session = Depends(get_db)):
-    """Besedilni fragmenti strani za urejevalnik brez kode."""
+    """Bloki besedila strani za urejevalnik brez kode."""
     _require_main_admin(request, db)
     if name not in TEMPLATE_FILES:
         raise HTTPException(status_code=404, detail="Predloga ne obstaja")
@@ -916,25 +965,18 @@ def pages_text(name: str, request: Request, db: Session = Depends(get_db)):
     content = ov if ov is not None else tov.read_builtin(name)
     if content is None:
         raise HTTPException(status_code=404, detail="Predloge ni mogoče prebrati")
-    frags, codes = _extract_text_fragments(content)
-    for idx, f in enumerate(frags):
-        f["id"] = idx
-    seq = sorted([("f", f) for f in frags] + [("c", c) for c in codes],
-                 key=lambda x: x[1]["start"])
+    passages, codes = _extract_passages(content)
     items = []
-    for kind, x in seq:
-        if kind == "f":
-            items.append({"type": "text", "id": x["id"], "text": x["text"], "tag": x["tag"]})
-        else:
-            items.append({"type": "code", "kind": x["kind"],
-                          "preview": content[x["start"]:x["end"]][:90]})
+    for idx, p in enumerate(passages):
+        items.append({"type": "text", "id": idx, "tag": p["name"],
+                      "jinja": p["jinja"], "text": p["text"]})
     return {"name": name, "items": items, "overridden": ov is not None,
             "history": len(tov.list_history(db, name))}
 
 
 @router.post("/api/pages/{name}/text", status_code=200)
 async def pages_text_save(name: str, request: Request, db: Session = Depends(get_db)):
-    """Shrani urejeno besedilo: vstavi nazaj v predlogo (koda ostane) + override."""
+    """Shrani urejeno besedilo: vstavi nazaj v predlogo (koda + večjezični ostanejo)."""
     user = _require_main_admin(request, db)
     if name not in TEMPLATE_FILES:
         raise HTTPException(status_code=400, detail="Predloga ne obstaja")
@@ -947,11 +989,9 @@ async def pages_text_save(name: str, request: Request, db: Session = Depends(get
     content = ov if ov is not None else tov.read_builtin(name)
     if content is None:
         raise HTTPException(status_code=404, detail="Predloge ni mogoče prebrati")
-    frags, _codes = _extract_text_fragments(content)
-    for idx, f in enumerate(frags):
-        f["id"] = idx
+    passages, _codes = _extract_passages(content)
     edits = body.get("fragments") or {}
-    rebuilt = _rebuild_fragments(content, frags, edits)
+    rebuilt = _rebuild_passages(content, passages, edits)
     tov.save_override(db, name, rebuilt)
     log_audit(db, user.id, user.username, "edit_page", f"{name} (besedilo)")
     return {"ok": True, "name": name, "overridden": True}

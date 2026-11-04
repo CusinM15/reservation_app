@@ -76,6 +76,8 @@
         .frag-tag { font-size:.7rem; color:#7a8b99; display:block; margin-bottom:2px; }
         .codechip { font-family:ui-monospace,Menlo,monospace; font-size:.72rem; color:#8a949e; background:#eef1f5; border-radius:6px; padding:.1rem .45rem; margin:.25rem 0; display:inline-block; max-width:100%; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; vertical-align:middle; }
         .codechip .kind { color:#b0b9c2; }
+        .i18n-chip { font-size:.78rem; color:#8a7b3b; background:#fbf5e3; border:1px dashed #d9c78a; border-radius:8px; padding:.28rem .6rem; margin:.3rem 0; display:flex; align-items:center; gap:.5rem; }
+        .i18n-chip .kindi { font-weight:700; color:#a58a2e; }
         .strings-empty { color:#7a8b99; padding:.6rem; }
         blockquote.note { border-left:4px solid #14608c; background:#f0f6fc; padding:.6rem 1rem; border-radius:8px; color:#344c5c; font-size:.9rem; margin:.6rem 0; }
         @media (max-width:700px){ .page{flex-direction:column;align-items:flex-start;} }
@@ -226,7 +228,7 @@
                         <button class="btn ghost small" title="Krepko" onclick="fmtCmd('bold')"><b>B</b></button>
                         <button class="btn ghost small" title="Povezava (link)" onclick="fmtLink()">🔗 Link</button>
                         <button class="btn ghost small" title="Seznam" onclick="fmtCmd('insertUnorderedList')">• Seznam</button>
-                        <span class="hint" style="margin-left:.5rem;">Klikni v besedilo, nato gumb.</span>
+                        <span class="hint" style="margin-left:.5rem;">Klikni v besedilo, nato gumb. Rumena polja = večjezični napis/gumb (uredi v Urejevalniku besedil).</span>
                     </div>
                     <div class="actions">
                         <button class="btn primary" onclick="saveText()">💾 Shrani besedilo</button>
@@ -366,14 +368,14 @@ async function loadPage() {
 }
 function renderTextItems(items){
     const box = document.getElementById('pageTextEditor');
-    if (!items.length) { box.innerHTML = '<div class="hint">Na tej strani ni vidnega besedila za urejanje.</div>'; return; }
+    if (!items.length) { box.innerHTML = '<div class="hint">Na tej strani ni besedila za urejanje.</div>'; return; }
     let html = '';
     for (const it of items) {
-        if (it.type === 'code') {
-            html += '<div><span class="codechip"><span class="kind">'+escHtml(it.kind)+'</span> '+escHtml(it.preview||'')+'</span></div>';
+        if (it.jinja) {
+            html += '<div class="i18n-chip"><span class="kindi">🔤 večjezični</span> <span>'+escHtml(it.tag)+'</span><span class="hint">— ureja se v Urejevalniku besedil</span></div>';
         } else {
             html += '<div class="frag-row"><span class="frag-tag">' + (it.tag ? escHtml(it.tag) : 'besedilo') + '</span>'
-                 + '<div class="frag" contenteditable="true" data-id="' + it.id + '" onfocus="ACTIVE_FRAG=this">' + escHtml(it.text) + '</div></div>';
+                 + '<div class="frag" contenteditable="true" data-id="' + it.id + '" onfocus="ACTIVE_FRAG=this">' + it.text + '</div></div>';
         }
     }
     box.innerHTML = html;
