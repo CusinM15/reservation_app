@@ -1073,21 +1073,24 @@ async def ure_ucitelj(request: Request, db: Session = Depends(get_db)):
     except Exception:
         raise HTTPException(status_code=400, detail="Neveljaven JSON")
 
+    # Navaden učitelj sme urejati LE svoj zapis: če poslano `ime` ni njegovo → 403.
+    # Če `ime` ni poslano (učitelj v obrazcu nima polja 'ime') → vzamemo polno ime
+    # prijavljenega (popravek: prej je učitelj brez 'ime' dobil 400 »Manjka«).
     ime = (body.get("ime") or "").strip()
-    if not ime:
-        raise HTTPException(status_code=400, detail="Manjka 'ime' učitelja")
-
     if not _lahko_ureja_vse(user):
-        # Učitelj (ne vodstvo/admin) sme urejati LE svoj zapis — ne kogarkoli.
-        polno_ime = _polno_ime_user(user)
-        if ime != polno_ime:
+        if ime and ime != _polno_ime_user(user):
             raise HTTPException(status_code=403,
                                 detail="Učitelj lahko ureja samo svoj zapis")
+        izbran_ime = ime or _polno_ime_user(user)
+    else:
+        izbran_ime = ime
+        if not izbran_ime:
+            raise HTTPException(status_code=400, detail="Manjka 'ime' učitelja")
     if not is_main_admin(user):
         school_id = user.school_id or school_id
     cfg = _load_cfg(db, school_id)
 
-    ucitelj = _ucitelj_by_ime(ime, cfg["ucitelji"])
+    ucitelj = _ucitelj_by_ime(izbran_ime, cfg["ucitelji"])
     if ucitelj is None:
         raise HTTPException(status_code=404, detail="Učitelj ni v konfiguraciji")
 
