@@ -203,7 +203,7 @@ def test_zasloni_nastavitve_so_v_school_settings():
     from app.tenancy import SCHOOL_SETTING_KEYS, SchoolConfig, env_default_settings
     for k in ("ZASLON_URL", "ZASLON_POKAZI_NADOMESCANJA", "ZASLON_CAS_OBVESTILA",
               "ZASLON_MIN_CAS_TABELE", "ZASLON_HITROST_DRSENJA", "ZASLON_TIME_ZONE",
-              "ZASLON_OMOGOCEN", "ZASLON_OBVESTILA", "ZASLON_OBVESTILA_TEKST",
+              "ZASLON_OMOGOCEN", "ZASLON_OBVESTILA",
               "ZASLON_OSVEZI_AT"):
         assert k in SCHOOL_SETTING_KEYS, f"{k} manjka v SCHOOL_SETTING_KEYS"
         assert k in env_default_settings(), f"{k} manjka v env_default_settings"
@@ -236,19 +236,6 @@ def test_school_settings_put_sprejme_bool_in_float():
         assert m.get("ZASLON_POKAZI_NADOMESCANJA") == "true"
         assert m.get("ZASLON_CAS_OBVESTILA") == "7"
         assert m.get("ZASLON_HITROST_DRSENJA") == "1.5"
-
-
-def test_zasloni_obvestila_tekst_najvec_5(client, make_user):
-    """Strežnik zavrne 400, če bi šola shranila več kot 5 tekstovnih obvestil."""
-    admin = make_user(role="admin")
-    login(client, admin.username)
-    sid = _default_school_id()
-
-    r = client.put(f"/api/schools/{sid}/settings", json={
-        "values": {"ZASLON_OBVESTILA_TEKST": json.dumps(["1", "2", "3", "4", "5", "6"])}
-    })
-    assert r.status_code == 400, r.text
-    assert "5" in r.text
 
 
 # ═══════════════════════════════════════════════════════════════════════

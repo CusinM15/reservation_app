@@ -127,17 +127,6 @@ def _zasloni_settings(request: Request, db: Session) -> dict:
                 obvestila = [str(x) for x in parsed]
     except (TypeError, ValueError):
         obvestila = []
-    # Tekstovna obvestila (ZASLON_OBVESTILA_TEKST): JSON seznam besedil, ki jih
-    # admin doda v UI (največ 5). Vrtijo se na zaslonu skupaj s slikovnimi.
-    obvestila_tekst = []
-    try:
-        raw_txt = config.get_str("ZASLON_OBVESTILA_TEKST", "").strip()
-        if raw_txt:
-            parsed_txt = json.loads(raw_txt)
-            if isinstance(parsed_txt, list):
-                obvestila_tekst = [str(x).strip() for x in parsed_txt if str(x).strip()][:5]
-    except (TypeError, ValueError):
-        obvestila_tekst = []
     return {
         "url": config.get_str("ZASLON_URL", DEFAULT_ZASLON_URL),
         "pokazi_nadomescanja": b("ZASLON_POKAZI_NADOMESCANJA", True),
@@ -149,7 +138,6 @@ def _zasloni_settings(request: Request, db: Session) -> dict:
         "osvezi_at": config.get_str("ZASLON_OSVEZI_AT", ""),
         "school_id": sid,
         "obvestila": obvestila,
-        "obvestila_tekst": obvestila_tekst,
         "media_dir": media_dir,
         "vec_obvestil": media_dir / "vec_obvestil",
         "logo_path": "obvestila/logo.jpg",
@@ -571,8 +559,6 @@ def zasloni_obvestila(request: Request, db: Session = Depends(get_db)):
     """Urejen seznam aktivnih obvestil (slike + tekstovna) za rotacijo na zaslonu."""
     settings = _zasloni_settings(request, db)
     items = [{"src": url, "type": "image"} for url in _aktivna_obvestila(settings, db)]
-    for txt in settings.get("obvestila_tekst", [])[:5]:
-        items.append({"src": None, "text": txt, "type": "text"})
     return {"obvestila": items}
 
 

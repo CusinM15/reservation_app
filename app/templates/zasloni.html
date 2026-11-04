@@ -33,7 +33,6 @@
         <!-- SLIKA (vedno pripravljena) -->
         <div class="view image-view" id="imageView" style="opacity:{{ '0' if pokazi_nadomescanja else '1' }};">
             <img src="/zasloni/media/{{ obvestilo_path }}" alt="Obvestilo" id="obvestiloImg">
-            <div id="obvestiloTxt" style="display:none;align-items:center;justify-content:center;height:100%;padding:40px 60px;color:#fff;text-align:center;font-size:3.5rem;line-height:1.25;text-shadow:0 2px 8px rgba(0,0,0,0.4);"></div>
         </div>
         <!-- TABELA (samo če so nadomeščanja vklopljena) -->
         {% if pokazi_nadomescanja and tabela %}
@@ -45,21 +44,22 @@
 </div>
 
 <script>
-// ROTACIJA OBVESTIL — teče VEDNO (tudi če so nadomeščanja izklopljena).
-// Ko so nadomeščanja vklopljena, se izmenjujeta tabela ↔ slika/tekst; sicer
-// se vrtijo SAMO slike/tekstovna obvestila (vseeno napredujejo).
+// ROTACIJA NADOMEŠČANJ / SLIK.
+// Ko so nadomeščanja vklopljena: tabela ↔ slika. Brez tabele: vrti slike v nedogled.
+// Slike (obvestila) se vrtijo vse po vrsti, vsaka za CAS_OBV sekund, ŠELE NAREDO
+// tabela — s tem ni več preskakovanja (ene slike na celo obdobje).
 const IMA_TABELO = {{ 'true' if pokazi_nadomescanja and tabela else 'false' }};
 const CAS_OBV = {{ cas_obvestila }} * 1000;
 const MIN_CAS_TABELE = {{ min_cas_tabele }} * 1000;
 const HITROST_DRSENJA = {{ hitrost_drsenja }};
+const SKOLA = {{ skola | tojson }};
 
 const tableView = document.getElementById('tableView');
 const imageView = document.getElementById('imageView');
 const obvestiloImg = document.getElementById('obvestiloImg');
-const obvestiloTxt = document.getElementById('obvestiloTxt');
+let timer = null;
 let scrollInterval = null;
-let showingTable = false;
-
+let obvestilaSeznam = [];
 const imaVsebino = IMA_TABELO && tableView !== null && tableView.querySelector('table') !== null;
 
 function izracunajCasTabele() {
@@ -77,17 +77,15 @@ function startAutoScroll() {
     if (scrollInterval) clearInterval(scrollInterval);
     let direction = 1, paused = false;
     scrollInterval = setInterval(() => {
-        if (!showingTable || paused) return;
+        if (paused) return;
         const max = tableView.scrollHeight - tableView.clientHeight;
         if (max <= 0) return;
         let next = tableView.scrollTop + direction * HITROST_DRSENJA;
         if (next >= max) {
-            tableView.scrollTop = max;
-            paused = true;
+            tableView.scrollTop = max; paused = true;
             setTimeout(() => { direction = -1; paused = false; }, 800);
         } else if (next <= 0) {
-            tableView.scrollTop = 0;
-            paused = true;
+            tableView.scrollTop = 0; paused = true;
             setTimeout(() => { direction = 1; paused = false; }, 800);
         } else {
             tableView.scrollTop = next;
@@ -95,95 +93,80 @@ function startAutoScroll() {
     }, 16);
 }
 
-function showTable() {
-    if (timerShowImage) clearTimeout(timerShowImage);
-    if (timerShowTable) clearTimeout(timerShowTable);
+async function naloziObvestila() {
+    try {
+        const r = await fetch('/zasloni/obvestila?skola=' + encodeURIComponent(SKOLA) + '&t=' + Date.now());
+        const d = await r.json();
+        obvestilaSeznam = (d.obvestila || []);
+    } catch (e) { obvestilaSeznam = obvestilaSeznam || []; }
+}
+
+function prikaziSliko(src) {
+    if (src) obvestiloImg.src = '/zasloni/media/' + src;
+    imageView.style.opacity = '1';
+    if (tableView) tableView.style.opacity = '0';
+}
+
+// Vrti VSE slike po vrsti, vsako za CAS_OBV; potem pokliče 'nadaljuj'.
+function vrtiVsaObvestila(nadaljuj) {
+    if (timer) clearTimeout(timer);
+    if (!obvestilaSeznam.length) {
+        naloziObvestila();
+        timer = setTimeout(nadaljuj, CAS_OBV);
+        return;
+    }
+    let i = 0;
+    (function korak() {
+        prikaziSliko(obvestilaSeznam[i] && obvestilaSeznam[i].src);
+        i++;
+        timer = setTimeout(i < obvestilaSeznam.length ? korak : nadaljuj, CAS_OBV);
+    })();
+}
+
+function pokaziTabelo() {
+    if (timer) clearTimeout(timer);
+    if (!tableView) return;
     tableView.style.opacity = '1';
     imageView.style.opacity = '0';
-    showingTable = true;
     tableView.scrollTop = 0;
     startAutoScroll();
-    timerShowImage = setTimeout(showImage, izracunajCasTabele());
+    timer = setTimeout(function () {
+        if (scrollInterval) clearInterval(scrollInterval);
+        vrtiVsaObvestila(pokaziTabelo);
+    }, izracunajCasTabele());
 }
 
-async function showImage() {
-    if (timerShowImage) clearTimeout(timerShowImage);
-    if (scrollInterval) clearInterval(scrollInterval);
-
-    // Obvestila se vrtijo PO VRSTI (ne naključno): preberemo urejen seznam
-    // in pokažemo naslednjega v nizu. Ko pridemo do konca, začnemo znova.
-    try {
-        if (!obvestilaSeznam || obvestilaSeznam.length === 0) {
-            const r = await fetch('/zasloni/obvestila?t=' + Date.now());
-            const d = await r.json();
-            obvestilaSeznam = (d.obvestila || []);
-        }
-        if (obvestilaSeznam.length > 0) {
-            obvestilaIndex = (obvestilaIndex + 1) % obvestilaSeznam.length;
-            const item = obvestilaSeznam[obvestilaIndex];
-            if (item && item.type === 'text') {
-                obvestiloTxt.textContent = item.text || '';
-                obvestiloTxt.style.display = 'flex';
-                obvestiloImg.style.display = 'none';
-            } else {
-                obvestiloImg.style.display = 'block';
-                obvestiloTxt.style.display = 'none';
-                obvestiloImg.src = '/zasloni/media/' + (item ? item.src : obvestiloImg.src);
-            }
-        }
-    } catch (e) {
-        console.log('Napaka pri pridobivanju obvestil:', e);
+function vrtiVesCas() {
+    if (timer) clearTimeout(timer);
+    if (!obvestilaSeznam.length) {
+        prikaziSliko(null);
+        naloziObvestila();
+        timer = setTimeout(vrtiVesCas, CAS_OBV);
+        return;
     }
-
-    if (tableView) tableView.style.opacity = '0';
-    imageView.style.opacity = '1';
-    showingTable = false;
-    if (IMA_TABELO) {
-        // Po CAS_OBV se vrnemo na tabelo nadomeščanj.
-        timerShowTable = setTimeout(showTable, CAS_OBV);
-    } else {
-        // Brez tabele: čez CAS_OBV se pokaže naslednje obvestilo.
-        timerShowImage = setTimeout(showImage, CAS_OBV);
-    }
+    vrtiVsaObvestila(vrtiVesCas);
 }
 
-let timerShowImage, timerShowTable;
-let obvestilaSeznam = [];
-let obvestilaIndex = 0;
-if (IMA_TABELO) {
-    showTable();
-} else {
-    // Začetna slika je že v HTML-ju; po CAS_OBV rotiramo na naslednje obvestilo.
-    timerShowImage = setTimeout(showImage, CAS_OBV);
-}
+naloziObvestila();
+if (imaVsebino) { pokaziTabelo(); } else { vrtiVesCas(); }
 
-// Seznam obvestil občasno osvežimo v ozadju (brez osvežitve strani),
-// da se novo dodana obvestila pojavijo čim prej.
-setInterval(async () => {
-    try {
-        const r = await fetch('/zasloni/obvestila?t=' + Date.now());
-        const d = await r.json();
-        const nov = d.obvestila || [];
-        if (nov.length > 0) obvestilaSeznam = nov;
-    } catch (e) { /* obdržimo stari seznam */ }
-}, 2 * 60 * 1000);
+// Občasno osvežimo seznam slik v ozadju (brez osvežitve strani).
+setInterval(naloziObvestila, 2 * 60 * 1000);
 
-// Občasna polna osvežitev: pobere spremembe nastavitev (npr. vklop
-// nadomeščanj) in svežo tabelo. V načinu s tabelo počakamo na sliko,
-// da flash ne zmoti branja tabele; brez tabele redkeje (30 min).
-const INTERVAL_OSVEZITVE = IMA_TABELO ? 5 * 60 * 1000 : 30 * 60 * 1000;
+// Občasna polna osvežitev: pobere spremembe nastavitev in svežo tabelo.
+const INTERVAL_OSVEZITVE = imaVsebino ? 5 * 60 * 1000 : 30 * 60 * 1000;
 function osveziStranMedLogotipom() {
-    if (!showingTable) location.reload();
-    else setTimeout(osveziStranMedLogotipom, 1000);
+    if (imaVsebino && imageView.style.opacity === '1') setTimeout(osveziStranMedLogotipom, 1000);
+    else location.reload();
 }
 setTimeout(osveziStranMedLogotipom, INTERVAL_OSVEZITVE);
 
-// Osveži vse naprave: šolski admin pritisne gumb v nastavitvah →
-// ZASLON_OSVEZI_AT se spremeni; vsi zasloni tu pollajo in ob spremembi reloadajo.
+// Osveži vse naprave: šolski admin pritisne gumb v nastavitvah → ZASLON_OSVEZI_AT
+// se spremeni; zasloni pollajo in ob spremembi reloadajo.
 const OSNOVNI_OSVEZI_AT = {{ osvezi_at | tojson }};
 async function preveriOsvezi() {
     try {
-        const r = await fetch('/zasloni/osvezi_at?t=' + Date.now());
+        const r = await fetch('/zasloni/osvezi_at?skola=' + encodeURIComponent(SKOLA) + '&t=' + Date.now());
         const d = await r.json();
         if (d.osvezi_at && d.osvezi_at !== OSNOVNI_OSVEZI_AT) location.reload();
     } catch (e) { /* prezremo */ }
@@ -200,7 +183,6 @@ function updateTime() {
         document.querySelector('.fs-cas').textContent =
             new Intl.DateTimeFormat('sl-SI', { timeZone: CASOVNI_PAS, hour: '2-digit', minute: '2-digit' }).format(now);
     } catch (e) {
-        // Neveljaven časovni pas → padec na lokalno uro naprave.
         document.querySelector('.fs-datum').textContent = now.toLocaleDateString('sl-SI');
         document.querySelector('.fs-cas').textContent = now.toLocaleTimeString('sl-SI', {hour:'2-digit', minute:'2-digit'});
     }
