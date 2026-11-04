@@ -375,6 +375,12 @@
                             </label>
                         </div>
                         <div class="field">
+                            <label>{{ t('set_govorilne_termin_minut', 'Trajanje termina (minut)') }}</label>
+                            {% if is_main_admin %}<span class="key">TERMIN_MINUT</span>{% endif %}
+                            <input type="number" name="TERMIN_MINUT" min="5" max="120" value="{{ govorilne_termin_minut }}" style="padding:8px 10px;border:1px solid #ddd;border-radius:5px;width:120px;">
+                            <div class="hint" style="margin-top:6px;">Koliko minut traja en termin (npr. 15). Sprememba velja povsod — javna stran /govorilne, najave in urnik govorilnih ur.</div>
+                        </div>
+                        <div class="field">
                             <label>{{ t('setf_GOVORILNE_VLOGAROLE', 'Govorilne ure — katere grupe jih vidijo') }}</label>
                             {% if is_main_admin %}<span class="key">GOVORILNE_VLOGAROLE</span>{% endif %}
                             {% set gov_vloge = (values.get('GOVORILNE_VLOGAROLE') or 'admin').split(',') %}

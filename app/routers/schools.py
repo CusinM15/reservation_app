@@ -65,6 +65,8 @@ from app.school_backup import backup_filename, build_school_sql, send_backup_ema
 from app.config import settings
 from app.models import ZaslonFile
 from app.routers.zasloni import _default_media_dir, _pdf_to_jpg_bytes, _razpolozljiva_obvestila
+# Per-šola govorilna konfiguracija (GOVORILNE_KONFIG) — za polje »trajanje termina«.
+from app.routers.govorilne import _load_cfg as _gov_load_cfg, _save_cfg as _gov_save_cfg
 
 router = APIRouter(tags=["schools"])
 templates = make_templates()
@@ -482,6 +484,20 @@ async def update_school_settings(school_id: int, request: Request, db: Session =
     if "slug" in values:
         nova_kratica = values.pop("slug")
 
+    # Trajanje govorilnega termina (minut, 5–120). Ni samostojna school_setting —
+    # shranjujemo ga v GOVORILNE_KONFIG (en vir, ki ga bere vse govorilne kode).
+    termin_minut_raw = values.pop("TERMIN_MINUT", None)
+    termin_minut_int = None
+    if termin_minut_raw is not None:
+        try:
+            termin_minut_int = int(str(termin_minut_raw).strip())
+        except (TypeError, ValueError):
+            raise HTTPException(status_code=400,
+                                detail="'TERMIN_MINUT' mora biti celo število (minut termina)")
+        if not (5 <= termin_minut_int <= 120):
+            raise HTTPException(status_code=400,
+                                detail="'TERMIN_MINUT' mora biti med 5 in 120 minut")
+
     unknown = [k for k in values if k not in SCHOOL_SETTING_KEYS]
     if unknown:
         raise HTTPException(status_code=400, detail=f"Neznane nastavitve: {', '.join(sorted(unknown))}")
@@ -618,6 +634,12 @@ async def update_school_settings(school_id: int, request: Request, db: Session =
                 db.add(SchoolAlias(school_id=school.id, alias=alias, kind=kind))
             school.slug = nova
             invalidate_alias_cache()
+
+    if termin_minut_raw is not None and termin_minut_int is not None:
+        _gcfg = _gov_load_cfg(db, school.id)
+        _gcfg["termin_minut"] = termin_minut_int
+        _gov_save_cfg(db, school.id, _gcfg)
+
     db.commit()
 
     user = get_request_user(request, db)
@@ -1200,6 +1222,7 @@ def school_settings_page(
         "razredi_rows": razredi_rows,
         "stevila_rows": stevila_rows,
         "obv_rows": obv_rows,
+        "govorilne_termin_minut": _gov_load_cfg(db, school.id).get("termin_minut", 15),
         # Naslov, kamor gre »Naredi backup« (BACKUP_EMAIL šole, sicer ADMIN_EMAIL).
         "backup_email": (cfg.BACKUP_EMAIL or cfg.ADMIN_EMAIL or ""),
         "is_main_admin": is_main_admin(user),
