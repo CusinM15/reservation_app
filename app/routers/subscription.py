@@ -122,14 +122,18 @@ def nakup_page(
     (glej prorated_price_eur), zato npr. začetek 1. 3. pri polni ceni 12 € znaša ~6 €.
     """
     cfg = selling_config(db)
+    user = get_request_user(request, db)
+    # Nakup naročnine je ZGOLJ za administratorja šole (ali glavnega admina);
+    # stran ni več javno dostopna (gumb na prijavni strani se ni vrnil k nakupu).
+    if user is None:
+        return RedirectResponse(url="/auth/login")
+    if user.role not in (RoleEnum.admin, RoleEnum.main_admin):
+        raise HTTPException(status_code=403,
+                            detail="Nakup naročnine je dostopen le administratorju šole.")
     izbrani_start = _parse_iso_date(start) or date.today()
     # Samodejna odjava: če je obiskovalec prijavljen (npr. admin odpre /nakup),
     # velja timeout šole; anonimni obiskovalec (0) nima seje za odjavo.
-    _nakup_user = get_request_user(request, db)
-    _nakup_timeout = (
-        inactivity_timeout_ms(_nakup_user, config_for_request(request, db))
-        if _nakup_user else 0
-    )
+    _nakup_timeout = inactivity_timeout_ms(user, config_for_request(request, db))
     return templates.TemplateResponse(
         "nakup.html",
         {

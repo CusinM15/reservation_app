@@ -370,12 +370,21 @@ def test_selling_settings_are_main_admin_only(client, make_user):
 
 # ── 7. Javna stran za nakup (popravek napake »klik ne naredi nič«) ───
 
-def test_nakup_page_is_public(client):
+def test_nakup_ni_vec_javno_anon_307(client):
+    """/nakup ni več javno dostopna — anonimni obiskovalec je preusmerjen na prijavo."""
+    _set_selling(True, price=30)
+    r = client.get("/nakup", follow_redirects=False)
+    assert r.status_code in (301, 302, 307), r.status_code
+
+
+def test_nakup_page_is_public(client, make_user):
     """Gumb za nakup je na PRIJAVNI strani, kjer uporabnik še ni prijavljen —
     zato mora biti stran za nakup dosegljiva BREZ prijave. Če bi kazala na
     zaščiteno /narocnina, bi middleware obiskovalca vrnil na prijavo in klik
     bi izgledal, kot da ne naredi nič."""
     _set_selling(True, price=30)
+    admin = make_user(role="admin")
+    _login(client, admin.username)
     r = client.get("/nakup")
     assert r.status_code == 200
     assert "30 €" in r.text
@@ -383,7 +392,9 @@ def test_nakup_page_is_public(client):
     assert "Kako kupite" in r.text
 
 
-def test_nakup_page_when_selling_off(client):
+def test_nakup_page_when_selling_off(client, make_user):
+    admin = make_user(role="admin")
+    _login(client, admin.username)
     r = client.get("/nakup")
     assert r.status_code == 200
     assert "niso v prodaji" in r.text
@@ -457,9 +468,11 @@ def test_price_zero_is_allowed(client):
         db.close()
 
 
-def test_price_zero_shows_zero_eur(client):
+def test_price_zero_shows_zero_eur(client, make_user):
     """Pri ceni 0 € stran izpiše, da je aplikacija brezplačna (in 0 €)."""
     _set_selling(True, price=0)
+    admin = make_user(role="admin")
+    _login(client, admin.username)
     r = client.get("/nakup")
     assert r.status_code == 200
     assert "0 €" in r.text
@@ -828,9 +841,11 @@ def test_unknown_plan_falls_back_to_year(client, make_user):
     assert row.months == 12
 
 
-def test_nakup_shows_only_yearly_plan(client):
+def test_nakup_shows_only_yearly_plan(client, make_user):
     """Nakupna stran ponudi samo LETNI plan (polletni je odstranjen)."""
     _set_selling(True, price=13)
+    admin = make_user(role="admin")
+    _login(client, admin.username)
     r = client.get("/nakup")
     assert "13 €" in r.text and "pol leta" not in r.text
     assert "leto" in r.text
@@ -960,9 +975,11 @@ def test_prorated_free_is_zero(client):
         db.close()
 
 
-def test_nakup_free_text_and_donation(client):
+def test_nakup_free_text_and_donation(client, make_user):
     """Pri ceni 0 € stran pove, da je app brezplačen, in ponudi donacijo."""
     _set_selling(True, price=0)
+    admin = make_user(role="admin")
+    _login(client, admin.username)
     r = client.get("/nakup")
     assert r.status_code == 200
     assert "brezplačno" in r.text.lower()
@@ -970,9 +987,11 @@ def test_nakup_free_text_and_donation(client):
     assert DONATION_URL in r.text
 
 
-def test_nakup_priced_calculator(client):
+def test_nakup_priced_calculator(client, make_user):
     """Pri ceni > 0 stran izračuna sorazmerno ceno do 1. 9."""
     _set_selling(True, price=12)
+    admin = make_user(role="admin")
+    _login(client, admin.username)
     r = client.get("/nakup?start=2027-03-01")
     assert r.status_code == 200
     assert "Izračun cene" in r.text
