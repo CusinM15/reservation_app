@@ -334,6 +334,18 @@ def _purge_once() -> None:
         from app.subscriptions import purge_unsubscribed_schools
 
         izbrisane = purge_unsubscribed_schools(db)
+        # 1. septembra (enkrat na šolsko leto): izbriši rezervacije in
+        # ocenjevanja za nazaj; dnevi dejavnosti ostanejo.
+        from app.school_year import purge_previous_school_year
+
+        rez = purge_previous_school_year(db)
+        if not rez["skipped"] and (rez["reservations"] or rez["assessments"]):
+            log_audit(
+                db, None, "system", "auto_purge_school_year",
+                f"cutoff={rez['cutoff']}, reservations={rez['reservations']}, "
+                f"assessments={rez['assessments']}",
+                school_id=None,
+            )
         for s in izbrisane:
             log_audit(
                 db, None, "system", "auto_purge_school",

@@ -126,7 +126,8 @@ Prijave staršev na govorilne ure delujejo kot **izjema** od zgornje prepovedi v
 
 ### 5.2 Brisanje podatkov
 
-- **Nič se ne izbriše samodejno.** Nobenih podatkov aplikacija ne briše po svoje (npr. starih rezervacij, ocenjevanj ali uporabnikov) — vse ostane, dokler jih nekdo ne izbriše.
+- **Nič se ne izbriše samodejno** — razen spodnjih izjem.
+- **Izjema — 1. september (novo šolsko leto):** samodejno se izbrišejo **vse rezervacije in napovedana ocenjevanja za nazaj** (iz preteklega šolskega leta). **Dnevi dejavnosti ostanejo** — zato je za novo leto treba urediti zgolj datume, saj so dejavnosti iz leta v leto večinoma enake.
 - **Izjema — prijave na govorilne ure:** prijave staršev se **samodejno izbrišejo 24 ur po koncu govorilnih ur** (4.4). S tem se izpolni zahteva o omejeni hrambi in te prijave ne obremenjujejo baze dlje, kot je potrebno.
 - **Izjema — nova šola brez naročnine:** nov račun šole, ki v 28 dneh ne sklene naročnine, se samodejno izbriše (poglavje 3).
 - **Vse izbriše šolski admin.** Samo šolski admin lahko izbriše podatke svoje šole:
