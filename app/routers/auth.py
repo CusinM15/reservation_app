@@ -514,6 +514,8 @@ def change_password(
 # Vloge, ki jih sme podeliti šolski admin. main_admin lahko podeli samo
 # glavni admin (globalna vloga).
 _SCHOOL_ROLES = {RoleEnum.teacher.value, RoleEnum.vodstvo.value, RoleEnum.admin.value}
+# Omejitev števila članov VODSTVA na šolo (zahteva uporabnika 2026-11-05).
+MAX_VODSTVO = 4
 
 
 # ── Uvoz uporabnikov iz CSV: preslikave (tolerantno na SI/EN in velikost črk) ──
@@ -683,7 +685,20 @@ def create_user(
     ).first()
     if existing:
         return RedirectResponse(url="/auth/admin/users?error=Uporabnik že obstaja", status_code=303)
-    
+
+    # Omejitev vodstva (MAX_VODSTVO članov na šolo).
+    if role == RoleEnum.vodstvo.value:
+        vodstvo_count = db.query(User).filter(
+            User.school_id == target_school_id,
+            User.role == RoleEnum.vodstvo.value,
+        ).count()
+        if vodstvo_count >= MAX_VODSTVO:
+            return RedirectResponse(
+                url=f"/auth/admin/users?error=Vodstvo je omejeno na {MAX_VODSTVO} "
+                    f"člane (trenutno {vodstvo_count}).",
+                status_code=303,
+            )
+
     hashed = get_password_hash(password)
     # Admin račun dobi e-pošto iz nastavitve ADMIN_EMAIL te šole (ne iz obrazca):
     # e-pošta šolskega admina je vezana na nastavitve (glej update_user).
@@ -754,6 +769,9 @@ async def import_users_csv(request: Request, db: Session = Depends(get_db)):
     created, skipped, errors = 0, 0, []
     new_users: list[dict] = []
     seen: set[str] = set()
+    vodstvo_so_far = db.query(User).filter(
+        User.school_id == school_id, User.role == RoleEnum.vodstvo.value
+    ).count()
     for i, item in enumerate(rows, start=1):
         # E-pošta JE uporabniško ime — login in »Pozabljeno geslo« najdeta
         # uporabnika po e-pošti (find_user_for_login), zato jo shranimo na obe mesti.
@@ -783,6 +801,16 @@ async def import_users_csv(request: Request, db: Session = Depends(get_db)):
         if exists:
             skipped += 1
             continue
+
+        # Omejitev vodstva (MAX_VODSTVO članov na šolo).
+        if role == RoleEnum.vodstvo.value and vodstvo_so_far >= MAX_VODSTVO:
+            errors.append(
+                f"vrstica {i}: vodstvo je omejeno na {MAX_VODSTVO} člane — preskočeno"
+            )
+            skipped += 1
+            continue
+        if role == RoleEnum.vodstvo.value:
+            vodstvo_so_far += 1
 
         # Geslo ni več stolpec CSV — aplikacija ga vedno izmisli in ga nikjer
         # ne pokaže; uporabnik si ga nastavi sam prek »Pozabljeno geslo«.
