@@ -1,10 +1,10 @@
-from tests.conftest import login
+﻿from tests.conftest import login
 
 SHOWN = ["navodila-ucitelji", "navodila-vodstvo", "navodila-admin",
-         "obvestilo-ucitelji", "obvestilo-starsi"]
+         "obvestilo-ucitelji", "obvestilo-starsi", "pogoji-uporabe"]
 # razni notranji/dev/EN — na /navodila NE smejo biti (niti v editorju)
 HIDDEN = ["navodila-ucitelji-en", "navodila-vodstvo-en", "navodila-admin-en",
-          "pogoji-uporabe", "reklama-sola", "main", "main-en",
+          "reklama-sola", "main", "main-en",
           "aplikacija-rezervacije", "aplikacija-rezervacije-en", "govorilne-ure",
           "admin-devops-navodila", "admin-devops-navodila-en",
           "postavi-lokalni-app", "postavi-lokalni-app-en"]

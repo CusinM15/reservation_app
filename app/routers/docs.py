@@ -500,6 +500,7 @@ def _shown_docs() -> list[str]:
         "navodila-admin",
         "obvestilo-ucitelji",
         "obvestilo-starsi",
+        "pogoji-uporabe",  # javni dokument (povezava na /govorilne) — urejamo na /navodila
     }
     return [k for k in _editable_docs() if k in SHOWN]
 
