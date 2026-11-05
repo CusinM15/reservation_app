@@ -1,4 +1,4 @@
-# ─────────────────────────────────────────────────────────────────────────
+﻿# ─────────────────────────────────────────────────────────────────────────
 # app/routers/auth.py — Avtentikacija in upravljanje uporabnikov
 #
 # Namen: Prijava, odjava, ponastavitev gesla, sprememba gesla ter admin
@@ -225,7 +225,11 @@ def login(
     # Zahteva (2026-09-25): ko naročnina šole poteče, aplikacija za to šolo ni
     # več dostopna — prijavita se lahko le ŠOLSKI ADMIN (da kupi nov mesec) in
     # glavni admin. Ostali dobijo jasno sporočilo namesto prazne aplikacije.
-    if not is_main_admin(user) and role_value(user) != SCHOOL_ADMIN_ROLE:
+    # Pred plačilom (naročnina neaktivna) imata dostop šolski admin in vodstvo
+    # (brezplačen preizkus); učitelji se lahko prijavijo šele po plačilu.
+    if not is_main_admin(user) and role_value(user) not in (
+        SCHOOL_ADMIN_ROLE, "vodstvo",
+    ):
         if not is_active(db, user.school_id):
             until = get_valid_until(db, user.school_id)
             rok = f" (veljavnost je bila do {until.day}. {until.month}. {until.year})" if until else ""

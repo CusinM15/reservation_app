@@ -67,7 +67,11 @@ def subscription_blocks_access(request: Request) -> bool:
         if not uid:
             return False
         user = db.query(User).filter(User.id == uid).first()
-        if user is None or is_main_admin(user) or role_value(user) == SCHOOL_ADMIN_ROLE:
+        # Pred plačilom imata dostop šolski admin (da uredi naročnino) in vodstvo
+        # (da lahko šola aplikacijo brezplačno preizkusi); učitelji šele po plačilu.
+        if user is None or is_main_admin(user) or role_value(user) in (
+            SCHOOL_ADMIN_ROLE, RoleEnum.vodstvo.value,
+        ):
             return False
         if user.school_id is None:          # npr. glavni admin brez šole
             return False
