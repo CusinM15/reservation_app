@@ -1,4 +1,4 @@
-# ─────────────────────────────────────────────────────────────────────────
+﻿# ─────────────────────────────────────────────────────────────────────────
 # app/routers/docs.py — Bralnik dokumentacije (Markdown → HTML/PDF)
 #
 # Namen: Servira dokumentacijo v treh formatih:
@@ -350,12 +350,13 @@ def _govorilne_url(db: Session, request: Request) -> str:
 
 @router.get("/docs/{name}")
 async def get_doc(name: str, db: Session = Depends(get_db)):
-    """JSON preview (za klice iz appa)."""
-    try:
-        content, label = _read_docs(name, db)
-    except ValueError as e:
-        return JSONResponse({"error": str(e)}, status_code=404)
-    return {"content": content, "label": label, "name": name}
+    """Lepa HTML stran namesto belega JSON-a — preusmeri na /docs/html/{name}.
+
+    Nekoč je tu bil JSON preview; frontend danes uporablja /docs/html/ in
+    /api/navodila/docs/ (JSON), zato vsaka neposredna pot /docs/<dokument>
+    (npr. pogoji uporabe v nogi javne strani) prikaže oblikovano stran.
+    """
+    return RedirectResponse(url=f"/docs/html/{name}", status_code=302)
 
 
 @router.get("/docs/html/{name}", response_class=HTMLResponse)
