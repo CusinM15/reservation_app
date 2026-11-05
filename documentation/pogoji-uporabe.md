@@ -22,11 +22,13 @@
 ### 1.1 Obseg dela ponudnika (kaj dela in česa ne)
 
 **Ponudnik opravlja izključno:**
+
 - gostovanje aplikacije in baze podatkov na strežniku,
 - nameščanje posodobitev in vzdrževanje delovanja strežnika,
 - redne varnostne kopije celotne baze.
 
 **Ponudnik NE opravlja in ni dolžan opravljati:**
+
 - vnosa, urejanja ali preverjanja podatkov šole (rezervacij, ocenjevanj, dni dejavnosti,
   uporabnikov, nastavitev),
 - preverjanja pravilnosti, popolnosti ali zakonitosti vsebine, ki jo vnese šola,
@@ -43,6 +45,7 @@ vsebine in nastavitve odgovarja **šola**.
 ## 2. Kaj je aplikacija
 
 Aplikacija šoli omogoča:
+
 - **rezervacije prostorov in opreme** (računalnice, tablice in drugi prostori) za vse učitelje,
 - **dneve dejavnosti** (termini po razredih, prostori, urnik),
 - **ocenjevanja** (napovedani datumi z omejitvami, ponavljanja, izvoz),
@@ -259,6 +262,7 @@ sta vedno navedena na vrhu dokumenta.
 ## 10. Sprejeto in dogovorjeno
 
 Z uporabo aplikacije šola in njeni uporabniki potrjujejo, da:
+
 - so prebrali in sprejeli te pogoje,
 - v aplikacijo vnašajo **zgolj podatke osebja** in **nobene** podatke otrok/osebnih podatkov
   učencev — **razen podatkov, ki jih ob prijavi na govorilne ure vnese starš sam** (4.4),

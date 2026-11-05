@@ -11,3 +11,17 @@ def test_docs_html_je_lepa_stran(client):
     assert "text/html" in r.headers.get("content-type", "")
     assert "Pogoji uporabe" in r.text
     assert "<html" in r.text.lower()
+
+
+def test_pogoji_uporabe_seznami_so_seznami():
+    """Seznami v pogoji-uporabe se renderirajo kot <ul>, ne kot '- ' v odstavku."""
+    import re
+    import markdown
+    from app.routers.docs import _read_docs
+    content, _ = _read_docs("pogoji-uporabe", None)
+    html = markdown.markdown(content)
+    for m in re.finditer(r"<p>(.*?)</p>", html, re.S):
+        body = m.group(1)
+        assert not any(l.strip().startswith("-") for l in body.split("\n")), \
+            f"seznam ostal v odstavku: {body[:120]}"
+    assert html.count("<ul>") >= 10
