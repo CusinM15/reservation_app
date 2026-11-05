@@ -70,10 +70,10 @@ Aplikacija je **večšolska**: vsaka šola vidi samo svoje podatke.
   - podrobnosti (znesek, način plačila) so vidne na strani nakupa (`/nakup`) ob sklenitvi.
 
 - **Plačilo in e-račun.** Nakup poteka prek strani **`/nakup`**. Po plačilu ponudnik izstavi **e-račun (B2G)** in ga pošlje šoli; **plačilo potrdi ponudnik**, nato je naročnina aktivna.
-- **Brez veljavne naročnine** se lahko v aplikacijo prijavi **le šolski admin** (da uredi naročnino); učitelji in vodstvo do takrat nimajo dostopa.
+- **Brez veljavne naročnine** se lahko v aplikacijo prijavita **šolski admin** (da uredi naročnino) in **vodstvo** (brezplačni preizkus); **učitelji** do takrat nimajo dostopa.
 - **Nova šola, ki v 28 dneh ne sklene naročnine**, se z vsemi podatki samodejno izbriše (avtomatski postopek za preprečevanje zlorab). Za podaljšanje ali vprašanja se šola pred iztekom obrne na ponudnika.
 
-> 💡 Brez veljavne naročnine se lahko v aplikacijo prijavi **le šolski admin** (da uredi naročnino); učitelji in vodstvo do takrat nimajo dostopa.
+> 💡 Brez veljavne naročnine se lahko v aplikacijo prijavita **šolski admin** (da uredi naročnino) in **vodstvo** (brezplačni preizkus); **učitelji** do takrat nimajo dostopa.
 
 ---
 
