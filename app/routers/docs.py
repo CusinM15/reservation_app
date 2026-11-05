@@ -54,6 +54,7 @@ ALLOWED = {
     "navodila-admin": ["navodila-admin.md"],
     "navodila-admin-en": ["en/navodila-admin.md"],
     "pogoji-uporabe": ["pogoji-uporabe.md"],
+    "dpa": ["dpa.md"],
     "obvestilo-ucitelji": ["obvestilo-ucitelji.md"],
     "obvestilo-starsi": ["obvestilo-starsi.md"],
     "reklama-sola": ["reklama-sola.md"],
@@ -76,6 +77,7 @@ DOC_LABELS = {
     "navodila-admin": "Navodila za administratorja",
     "navodila-admin-en": "Administrator Guide",
     "pogoji-uporabe": "Pogoji uporabe",
+    "dpa": "Pogodba o obdelavi osebnih podatkov (DPA)",
     "obvestilo-ucitelji": "Obvestilo za učitelje — govorilne ure",
     "obvestilo-starsi": "Obvestilo za starše — najava na govorilne ure",
     "reklama-sola": "Predstavitev aplikacije (reklama)",
@@ -501,6 +503,7 @@ def _shown_docs() -> list[str]:
         "obvestilo-ucitelji",
         "obvestilo-starsi",
         "pogoji-uporabe",  # javni dokument (povezava na /govorilne) — urejamo na /navodila
+        "dpa",              # DPA — viden adminu/vodstvu, urejamo na /navodila
     }
     return [k for k in _editable_docs() if k in SHOWN]
 

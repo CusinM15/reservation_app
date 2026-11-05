@@ -98,8 +98,8 @@ Aplikacija je **večšolska**: vsaka šola vidi samo svoje podatke.
 
 ### 4.3 Pogodba o obdelavi osebnih podatkov (DPA)
 
-- Ponudnik šoli na zahtevo predloži **pogodbo o obdelavi osebnih podatkov**, ki podrobneje uredi zgoraj našteto (predmet in trajanje obdelave, vrste podatkov, obveznosti in pomoč šoli, obveščanje o vdoru, ukrepe ob prenehanju). Šola jo podpiše (elektronsko zadošča).
-- Za pridobitev DPA se šola obrne na ponudnika.
+- **Pogodba o obdelavi osebnih podatkov (DPA)** je na voljo v aplikaciji kot dokument (viden administratorju in vodstvu) in na naslovu `/docs/html/dpa`. Podrobneje ureja zgoraj našteto (predmet in trajanje obdelave, vrste podatkov, obveznosti in pomoč šoli, obveščanje o vdoru, ukrepe ob prenehanju).
+- Šola jo natisne in podpiše (elektronsko zadošča) ter podpisano pošlje ponudniku; za vprašanja se obrne na reservation.app@proton.me.
 
 ### 4.4 Prijave staršev na govorilne ure
 
