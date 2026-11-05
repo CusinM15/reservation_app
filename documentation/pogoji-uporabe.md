@@ -242,4 +242,4 @@ Z uporabo aplikacije šola in njeni uporabniki potrjujejo, da:
 
 > **Avtor aplikacije:** Matej Čušin — skrbi **zgolj za delovanje strežnika** (poglavje 1.1); za vsebino, uporabo in **varnostne kopije podatkov** odgovarja šola (poglavji 5.1 in 7.1).
 >
-> Aplikacija je odprtokodna; če ti je v pomoč, lahko projekt podpreš z donacijo (povezava je v README repozitorija).
+> Aplikacija v polni obliki **ni odprtokodna**. Odprtokodna je zgolj starejša, poenostavljena različica z **manj funkcijami**.
