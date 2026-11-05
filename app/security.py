@@ -1,4 +1,4 @@
-# ─────────────────────────────────────────────────────────────────────────
+﻿# ─────────────────────────────────────────────────────────────────────────
 # app/security.py — Podpisovanje in preverjanje session cookieja
 #
 # Namen: user_id cookie je podpisan z itsdangerous (HMAC + timestamp), da
@@ -40,6 +40,38 @@ def inactivity_timeout_ms(user, config=None) -> int:
 def sign_user_id(user_id: int) -> str:
     """Podpiši user_id v varen cookie string."""
     return _serializer.dumps(str(user_id))
+
+
+def session_inactivity_check(uid: int, raw_cookie: str | None, timeout_secs: float, now: float | None = None) -> str:
+    """Strežniški timeout neaktivnosti (velja na VSAKI prijavljeni strani).
+
+    user_id cookie hisdangerous podpis vsebuje ČAS izdaje. Če je posodobljen
+    ob aktivnosti (rolling), je to tudi čas zadnje aktivnosti.
+
+    Vrne: 'ok' (svež), 'refresh' (obnovi cookie — aktivnost), 'expired'.
+    """
+    if not raw_cookie or timeout_secs <= 0:
+        return "ok"  # brez podatka / izklopljeno → ne blokiramo
+    import time as _t
+    now = now if now is not None else _t.time()
+    try:
+        payload, ts = _serializer.loads(
+            raw_cookie, max_age=timeout_secs + 5, return_timestamp=True)
+    except (BadSignature, SignatureExpired, ValueError, TypeError):
+        return "expired"
+    if str(payload) != str(uid):
+        return "expired"
+    # itsdangerous vrne timestamp kot aware datetime (novejše) ali float — beremo oboje.
+    if isinstance(ts, (int, float)):
+        _ts = float(ts)
+    else:
+        _ts = ts.timestamp()
+    age = now - _ts
+    if age > timeout_secs + 5:
+        return "expired"
+    if age > 60:
+        return "refresh"  # aktivnost: pre-podpiši, da se okno pomakne
+    return "ok"
 
 
 def get_current_user_id(request) -> int | None:

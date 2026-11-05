@@ -36,7 +36,9 @@ from sqlalchemy.orm import Session
 
 from app.database import get_db
 from app.models import GovorilnaPrijava
+from app.security import inactivity_timeout_ms
 from app.tenancy import (
+    get_school_config,
     _default_school_id,
     get_request_user,
     is_main_admin,
@@ -770,7 +772,9 @@ def govorilne_prijave_stran(request: Request, db: Session = Depends(get_db)):
     return templates.TemplateResponse(
         request, "govorilne_prijave.html",
         {"prijave": prijave, "role": role, "is_teacher": role == "teacher",
-         "is_admin": _lahko_ureja_vse(user)},
+         "is_admin": _lahko_ureja_vse(user),
+         "inactivity_timeout_ms": inactivity_timeout_ms(
+             user, get_school_config(db, school_id))},
     )
 
 
@@ -942,7 +946,9 @@ def govorilne_ure_stran(request: Request, db: Session = Depends(get_db)):
          "popoldan_osnovni_min": cfg.get("popoldan_osnovni_min") or POPOLDAN_OSNOVNI_MIN,
          "popoldan_max_ur": cfg.get("popoldan_max_ur") or POPOLDAN_MAX_UR,
          "urniki": cfg.get("urniki") or URNIKI,
-         "zvonec_url": cfg.get("zvonec_url") or ZBONJEC_URL},
+         "zvonec_url": cfg.get("zvonec_url") or ZBONJEC_URL,
+         "inactivity_timeout_ms": inactivity_timeout_ms(
+             user, get_school_config(db, school_id))},
     )
 
 

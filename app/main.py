@@ -41,7 +41,7 @@ from app.tenancy import (
     role_value,
     vidni_prostori,
 )
-from app.security import inactivity_timeout_ms
+from app.security import inactivity_timeout_ms, session_inactivity_check, sign_user_id
 from app.i18n import set_request_language
 from app.templating import make_templates
 
@@ -168,6 +168,27 @@ app.add_middleware(GZipMiddleware, minimum_size=1000)
 #
 # Pomembno: To ni varnostna meja — to je UX meja. Resnična avtorizacija
 # se dogaja v vsakem routerju posebej (preverjanje vlog).
+def _session_inactivity_state(request, uid: int) -> str:
+    """Strežniški timeout neaktivnosti za prijavljenega uporabnika.
+
+    Velja na VSAKI prijavljeni strani (tudi /govorilne*). Error-proof: ob
+    napaki vrne 'ok' — timeout je zaščita, ne sme nikoli blokirati po pomoti.
+    """
+    from app.database import SessionLocal as _S
+    _db = _S()
+    try:
+        _u = _db.query(User).filter(User.id == uid).first()
+        if _u is None:
+            return "expired"  # račun ne obstaja več → odjava
+        _cfg = get_school_config(_db, _u.school_id) if _u.school_id else None
+        _to_secs = inactivity_timeout_ms(_u, _cfg) / 1000.0
+        return session_inactivity_check(uid, request.cookies.get("user_id"), _to_secs)
+    except Exception:
+        return "ok"
+    finally:
+        _db.close()
+
+
 class AuthMiddleware(BaseHTTPMiddleware):
     async def dispatch(self, request: Request, call_next):
         path = request.url.path
@@ -201,6 +222,27 @@ class AuthMiddleware(BaseHTTPMiddleware):
             is_public = True
         if not is_public and not get_current_user_id(request):
             return RedirectResponse(url="/auth/login")
+
+        # ── Timeout neaktivnosti (strežniško) ────────────────────────
+        # Velja na VSAKI prijavljeni strani (tudi /govorilne* ali odprt zavihek
+        # čez noč) — JS-timer v predlogi je le UX, tu je varnostna meja.
+        # Cookie user_id nosi čas izdaje; ob aktivnosti ga posodobimo (rolling).
+        _uid = get_current_user_id(request)
+        if _uid and not is_public:
+            _st = _session_inactivity_state(request, _uid)
+            if _st == "expired":
+                if path.startswith("/api/"):
+                    return JSONResponse(
+                        {"detail": "Seja je potekla zaradi neaktivnosti. Prijavite se znova."},
+                        status_code=401,
+                    )
+                resp = RedirectResponse(url="/auth/login", status_code=303)
+                resp.delete_cookie("user_id", httponly=True, samesite="lax")
+                return resp
+            if _st == "refresh":
+                resp = await call_next(request)
+                resp.set_cookie("user_id", sign_user_id(_uid), httponly=True, samesite="lax")
+                return resp
 
         # ── Naročnina ──────────────────────────────────────────────────
         # Če šola nima veljavne naročnine, aplikacija zanjo ni več dostopna:
