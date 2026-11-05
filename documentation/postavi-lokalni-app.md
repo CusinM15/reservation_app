@@ -500,5 +500,5 @@ Spremeniš besedilo (v vimu pritisneš `Esc` + `i`, da začneš tipkati, nato pa
 ---
 
 
-> **Avtor:** Matej Čušin  
+> **Avtor:** Reservation App (reservation.app@proton.me)  
 

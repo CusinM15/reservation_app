@@ -240,8 +240,6 @@ Z uporabo aplikacije šola in njeni uporabniki potrjujejo, da:
 
 ---
 
-> **Avtor aplikacije:** Matej Čušin — skrbi **zgolj za delovanje strežnika** (poglavje 1.1); za vsebino, uporabo in **varnostne kopije podatkov** odgovarja šola (poglavji 5.1 in 7.1).
->
-> **Kontakt (e-pošta):** reservation.app@proton.me
+> **Avtor aplikacije:** Reservation App (reservation.app@proton.me) — skrbi **zgolj za delovanje strežnika** (poglavje 1.1); za vsebino, uporabo in **varnostne kopije podatkov** odgovarja šola (poglavji 5.1 in 7.1).
 >
 > Aplikacija v polni obliki **ni odprtokodna**. Odprtokodna je zgolj starejša, poenostavljena različica z **manj funkcijami**.

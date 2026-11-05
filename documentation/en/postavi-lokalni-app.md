@@ -498,4 +498,4 @@ You change the text (in vim presss `Esc`+ `i`to start tiping and then `Esc`+ `ZZ
 
 ---
 
-> **Author:** Matej Čušin  
+> **Author:** Reservation App (reservation.app@proton.me)  

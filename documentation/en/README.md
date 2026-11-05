@@ -64,4 +64,4 @@ If this app helps you, you can buy me a coffee via PayPal:
 
 ---
 
-**Author:** Matej Čušin  
+**Author:** Reservation App (reservation.app@proton.me)  

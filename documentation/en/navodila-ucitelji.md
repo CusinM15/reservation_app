@@ -247,4 +247,4 @@ Right side of the app
 
 > 🫶 **I hope this app helps make your work easier. All the best!**
 >
-> **Author:** Matej Čušin
+> **Author:** Reservation App (reservation.app@proton.me)

@@ -268,4 +268,4 @@ teachers run the lessons.
 > 🛠️ **Note:** There are no real passwords or email addresses in this guide —
 > replace all examples with your own. Passwords are never displayed in the app.
 >
-> **Author:** Matej Čušin
+> **Author:** Reservation App (reservation.app@proton.me)

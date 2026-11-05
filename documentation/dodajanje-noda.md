@@ -197,5 +197,5 @@ hermes gateway status
 
 ---
 
-> **Avtor:** Matej Čušin  
+> **Avtor:** Reservation App (reservation.app@proton.me)  
 > **Šola:** OŠ Toneta Čufarja, Jesenice

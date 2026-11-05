@@ -561,4 +561,4 @@ git pull                                    # Potegni zadnjo kodo
 
 ---
 
-> **Avtor:** Matej Čušin  
+> **Avtor:** Reservation App (reservation.app@proton.me)  

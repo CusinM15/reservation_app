@@ -172,4 +172,4 @@ Zato so tehnologije izbrane premišljeno in dokumentacija napisana v čim bolj r
 
 ---
 
-> **Avtor:** Matej Čušin  
+> **Avtor:** Reservation App (reservation.app@proton.me)  

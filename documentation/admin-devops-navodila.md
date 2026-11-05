@@ -407,4 +407,4 @@ journalctl -u k3s --tail=50
 ---
 
 
-> **Avtor:** Matej Čušin  
+> **Avtor:** Reservation App (reservation.app@proton.me)  

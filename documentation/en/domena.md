@@ -157,4 +157,4 @@ kubectl -n sola-app rollout restart deployment/sola-app
 
 ---
 
-> **Author:** Matej Čušin  
+> **Author:** Reservation App (reservation.app@proton.me)  

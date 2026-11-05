@@ -565,4 +565,4 @@ git pull                                    # Pull the latest code
 
 ---
 
-> **Author:** Matej Čušin  
+> **Author:** Reservation App (reservation.app@proton.me)  

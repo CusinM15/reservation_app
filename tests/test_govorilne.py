@@ -51,7 +51,7 @@ def test_govorilne_stran_vidi_zgolj_skolski_admin_in_vsebuje_ucitelje(make_user)
         assert "Prijava na govorilne ure" in r.text
         assert "izberite učitelja" in r.text
         # Izbrani učitelji iz podatkov so na voljo v izbirniku.
-        assert "Matej Čušin" in r.text
+        assert "Marko Novak" in r.text
         assert "Arijana Đuretić" in r.text
 
 def test_govorilne_anon_vidi_javno_stran_za_starse():
@@ -61,10 +61,10 @@ def test_govorilne_anon_vidi_javno_stran_za_starse():
     with TestClient(app) as c:
         r = c.get("/govorilne", follow_redirects=False)
         assert r.status_code == 200, r.status_code
-        r2 = c.get("/govorilne/api/termini", params={"ucitelj": "Matej Čušin"},
+        r2 = c.get("/govorilne/api/termini", params={"ucitelj": "Marko Novak"},
                    follow_redirects=False)
         assert r2.status_code == 200, (r2.status_code, r2.text[:150])
-        assert r2.json()["ucitelj"] == "Matej Čušin"
+        assert r2.json()["ucitelj"] == "Marko Novak"
         # Pregled prijav in urejanje urnika še zahtevata prijavo.
         for path in ("/govorilne/prijave", "/govorilne/ure"):
             r3 = c.get(path, follow_redirects=False)
@@ -73,17 +73,17 @@ def test_govorilne_anon_vidi_javno_stran_za_starse():
 
 def test_govorilne_anon_prijavi_starsa():
     """Neprijavljen starš se lahko prijavi na prost termin (javna prijava)."""
-    t = _termin("Matej Čušin")
+    t = _termin("Marko Novak")
     with TestClient(app) as c:
         r = c.post("/govorilne/api/prijava", json={
-            "ucitelj": "Matej Čušin", "datum": t["datum"], "ura_od": t["ura_od"],
+            "ucitelj": "Marko Novak", "datum": t["datum"], "ura_od": t["ura_od"],
             "ura_do": t["ura_do"], "ime_starsa": "Tina Starš",
             "email": "tina.starš@example.si", "otrok": "Luka Starš",
         })
         assert r.status_code == 200, r.text[:200]
         # Dvakrat na isti termin → 409 (zaseden)
         r2 = c.post("/govorilne/api/prijava", json={
-            "ucitelj": "Matej Čušin", "datum": t["datum"], "ura_od": t["ura_od"],
+            "ucitelj": "Marko Novak", "datum": t["datum"], "ura_od": t["ura_od"],
             "ura_do": t["ura_do"], "ime_starsa": "Druga", "email": "d@x.si",
             "otrok": "A", })
         assert r2.status_code == 409, (r2.status_code, r2.text[:150])
@@ -99,9 +99,9 @@ def test_govorilne_alias_sluga_vidi_zgolj_skolski_admin(make_user):
         assert r.status_code == 200
         assert "Prijava na govorilne ure" in r.text
         # API prek aliasa — prav tako le za admina.
-        r = c.get("/govorilne_ostcj/api/termini", params={"ucitelj": "Matej Čušin"})
+        r = c.get("/govorilne_ostcj/api/termini", params={"ucitelj": "Marko Novak"})
         assert r.status_code == 200
-        assert r.json()["ucitelj"] == "Matej Čušin"
+        assert r.json()["ucitelj"] == "Marko Novak"
         # Pregled prijav prek aliasa — prijavljeni šolski admin ga vidi.
         r = c.get("/govorilne_ostcj/prijave", follow_redirects=False)
         assert r.status_code == 200
@@ -110,10 +110,10 @@ def test_govorilne_alias_sluga_vidi_zgolj_skolski_admin(make_user):
 def test_termini_api_vraca_15min_termine(make_user):
     with TestClient(app) as c:
         _admin_login(c, make_user)
-        r = c.get("/govorilne/api/termini", params={"ucitelj": "Matej Čušin"})
+        r = c.get("/govorilne/api/termini", params={"ucitelj": "Marko Novak"})
         assert r.status_code == 200
         data = r.json()
-        assert data["ucitelj"] == "Matej Čušin"
+        assert data["ucitelj"] == "Marko Novak"
         assert data["termini"]
         t = data["termini"][0]
         assert t["datum"] and t["ura_od"] and t["ura_do"]
@@ -128,11 +128,11 @@ def test_termini_api_vraca_15min_termine(make_user):
 
 def test_termini_api_zasedeni_so_oznaceni(make_user):
     """Po prijavi se termin v API-ju prikaže kot zaseden (flag true)."""
-    t = _termin("Matej Čušin")
+    t = _termin("Marko Novak")
     with TestClient(app) as c:
         _admin_login(c, make_user)
         payload = {
-            "ucitelj": "Matej Čušin",
+            "ucitelj": "Marko Novak",
             "datum": t["datum"],
             "ura_od": t["ura_od"],
             "ura_do": t["ura_do"],
@@ -144,7 +144,7 @@ def test_termini_api_zasedeni_so_oznaceni(make_user):
         assert r.status_code == 200, r.text
 
         # Prav zaseden termin je v API-ju označen kot zaseden.
-        r2 = c.get("/govorilne/api/termini", params={"ucitelj": "Matej Čušin"})
+        r2 = c.get("/govorilne/api/termini", params={"ucitelj": "Marko Novak"})
         assert r2.status_code == 200
         oznake = {(tt["datum"], tt["ura_od"]): tt["zaseden"]
                   for tt in r2.json()["termini"]}
@@ -159,11 +159,11 @@ def test_termini_api_neznan_ucitelj_404(make_user):
 
 
 def test_prijava_uspe_termin_postane_zaseden(make_user):
-    t = _termin("Matej Čušin")
+    t = _termin("Marko Novak")
     with TestClient(app) as c:
         _admin_login(c, make_user)
         payload = {
-            "ucitelj": "Matej Čušin",
+            "ucitelj": "Marko Novak",
             "datum": t["datum"],
             "ura_od": t["ura_od"],
             "ura_do": t["ura_do"],
@@ -184,7 +184,7 @@ def test_prijava_neveljaven_termin_400(make_user):
     with TestClient(app) as c:
         _admin_login(c, make_user)
         r = c.post("/govorilne/api/prijava", json={
-            "ucitelj": "Matej Čušin",
+            "ucitelj": "Marko Novak",
             "datum": "2026-11-19",
             "ura_od": "09:00",          # ni veljaven termin (zunaj okna)
             "ura_do": "09:15",
@@ -199,7 +199,7 @@ def test_prijava_manjkajoci_podatki_400(make_user):
     with TestClient(app) as c:
         _admin_login(c, make_user)
         r = c.post("/govorilne/api/prijava", json={
-            "ucitelj": "Matej Čušin",
+            "ucitelj": "Marko Novak",
             "datum": "2026-11-19",
             "ura_od": "17:30",
             "ura_do": "17:45",
@@ -218,9 +218,9 @@ def test_prijave_pregled_auth_in_vloge(make_user):
         # Po startupu obstaja privzeta šola → default_school_id deluje.
         db = SessionLocal()
         try:
-            t = _termin("Matej Čušin")
+            t = _termin("Marko Novak")
             p = GovorilnaPrijava(
-                school_id=_default_school_id(db), ucitelj="Matej Čušin",
+                school_id=_default_school_id(db), ucitelj="Marko Novak",
                 datum=t["datum"][:10], ura_od=t["ura_od"], ura_do=t["ura_do"],
                 ime_starsa="Janez Novak", email="janez.novak@example.si",
                 otrok="Miha Novak",
@@ -245,9 +245,9 @@ def test_prijave_pregled_auth_in_vloge(make_user):
         # Šolski admin vidi vse prijave šole.
         db = SessionLocal()
         try:
-            t = _termin("Matej Čušin")
+            t = _termin("Marko Novak")
             p = GovorilnaPrijava(
-                school_id=_default_school_id(db), ucitelj="Matej Čušin",
+                school_id=_default_school_id(db), ucitelj="Marko Novak",
                 datum=t["datum"][:10], ura_od=t["ura_od"], ura_do=t["ura_do"],
                 ime_starsa="Janez Novak", email="janez.novak@example.si",
                 otrok="Miha Novak",
@@ -261,7 +261,7 @@ def test_prijave_pregled_auth_in_vloge(make_user):
         r = c.get("/govorilne/prijave")
         assert r.status_code == 200
         assert "Janez Novak" in r.text
-        assert "Matej Čušin" in r.text
+        assert "Marko Novak" in r.text
 
 
 def _ucitelj_uporabnik(ime: str, priimek: str, ima_govorilne: bool = True):
@@ -311,11 +311,11 @@ def _gos_osnovni_ucitelji():
     """Od 30.10.2026 je članstvo na govorilnih vezano na uporabnike (kljukica
     »ima govorilne ure«), ne več na trdi UCITELJI seznam. Ta fixture ob bootstrapu
     v privzeto šolo doda dva osnovna učitelja z odkljukano govorilno kljukico, da so
-    testi, ki pričakujejo Mateja Čušina / Đuretićevo na /govorilne, deterministični."""
+    testi, ki pričakujejo Marka Novaka / Đuretićevo na /govorilne, deterministični."""
     # Bootstrap privzete šole (startup) — šele nato so uporabniki v pravi šoli.
     with TestClient(app) as c:
         pass
-    _ucitelj_uporabnik("Matej", "Čušin")
+    _ucitelj_uporabnik("Marko", "Novak")
     _ucitelj_uporabnik("Arijana", "Đuretić")
     _ucitelj_uporabnik("Monika", "Pogačar")
     _ucitelj_uporabnik("Neja", "Grohar")
@@ -449,14 +449,14 @@ def test_govorilne_ure_mainadmin_zanikan_vedno(make_user):
 
 
 def test_govorilne_ure_admin_vidi_vse_ucitelje(make_user):
-    """Šolski admin vidi urnike vseh učiteljev (npr. testni Matej Čušin)
+    """Šolski admin vidi urnike vseh učiteljev (npr. testni Marko Novak)
     in ima urejanje učiteljev (dodaj/odstrani) + nastavitve popoldanskih ur."""
     admin = make_user(role="admin")
     with TestClient(app) as c:
         login(c, admin.username)
         r = c.get("/govorilne/ure")
         assert r.status_code == 200
-        assert "Čušin Matej" in r.text
+        assert "Novak Marko" in r.text
         # Članstvo od 30.10.2026: dodaj/odstrani se ne dela tu, ampak v Uporabniki.
         assert "Kako dodati / odstraniti učitelja?" in r.text
         assert "Dodaj učitelja" not in r.text
@@ -545,7 +545,7 @@ def test_termini_okno_24ur_do_naslednjih_popoldanskih(make_user):
     # API (zaenkrat le za šolskega admina) vrača samo termine znotraj okna.
     with TestClient(app) as c:
         _admin_login(c, make_user)
-        r = c.get("/govorilne/api/termini", params={"ucitelj": "Matej Čušin"})
+        r = c.get("/govorilne/api/termini", params={"ucitelj": "Marko Novak"})
         assert r.status_code == 200
         datumi = {tt["datum"] for tt in r.json()["termini"]}
         assert all(d <= naslednji for d in datumi)
@@ -561,7 +561,7 @@ def test_prijava_termina_po_naslednjih_govorilnih_400(make_user):
     with TestClient(app) as c:
         _admin_login(c, make_user)
         r = c.post("/govorilne/api/prijava", json={
-            "ucitelj": "Matej Čušin",
+            "ucitelj": "Marko Novak",
             "datum": zadnji,
             "ura_od": "17:30",
             "ura_do": "17:45",
@@ -587,7 +587,7 @@ def test_prijave_se_izbrisejo_24ur_po_terminu(make_user):
         try:
             # Pretekla prijava: termin pred 2 dnevoma (konec + 24 h je že mimo).
             p = GovorilnaPrijava(
-                school_id=_default_school_id(db), ucitelj="Matej Čušin",
+                school_id=_default_school_id(db), ucitelj="Marko Novak",
                 datum=date.today() - timedelta(days=2),
                 ura_od="17:30", ura_do="17:45",
                 ime_starsa="Stari Starš", email="stari@example.si", otrok="Otrok",
@@ -598,7 +598,7 @@ def test_prijave_se_izbrisejo_24ur_po_terminu(make_user):
 
             # Sveža prijava: termin v prihodnosti → ni pretekla.
             p2 = GovorilnaPrijava(
-                school_id=_default_school_id(db), ucitelj="Matej Čušin",
+                school_id=_default_school_id(db), ucitelj="Marko Novak",
                 datum=date.today() + timedelta(days=1),
                 ura_od="17:30", ura_do="17:45",
                 ime_starsa="Sveži Starš", email="svezi@example.si", otrok="Otrok",
@@ -634,7 +634,7 @@ def test_ucitelji_sortirani_po_priimkih_in_razredniki_oznaceni(make_user):
     # Priimek-ime: zadnja beseda naprej.
     assert _ime_priimek("Arijana Đuretić") == "Đuretić Arijana"
     assert _ime_priimek("Barbara Potočan Iskra") == "Iskra Barbara Potočan"
-    assert _ime_priimek("Matej Čušin") == "Čušin Matej"
+    assert _ime_priimek("Marko Novak") == "Novak Marko"
 
     # Razrednik (ima ločeno polje razred) → predmet + 'razrednik <razred>'.
     assert _opis_ucitelja({"razred": "1. a", "predmet": "razredni pouk"}) == "razredni pouk — razrednik 1. a"
@@ -1011,13 +1011,13 @@ def _naredi_prijavo():
     from app.tenancy import _default_school_id
     db = SessionLocal()
     try:
-        u = _ucitelj_by_ime("Matej Čušin")
+        u = _ucitelj_by_ime("Marko Novak")
         assert u is not None
         terms = _prosti_termini(db, _default_school_id(db), u)
         assert terms, "učitelj nima prostih terminov"
         t = terms[0]
         p = GovorilnaPrijava(
-            school_id=_default_school_id(db), ucitelj="Matej Čušin",
+            school_id=_default_school_id(db), ucitelj="Marko Novak",
             datum=t["datum"][:10], ura_od=t["ura_od"], ura_do=t["ura_do"],
             ime_starsa="Janez Novak", email="janez.novak@example.si",
             otrok="Miha Novak", opis="Vprašanje o snovi",
@@ -1042,7 +1042,7 @@ def test_prijava_brisanje_neprijavljen_401():
 def test_prijava_brisanje_ucitelj_tuja_403():
     """Učitelj NE more izbrisati rezervacije drugega učitelja (ne svoje)."""
     with TestClient(app) as c:
-        pid = _naredi_prijavo()  # prijava za "Matej Čušin"
+        pid = _naredi_prijavo()  # prijava za "Marko Novak"
         teacher = _ucitelj_uporabnik("Drugi", "Učenik")
         login(c, teacher.username)
         r = c.post("/govorilne/api/prijava/odstrani", json={"id": pid})
@@ -1058,8 +1058,8 @@ def test_prijava_brisanje_ucitelj_tuja_403():
 def test_prijava_brisanje_ucitelj_svojo_403(make_user):
     """Učitelj zaenkrat NE more brisati rezervacij (samo šolski admin) — tudi lastne."""
     with TestClient(app) as c:
-        pid = _naredi_prijavo()  # prijava za "Matej Čušin"
-        teacher = _ucitelj_uporabnik("Matej", "Čušin")
+        pid = _naredi_prijavo()  # prijava za "Marko Novak"
+        teacher = _ucitelj_uporabnik("Marko", "Novak")
         login(c, teacher.username)
         r = c.post("/govorilne/api/prijava/odstrani", json={"id": pid})
         assert r.status_code == 403
@@ -1134,9 +1134,9 @@ def test_ure_ucitelj_samo_vidi_admin_briše_in_manj_vec_fix(make_user):
     oznake notranjega, še vedno zloženega edit-bloka."""
     _set_govorilne_vloge("admin,teacher")
     with TestClient(app) as c:
-        _naredi_prijavo()  # rezervacija za »Matej Čušin«
+        _naredi_prijavo()  # rezervacija za »Marko Novak«
         # Učitelj → samo vidi, gumba ni.
-        teacher = _ucitelj_uporabnik("Matej", "Čušin")
+        teacher = _ucitelj_uporabnik("Marko", "Novak")
         login(c, teacher.username)
         r = c.get("/govorilne/ure")
         assert r.status_code == 200
@@ -1341,11 +1341,11 @@ def test_govorilne_onemogocene_poti_ugasnjene(make_user):
         r = c.get("/govorilne")
         assert r.status_code == 404
         # Termini API — ugasnjen (404).
-        r = c.get("/govorilne/api/termini", params={"ucitelj": "Matej Čušin"})
+        r = c.get("/govorilne/api/termini", params={"ucitelj": "Marko Novak"})
         assert r.status_code == 404
         # Prijava — zavrnjena (400).
         r = c.post("/govorilne/api/prijava", json={
-            "ucitelj": "Matej Čušin",
+            "ucitelj": "Marko Novak",
             "datum": "2030-01-10", "ura_od": "17:30", "ura_do": "17:45",
             "ime_starsa": "Janez Novak", "email": "janez@example.si",
             "otrok": "Miha Novak",
@@ -1475,7 +1475,7 @@ def test_govorilne_vlogarole_teacher_vidi_samo_svoj_zapis(make_user):
     a sme urejati LE svoj zapis; urejanje drugega učitelja → 403."""
     with TestClient(app) as c:
         _set_govorilne_vloge("admin,teacher")
-        u = _ucitelj_uporabnik("Matej", "Čušin")
+        u = _ucitelj_uporabnik("Marko", "Novak")
         login(c, u.username)
         r = c.get("/govorilne/ure")
         assert r.status_code == 200, r.status_code

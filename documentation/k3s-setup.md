@@ -376,4 +376,4 @@ open-iscsi in nfs-common je treba namestiti na **vsakem** nodu posebej. Če poza
 
 ---
 
-> **Avtor:** Matej Čušin  
+> **Avtor:** Reservation App (reservation.app@proton.me)  

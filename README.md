@@ -64,4 +64,4 @@ Spisal sem kar dolga in **zelo podrobna navodila** — od namestitve na gol Linu
 
 ---
 
-**Avtor:** Matej Čušin  
+**Avtor:** Reservation App (reservation.app@proton.me)  

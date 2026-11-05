@@ -336,5 +336,5 @@ naredil in kdaj. Uporabno za sledljivost in odpravljanje napak.
 > 🛠️ **Opomba:** Pravih gesel in e-naslovov v teh navodilih ni — vse primere
 > zamenjajte s svojimi. Gesla se v aplikaciji nikjer ne izpisujejo.
 >
-> **Avtor:** Matej Čušin
+> **Avtor:** Reservation App (reservation.app@proton.me)
 

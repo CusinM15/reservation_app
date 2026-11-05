@@ -278,4 +278,4 @@ cloudu in dodaten mesečni strošek.
 
 ---
 
-> **Avtor:** Matej Čušin
+> **Avtor:** Reservation App (reservation.app@proton.me)

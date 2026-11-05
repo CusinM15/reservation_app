@@ -28,7 +28,7 @@
   Uporabnik je prosil, naj si datum izmislimo za testiranje.
 - **Popoldanski termini so uradni**: četrtki 17:30–18:30 → 4×15 min za VSE
   učitelje (tudi »po dogovoru«).
-- Učitelja **Matej Čušin** smo dodali na konec seznama (testni učitelj).
+- Učitelja **Marko Novak** smo dodali na konec seznama (testni učitelj).
 
 ## Kako spremeniti podatke (ko pridejo pravi datumi)
 - Dopoldanski datum: spremeni `GOVORILNE_DOPOLDAN_TEDEN` v

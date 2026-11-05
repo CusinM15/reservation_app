@@ -171,4 +171,4 @@ of teaching.
 
 ---
 
-> **Author:** Matej Čušin
+> **Author:** Reservation App (reservation.app@proton.me)

@@ -360,5 +360,5 @@ kubectl -n longhorn-system get volumes.longhorn.io -o wide
 
 ---
 
-> **Avtor:** Matej Čušin
+> **Avtor:** Reservation App (reservation.app@proton.me)
 > **Šola:** OŠ Toneta Čufarja, Jesenice

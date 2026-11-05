@@ -502,5 +502,5 @@ kubectl exec -n sola -it sola-db-1 -- psql -U postgres -d sola -f /tmp/sola_back
 
 ---
 
-> **Avtor:** Matej Čušin  
+> **Avtor:** Reservation App (reservation.app@proton.me)  
 

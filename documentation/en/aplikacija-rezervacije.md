@@ -224,4 +224,4 @@ idea of where to look.
 
 ---
 
-> **Author:** Matej Čušin  
+> **Author:** Reservation App (reservation.app@proton.me)  

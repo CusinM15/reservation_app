@@ -380,5 +380,5 @@ If you write the wrong hostname in `DATABASE_URL` (e.g. `sola-db` instead of `so
 
 ---
 
-> **Author:** Matej Čušin
+> **Author:** Reservation App (reservation.app@proton.me)
 

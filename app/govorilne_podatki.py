@@ -1,4 +1,4 @@
-# ─────────────────────────────────────────────────────────────────────────
+﻿# ─────────────────────────────────────────────────────────────────────────
 # app/govorilne_podatki.py — Učitelji in termini govorilnih ur (OŠ Toneta Čufarja).
 #
 # VIR: https://ostcjesenice.splet.arnes.si/za-starse/govorilne-ure/
@@ -7,7 +7,7 @@
 # PRAVILO (uporabnik, 24. 10. 2026): govorilne ure imajo lahko SAMO učitelji
 # razrednega pouka (1.–5. razred) in predmetne stopnje (6.–9. razred), kot so
 # navedeni na strani https://www.tonecufar.si/zaposleni/ (taba RAZREDNA STOPNJA
-# = tablepress-2, PREDMETNA STOPNJA = tablepress-1) — plus Matej Čušin.
+# = tablepress-2, PREDMETNA STOPNJA = tablepress-1) — plus testni učitelj.
 # Izločeno je vse podporno/nestrokovno osebje (SS, UP, SRP, DSP, OPB, vodstvo),
 # tudi če se pojavi v tabelah zaposlenih.
 #
@@ -405,7 +405,7 @@ UCITELJI = [{'ime': 'Arijana Đuretić',
   'ura': None,
   'prostor': '',
   'po_dogovoru': True},
-{'ime': 'Matej Čušin',
+{'ime': 'Marko Novak',
   'razred': None,
   'predmet': 'Računalništvo / aplikacija (test)',
   'dan': 2,

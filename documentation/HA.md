@@ -224,4 +224,4 @@ Brez varnostnih posodobitev je to časovna bomba. Še posebej za app, ki ima opr
 
 ---
 
-> **Avtor:** Matej Čušin  
+> **Avtor:** Reservation App (reservation.app@proton.me)  
