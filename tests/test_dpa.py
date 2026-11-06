@@ -194,3 +194,50 @@ def test_vodstvo_dostop_zaslu_podpisom_dpa(client, make_user):
     r2 = client.post("/auth/login", data={"username": vodstvo_u, "password": TEST_PASSWORD},
                      follow_redirects=False)
     assert r2.status_code in (302, 303)
+
+
+def test_vodstvo_vidi_dpa_sekcijo_nastavitev(client, make_user):
+    """Vodstvo lahko odpre /settings in tam vidi (samo) DPA sekcijo."""
+    vodstvo = make_user(role="vodstvo")
+    login(client, vodstvo.username)
+    r = client.get("/settings")
+    assert r.status_code == 200, r.text
+    assert 'id="dpa-section"' in r.text
+    # vodstvo_mode CSS skrije ostale sekcije (Osnovno, Razredi ...) in pusti le DPA.
+    assert "#dpa-section{display:block" in r.text
+
+
+def test_vodstvo_lahko_izpolni_in_podpise_dpa_samo_dpa_kljuce(client, make_user):
+    """Vodstvo posodobi SAMO DPA_ polja in lahko podpiše DPA (ostalo admin-only)."""
+    db = SessionLocal()
+    try:
+        sid = default_school_id()
+        _pripravi_dpa_podatke(db, sid)
+    finally:
+        db.close()
+
+    vodstvo = make_user(role="vodstvo")
+    login(client, vodstvo.username)
+
+    # vodstvo: DPA_ polja se shranijo, ne-DPA (RAZREDI) se zavržejo
+    r = client.put(f"/api/schools/{sid}/settings",
+                   json={"values": {"DPA_ZASTOPNIK": "Vodja",
+                                    "RAZREDI": "MOCK_RAZRED_A,MOCK_RAZRED_B"}})
+    assert r.status_code == 200, r.text
+
+    # vodstvo samo z ne-DPA ključi → prepovedano
+    r3 = client.put(f"/api/schools/{sid}/settings", json={"values": {"RAZREDI": "x"}})
+    assert r3.status_code == 403
+
+    # RAZREDI ostanejo nedotaknjeni (preverimo s šolskim adminom)
+    admin = make_user(role="admin")
+    login(client, admin.username)
+    r4 = client.get(f"/api/schools/{sid}/settings")
+    assert r4.status_code == 200
+    assert "MOCK_RAZRED" not in str(r4.json().get("values", {}).get("RAZREDI", ""))
+
+    # vodstvo lahko podpiše DPA
+    login(client, vodstvo.username)
+    r5 = client.post("/settings/dpa/sign")
+    assert r5.status_code == 200, r5.text
+    assert r5.json().get("sha256")

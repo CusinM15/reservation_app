@@ -2161,9 +2161,13 @@
         }
         document.getElementById('userInfo').textContent = `${currentUser.full_name || currentUser.username} (${currentUser.role === 'admin' ? '{{ t('role_admin', 'admin') }}' : currentUser.role === 'vodstvo' ? '{{ t('role_vodstvo', 'vodstvo') }}' : '{{ t('role_ucitelj', 'učitelj') }}'})`;
         if (currentUser.role === 'admin' || currentUser.role === 'main_admin') {
-            document.getElementById('admin-link').style.display = 'inline';
-            document.getElementById('settings-link').style.display = 'inline';
-        }
+                    document.getElementById('admin-link').style.display = 'inline';
+                }
+                // »Nastavitve šole« vidi tudi vodstvo — zanj se odpre zgolj sekcija DPA
+                // (šola podpiše pogodbo o obdelavi podatkov); vse ostalo ostane admin-only.
+                if (currentUser.role === 'admin' || currentUser.role === 'main_admin' || currentUser.role === 'vodstvo') {
+                    document.getElementById('settings-link').style.display = 'inline';
+                }
         // Pregled vseh šol ima samo glavni admin (nima svoje šole).
         if (currentUser.role === 'main_admin') {
             document.getElementById('schools-link').style.display = 'inline';

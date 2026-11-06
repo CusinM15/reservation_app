@@ -95,10 +95,15 @@
         <div id="msg"></div>
 
         <form id="settings-form">
-            <input type="hidden" name="school_id" value="{{ school.id }}">
+                    <input type="hidden" name="school_id" value="{{ school.id }}">
 
-    <details class="collapsible">
-                <summary><h3>{{ t('set_osnovno', 'Osnovno') }}</h3><span class="toggle-hint">▸ več</span></summary>
+        {% if vodstvo_mode %}
+        <style>.collapsible{display:none !important}#dpa-section{display:block !important}.sticky{display:none !important}</style>
+        <p class="hint" style="margin-bottom:10px;">{{ t('vodstvo_dpa_only', 'Vodstvo — pregled in podpis pogodbe o obdelavi osebnih podatkov (DPA).') }}</p>
+        {% endif %}
+
+            <details class="collapsible">
+                        <summary><h3>{{ t('set_osnovno', 'Osnovno') }}</h3>
 
             <!-- JEZIK VMESNIKA: izbira jezika (SL/EN) za napise gumbov in oken.
                  Napisi se berejo iz tabele ui_strings (glej app/i18n.py). -->
@@ -405,8 +410,8 @@
                         </div>
             </details>
 
-                <details class="collapsible">
-                    <summary><h3>{{ t('set_dpa', '📄 DPA — Pogodba o obdelavi osebnih podatkov') }}</h3><span class="toggle-hint">▸ več</span></summary>
+                <details class="collapsible" id="dpa-section">
+                                    <summary><h3>{{ t('set_dpa', '📄 DPA — Pogodba o obdelavi osebnih podatkov') }}</h3><span class="toggle-hint">▸ več</span></summary>
                     <p class="hint">
                         {{ t('set_dpa_hint', 'Izpolnite podatke o šoli in podpišite pogodbo o obdelavi osebnih podatkov. Ob kliku na »Podpiši pogodbo« se dokument podpiše z obema stranema: šola (podpišete vi) in ponudnik (samodejno). Podpisan PDF bo na voljo na strani DPA.') }}
                     </p>

@@ -469,7 +469,22 @@ async def update_school_settings(school_id: int, request: Request, db: Session =
     Sprejemamo samo znane ključe (SCHOOL_SETTING_KEYS), da ne moremo
     v bazo zapisati poljubnih nastavitev.
     """
-    school = _manageable_school(db, request, school_id)
+    user = get_request_user(request, db)
+    if not user:
+        raise HTTPException(status_code=401, detail="Niste prijavljeni")
+    is_vodstvo = bool(user.role == RoleEnum.vodstvo)
+    if is_vodstvo:
+        # Vodstvo sme prek tega končpara posodobiti SAMO DPA_ polja (podpis).
+        if not user.school_id:
+            raise HTTPException(status_code=400, detail="Vaš račun ni vezan na nobeno šolo")
+        if int(school_id) != int(user.school_id):
+            raise HTTPException(status_code=403, detail="Nastavitve lahko urejate samo za svojo šolo")
+        school = db.query(School).filter(School.id == user.school_id).first()
+        if not school:
+            raise HTTPException(status_code=404, detail="Šola ne obstaja")
+    else:
+        school = _manageable_school(db, request, school_id)
+
     try:
         body = await request.json()
     except Exception:
@@ -477,6 +492,11 @@ async def update_school_settings(school_id: int, request: Request, db: Session =
     values = body.get("values") if isinstance(body, dict) else None
     if not isinstance(values, dict):
         raise HTTPException(status_code=400, detail="Manjka 'values' (slovar nastavitev)")
+    if is_vodstvo:
+        # Vodstvo zavržemo vse razen DPA_ ključev — admin nastavitve ostanejo nedotaknjene.
+        values = {k: v for k, v in values.items() if k.startswith("DPA_")}
+        if not values:
+            raise HTTPException(status_code=403, detail="Vodstvo lahko posodablja samo DPA polja.")
 
     # Kratica šole (slug) je School stolpec, NE SchoolSetting — izvlečemo jo
     # pred validacijo znanih ključev in jo obravnamo ločeno na koncu.
@@ -1098,19 +1118,31 @@ def school_settings_page(
     school_id: int | None = Query(None),
     db: Session = Depends(get_db),
 ):
-    """Stran za urejanje nastavitev šole (šolski admin ali glavni admin)."""
+    """Stran za urejanje nastavitev šole (šolski admin ali glavni admin; vodstvo le DPA)."""
     user = get_request_user(request, db)
     if not user:
         return RedirectResponse(url="/auth/login")
-    try:
-        school = _manageable_school(db, request, school_id)
-    except HTTPException as exc:
-        # Glavni admin, ki ni izbral šole (in jih ima več), prej ni dobil niti
-        # strani niti povezave — samo golo napako 400. Zdaj mu ponudimo izbiro
-        # šole direktno na strani, da dostop do /settings ne »pade«.
-        if exc.status_code == 400 and is_main_admin(user):
-            return HTMLResponse(_school_chooser_html(db), status_code=200)
-        return HTMLResponse(exc.detail, status_code=exc.status_code)
+    vodstvo_mode = bool(user.role == RoleEnum.vodstvo)
+    if vodstvo_mode:
+        # Vodstvo sme ODKRITI stran samo za ogled/podpis DPA — vse ostalo
+        # (uresničevanje vrednosti, shranjevanje) ostane admin-only v backendu.
+        if not user.school_id:
+            return HTMLResponse("Vaš račun ni vezan na nobeno šolo.", status_code=400)
+        if school_id is not None and int(school_id) != int(user.school_id):
+            return HTMLResponse("Nastavitve lahko pregledate samo za svojo šolo.", status_code=403)
+        school = db.query(School).filter(School.id == user.school_id).first()
+        if not school:
+            return HTMLResponse("Šola ne obstaja.", status_code=404)
+    else:
+        try:
+            school = _manageable_school(db, request, school_id)
+        except HTTPException as exc:
+            # Glavni admin, ki ni izbral šole (in jih ima več), prej ni dobil niti
+            # strani niti povezave — samo golo napako 400. Zdaj mu ponudimo izbiro
+            # šole direktno na strani, da dostop do /settings ne »pade«.
+            if exc.status_code == 400 and is_main_admin(user):
+                return HTMLResponse(_school_chooser_html(db), status_code=200)
+            return HTMLResponse(exc.detail, status_code=exc.status_code)
 
     cfg = get_school_config(db, school.id)
     values = cfg.effective_values()
@@ -1232,6 +1264,7 @@ def school_settings_page(
         "prodaja": selling_config(db),
         # DPA: status podpisane pogodbe (signed_at, sha256) — za sekcijo v UI.
         "dpa": _dpa_status(db, school.id),
+        "vodstvo_mode": vodstvo_mode,
     })
 
 
@@ -1256,7 +1289,7 @@ def dpa_sign(request: Request, db: Session = Depends(get_db)):
     from app.tenancy import resolve_school_context
 
     user = _require_login(request, db)
-    if not (is_school_admin(user) or is_main_admin(user)):
+    if not (is_school_admin(user) or is_main_admin(user) or user.role == RoleEnum.vodstvo):
         raise HTTPException(status_code=403, detail="Samo šolski admin lahko podpiše DPA.")
     _school_id, school = resolve_school_context(request, db)
     if school is None:
@@ -1278,7 +1311,7 @@ def dpa_reset(request: Request, db: Session = Depends(get_db)):
     from app.tenancy import resolve_school_context
 
     user = _require_login(request, db)
-    if not (is_school_admin(user) or is_main_admin(user)):
+    if not (is_school_admin(user) or is_main_admin(user) or user.role == RoleEnum.vodstvo):
         raise HTTPException(status_code=403, detail="Samo šolski admin lahko ponastavi DPA.")
     _school_id, school = resolve_school_context(request, db)
     if school is None:
