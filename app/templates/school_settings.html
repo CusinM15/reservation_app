@@ -444,10 +444,52 @@
             </a>
         </div>
         </details>
-        {% endif %}
+                {% endif %}
 
-        <details class="collapsible">
-            <summary><h3>{{ t('set_backup', 'Varnostna kopija šole') }}</h3><span class="toggle-hint">▸ več</span></summary>
+                <details class="collapsible">
+                    <summary><h3>{{ t('set_dpa', '📄 DPA — Pogodba o obdelavi osebnih podatkov') }}</h3><span class="toggle-hint">▸ več</span></summary>
+                    <p class="hint">
+                        {{ t('set_dpa_hint', 'Izpolnite podatke o šoli in podpišite pogodbo o obdelavi osebnih podatkov. Ob kliku na »Podpiši pogodbo« se dokument podpiše z obema stranema: šola (podpišete vi) in ponudnik (samodejno). Podpisan PDF bo na voljo na strani DPA.') }}
+                    </p>
+                    {% for f in fields %}{% if f.key.startswith('DPA_') %}
+                    <div class="field">
+                        <label>{{ t('setf_' ~ f.key, f.label) }}</label>
+                        {% if is_main_admin %}<span class="key">{{ f.key }}</span>{% endif %}
+                        <input type="text" name="{{ f.key }}" value="{{ values.get(f.key, '') }}">
+                    </div>
+                    {% endif %}{% endfor %}
+
+                    <div class="restore-box" id="dpa-box">
+                    {% if dpa and dpa.signed_at %}
+                        <p class="hint" style="margin-top:0;">
+                            ✔ {{ t('set_dpa_podpisana', 'DPA je podpisana') }} ·
+                            {{ t('set_dpa_datum', 'datum') }}: {{ dpa.signed_at }}
+                            {% if dpa.version %}· različica {{ dpa.version }}{% endif %}
+                            <br><small>SHA-256: {{ dpa.sha256 }}</small>
+                        </p>
+                        <a class="btn btn-primary" href="/settings/dpa/pdf" download style="text-decoration:none;display:inline-block;">
+                            ⬇ {{ t('set_dpa_prenesi', 'Prenesi podpisan PDF') }}
+                        </a>
+                        <button type="button" class="btn" style="background:#e11d48;color:#fff;"
+                                onclick="dpaReset()">↺ {{ t('set_dpa_ponastavi', 'Ponastavi') }}</button>
+                    {% else %}
+                        <p class="hint" style="margin-top:0;">
+                            {{ t('set_dpa_ni_podpisana', 'DPA še ni podpisana. Najprej kliknite »Shrani nastavitve«, nato tu »Podpiši pogodbo«.') }}
+                        </p>
+                        {% if dpa and dpa.provider_complete is sameas false %}
+                        <p class="hint" style="color:#991b1b;">
+                            ⚠ {{ t('set_dpa_ni_ponudnika', 'Podatki ponudnika niso vnešeni (globalne nastavitve e-računov) — dokler jih ni, DPA ne bo mogla biti podpisana.') }}
+                        </p>
+                        {% endif %}
+                        <button type="button" class="btn btn-primary" onclick="dpaSign()">
+                            ✍️ {{ t('set_dpa_podpisi', 'Podpiši pogodbo (šola + ponudnik)') }}
+                        </button>
+                    {% endif %}
+                    </div>
+                </details>
+
+                <details class="collapsible">
+                    <summary><h3>{{ t('set_backup', 'Varnostna kopija šole') }}</h3><span class="toggle-hint">▸ več</span></summary>
         <div class="restore-box">
             <p class="hint" style="margin-top:0;">
                 {{ t('set_backup_hint_a', 'Sestavi <code>.sql</code> varnostno kopijo podatkov <strong>te šole</strong> (izključno te šole — vrstic drugih šol ne vsebuje) in jo pošlje po e-pošti na') | safe }}
@@ -1015,7 +1057,23 @@
             box.textContent = '{{ t('js_napaka_prefix', 'Napaka: ') }}' + (data.detail || res.status);
         }
         box.scrollIntoView({ behavior: 'smooth', block: 'center' });
-    });
+            });
+
+            // ── DPA: podpis / ponastavitev ────────────────────────────────────
+            async function dpaSign() {
+                if (!confirm('{{ t('js_dpa_potrdi', 'S tem boste podpisali pogodbo o obdelavi osebnih podatkov v imenu šole. Tudi ponudnik jo bo podpisal (samodejno).') }}')) return;
+                const r = await fetch('/settings/dpa/sign', { method: 'POST', credentials: 'include' });
+                const d = await r.json().catch(() => ({}));
+                if (r.ok) { alert('{{ t('js_dpa_podpisana', 'DPA je podpisana. ✔') }}'); location.reload(); }
+                else { alert('{{ t('js_napaka_prefix', 'Napaka: ') }}' + (d.detail || r.status)); }
+            }
+            async function dpaReset() {
+                if (!confirm('{{ t('js_dpa_ponastavi_potrdi', 'Ponastaviti DPA? Podatke boste lahko spremenili in podpisali znova.') }}')) return;
+                const r = await fetch('/settings/dpa/reset', { method: 'POST', credentials: 'include' });
+                const d = await r.json().catch(() => ({}));
+                if (r.ok) { alert('{{ t('js_dpa_ponastavljena', 'DPA je ponastavljena.') }}'); location.reload(); }
+                else { alert('{{ t('js_napaka_prefix', 'Napaka: ') }}' + (d.detail || r.status)); }
+            }
 
     // ── Obnova iz varnostne kopije ────────────────────────────────────
     let restoreDomain = null;

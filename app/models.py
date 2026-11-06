@@ -285,15 +285,35 @@ class Payment(Base):
     months = Column(Integer, nullable=False, default=1)          # koliko mesecev pokriva
     reference = Column(String, nullable=True, default="")        # sklic / naziv plačnika
     note = Column(Text, nullable=True, default="")               # sporočilo šole
-    # pending = šola je sporočila plačilo, čaka potrditev
-    # confirmed = glavni admin potrdil (naročnina podaljšana)
-    # rejected = plačilo ni bilo prejeto / ni veljavno
     status = Column(String, nullable=False, default="pending", index=True)
     valid_until = Column(Date, nullable=True)                    # do kdaj je podaljšano (ob potrditvi)
     reported_at = Column(DateTime, default=datetime.utcnow, nullable=False)
     reported_by_id = Column(Integer, ForeignKey("users.id"), nullable=True)
     confirmed_at = Column(DateTime, nullable=True)
     confirmed_by = Column(String, nullable=True, default="")     # uporabniško ime potrjevalca
+    created_by_id = Column(Integer, ForeignKey("users.id"), nullable=True)
+    created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
+
+
+class DpaAgreement(Base):
+    """Podpisana Pogodba o obdelavi osebnih podatkov — ena na šolo.
+
+    Podpišeta jo obe strani v aplikaciji: šola (klik admina) in ponudnik
+    (samodejno na podlagi pooblastila). PDF se shrani tukaj, zraven pa
+    posnetek podatkov obeh strank in SHA-256.
+    """
+
+    __tablename__ = "dpa_agreements"
+
+    id = Column(Integer, primary_key=True, index=True)
+    school_id = Column(Integer, ForeignKey("schools.id"), nullable=False, index=True, unique=True)
+    version = Column(String, nullable=False, default="1.0")
+    school_json = Column(Text, nullable=False, default="{}")
+    provider_json = Column(Text, nullable=False, default="{}")
+    signed_by_user_id = Column(Integer, ForeignKey("users.id"), nullable=True)
+    signed_at = Column(DateTime, default=datetime.utcnow, nullable=False, index=True)
+    pdf = Column(LargeBinary, nullable=True)
+    sha256 = Column(String(64), nullable=False, default="")
 
 
 # ── E-računi (invoices) ─────────────────────────────────────────────

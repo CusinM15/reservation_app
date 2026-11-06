@@ -1230,4 +1230,83 @@ def school_settings_page(
         # vidi, da lahko naročnino kupi oziroma podaljša na /narocnina.
         "narocnina": subscription_state(db, school.id),
         "prodaja": selling_config(db),
+        # DPA: status podpisane pogodbe (signed_at, sha256) — za sekcijo v UI.
+        "dpa": _dpa_status(db, school.id),
     })
+
+
+def _dpa_status(db: Session, school_id: int) -> dict | None:
+    from app.dpa import get_agreement, provider_data
+
+    a = get_agreement(db, school_id)
+    return {
+        "signed_at": a.signed_at.isoformat() if a and a.signed_at else None,
+        "sha256": a.sha256 if a else "",
+        "version": a.version if a else None,
+        "provider_complete": bool(provider_data(db).get("naziv")),
+    }
+
+
+# ── DPA (Pogodba o obdelavi osebnih podatkov) ──────────────────────────
+
+@router.post("/settings/dpa/sign")
+def dpa_sign(request: Request, db: Session = Depends(get_db)):
+    """Podpiši DPA z obema stranema: šola (admin) + ponudnik (samodejno)."""
+    from app.dpa import sign_dpa
+    from app.tenancy import resolve_school_context
+
+    user = _require_login(request, db)
+    if not (is_school_admin(user) or is_main_admin(user)):
+        raise HTTPException(status_code=403, detail="Samo šolski admin lahko podpiše DPA.")
+    _school_id, school = resolve_school_context(request, db)
+    if school is None:
+        raise HTTPException(status_code=400, detail="Ni izbrane šole.")
+    try:
+        agreement = sign_dpa(db, school, user)
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    log_audit(db, user.id, "dpa_sign",
+              f"Podpisana DPA različica {agreement.version} (sha256={agreement.sha256[:12]}…)",
+              school_id=school.id)
+    return {"ok": True, "signed_at": agreement.signed_at.isoformat(), "sha256": agreement.sha256}
+
+
+@router.post("/settings/dpa/reset")
+def dpa_reset(request: Request, db: Session = Depends(get_db)):
+    """Ponastavi DPA — šola lahko spremeni podatke in podpiše znova."""
+    from app.dpa import reset_dpa
+    from app.tenancy import resolve_school_context
+
+    user = _require_login(request, db)
+    if not (is_school_admin(user) or is_main_admin(user)):
+        raise HTTPException(status_code=403, detail="Samo šolski admin lahko ponastavi DPA.")
+    _school_id, school = resolve_school_context(request, db)
+    if school is None:
+        raise HTTPException(status_code=400, detail="Ni izbrane šole.")
+    ok = reset_dpa(db, school.id)
+    if ok:
+        log_audit(db, user.id, "dpa_reset", f"Ponastavljena DPA za šolo {school.name}", school_id=school.id)
+    return {"ok": ok}
+
+
+@router.get("/settings/dpa/pdf")
+def dpa_pdf(request: Request, db: Session = Depends(get_db)):
+    """Prenos podpisane DPA v PDF (admin, vodstvo, glavni admin)."""
+    from app.dpa import get_agreement
+    from app.tenancy import resolve_school_context
+
+    user = _require_login(request, db)
+    allowed = is_school_admin(user) or is_main_admin(user) or user.role == RoleEnum.vodstvo
+    if not allowed:
+        raise HTTPException(status_code=403, detail="Nimate dostopa do DPA.")
+    _school_id, school = resolve_school_context(request, db)
+    if school is None:
+        raise HTTPException(status_code=400, detail="Ni izbrane šole.")
+    agreement = get_agreement(db, school.id)
+    if agreement is None or not agreement.pdf:
+        raise HTTPException(status_code=404, detail="DPA še ni podpisana.")
+    return Response(
+        content=bytes(agreement.pdf),
+        media_type="application/pdf",
+        headers={"Content-Disposition": f'inline; filename="dpa_{school.slug}.pdf"'},
+    )

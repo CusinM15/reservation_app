@@ -143,6 +143,12 @@ SCHOOL_SETTING_KEYS = [
     "GOVORILNE_VLOGAROLE",
     # Koledarji govorilnih ur: poimenovani urniki (id → {label, zacetki}).
     "URNIKI",
+    # DPA — podatki šole za pogodbo o obdelavi osebnih podatkov.
+    "DPA_NASLOV",
+    "DPA_DAVCNA",
+    "DPA_MATICNA",
+    "DPA_ZASTOPNIK",
+    "DPA_FUNKCIJA",
 ]
 
 
@@ -220,6 +226,12 @@ SCHOOL_SETTING_FIELDS = [
     {"key": "GOVORILNE_VLOGAROLE", "label": "Govorilne ure — katere grupe jih vidijo", "type": "csv"},
     # Koledarji govorilnih ur: poimenovani urniki (id → {label, zacetki}).
     {"key": "URNIKI", "label": "Urnik — govorilne ure (koledarji: ime + začetki ur)", "type": "json"},
+    # ── DPA (Pogodba o obdelavi osebnih podatkov) ────────────────────
+    {"key": "DPA_NASLOV", "label": "DPA — naslov šole", "type": "text"},
+    {"key": "DPA_DAVCNA", "label": "DPA — davčna številka", "type": "text"},
+    {"key": "DPA_MATICNA", "label": "DPA — matična številka", "type": "text"},
+    {"key": "DPA_ZASTOPNIK", "label": "DPA — ime in priimek zastopnika", "type": "text"},
+    {"key": "DPA_FUNKCIJA", "label": "DPA — funkcija (npr. ravnateljica)", "type": "text"},
 ]
 
 

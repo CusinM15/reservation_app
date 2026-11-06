@@ -405,6 +405,14 @@ async def get_doc_html(name: str, request: Request, db: Session = Depends(get_db
 </html>"""
     if name.startswith("obvestilo"):
         full_html = full_html.replace("</style>", _OBVESTILA_CSS + "</style>", 1)
+
+    # DPA: za prijavljene (admin/vodstvo) dodaj ploščo s statusom, vpogledom,
+    # prenosom in ponastavitvijo podpisane pogodbe.
+    if name == "dpa":
+        dpa_panel = _dpa_panel_html(request, db)
+        if dpa_panel:
+            full_html = full_html.replace("<body>", "<body>" + dpa_panel, 1)
+
     return HTMLResponse(
         content=full_html,
         headers={
@@ -412,6 +420,58 @@ async def get_doc_html(name: str, request: Request, db: Session = Depends(get_db
             "Pragma": "no-cache",
             "Expires": "0",
         },
+    )
+
+
+def _dpa_panel_html(request: Request, db: Session) -> str:
+    """Plošča za DPA stran: status podpisa + gumba Prenesi in Ponastavi."""
+    from app.dpa import get_agreement
+    from app.tenancy import resolve_school_context
+
+    user = get_request_user(request, db)
+    if user is None:
+        return ""
+    try:
+        school_id, school = resolve_school_context(request, db)
+    except Exception:
+        return ""
+    if school is None:
+        return ""
+
+    from app.tenancy import is_main_admin, is_school_admin
+
+    is_admin = is_school_admin(user) or is_main_admin(user)
+    is_vodstvo = (not is_admin) and user.role == "vodstvo"
+    agreement = get_agreement(db, school.id)
+
+    if agreement is not None:
+        when = agreement.signed_at.strftime("%d. %m. %Y ob %H:%M") if agreement.signed_at else "?"
+        sha = agreement.sha256[:16] + "…" if agreement.sha256 else ""
+        btns = [
+            f'<a class="dpa-btn" href="/settings/dpa/pdf" download style="background:#4a6cf7;color:#fff;">⬇ Prenesi podpisan PDF</a>',
+        ]
+        if is_admin:
+            btns.append(
+                '<button class="dpa-btn" style="background:#e11d48;color:#fff;" '
+                'onclick="if(confirm(\'Ponastaviti DPA? Podatke boste lahko spremenili in podpisali znova.\')){fetch(\'/settings/dpa/reset\',{method:\'POST\'}).then(r=>r.json()).then(()=>location.reload());}">↺ Ponastavi</button>'
+            )
+        inner = (f'<p><b>✔ Podpisano:</b> {when} · različica {agreement.version} · '
+                 f'SHA-256 {sha}</p>'
+                 + " ".join(btns)
+                 + f'<iframe src="/settings/dpa/pdf" style="width:100%;height:60vh;border:1px solid #ccc;border-radius:6px;" title="Podpisana DPA"></iframe>')
+    elif is_admin:
+        inner = ('<p><b>DPA še ni podpisana.</b> Izpolnite podatke v '
+                 '<a href="/settings">Nastavitvah šole → DPA</a> in kliknite »Podpiši«.</p>')
+    elif is_vodstvo:
+        inner = "<p><b>DPA še ni podpisana.</b></p>"
+    else:
+        return ""
+
+    return (
+        '<div style="border:2px solid #4a6cf7;border-radius:10px;padding:1rem 1.2rem;'
+        'margin-bottom:1.5rem;background:#f6f8ff;">'
+        f"<h3 style='margin-top:0;color:#1a1a2e;'>📄 Pogodba o obdelavi osebnih podatkov — {html_mod.escape(school.name)}</h3>"
+        f"{inner}</div>"
     )
 
 
