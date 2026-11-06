@@ -405,47 +405,6 @@
                         </div>
             </details>
 
-            <div class="sticky">
-                <button type="submit" class="btn btn-success">{{ t('btn_shrani_nastavitve', 'Shrani nastavitve') }}</button>
-            </div>
-        </form>
-
-        <details class="collapsible">
-            <summary><h3>{{ t('set_navodila', 'Navodila') }}</h3><span class="toggle-hint">▸ več</span></summary>
-            <a class="btn" href="/nastavitev">{{ t('set_link_navodila', 'Navodila za nastavitev šole →') }}</a>
-        </details>
-        {% if prodaja and prodaja.enabled %}
-        <!-- NAROČNINA: v tej namestitvi se naročnine prodajajo, zato šolski
-             admin tu vidi stanje in gumb za nakup oziroma podaljšanje. -->
-        <details class="collapsible">
-            <summary><h3>{{ t('narocnina_naslov', 'Naročnina šole') }}</h3><span class="toggle-hint">▸ več</span></summary>
-        <div class="restore-box">
-            {% if narocnina.until and narocnina.active %}
-                <p class="hint" style="margin-top:0;">
-                    {{ t('set_narocnina_veljavna_do', 'Naročnina je veljavna do') }}
-                    <strong>{{ narocnina.until.strftime('%d. %m. %Y') }}</strong>
-                    {% if narocnina.days_left is not none %}{{ t('set_se', '(še') }} {{ narocnina.days_left }} {{ t('set_dni', 'dni') }}){% endif %}.
-                </p>
-            {% elif narocnina.active %}
-                <p class="hint" style="margin-top:0;">
-                    {{ t('set_narocnina_ni_potrebna', 'V tej namestitvi naročnina ni potrebna — aplikacija deluje brez omejitev.') }}
-                </p>
-            {% else %}
-                <p class="hint" style="margin-top:0;color:#991b1b;">
-                    {{ t('set_narocnina_lbl', 'Naročnina') }} <strong>{{ t('set_ni_veljavna', 'ni veljavna') }}</strong>{% if narocnina.until %}
-                    ({{ t('set_potekla', 'potekla') }} {{ narocnina.until.strftime('%d. %m. %Y') }}){% endif %}.
-                    {{ t('set_narocnina_zaprta', 'Aplikacija je za učitelje zaprta, dokler naročnina ni obnovljena.') }}
-                </p>
-            {% endif %}
-            <a class="btn btn-primary" href="/narocnina?school_id={{ school.id }}"
-               style="text-decoration:none;display:inline-block;">
-                {% if narocnina.until and narocnina.active %}{{ t('btn_podaljsaj_narocnino', 'Podaljšaj naročnino') }}{% else %}{{ t('set_kupi_narocnino', 'Kupi naročnino') }}{% endif %}
-                ({{ prodaja.price_label }})
-            </a>
-        </div>
-        </details>
-                {% endif %}
-
                 <details class="collapsible">
                     <summary><h3>{{ t('set_dpa', '📄 DPA — Pogodba o obdelavi osebnih podatkov') }}</h3><span class="toggle-hint">▸ več</span></summary>
                     <p class="hint">
@@ -487,6 +446,47 @@
                     {% endif %}
                     </div>
                 </details>
+
+            <div class="sticky">
+                <button type="submit" class="btn btn-success">{{ t('btn_shrani_nastavitve', 'Shrani nastavitve') }}</button>
+            </div>
+        </form>
+
+        <details class="collapsible">
+            <summary><h3>{{ t('set_navodila', 'Navodila') }}</h3><span class="toggle-hint">▸ več</span></summary>
+            <a class="btn" href="/nastavitev">{{ t('set_link_navodila', 'Navodila za nastavitev šole →') }}</a>
+        </details>
+        {% if prodaja and prodaja.enabled %}
+        <!-- NAROČNINA: v tej namestitvi se naročnine prodajajo, zato šolski
+             admin tu vidi stanje in gumb za nakup oziroma podaljšanje. -->
+        <details class="collapsible">
+            <summary><h3>{{ t('narocnina_naslov', 'Naročnina šole') }}</h3><span class="toggle-hint">▸ več</span></summary>
+        <div class="restore-box">
+            {% if narocnina.until and narocnina.active %}
+                <p class="hint" style="margin-top:0;">
+                    {{ t('set_narocnina_veljavna_do', 'Naročnina je veljavna do') }}
+                    <strong>{{ narocnina.until.strftime('%d. %m. %Y') }}</strong>
+                    {% if narocnina.days_left is not none %}{{ t('set_se', '(še') }} {{ narocnina.days_left }} {{ t('set_dni', 'dni') }}){% endif %}.
+                </p>
+            {% elif narocnina.active %}
+                <p class="hint" style="margin-top:0;">
+                    {{ t('set_narocnina_ni_potrebna', 'V tej namestitvi naročnina ni potrebna — aplikacija deluje brez omejitev.') }}
+                </p>
+            {% else %}
+                <p class="hint" style="margin-top:0;color:#991b1b;">
+                    {{ t('set_narocnina_lbl', 'Naročnina') }} <strong>{{ t('set_ni_veljavna', 'ni veljavna') }}</strong>{% if narocnina.until %}
+                    ({{ t('set_potekla', 'potekla') }} {{ narocnina.until.strftime('%d. %m. %Y') }}){% endif %}.
+                    {{ t('set_narocnina_zaprta', 'Aplikacija je za učitelje zaprta, dokler naročnina ni obnovljena.') }}
+                </p>
+            {% endif %}
+            <a class="btn btn-primary" href="/narocnina?school_id={{ school.id }}"
+               style="text-decoration:none;display:inline-block;">
+                {% if narocnina.until and narocnina.active %}{{ t('btn_podaljsaj_narocnino', 'Podaljšaj naročnino') }}{% else %}{{ t('set_kupi_narocnino', 'Kupi naročnino') }}{% endif %}
+                ({{ prodaja.price_label }})
+            </a>
+        </div>
+        </details>
+                {% endif %}
 
                 <details class="collapsible">
                     <summary><h3>{{ t('set_backup', 'Varnostna kopija šole') }}</h3><span class="toggle-hint">▸ več</span></summary>
@@ -1064,7 +1064,7 @@
                 if (!confirm('{{ t('js_dpa_potrdi', 'S tem boste podpisali pogodbo o obdelavi osebnih podatkov v imenu šole. Tudi ponudnik jo bo podpisal (samodejno).') }}')) return;
                 // Najprej shrani vpisana DPA polja (da jih podpis prebere iz baze).
                 const dpa = {};
-                document.querySelectorAll('#settings-form input[name^="DPA_"]')
+                document.querySelectorAll('input[name^="DPA_"]')
                     .forEach(inp => dpa[inp.name] = inp.value);
                 const saveRes = await fetch('/api/schools/' + SCHOOL_ID + '/settings', {
                     method: 'PUT',
