@@ -76,10 +76,11 @@ Pogodba velja od dneva podpisa. **Elektronski podpis zadošča.** Podpisana kopi
 
 ---
 
-**Upravljavec (šola):** [naziv šole]
+**Upravljavec (šola) in obdelovalec (ponudnik) podpišeta:**
 
-Ime in funkcija: ______________________  Datum: ____________  Podpis: ______________________
-
-**Obdelovalec (ponudnik):** [naziv s.p.]
-
-Ime in funkcija: [ime in priimek zastopnika]  Datum: 6. 11. 2026  Podpis: *elektronsko podpisano s strani ponudnika*
+| | Upravljavec (šola) | Obdelovalec (ponudnik) |
+|---|---|---|
+| Naziv | [naziv šole] | [naziv s.p.] |
+| Ime in funkcija | .................... | [ime in priimek zastopnika] |
+| Datum | .................... | .................... |
+| Podpis | .................... | .................... |
