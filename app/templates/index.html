@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="sl">
 <head>
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
@@ -249,6 +249,7 @@
     <a href="{{ nav_ocenjevanje }}" data-tab="ocenjevanja">{{ t('nav_ocenjevanje_dejavnosti', 'Ocenjevanje in dnevi dejavnosti') }}</a>
     <a href="/govorilne/ure" id="govorilne-nav" style="display:none;">{{ t('nav_govorilne', '🗓️ Moje govorilne ure') }}</a>
     <a href="/obrazci" id="obrazci-nav" style="display:none;">📄 Obrazci</a>
+    <a href="/docs/html/dpa" id="dpa-nav" target="_blank" style="display:none;">📄 DPA (obdelava podatkov)</a>
     <!-- ADMIN IN AUDIT POVEZAVE — prikazane le za admin vlogo.
          Skrijemo jih privzeto (style="display:none"), JS jih pokaže
          glede na vlogo uporabnika. Tako učitelji in vodstvo ne vidijo
@@ -2171,9 +2172,11 @@
         }
         if (currentUser.role === 'admin' || currentUser.role === 'vodstvo') {
             document.getElementById('obrazci-nav').style.display = 'inline';
+            document.getElementById('dpa-nav').style.display = 'inline';
         }
         if (currentUser.role === 'main_admin') {
             document.getElementById('obrazci-nav').style.display = 'inline';
+            document.getElementById('dpa-nav').style.display = 'inline';
         }
         if (currentUser.role === 'admin' || currentUser.role === 'vodstvo') {
             document.getElementById('export-rez-link').style.display = 'inline';

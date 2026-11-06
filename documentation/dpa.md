@@ -82,4 +82,4 @@ Ime in funkcija: ______________________  Datum: ____________  Podpis: __________
 
 **Obdelovalec (ponudnik):** [naziv s.p.]
 
-Ime in funkcija: ______________________  Datum: ____________  Podpis: ______________________
+Ime in funkcija: [ime in priimek zastopnika]  Datum: 6. 11. 2026  Podpis: *elektronsko podpisano s strani ponudnika*
