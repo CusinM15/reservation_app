@@ -26,6 +26,7 @@ from app.routers import rezervacije, ocenjevanja, auth, blocked_dates, audit_log
 from app.app_settings import selling_enabled
 from app.subscriptions import is_active
 from app.models import User, RoleEnum
+from app.dpa import dpa_signed
 from app.tenancy import (
     MAIN_ADMIN_ROLE,
     SCHOOL_ADMIN_ROLE,
@@ -50,6 +51,28 @@ NAROCNINA_POTEKLA = (
     "Naro%C4%8Dnina+%C5%A1ole+je+potekla.+Za+obnovitev+se+obrnite+na+"
     "administratorja+%C5%A1ole."
 )
+
+
+def dpa_blocks_teachers(request: Request) -> bool:
+    """Ali naj bo ta zahteva učitelja zavrnjena, ker šola še ni podpisala DPA?
+
+    Učitelji ne morejo uporabljati aplikacije, dokler šola ne podpiše pogodbe
+    o obdelavi osebnih podatkov. Šolski admin, vodstvo in glavni admin imajo
+    dostop (da podpišejo/uredijo DPA).
+    """
+    db = SessionLocal()
+    try:
+        uid = get_current_user_id(request)
+        if not uid:
+            return False
+        user = db.query(User).filter(User.id == uid).first()
+        if user is None or is_main_admin(user) or role_value(user) != RoleEnum.teacher.value:
+            return False
+        if user.school_id is None:
+            return False
+        return not dpa_signed(db, user.school_id)
+    finally:
+        db.close()
 
 
 def subscription_blocks_access(request: Request) -> bool:
@@ -264,6 +287,21 @@ class AuthMiddleware(BaseHTTPMiddleware):
                         status_code=403,
                     )
                 return RedirectResponse(url=f"/narocnina?error={NAROCNINA_POTEKLA}", status_code=303)
+
+        # ── DPA ────────────────────────────────────────────────────────
+        # Učitelji ne morejo uporabljati aplikacije, dokler šola ne podpiše
+        # pogodbe o obdelavi osebnih podatkov (DPA). Admin/vodstvo/glavni
+        # admin imajo dostop (da podpišejo ali uredijo DPA).
+        if (not is_public and not path.startswith("/narocnina")
+                and not path.startswith("/auth") and get_current_user_id(request)):
+            if dpa_blocks_teachers(request):
+                if path.startswith("/api/"):
+                    return JSONResponse(
+                        {"detail": "Šola še ni podpisala pogodbe o obdelavi osebnih "
+                                   "podatkov (DPA) — aplikacija za učitelje ni odprta."},
+                        status_code=403,
+                    )
+                return RedirectResponse(url="/docs/html/dpa?neodpisana=1", status_code=303)
 
         # ── Jezik vmesnika (SL/EN) ─────────────────────────────────────
         # Napisi (gumbi, pogovorna okna) se berejo iz tabele ui_strings v

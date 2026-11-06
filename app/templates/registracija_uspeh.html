@@ -72,11 +72,19 @@
         ko ga potrdimo, se bodo lahko prijavili tudi vaši učitelji.
       {% endif %}
     </p>
-    <p>
-      <a class="btn" href="/narocnina">Uredi naročnino</a>
-      <a class="btn" href="/nastavitev" style="margin-left:8px;">Navodila za nastavitev</a>
-      <a class="btn btn-secondary" href="/settings" style="margin-left:8px;">{{ t('set_naslov', 'Nastavitve šole') }}</a>
-    </p>
+
+        <div style="background:#fff7ed;border:1px solid #fed7aa;border-radius:8px;padding:14px 16px;margin:14px 0;">
+          <strong>⚠ Takoj podpišite pogodbo o obdelavi osebnih podatkov (DPA).</strong><br>
+          Dokler šola ne podpiše DPA, se vaši učitelji <strong>ne morejo prijaviti</strong> v aplikacijo
+          (dostop imata le admin in vodstvo). Pojdite v <strong>Nastavitve šole → DPA</strong>,
+          izpolnite podatke in kliknite <strong>»Podpiši pogodbo«</strong>.
+        </div>
+
+        <p>
+          <a class="btn" href="/narocnina">Uredi naročnino</a>
+          <a class="btn" href="/nastavitev" style="margin-left:8px;">Navodila za nastavitev</a>
+          <a class="btn btn-secondary" href="/settings" style="margin-left:8px;">{{ t('set_naslov', 'Nastavitve šole') }}</a>
+        </p>
   </div>
 </div>
 </body>

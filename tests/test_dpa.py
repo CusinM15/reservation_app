@@ -8,7 +8,7 @@ from app.database import SessionLocal
 from app.dpa import get_agreement, provider_complete, provider_data, reset_dpa, sign_dpa
 from app.models import School
 from app.tenancy import set_school_setting
-from tests.conftest import default_school_id, login
+from tests.conftest import TEST_PASSWORD, default_school_id, login
 
 
 def _pripravi_dpa_podatke(db, sid):
@@ -111,3 +111,57 @@ def test_dpa_api_potok(client, make_user):
 
     r4 = client.get("/settings/dpa/pdf")
     assert r4.status_code == 404
+
+
+def test_ucitelj_ne_more_prijave_pred_podpisom_dpa(client, make_user):
+    """Učitelj se ne more prijaviti, dokler šola ne podpiše DPA."""
+    db = SessionLocal()
+    try:
+        admin = make_user(role="admin")
+        teacher = make_user(role="teacher")
+    finally:
+        db.close()
+
+    # u citelj -> login zavrnjen z napako o DPA
+    r = client.post("/auth/login", data={"username": teacher.username, "password": TEST_PASSWORD})
+    assert r.status_code == 200
+    assert "DPA" in r.text or "obdelavi osebnih" in r.text
+
+    # admin -> prijava gre naprej (ima dostop, da podpiše)
+    r2 = client.post("/auth/login", data={"username": admin.username, "password": TEST_PASSWORD},
+                     follow_redirects=False)
+    assert r2.status_code in (302, 303)
+
+
+def test_ucitelj_se_prijavi_po_podpisu_dpa(client, make_user):
+    """Po podpisu DPA se učitelj normalno prijavi."""
+    from app.dpa import sign_dpa
+    from app.models import School
+    db = SessionLocal()
+    try:
+        sid = default_school_id()
+        school = db.query(School).filter(School.id == sid).first()
+        _pripravi_dpa_podatke(db, sid)
+        admin = make_user(role="admin")
+        teacher = make_user(role="teacher")
+        sign_dpa(db, school, admin)
+    finally:
+        db.close()
+
+    # u citelj se zdaj prijavi (preusmeritev na aplikacijo)
+    r2 = client.post("/auth/login", data={"username": teacher.username, "password": TEST_PASSWORD},
+                     follow_redirects=False)
+    assert r2.status_code in (302, 303)
+
+
+def test_vodstvo_dostop_zaslu_podpisom_dpa(client, make_user):
+    """Vodstvo ima dostop tudi pred podpisom DPA (da šolo pripravi)."""
+    from app.models import RoleEnum
+    db = SessionLocal()
+    try:
+        vodstvo = make_user(role="vodstvo")
+    finally:
+        db.close()
+    r2 = client.post("/auth/login", data={"username": vodstvo.username, "password": TEST_PASSWORD},
+                     follow_redirects=False)
+    assert r2.status_code in (302, 303)

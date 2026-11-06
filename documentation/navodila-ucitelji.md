@@ -62,6 +62,11 @@ Ko ste geslo nastavili, se prijavite:
 
 > ⚠️ Če prijava ne deluje, najprej sami še nekajkrat poskusite ponastaviti geslo. Administratorja kontaktirajte šele, ko se težava ne reši.
 
+> 🔒 **Vaša šola še ni podpisala pogodbe o obdelavi osebnih podatkov (DPA)?**
+> Dokler šola DPA ne podpiše, se učitelji **ne morejo prijaviti** — prijavijo
+> se lahko le administrator in vodstvo. Če se ne morete prijaviti, se obrnite
+> na **šolskega administratorja**, da pogodbo podpiše v **Nastavitvah → DPA**.
+
 ---
 
 ## 4. Rezervacije

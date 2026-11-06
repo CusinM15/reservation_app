@@ -150,6 +150,11 @@ podaljšanj in skritih stroškov.
 3. **Uredite naročnino** — velja vedno **do 1. 9.**; za naslednje leto jo lahko sklenete
    **šele od 15. 8. dalje**. Naročnina **se ne da prekiniti** pred iztekom (do 1. 9.) —
    sklenete jo za celo šolsko leto.
+
+   - **3.b Podpišite DPA** (pogodbo o obdelavi osebnih podatkov): v
+     **Nastavitvah → DPA** izpolnite podatke in kliknite **»Podpiši pogodbo«**.
+     Dokler ni podpisana, se **učitelji ne morejo prijaviti** (dostop imata le
+     admin in vodstvo).
 4. **Uvozite učitelje** in začnite uporabljati — učitelji in vodstvo se prijavijo, ko je
    naročnina urejena in potrjena.
 

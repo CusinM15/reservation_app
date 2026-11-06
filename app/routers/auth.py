@@ -29,6 +29,7 @@ from app.config import settings
 from app.audit import log_audit
 from app.app_settings import selling_config
 from app.subscriptions import get_valid_until, is_active
+from app.dpa import dpa_signed
 from app.models import User, RoleEnum
 from app.config import settings, validate_password_strength
 from app.routers.blocked_dates import _send_email
@@ -240,6 +241,25 @@ def login(
                     "error": "Naročnina vaše šole je potekla" + rok + ". "
                              "Aplikacija trenutno ni na voljo — obrnite se na "
                              "administratorja šole.",
+                    "selling": selling_config(db),
+                },
+            )
+
+    # ── DPA ──────────────────────────────────────────────────────────
+    # Učitelji ne morejo uporabljati aplikacije, dokler šola ne podpiše
+    # pogodbe o obdelavi osebnih podatkov (DPA). Admin/vodstvo/glavni admin
+    # imajo dostop (da podpišejo ali uredijo DPA).
+    if not is_main_admin(user) and role_value(user) not in (
+        SCHOOL_ADMIN_ROLE, "vodstvo",
+    ):
+        if not dpa_signed(db, user.school_id):
+            return templates.TemplateResponse(
+                "login.html",
+                {
+                    "request": request,
+                    "error": "Šola še ni podpisala pogodbe o obdelavi osebnih "
+                             "podatkov (DPA) — aplikacija za učitelje trenutno "
+                             "ni odprta. Obrnite se na administratorja šole.",
                     "selling": selling_config(db),
                 },
             )

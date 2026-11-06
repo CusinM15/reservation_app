@@ -443,6 +443,7 @@ def _dpa_panel_html(request: Request, db: Session) -> str:
     is_admin = is_school_admin(user) or is_main_admin(user)
     is_vodstvo = (not is_admin) and user.role == "vodstvo"
     agreement = get_agreement(db, school.id)
+    is_teacher = (not is_admin) and (not is_vodstvo)
 
     if agreement is not None:
         when = agreement.signed_at.strftime("%d. %m. %Y ob %H:%M") if agreement.signed_at else "?"
@@ -464,6 +465,10 @@ def _dpa_panel_html(request: Request, db: Session) -> str:
                  '<a href="/settings">Nastavitvah šole → DPA</a> in kliknite »Podpiši«.</p>')
     elif is_vodstvo:
         inner = "<p><b>DPA še ni podpisana.</b></p>"
+    elif is_teacher:
+        inner = ('<p><b>⚠ DPA še ni podpisana.</b> Šola mora najprej podpisati pogodbo '
+                 'o obdelavi osebnih podatkov — aplikacija za učitelje zato trenutno ni '
+                 'odprta. Obrnite se na šolskega administratorja.</p>')
     else:
         return ""
 

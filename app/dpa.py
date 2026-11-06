@@ -64,6 +64,13 @@ def get_agreement(db: Session, school_id: int) -> DpaAgreement | None:
     return db.query(DpaAgreement).filter(DpaAgreement.school_id == school_id).first()
 
 
+def dpa_signed(db: Session, school_id: int | None) -> bool:
+    """Ali ima šola podpisano DPA (potrebno za dostop učiteljem)?"""
+    if not school_id:
+        return False
+    return get_agreement(db, school_id) is not None
+
+
 def _row(label: str, value: str) -> str:
     return (f'<tr><td style="width:200px;font-weight:600;padding:5px 8px;'
             f'border:1px solid #999;vertical-align:top;">{html_mod.escape(label)}</td>'
@@ -71,7 +78,8 @@ def _row(label: str, value: str) -> str:
 
 
 def dpa_html(school_name: str, sdata: dict, provider: dict,
-             school_sig: str, provider_sig: str, version: str = DPA_VERSION) -> str:
+             school_sig: str, provider_sig: str, version: str = DPA_VERSION,
+             signer_email: str = "") -> str:
     """Celotna DPA kot HTML (vhod za weasyprint)."""
     upr = _row("Naziv šole", school_name)
     upr += _row("Naslov", sdata.get("DPA_NASLOV", ""))
@@ -79,7 +87,7 @@ def dpa_html(school_name: str, sdata: dict, provider: dict,
     upr += _row("Matična številka", sdata.get("DPA_MATICNA", ""))
     upr += _row("Ime in priimek zastopnika", sdata.get("DPA_ZASTOPNIK", ""))
     upr += _row("Funkcija", sdata.get("DPA_FUNKCIJA", ""))
-    upr += _row("E-pošta administratorja", sdata.get("DPA_EMAIL", ""))
+    upr += _row("E-pošta podpisnika", signer_email or sdata.get("DPA_EMAIL", ""))
 
     obd = _row("Naziv", provider.get("naziv", ""))
     obd += _row("Naslov", provider.get("naslov", ""))
@@ -207,10 +215,12 @@ def dpa_html(school_name: str, sdata: dict, provider: dict,
 
 
 def build_dpa_pdf(school: School, sdata: dict, provider: dict,
-                  school_sig: str, provider_sig: str, version: str = DPA_VERSION) -> bytes:
+                  school_sig: str, provider_sig: str, version: str = DPA_VERSION,
+                  signer_email: str = "") -> bytes:
     from weasyprint import HTML as WP_HTML
 
-    html_doc = dpa_html(school.name, sdata, provider, school_sig, provider_sig, version)
+    html_doc = dpa_html(school.name, sdata, provider, school_sig, provider_sig, version,
+                        signer_email=signer_email)
     return WP_HTML(string=html_doc).write_pdf()
 
 
@@ -227,7 +237,8 @@ def sign_dpa(db: Session, school: School, user: User) -> DpaAgreement:
     school_sig = now.strftime("%d. %m. %Y %H:%M")
     provider_sig = now.strftime("%d. %m. %Y %H:%M")
 
-    pdf = build_dpa_pdf(school, sdata, provider, school_sig, provider_sig)
+    pdf = build_dpa_pdf(school, sdata, provider, school_sig, provider_sig,
+                          signer_email=(user.username or ""))
     sha256 = hashlib.sha256(pdf).hexdigest()
 
     agreement = get_agreement(db, school.id)

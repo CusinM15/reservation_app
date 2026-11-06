@@ -164,9 +164,24 @@ administrator šole.
 
 > 💶 Trenutno je na voljo **letni** plan (12 mesecev).
 
+## 6. Pogodba o obdelavi osebnih podatkov (DPA)
+
+Takoj po ustvarjanju šole **podpišite pogodbo o obdelavi osebnih podatkov**
+(DPA). Dokler ni podpisana, se **učitelji ne morejo prijaviti** v aplikacijo
+(dostop imata le administrator in vodstvo).
+
+- **Nastavitve šole → DPA** → izpolnite naslov šole, davčno in matično (neobvezno)
+  ter **ime in funkcijo podpisnika** → kliknite **»Podpiši pogodbo«**.
+- Dokument se samodejno podpiše **z obema stranema**: šola (podpišete vi) in
+  ponudnik (samodejno). Podpisan PDF je na voljo na **`/docs/html/dpa`**
+  (vpogled, prenos, ponastavitev).
+- Po podpisu se učitelji lahko normalno prijavijo.
+
 ---
 
-## 6. Varnostna kopija in obnova
+---
+
+## 7. Varnostna kopija in obnova
 
 ### Naredi backup
 
@@ -195,7 +210,7 @@ s podatki iz kopije; podatki drugih šol ostanejo nedotaknjeni.
 
 ---
 
-## 7. Dnevi dejavnosti — kaj in kako dela
+## 8. Dnevi dejavnosti — kaj in kako dela
 
 **Dan dejavnosti** je dan, ko razred ne more pisati ocenjevanj in (običajno) ni
 pouka — npr. športni dan, kulturni dan, naravoslovni dan, tehniški dan, ekskurzija,
@@ -300,7 +315,7 @@ za starše** (npr. obvestilo o govorilnih urah), vsako s predogledom in **PDF**
 prenosom — takoj pošljete po e-asistentu ali natisnete. Obvestila so oblikovana
 kot A4 dokument.
 
-## 8. Audit log (dnevnik sprememb)
+## 9. Audit log (dnevnik sprememb)
 
 **📋 Audit log** omogoča **pregled vseh pomembnih sprememb v sistemu**
 
@@ -319,7 +334,7 @@ naredil in kdaj. Uporabno za sledljivost in odpravljanje napak.
 
 ---
 
-## 9. Priporočila za vloge
+## 10. Priporočila za vloge
 
 | Vloga | Kdo naj jo ima | Pravice |
 |---|---|---|
