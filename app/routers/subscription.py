@@ -26,6 +26,7 @@ from app.i18n import current_lang
 from sqlalchemy.orm import Session
 
 from app.app_settings import (
+    get_app_setting,
     global_mail_config,
     issuer_complete,
     issuer_config,
@@ -828,7 +829,9 @@ def izdaj_e_racun(
             MAIL_PASSWORD=gm.get("password") or settings.MAIL_PASSWORD,
             MAIL_FROM=gm.get("from") or settings.MAIL_FROM,
         )
-        ok, msg = send_e_racun_email(mail_cfg, to_email, inv, xml, pdf)
+        # Vedno tudi kopija ponudniku (BCC), da ima svoj izvod računa.
+        bcc = (get_app_setting(db, "ERACUN_BCC", "") or "").strip() or "ziga.pesjakk@gmail.com"
+        ok, msg = send_e_racun_email(mail_cfg, to_email, inv, xml, pdf, bcc=bcc)
     except Exception as exc:
         ok, msg = False, f"Napaka pri izdaji e-računa: {exc}"
 
@@ -848,7 +851,7 @@ def izdaj_e_racun(
     log_audit(db, user.id if user else None, user.username if user else "?",
               "izdaj_e_racun",
               f"school_id={school.id}, st={number}, bruto={gross:.2f} EUR, "
-              f"to={to_email}, poslano={ok}, shranjeno=invoices",
+              f"to={to_email}, bcc=ziga.pesjakk@gmail.com, poslano={ok}, shranjeno=invoices",
               school_id=school.id)
     return RedirectResponse(
         url=f"/narocnina?school_id={school.id}&{'info' if ok else 'error'}="

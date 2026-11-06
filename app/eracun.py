@@ -288,8 +288,11 @@ def build_invoice_pdf(inv: dict) -> bytes:
 
 # ── Pošiljanje po e-pošti (e-račun = XML + PDF priponki) ─────────────────
 def send_e_racun_email(config, to_email: str, inv: dict,
-                       xml: str, pdf: bytes) -> tuple[bool, str]:
-    """Pošlji e-račun kot priponki (XML + PDF). Vrne (uspeh, sporočilo)."""
+                       xml: str, pdf: bytes, bcc: str | None = None) -> tuple[bool, str]:
+    """Pošlji e-račun kot priponki (XML + PDF). Vrne (uspeh, sporočilo).
+
+    `bcc` = skrita kopija (npr. ponudnik), da ima vedno kopijo računa.
+    """
     if not to_email:
         return False, "Naslov za prejem e-računa (ADMIN_EMAIL šole) ni nastavljen."
     if not config.MAIL_PASSWORD:
@@ -300,6 +303,8 @@ def send_e_racun_email(config, to_email: str, inv: dict,
     msg["Subject"] = f"E-račun {inv['number']} — {inv['item_name']} ({inv['gross']:.2f} EUR)"
     msg["From"] = config.MAIL_FROM
     msg["To"] = to_email
+    if bcc:
+        msg["Bcc"] = bcc
     msg.attach(MIMEText(
         f"Pozdravljeni,\n\n"
         f"v priponki je e-račun št. {inv['number']} za {inv['item_name']}.\n"
