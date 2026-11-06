@@ -474,7 +474,7 @@
                                 onclick="dpaReset()">↺ {{ t('set_dpa_ponastavi', 'Ponastavi') }}</button>
                     {% else %}
                         <p class="hint" style="margin-top:0;">
-                            {{ t('set_dpa_ni_podpisana', 'DPA še ni podpisana. Najprej kliknite »Shrani nastavitve«, nato tu »Podpiši pogodbo«.') }}
+                            {{ t('set_dpa_ni_podpisana', 'DPA še ni podpisana. Izpolnite podatke in kliknite »Podpiši pogodbo« — vpisana polja bodo samodejno shranjena.') }}
                         </p>
                         {% if dpa and dpa.provider_complete is sameas false %}
                         <p class="hint" style="color:#991b1b;">
@@ -1062,6 +1062,21 @@
             // ── DPA: podpis / ponastavitev ────────────────────────────────────
             async function dpaSign() {
                 if (!confirm('{{ t('js_dpa_potrdi', 'S tem boste podpisali pogodbo o obdelavi osebnih podatkov v imenu šole. Tudi ponudnik jo bo podpisal (samodejno).') }}')) return;
+                // Najprej shrani vpisana DPA polja (da jih podpis prebere iz baze).
+                const dpa = {};
+                document.querySelectorAll('#settings-form input[name^="DPA_"]')
+                    .forEach(inp => dpa[inp.name] = inp.value);
+                const saveRes = await fetch('/api/schools/' + SCHOOL_ID + '/settings', {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    credentials: 'include',
+                    body: JSON.stringify({ values: dpa }),
+                });
+                if (!saveRes.ok) {
+                    const sd = await saveRes.json().catch(() => ({}));
+                    alert('{{ t('js_napaka_prefix', 'Napaka: ') }}' + (sd.detail || saveRes.status));
+                    return;
+                }
                 const r = await fetch('/settings/dpa/sign', { method: 'POST', credentials: 'include' });
                 const d = await r.json().catch(() => ({}));
                 if (r.ok) { alert('{{ t('js_dpa_podpisana', 'DPA je podpisana. ✔') }}'); location.reload(); }
