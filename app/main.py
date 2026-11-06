@@ -26,7 +26,7 @@ from app.routers import rezervacije, ocenjevanja, auth, blocked_dates, audit_log
 from app.app_settings import selling_enabled
 from app.subscriptions import is_active
 from app.models import User, RoleEnum
-from app.dpa import dpa_signed
+from app.dpa import require_dpa, dpa_signed
 from app.tenancy import (
     MAIN_ADMIN_ROLE,
     SCHOOL_ADMIN_ROLE,
@@ -62,6 +62,8 @@ def dpa_blocks_teachers(request: Request) -> bool:
     """
     db = SessionLocal()
     try:
+        if not require_dpa(db):
+            return False
         uid = get_current_user_id(request)
         if not uid:
             return False

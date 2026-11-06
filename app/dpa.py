@@ -64,6 +64,20 @@ def get_agreement(db: Session, school_id: int) -> DpaAgreement | None:
     return db.query(DpaAgreement).filter(DpaAgreement.school_id == school_id).first()
 
 
+def require_dpa(db: Session) -> bool:
+    """Ali naj velja zahteva po podpisani DPA (učitelji blokirani)?
+
+    Stikalo REQUIRE_DPA (app_setting): privzeto izklopljeno. V produkciji ga
+    postavimo na 1, da velja zahteva, da mora šola podpisati DPA, preden se
+    učitelji lahko prijavijo. Testi ga ne nastavljajo (privzeto 0), razen
+    namenskih gate-testov.
+    """
+    from app.app_settings import get_app_setting
+
+    v = (get_app_setting(db, "REQUIRE_DPA", "0") or "").strip().lower()
+    return v in ("1", "true", "yes", "on")
+
+
 def dpa_signed(db: Session, school_id: int | None) -> bool:
     """Ali ima šola podpisano DPA (potrebno za dostop učiteljem)?"""
     if not school_id:

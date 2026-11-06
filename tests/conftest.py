@@ -74,7 +74,7 @@ def clean_db():
         db.execute(text(
             "TRUNCATE users, reservations, assessments, audit_log, blocked_dates, "
             "activity_days, school_aliases, school_settings, schools, "
-            "payments, invoices, app_settings, ui_strings, zasloni_files, govorilne_prijave "
+            "payments, invoices, app_settings, ui_strings, zasloni_files, govorilne_prijave, dpa_agreements "
             "RESTART IDENTITY CASCADE"
         ))
         db.commit()
@@ -144,5 +144,29 @@ def get_user_from_db(user_id: int) -> User:
         user = db.query(User).filter(User.id == user_id).first()
         db.expunge(user) if user else None
         return user
+    finally:
+        db.close()
+
+
+    """Vpiši zapis o podpisani DPA za privzeto šolo (brez pravega PDF-ja)."""
+    from app.models import DpaAgreement
+
+    db = SessionLocal()
+    try:
+        sid = default_school_id()
+        if sid is not None:
+            if db.query(DpaAgreement).filter(DpaAgreement.school_id == sid).first() is None:
+                db.add(DpaAgreement(school_id=sid, version="1.0", sha256="testbootstrap"))
+                db.commit()
+    finally:
+        db.close()
+
+
+    from app.app_settings import set_app_setting
+
+    db = SessionLocal()
+    try:
+        set_app_setting(db, "REQUIRE_DPA", "0")
+        db.commit()
     finally:
         db.close()

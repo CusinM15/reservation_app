@@ -29,7 +29,7 @@ from app.config import settings
 from app.audit import log_audit
 from app.app_settings import selling_config
 from app.subscriptions import get_valid_until, is_active
-from app.dpa import dpa_signed
+from app.dpa import require_dpa, dpa_signed
 from app.models import User, RoleEnum
 from app.config import settings, validate_password_strength
 from app.routers.blocked_dates import _send_email
@@ -252,7 +252,7 @@ def login(
     if not is_main_admin(user) and role_value(user) not in (
         SCHOOL_ADMIN_ROLE, "vodstvo",
     ):
-        if not dpa_signed(db, user.school_id):
+        if require_dpa(db) and not dpa_signed(db, user.school_id):
             return templates.TemplateResponse(
                 "login.html",
                 {
