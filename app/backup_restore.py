@@ -175,11 +175,24 @@ def _file_has_school_column(columns: list[str]) -> bool:
 
 def _delete_table(db: Session, school_id: int, table: str, users_of_school_sql) -> int:
     """Izbriši vrstice TE šole iz ene tabele. Pred brisanjem uporabnikov
-    sprostimo audit_log.user_id (dnevnik ostane, sklic pa ne)."""
+    sprostimo NULLABLE tuje ključe nanje (audit_log.user_id, pa tudi
+    invoices/payments/dpa_agreements, ki jih obnova ne dotika), da
+    `DELETE FROM users` ne pade na ForeignKey. Vnos ohranimo, sklic
+    prekinemo (enako kot pri audit_log).
+    """
     if table == "users":
-        db.execute(sql_text(
-            f"UPDATE audit_log SET user_id = NULL WHERE user_id IN ({users_of_school_sql})"
-        ), {"sid": school_id})
+        for child, col in (
+            ("audit_log", "user_id"),
+            ("invoices", "created_by_id"),
+            ("payments", "reported_by_id"),
+            ("payments", "created_by_id"),
+            ("dpa_agreements", "signed_by_user_id"),
+            ("activity_days", "created_by_id"),
+        ):
+            db.execute(sql_text(
+                f"UPDATE {child} SET {col} = NULL "
+                f"WHERE {col} IN ({users_of_school_sql})"
+            ), {"sid": school_id})
     return db.execute(
         sql_text(f"DELETE FROM {table} WHERE school_id = :sid"), {"sid": school_id}
     ).rowcount or 0

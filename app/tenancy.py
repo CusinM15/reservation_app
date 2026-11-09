@@ -1008,34 +1008,59 @@ def delete_school_data(db: Session, school) -> dict:
     Vrne slovar {tabela: število izbrisanih vrstic}.
     """
     from app.models import (
-        ActivityDay, Assessment, AuditLog, BlockedDate, Reservation,
-        SchoolAlias, SchoolSetting, User,
+        ActivityDay, Assessment, AuditLog, BlockedDate, DpaAgreement,
+        GovorilnaPrijava, Invoice, Payment, Reservation, SchoolAlias,
+        SchoolSetting, User, ZaslonFile,
     )
-    from sqlalchemy import select
+    from sqlalchemy import select, text as sql_text
 
     sid = int(school.id)
     counts: dict[str, int] = {}
 
+    # 1. Podatki, ki kažejo na uporabnike in/ali šolo. Tabele z NOT NULL
+    #    sklici na uporabnike (reservations/assessments teacher_id,
+    #    blocked_dates.created_by_id) je treba izbrisati PRED uporabniki.
     for model, name in (
         (Reservation, "reservations"),
         (Assessment, "assessments"),
         (BlockedDate, "blocked_dates"),
         (ActivityDay, "activity_days"),
+        (Invoice, "invoices"),
+        (Payment, "payments"),
+        (DpaAgreement, "dpa_agreements"),
+        (GovorilnaPrijava, "govorilne_prijave"),
+        (ZaslonFile, "zasloni_files"),
     ):
         counts[name] = db.query(model).filter(model.school_id == sid).delete(
             synchronize_session=False
         ) or 0
 
+    # nadomescanja_cache nima ORM modela (tabela je v bazi, ni v models.py) —
+    # zbrišemo z golim SQL, da brisanje šole ne pade na tujem ključu.
+    counts["nadomescanja_cache"] = db.execute(
+        sql_text("DELETE FROM nadomescanja_cache WHERE school_id = :sid"),
+        {"sid": sid},
+    ).rowcount or 0
+
     counts["audit_log"] = db.query(AuditLog).filter(AuditLog.school_id == sid).delete(
         synchronize_session=False
     ) or 0
 
-    # Dnevnik z school_id = NULL, ki kaže na uporabnike te šole: sklopi vez
-    # (username ostane), da brisanje uporabnikov ne pade na tujem ključu.
+    # Vnosi s school_id = NULL (npr. dnevnik ali računi druge šole), ki kažejo
+    # na uporabnike TE šole: sprostimo vez (vrstica ostane), da brisanje
+    # uporabnikov ne pade na NULLABLE tujem ključu.
     user_ids = select(User.id).where(User.school_id == sid)
-    db.query(AuditLog).filter(AuditLog.user_id.in_(user_ids)).update(
-        {"user_id": None}, synchronize_session=False
-    )
+    for model, col in (
+        (AuditLog, "user_id"),
+        (Payment, "reported_by_id"),
+        (Payment, "created_by_id"),
+        (Invoice, "created_by_id"),
+        (DpaAgreement, "signed_by_user_id"),
+        (ActivityDay, "created_by_id"),
+    ):
+        db.query(model).filter(getattr(model, col).in_(user_ids)).update(
+            {col: None}, synchronize_session=False
+        )
 
     counts["users"] = db.query(User).filter(User.school_id == sid).delete(
         synchronize_session=False
