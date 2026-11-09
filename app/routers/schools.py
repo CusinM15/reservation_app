@@ -962,23 +962,23 @@ def setup_guide_page(
     obiskovalec vidi, kako so videti navodila, preden si ustvari račun.
     """
     user = get_request_user(request, db)
+    if demo:
+        items = _demo_setup_items()
+        return templates.TemplateResponse(
+            "nastavitev.html",
+            {
+                "request": request,
+                "inactivity_timeout_ms": 0,
+                "demo": True,
+                "school": {"name": "OŠ Primer", "slug": "primer"},
+                "items": items,
+                "stevilo_ok": sum(1 for i in items if i["ok"]),
+                "stevilo_vseh": len(items),
+                "is_main_admin": False,
+                "prodaja": selling_config(db),
+            },
+        )
     if not user:
-        if demo:
-            items = _demo_setup_items()
-            return templates.TemplateResponse(
-                            "nastavitev.html",
-                            {
-                                "request": request,
-                                "inactivity_timeout_ms": 0,
-                                "demo": True,
-                    "school": {"name": "OŠ Primer", "slug": "primer"},
-                    "items": items,
-                    "stevilo_ok": sum(1 for i in items if i["ok"]),
-                    "stevilo_vseh": len(items),
-                    "is_main_admin": False,
-                    "prodaja": selling_config(db),
-                },
-            )
         return RedirectResponse(url="/auth/login")
     try:
         school = _manageable_school(db, request, school_id)
